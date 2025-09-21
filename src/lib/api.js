@@ -3,7 +3,9 @@ const API_KEY = '9ORk2PjfCu7PEINoF5spv1ytb291KxkY7ReqfVCP'
 
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
+  'tithi-durations': 'tithi-durations',
   'nakshatra-timings': 'nakshatra-timings',
+  'nakshatra-durations': 'nakshatra-durations',
   'yoga-durations': 'yoga-durations',
   'karana-timings': 'karana-timings',
   'vedic-weekday': 'vedic-weekday',
@@ -78,6 +80,66 @@ export const astrologyAPI = {
   // Legacy method for backward compatibility
   async getTimings(payload) {
     return this.getSingleCalculation('choghadiya-timings', payload)
+  },
+
+  // Method to fetch sun/moon data from IPGeolocation API
+  async getSunMoonData(latitude, longitude, date) {
+    try {
+      const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
+      const elevation = 10 // Default elevation
+      
+      // Format date as YYYY-MM-DD
+      const formattedDate = date instanceof Date ? date.toISOString().split('T')[0] : date
+      
+      const url = `https://api.ipgeolocation.io/v2/astronomy?apiKey=${apiKey}&lat=${latitude}&long=${longitude}&elevation=${elevation}&date=${formattedDate}`
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error fetching sun/moon data:', error)
+      throw error
+    }
+  },
+
+  // Method to fetch Panchang data for home page
+  async getPanchangData(payload) {
+    const panchangEndpoints = [
+      'tithi-durations', 
+      'nakshatra-durations', 
+      'yoga-durations', 
+      'karana-timings'
+    ]
+    const results = {}
+    const errors = {}
+
+    // Process requests in parallel with a small delay to avoid rate limiting
+    const promises = panchangEndpoints.map(async (endpoint, index) => {
+      // Add small delay between requests to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, index * 200))
+      
+      try {
+        const result = await this.getSingleCalculation(endpoint, payload)
+        results[endpoint] = result
+      } catch (error) {
+        errors[endpoint] = error.message
+        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+      }
+    })
+
+    await Promise.all(promises)
+
+    return { results, errors }
   }
 }
 

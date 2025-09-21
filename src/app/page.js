@@ -9,12 +9,19 @@ import HoraTimeline from '@/components/HoraTimeline'
 import AstrologyOptionCard from '@/components/AstrologyOptionCard'
 import AstrologyForm from '@/components/AstrologyForm'
 import AstrologyResult from '@/components/AstrologyResult'
+import DateSelector from '@/components/DateSelector'
 import { mockPanchangData } from '@/lib/mockData'
 import { astrologyAPI } from '@/lib/api'
 
 export default function Home() {
   const [panchangData, setPanchangData] = useState(mockPanchangData)
   const [currentDate, setCurrentDate] = useState('')
+  
+  // Date and location state
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [userLocation, setUserLocation] = useState(null)
+  const [isLoadingPanchang, setIsLoadingPanchang] = useState(false)
+  const [panchangError, setPanchangError] = useState(null)
   
   // Astrology options state
   const [selectedOption, setSelectedOption] = useState(null)
@@ -54,6 +61,208 @@ export default function Home() {
     })
     setCurrentDate(formattedDate)
   }, [])
+
+  // Get user location on component mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setUserLocation({ latitude, longitude })
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+          // Fallback to Delhi, India
+          setUserLocation({ latitude: 28.6139, longitude: 77.2090 })
+        }
+      )
+    } else {
+      // Fallback to Delhi, India
+      setUserLocation({ latitude: 28.6139, longitude: 77.2090 })
+    }
+  }, [])
+
+  // Fetch real Panchang data when date or location changes
+  useEffect(() => {
+    if (userLocation && selectedDate) {
+      fetchRealPanchangData()
+    }
+  }, [selectedDate, userLocation])
+
+  // Helper function to format time strings
+  const formatTime = (timeString) => {
+    try {
+      if (!timeString) return 'N/A'
+      
+      // Handle different time formats
+      let date
+      if (timeString.includes('T')) {
+        // ISO format
+        date = new Date(timeString)
+      } else if (timeString.includes(' ')) {
+        // "YYYY-MM-DD HH:MM:SS" format
+        date = new Date(timeString)
+      } else {
+        // Just time format "HH:MM:SS"
+        const today = new Date(selectedDate)
+        const [hours, minutes, seconds] = timeString.split(':')
+        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                       parseInt(hours), parseInt(minutes), parseInt(seconds))
+      }
+      
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch (error) {
+      console.error('Error formatting time:', error)
+      return timeString // Return original if formatting fails
+    }
+  }
+
+  // Helper function to format HH:MM time strings from IPGeolocation API
+  const formatTimeFromHHMM = (timeString) => {
+    try {
+      if (!timeString || timeString === '-:-') return 'N/A'
+      
+      // Handle HH:MM format from IPGeolocation API
+      const [hours, minutes] = timeString.split(':')
+      const today = new Date(selectedDate)
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                           parseInt(hours), parseInt(minutes), 0)
+      
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch (error) {
+      console.error('Error formatting HH:MM time:', error)
+      return timeString // Return original if formatting fails
+    }
+  }
+
+  const fetchRealPanchangData = async () => {
+    if (!userLocation || !selectedDate) return
+
+    setIsLoadingPanchang(true)
+    setPanchangError(null)
+
+    try {
+      const date = new Date(selectedDate)
+      const payload = {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        date: date.getDate(),
+        hours: 12,
+        minutes: 0,
+        seconds: 0,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        timezone: 5.5, // Default to IST, can be calculated based on location
+        config: {
+          observation_point: "geocentric",
+          ayanamsha: "lahiri"
+        }
+      }
+
+      // Fetch Panchang data and Sun/Moon data in parallel
+      const [panchangResults, sunMoonData] = await Promise.all([
+        astrologyAPI.getPanchangData(payload),
+        astrologyAPI.getSunMoonData(userLocation.latitude, userLocation.longitude, date)
+      ])
+      
+      // Update panchang data with real API results
+      const updatedPanchangData = { ...mockPanchangData }
+      
+      // Process Tithi data
+      if (panchangResults.results['tithi-durations']) {
+        try {
+          const tithiData = JSON.parse(JSON.parse(panchangResults.results['tithi-durations'].output))
+          updatedPanchangData.tithi = `${tithiData.name} (${tithiData.paksha})`
+        } catch (e) {
+          console.error('Error parsing tithi data:', e)
+        }
+      }
+
+      // Process Nakshatra data
+      if (panchangResults.results['nakshatra-durations']) {
+        try {
+          const nakshatraData = JSON.parse(panchangResults.results['nakshatra-durations'].output)
+          updatedPanchangData.nakshatra = nakshatraData.name
+        } catch (e) {
+          console.error('Error parsing nakshatra data:', e)
+        }
+      }
+
+      // Process Yoga data
+      if (panchangResults.results['yoga-durations']) {
+        try {
+          const yogaData = JSON.parse(JSON.parse(panchangResults.results['yoga-durations'].output))
+          const currentYoga = Object.values(yogaData).find(yoga => yoga.yoga_left_percentage > 0)
+          if (currentYoga) {
+            updatedPanchangData.yoga = currentYoga.name
+          }
+        } catch (e) {
+          console.error('Error parsing yoga data:', e)
+        }
+      }
+
+      // Process Karana data
+      if (panchangResults.results['karana-timings']) {
+        try {
+          const karanaData = JSON.parse(JSON.parse(panchangResults.results['karana-timings'].output))
+          const currentKarana = Object.values(karanaData).find(karana => karana.karana_left_percentage > 0)
+          if (currentKarana) {
+            updatedPanchangData.karana = currentKarana.name
+          }
+        } catch (e) {
+          console.error('Error parsing karana data:', e)
+        }
+      }
+
+      // Process Sun/Moon data from IPGeolocation API
+      if (sunMoonData && sunMoonData.astronomy) {
+        try {
+          const astronomy = sunMoonData.astronomy
+          
+          // Process Sunrise/Sunset
+          if (astronomy.sunrise && astronomy.sunrise !== '-:-') {
+            updatedPanchangData.sunrise = formatTimeFromHHMM(astronomy.sunrise)
+          }
+          if (astronomy.sunset && astronomy.sunset !== '-:-') {
+            updatedPanchangData.sunset = formatTimeFromHHMM(astronomy.sunset)
+          }
+
+          // Process Moonrise/Moonset
+          if (astronomy.moonrise && astronomy.moonrise !== '-:-') {
+            updatedPanchangData.moonrise = formatTimeFromHHMM(astronomy.moonrise)
+          }
+          if (astronomy.moonset && astronomy.moonset !== '-:-') {
+            updatedPanchangData.moonset = formatTimeFromHHMM(astronomy.moonset)
+          }
+        } catch (e) {
+          console.error('Error parsing sun/moon data:', e)
+        }
+      }
+
+      setPanchangData(updatedPanchangData)
+
+      // Log any errors
+      const allErrors = { ...panchangResults.errors }
+      if (Object.keys(allErrors).length > 0) {
+        console.warn('Some Panchang data failed to load:', allErrors)
+        setPanchangError('Some data may not be available due to API limitations')
+      }
+
+    } catch (error) {
+      console.error('Error fetching Panchang data:', error)
+      setPanchangError('Failed to load real-time Panchang data. Showing sample data.')
+    } finally {
+      setIsLoadingPanchang(false)
+    }
+  }
 
   const handleOptionClick = (optionId) => {
     if (optionId === 'tithi-timings') {
@@ -168,9 +377,60 @@ export default function Home() {
           <p className="text-lg text-gray-600">{currentDate}</p>
         </div>
 
-        {/* Today's Panchang Grid */}
+        {/* Date Selector */}
+        <DateSelector
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          userLocation={userLocation}
+          onLocationChange={setUserLocation}
+        />
+
+        {/* Loading and Error States */}
+        {isLoadingPanchang && (
+          <div className="text-center py-8">
+            <div className="inline-flex items-center space-x-2 text-blue-600">
+              <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+              <span>Loading real-time Panchang data...</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Fetching Tithi, Nakshatra, Yoga, Karana from astrology API
+            </p>
+            <p className="text-sm text-gray-500">
+              Fetching Sunrise, Sunset, Moonrise & Moonset from IPGeolocation API
+            </p>
+          </div>
+        )}
+
+        {panchangError && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm">{panchangError}</p>
+          </div>
+        )}
+
+        {/* Success indicator when data is loaded */}
+        {!isLoadingPanchang && !panchangError && userLocation && (
+          <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 text-sm">
+              ✅ Real-time Panchang data loaded for your location
+            </p>
+            <p className="text-green-700 text-xs mt-1">
+              Astrological data from Free Astrology API • Sun/Moon data from IPGeolocation API
+            </p>
+          </div>
+        )}
+
+        {/* Panchang Grid */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Today's Panchang</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            {selectedDate === new Date().toISOString().split('T')[0] 
+              ? "Today's Panchang" 
+              : `Panchang for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}`
+            }
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {panchangItems.map((item, index) => (
               <PanchangCard
