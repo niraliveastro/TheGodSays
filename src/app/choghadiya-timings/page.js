@@ -5,6 +5,7 @@ import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Share, RefreshCw, MapPin, Calendar, Zap, Star } from 'lucide-react'
+import astrologyAPI from '@/lib/api'
 
 export default function ChoghadiyaTimingsPage() {
   const [choghadiyaData, setChoghadiyaData] = useState(null)
@@ -30,7 +31,7 @@ export default function ChoghadiyaTimingsPage() {
           setUserLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            timezone: Math.round(position.coords.longitude / 15) // Approximate timezone
+            timezone: new Date().getTimezoneOffset() / -60
           })
         },
         (error) => {
@@ -83,54 +84,8 @@ export default function ChoghadiyaTimingsPage() {
           ayanamsha: 'lahiri'
         }
       }
-
-      console.log('Fetching choghadiya data with payload:', payload)
-
-      const response = await fetch('https://json.freeastrologyapi.com/choghadiya-timings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.status === 429) {
-        // Rate limit exceeded, use mock data
-        console.log('Rate limit exceeded, using mock data')
-        const mockData = {
-          statusCode: 200,
-          output: JSON.stringify({
-            "1": {"name": "Char", "starts_at": new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()},
-            "2": {"name": "Labh", "starts_at": new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()},
-            "3": {"name": "Amrit", "starts_at": new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()},
-            "4": {"name": "Kaal", "starts_at": new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString()},
-            "5": {"name": "Shubh", "starts_at": new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()},
-            "6": {"name": "Rog", "starts_at": new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString()},
-            "7": {"name": "Udveg", "starts_at": new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()},
-            "8": {"name": "Char", "starts_at": new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString()},
-            "9": {"name": "Rog", "starts_at": new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString()},
-            "10": {"name": "Kaal", "starts_at": new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString()},
-            "11": {"name": "Labh", "starts_at": new Date(Date.now() + 11 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()},
-            "12": {"name": "Udveg", "starts_at": new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 13 * 60 * 60 * 1000).toISOString()},
-            "13": {"name": "Shubh", "starts_at": new Date(Date.now() + 13 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 14 * 60 * 60 * 1000).toISOString()},
-            "14": {"name": "Amrit", "starts_at": new Date(Date.now() + 14 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 15 * 60 * 60 * 1000).toISOString()},
-            "15": {"name": "Char", "starts_at": new Date(Date.now() + 15 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 16 * 60 * 60 * 1000).toISOString()},
-            "16": {"name": "Rog", "starts_at": new Date(Date.now() + 16 * 60 * 60 * 1000).toISOString(), "ends_at": new Date(Date.now() + 17 * 60 * 60 * 1000).toISOString()}
-          })
-        }
-        setChoghadiyaData(mockData)
-        setError('API rate limit exceeded. Showing sample data.')
-        return
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log('Choghadiya API response:', data)
-      
+      // Use centralized API helper
+      const data = await astrologyAPI.getSingleCalculation('choghadiya-timings', payload)
       setChoghadiyaData(data)
     } catch (error) {
       console.error('Error fetching choghadiya data:', error)
@@ -415,53 +370,53 @@ export default function ChoghadiyaTimingsPage() {
               </CardHeader>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.entries(parsedChoghadiyaData).map(([key, choghadiya]) => {
                 const isCurrent = isCurrentChoghadiya(choghadiya)
                 return (
                   <Card 
                     key={key} 
-                    className={`${getChoghadiyaColor(choghadiya.name)} transition-all duration-200 hover:shadow-md ${
+                    className={`${getChoghadiyaColor(choghadiya.name)} transition-all duration-200 hover:shadow-md m-1 md:m-2 ${
                       isCurrent ? 'ring-2 ring-purple-500 ring-opacity-70' : ''
                     }`}
                   >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center space-x-2 text-lg">
-                        <span className="text-2xl">{getChoghadiyaIcon(choghadiya.name)}</span>
-                        <span>{choghadiya.name}</span>
+                    <CardHeader className="py-2">
+                      <CardTitle className="flex items-center space-x-2 text-base sm:text-lg font-bold leading-tight">
+                        <span className="text-xl sm:text-2xl">{getChoghadiyaIcon(choghadiya.name)}</span>
+                        <span className="font-extrabold text-base sm:text-lg">{choghadiya.name}</span>
                         {isCurrent && (
                           <div className="ml-auto">
                             <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
                           </div>
                         )}
                       </CardTitle>
-                      <p className="text-sm opacity-75">
+                      <p className="text-[11px] sm:text-xs opacity-80 leading-snug font-semibold truncate" title={getChoghadiyaDescription(choghadiya.name)}>
                         {getChoghadiyaDescription(choghadiya.name)}
                       </p>
                       {isCurrent && (
-                        <div className="text-xs font-bold text-purple-600 uppercase tracking-wide">
+                        <div className="text-[11px] font-bold text-purple-700 uppercase tracking-wide">
                           🔴 LIVE
                         </div>
                       )}
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">Starts:</span>
-                          <span className="font-mono text-xs">
+                    <CardContent className="space-y-2 p-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] sm:text-sm font-semibold">
+                          <span className="font-bold">Starts:</span>
+                          <span className="font-mono text-[11px] sm:text-sm font-bold text-right">
                             {formatDateTime(choghadiya.starts_at)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">Ends:</span>
-                          <span className="font-mono text-xs">
+                        <div className="flex items-center justify-between text-[11px] sm:text-sm font-semibold">
+                          <span className="font-bold">Ends:</span>
+                          <span className="font-mono text-[11px] sm:text-sm font-bold text-right">
                             {formatDateTime(choghadiya.ends_at)}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="pt-2 border-t border-current border-opacity-20">
-                        <div className="text-xs text-center font-medium">
+                      <div className="pt-1 border-t border-current/20">
+                        <div className="text-[10px] sm:text-[11px] text-center font-bold">
                           Period #{key}
                         </div>
                       </div>

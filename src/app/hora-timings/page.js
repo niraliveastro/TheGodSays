@@ -5,6 +5,7 @@ import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Clock, Download, Share, RefreshCw, MapPin, Calendar, Star, Sun, Moon, Zap } from 'lucide-react'
+import astrologyAPI from '@/lib/api'
 
 export default function HoraTimingsPage() {
   const [horaData, setHoraData] = useState(null)
@@ -12,6 +13,7 @@ export default function HoraTimingsPage() {
   const [error, setError] = useState(null)
   const [userLocation, setUserLocation] = useState(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
 
   // Update current time every minute
   useEffect(() => {
@@ -53,28 +55,28 @@ export default function HoraTimingsPage() {
     }
   }, [])
 
-  // Auto-fetch hora data when location is available
+  // Auto-fetch hora data when location/date is available
   useEffect(() => {
-    if (userLocation) {
-      fetchHoraData()
+    if (userLocation && selectedDate) {
+      fetchHoraData(selectedDate)
     }
-  }, [userLocation])
+  }, [userLocation, selectedDate])
 
-  const fetchHoraData = async () => {
+  const fetchHoraData = async (dateISO) => {
     if (!userLocation) return
 
     setIsLoading(true)
     setError(null)
     
     try {
-      const now = new Date()
+      const now = new Date(dateISO || selectedDate)
       const payload = {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
         date: now.getDate(),
-        hours: now.getHours(),
-        minutes: now.getMinutes(),
-        seconds: now.getSeconds(),
+        hours: 12,
+        minutes: 0,
+        seconds: 0,
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         timezone: userLocation.timezone,
@@ -83,66 +85,8 @@ export default function HoraTimingsPage() {
           ayanamsha: 'lahiri'
         }
       }
-
-      console.log('Fetching hora data with payload:', payload)
-      
-      const response = await fetch('https://json.freeastrologyapi.com/hora-timings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
-        },
-        body: JSON.stringify(payload)
-      })
-
-      console.log('Response status:', response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API Error Response:', errorText)
-        
-        // Handle rate limiting with fallback to mock data
-        if (response.status === 429) {
-          console.log('Rate limit exceeded, using mock data for demonstration')
-          const mockData = {
-            statusCode: 200,
-            output: JSON.stringify({
-              "1": {"lord": "Venus", "starts_at": "2024-01-01 06:53:01", "ends_at": "2024-01-01 07:53:02"},
-              "2": {"lord": "Mercury", "starts_at": "2024-01-01 07:53:02", "ends_at": "2024-01-01 08:53:03"},
-              "3": {"lord": "Moon", "starts_at": "2024-01-01 08:53:03", "ends_at": "2024-01-01 09:53:04"},
-              "4": {"lord": "Saturn", "starts_at": "2024-01-01 09:53:04", "ends_at": "2024-01-01 10:53:05"},
-              "5": {"lord": "Jupiter", "starts_at": "2024-01-01 10:53:05", "ends_at": "2024-01-01 11:53:06"},
-              "6": {"lord": "Mars", "starts_at": "2024-01-01 11:53:06", "ends_at": "2024-01-01 12:53:07"},
-              "7": {"lord": "Sun", "starts_at": "2024-01-01 12:53:07", "ends_at": "2024-01-01 13:53:08"},
-              "8": {"lord": "Venus", "starts_at": "2024-01-01 13:53:08", "ends_at": "2024-01-01 14:53:09"},
-              "9": {"lord": "Mercury", "starts_at": "2024-01-01 14:53:09", "ends_at": "2024-01-01 15:53:10"},
-              "10": {"lord": "Moon", "starts_at": "2024-01-01 15:53:10", "ends_at": "2024-01-01 16:53:11"},
-              "11": {"lord": "Saturn", "starts_at": "2024-01-01 16:53:11", "ends_at": "2024-01-01 17:53:12"},
-              "12": {"lord": "Jupiter", "starts_at": "2024-01-01 17:53:12", "ends_at": "2024-01-01 18:53:13"},
-              "13": {"lord": "Mars", "starts_at": "2024-01-01 18:53:13", "ends_at": "2024-01-01 19:53:14"},
-              "14": {"lord": "Sun", "starts_at": "2024-01-01 19:53:14", "ends_at": "2024-01-01 20:53:15"},
-              "15": {"lord": "Venus", "starts_at": "2024-01-01 20:53:15", "ends_at": "2024-01-01 21:53:16"},
-              "16": {"lord": "Mercury", "starts_at": "2024-01-01 21:53:16", "ends_at": "2024-01-01 22:53:17"},
-              "17": {"lord": "Moon", "starts_at": "2024-01-01 22:53:17", "ends_at": "2024-01-01 23:53:18"},
-              "18": {"lord": "Saturn", "starts_at": "2024-01-01 23:53:18", "ends_at": "2024-01-02 00:53:19"},
-              "19": {"lord": "Jupiter", "starts_at": "2024-01-02 00:53:19", "ends_at": "2024-01-02 01:53:20"},
-              "20": {"lord": "Mars", "starts_at": "2024-01-02 01:53:20", "ends_at": "2024-01-02 02:53:21"},
-              "21": {"lord": "Sun", "starts_at": "2024-01-02 02:53:21", "ends_at": "2024-01-02 03:53:22"},
-              "22": {"lord": "Venus", "starts_at": "2024-01-02 03:53:22", "ends_at": "2024-01-02 04:53:23"},
-              "23": {"lord": "Mercury", "starts_at": "2024-01-02 04:53:23", "ends_at": "2024-01-02 05:53:24"},
-              "24": {"lord": "Moon", "starts_at": "2024-01-02 05:53:24", "ends_at": "2024-01-02 06:53:25"}
-            })
-          }
-          setHoraData(mockData)
-          setError('API rate limit exceeded. Showing sample data for demonstration.')
-          return
-        }
-        
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
-      }
-
-      const data = await response.json()
-      console.log('API Response data:', data)
+      // Use centralized API helper for real-time data
+      const data = await astrologyAPI.getSingleCalculation('hora-timings', payload)
       setHoraData(data)
     } catch (error) {
       setError('Failed to fetch hora timings. Please try again.')
@@ -153,7 +97,7 @@ export default function HoraTimingsPage() {
   }
 
   const handleRefresh = () => {
-    fetchHoraData()
+    fetchHoraData(selectedDate)
   }
 
   const handleDownload = () => {
@@ -200,6 +144,53 @@ export default function HoraTimingsPage() {
       console.log('Raw output that failed to parse:', data.output)
       return null
     }
+  }
+
+  // Format 12-hour time like 06:09 AM
+  const formatTime12 = (dateTimeString) => {
+    try {
+      const d = new Date(dateTimeString)
+      return d.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    } catch (e) {
+      return dateTimeString
+    }
+  }
+
+  const planetMood = (lord) => {
+    // Readability-first palette: soft background + dark text + clear border
+    switch ((lord || '').toLowerCase()) {
+      case 'mars': return { label: 'Aggressive', classes: 'bg-red-100 text-red-900 border border-red-300', border: 'border-red-400' }
+      case 'sun': return { label: 'Vigorous', classes: 'bg-amber-100 text-amber-900 border border-amber-300', border: 'border-amber-400' }
+      case 'venus': return { label: 'Beneficial', classes: 'bg-rose-100 text-rose-900 border border-rose-300', border: 'border-rose-400' }
+      case 'mercury': return { label: 'Quick', classes: 'bg-emerald-100 text-emerald-900 border border-emerald-300', border: 'border-emerald-400' }
+      case 'moon': return { label: 'Gentle', classes: 'bg-sky-100 text-sky-900 border border-sky-300', border: 'border-sky-400' }
+      case 'saturn': return { label: 'Sluggish', classes: 'bg-slate-200 text-slate-900 border border-slate-400', border: 'border-slate-500' }
+      case 'jupiter': return { label: 'Fruitful', classes: 'bg-yellow-100 text-yellow-900 border border-yellow-300', border: 'border-yellow-400' }
+      default: return { label: 'Hora', classes: 'bg-gray-200 text-gray-900 border border-gray-300', border: 'border-gray-400' }
+    }
+  }
+
+  // Build arrays for Day (1-12) and Night (13-24)
+  const horaDataParsed = horaData ? formatHoraData(horaData) : null
+  const entries = horaDataParsed ? Object.entries(horaDataParsed) : []
+  const sortEntries = (arr) => arr.sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10))
+  const dayHoras = sortEntries(entries.filter(([k]) => parseInt(k, 10) >= 1 && parseInt(k, 10) <= 12))
+  const nightHoras = sortEntries(entries.filter(([k]) => parseInt(k, 10) >= 13 && parseInt(k, 10) <= 24))
+
+  const dayStart = dayHoras.length ? formatTime12(dayHoras[0][1].starts_at) : '--'
+  const nightStart = nightHoras.length ? formatTime12(nightHoras[0][1].starts_at) : '--'
+
+  // Helpers for next-day suffix
+  const sameDay = (a, b) => {
+    const da = new Date(a), db = new Date(b)
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
+  }
+  const endSuffixIfNextDay = (start, end) => {
+    if (!sameDay(start, end)) {
+      const d = new Date(end)
+      return `, ${d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}`
+    }
+    return ''
   }
 
   const formatDateTime = (dateTimeString) => {
@@ -285,63 +276,49 @@ export default function HoraTimingsPage() {
     return now >= startTime && now < endTime
   }
 
-  const horaDataParsed = horaData ? formatHoraData(horaData) : null
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <Clock className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-indigo-600">Hora Timings</h1>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header Bar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 text-gray-700">
+            <MapPin className="w-4 h-4" />
+            <span>{userLocation ? `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}` : 'Locating...'}</span>
           </div>
-          <p className="text-lg text-gray-600">Planetary hour periods for today</p>
-          <div className="flex items-center justify-center space-x-4 mt-2 text-sm text-gray-500">
-            <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
-              <span>{currentTime.toLocaleDateString()}</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date(Date.parse(selectedDate) - 86400000).toISOString().slice(0,10))}>{'<' } Prev Day</Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date().toISOString().slice(0,10))}>Today</Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date(Date.parse(selectedDate) + 86400000).toISOString().slice(0,10))}>Next Day {'>'}</Button>
             </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="w-4 h-4" />
-              <span>{currentTime.toLocaleTimeString()}</span>
-            </div>
-            {userLocation && (
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span>{userLocation.latitude.toFixed(2)}, {userLocation.longitude.toFixed(2)}</span>
-              </div>
-            )}
           </div>
         </div>
 
+        {/* Title strip */}
+        <div className="bg-gray-800 text-white rounded px-3 py-2 inline-block mb-4 text-sm font-semibold shadow">
+          {new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit', weekday: 'long' })}
+        </div>
+
         {/* Action Buttons */}
-        <div className="flex justify-between items-center mb-6">
-          <Button 
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="flex items-center space-x-2"
-          >
+        <div className="flex justify-between items-center mb-4">
+          <Button onClick={handleRefresh} disabled={isLoading} className="flex items-center gap-2">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
           </Button>
-          
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleDownload}
-              className="flex items-center space-x-2"
-            >
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
               <Download className="w-4 h-4" />
               <span>Download</span>
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleShare}
-              className="flex items-center space-x-2"
-            >
+            <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
               <Share className="w-4 h-4" />
               <span>Share</span>
             </Button>
@@ -350,72 +327,65 @@ export default function HoraTimingsPage() {
 
         {/* Hora Results */}
         {horaDataParsed ? (
-          <div className="space-y-6">
-            <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-indigo-800">
-                  <Zap className="w-5 h-5" />
-                  <span>24-Hour Planetary Hours</span>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Day Hora */}
+            <Card className="border border-gray-200 shadow-sm">
+              <CardHeader className="pb-2 border-b bg-yellow-50/50">
+                <CardTitle className="flex items-center justify-between text-yellow-800 text-lg font-bold">
+                  <span className="flex items-center gap-2">🌞 Day Hora</span>
+                  <span className="flex items-center gap-1 text-sm text-yellow-700"><Clock className="w-4 h-4" /> {dayStart}</span>
                 </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Each hour is ruled by a different planet, influencing the energy of that time period
-                </p>
               </CardHeader>
+              <CardContent className="pt-0">
+                <div>
+                  {dayHoras.map(([key, hora], idx) => {
+                    const mood = planetMood(hora.lord)
+                    return (
+                      <div key={key} className={`flex items-center flex-wrap gap-2 justify-between min-h-[54px] p-4 ${isCurrentHora(hora) ? 'bg-yellow-200/50 border-l-4 border-yellow-500' : 'bg-white border-b border-gray-200 hover:bg-gray-50'} transition-colors`}>
+    <div className="flex items-center gap-2">
+        <div className={`px-3 py-1 rounded-md text-sm leading-6 font-bold drop-shadow-sm ${mood.classes}`}>
+            {getPlanetIcon(hora.lord)} {hora.lord} - {mood.label}
+        </div>
+    </div>
+                        <div className="text-base text-gray-700 text-right font-mono font-semibold">
+                          {formatTime12(hora.starts_at)} <span className="text-gray-700">to</span> {formatTime12(hora.ends_at)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
             </Card>
 
-             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-16 gap-1.5">
-               {Object.entries(horaDataParsed).map(([key, hora]) => (
-                 <Card 
-                   key={key} 
-                   className={`${getPlanetColor(hora.lord)} transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer ${
-                     isCurrentHora(hora) ? 'ring-2 ring-green-500 ring-opacity-70 shadow-lg scale-105' : ''
-                   }`}
-                   style={{ aspectRatio: '1 / 0.8' }}
-                 >
-                   <CardContent className="p-1.5 h-full flex flex-col justify-between">
-                     {/* Header with planet icon and current indicator */}
-                     <div className="flex flex-col items-center space-y-0.5">
-                       <div className="relative">
-                         <div className="text-sm">
-                           {getPlanetIcon(hora.lord)}
-                         </div>
-                         {isCurrentHora(hora) && (
-                           <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                         )}
-                       </div>
-                       
-                       <div className="text-center">
-                         <div className="font-bold text-xs leading-none">
-                           {hora.lord}
-                         </div>
-                         <div className="text-xs opacity-75 font-bold">
-                           #{key}
-                         </div>
-                       </div>
-                     </div>
-
-                     {/* Time info */}
-                     <div className="space-y-0.5 text-center">
-                       <div className="text-xs font-mono font-bold leading-none">
-                         {formatDateTime(hora.starts_at)}
-                       </div>
-                       <div className="text-xs font-mono font-bold leading-none">
-                         {formatDateTime(hora.ends_at)}
-                       </div>
-                     </div>
-
-                     {/* Current indicator */}
-                     {isCurrentHora(hora) && (
-                       <div className="text-center">
-                         <div className="inline-flex items-center px-1 py-0.5 rounded-full bg-green-100 text-green-800 text-xs font-bold">
-                           LIVE
-                         </div>
-                       </div>
-                     )}
-                   </CardContent>
-                 </Card>
-               ))}
-            </div>
+            {/* Night Hora */}
+            <Card className="border border-gray-200 shadow-sm">
+              <CardHeader className="pb-2 border-b bg-indigo-50/50">
+                <CardTitle className="flex items-center justify-between text-indigo-800 text-lg font-bold">
+                  <span className="flex items-center gap-2">🌙 Night Hora</span>
+                  <span className="flex items-center gap-1 text-sm text-indigo-700"><Clock className="w-4 h-4" /> {nightStart}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div>
+                  {nightHoras.map(([key, hora], idx) => {
+                    const mood = planetMood(hora.lord)
+                    return (
+                      <div key={key} className={`flex items-center flex-wrap gap-2 justify-between min-h-[54px] p-4 ${isCurrentHora(hora) ? 'bg-indigo-200/50 border-l-4 border-indigo-500' : 'bg-white border-b border-gray-200 hover:bg-gray-50'} transition-colors`}>
+    <div className="flex items-center gap-2">
+        <div className={`px-3 py-1 rounded-md text-sm leading-6 font-bold drop-shadow-sm ${mood.classes}`}>
+            {getPlanetIcon(hora.lord)} {hora.lord} - {mood.label}
+        </div>
+    </div>
+                        <div className="text-base text-gray-700 text-right font-mono font-semibold">
+                          {formatTime12(hora.starts_at)} <span className="text-black">to</span> {formatTime12(hora.ends_at)}
+                          <span className="text-black">{endSuffixIfNextDay(hora.starts_at, hora.ends_at)}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div> 
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <Card>

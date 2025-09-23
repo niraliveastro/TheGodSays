@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calendar, Home, User, Menu, X, Clock, Star } from 'lucide-react'
+import { Calendar, Home, User, Menu, X, Clock, Star, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const Navigation = () => {
@@ -12,8 +12,10 @@ const Navigation = () => {
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
+    { href: '/choghadiya-timings', label: 'Choghadiya', icon: Clock },
     { href: '/hora-timings', label: 'Hora Timings', icon: Clock },
     { href: '/maha-dasas', label: 'Maha Dasas', icon: Star },
+    { href: '/kundali', label: 'Kundali', icon: BookOpen },
     { href: '/personalized', label: 'Personalized', icon: User },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
   ]

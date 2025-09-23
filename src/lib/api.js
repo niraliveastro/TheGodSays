@@ -2,7 +2,7 @@ const API_BASE_URL = 'https://json.freeastrologyapi.com'
 // const API_KEY = '9ORk2PjfCu7PEINoF5spv1ytb291KxkY7ReqfVCP'
 // const API_KEY = 'dB1NJ3uudt6sVFA8amcXW8SjlzjXXn3l99W7XYES'
 // const API_KEY = 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
-const API_KEY =  'PvlAjHjTqB1AqCDl21SZK3aaOsNpyzA593wIlyVs'
+const API_KEY =  'kUxWg1GeOt2u5MAmNzUrluncbRydgxl1sYs8Vihh'
 
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
@@ -26,7 +26,8 @@ const API_ENDPOINTS = {
   'gulika-kalam': 'gulika-kalam',
   'dur-muhurat': 'dur-muhurat',
   'varjyam': 'varjyam',
-  'good-bad-times': 'good-bad-times'
+  'good-bad-times': 'good-bad-times',
+  'horoscope-chart-svg-code': 'horoscope-chart-svg-code'
 }
 
 export const astrologyAPI = {

@@ -66,7 +66,10 @@ const AstrologyOptionCard = ({ option, onClick }) => {
   return (
     <Card 
       className={`cursor-pointer transition-all duration-200 transform hover:scale-105 ${getCardColor(option.id)}`}
-      onClick={() => onClick(option)}
+      onClick={() => onClick(option.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(option.id) } }}
     >
       <CardContent className="p-4 flex flex-col items-center text-center">
         <div className="text-blue-600 mb-3 mt-2">
