@@ -1,5 +1,8 @@
 const API_BASE_URL = 'https://json.freeastrologyapi.com'
-const API_KEY = '9ORk2PjfCu7PEINoF5spv1ytb291KxkY7ReqfVCP'
+// const API_KEY = '9ORk2PjfCu7PEINoF5spv1ytb291KxkY7ReqfVCP'
+// const API_KEY = 'dB1NJ3uudt6sVFA8amcXW8SjlzjXXn3l99W7XYES'
+// const API_KEY = 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
+const API_KEY =  'PvlAjHjTqB1AqCDl21SZK3aaOsNpyzA593wIlyVs'
 
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
@@ -34,6 +37,11 @@ export const astrologyAPI = {
         throw new Error(`Unknown option: ${optionId}`)
       }
 
+      // Debug: log outgoing request
+      try {
+        console.log(`[API] → POST ${API_BASE_URL}/${endpoint}`, payload)
+      } catch (_) {}
+
       const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -48,6 +56,11 @@ export const astrologyAPI = {
       }
 
       const data = await response.json()
+      // Debug: log success response (trim if huge)
+      try {
+        const preview = typeof data === 'string' ? data.slice(0, 300) : data
+        console.log(`[API] ← OK ${endpoint}`, preview)
+      } catch (_) {}
       return data
     } catch (error) {
       console.error(`Error fetching ${optionId}:`, error)
@@ -139,6 +152,39 @@ export const astrologyAPI = {
 
     await Promise.all(promises)
 
+    return { results, errors }
+  },
+
+  // Method to fetch Auspicious/Inauspicious timings used on the Home page
+  async getAuspiciousData(payload) {
+    const endpoints = [
+      'rahu-kalam',
+      'yama-gandam',
+      'gulika-kalam',
+      'abhijit-muhurat',
+      'amrit-kaal',
+      'brahma-muhurat',
+      'dur-muhurat',
+      'varjyam',
+      'good-bad-times',
+    ]
+
+    const results = {}
+    const errors = {}
+
+    const promises = endpoints.map(async (endpoint, index) => {
+      // slight staggering to be kind to rate limits
+      await new Promise((r) => setTimeout(r, index * 120))
+      try {
+        const result = await this.getSingleCalculation(endpoint, payload)
+        results[endpoint] = result
+      } catch (error) {
+        errors[endpoint] = error.message
+        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+      }
+    })
+
+    await Promise.all(promises)
     return { results, errors }
   }
 }

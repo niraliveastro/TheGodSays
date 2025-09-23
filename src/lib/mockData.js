@@ -12,6 +12,13 @@ export const mockPanchangData = {
   rahukalam: "09:00 AM - 10:30 AM",
   gulika: "06:30 AM - 08:00 AM",
   yamaganda: "01:30 PM - 03:00 PM",
+  // Additional auspicious/inauspicious timings
+  abhijitMuhurat: "12:05 PM - 12:50 PM",
+  brahmaMuhurat: "04:30 AM - 05:15 AM",
+  amritKaal: "02:20 AM - 03:10 AM",
+  durMuhurat: "10:30 AM - 11:15 AM",
+  varjyam: "08:10 PM - 09:55 PM",
+  goodBadTimes: "Good: 10:00 AM - 12:00 PM; Bad: 03:00 PM - 04:00 PM",
   festivals: [
     {
       name: "Navratri Begins",

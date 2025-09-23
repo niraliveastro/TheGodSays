@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
+import { Button } from '@/components/ui/button'
 import PanchangCard from '@/components/PanchangCard'
 import TimingsSection from '@/components/TimingsSection'
 import FestivalCard from '@/components/FestivalCard'
@@ -20,6 +21,7 @@ export default function Home() {
   // Date and location state
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [userLocation, setUserLocation] = useState(null)
+  const [pendingLocation, setPendingLocation] = useState(null)
   const [isLoadingPanchang, setIsLoadingPanchang] = useState(false)
   const [panchangError, setPanchangError] = useState(null)
   
@@ -30,26 +32,16 @@ export default function Home() {
   const [error, setError] = useState(null)
 
   const astrologyOptions = [
-    { id: 'tithi-timings', name: 'Tithi Timings', description: 'Lunar day timings and details' },
-    { id: 'nakshatra-timings', name: 'Nakshatra Timings', description: 'Lunar mansion timings' },
-    { id: 'yoga-durations', name: 'Yoga Durations', description: 'Yoga period calculations' },
-    { id: 'karana-timings', name: 'Karana Timings', description: 'Half lunar day timings' },
+   
     { id: 'vedic-weekday', name: 'Vedic Weekday', description: 'Traditional weekday calculation' },
     { id: 'lunar-month-info', name: 'Lunar Month Info', description: 'Lunar month details' },
     { id: 'ritu-information', name: 'Ritu Information', description: 'Seasonal information' },
     { id: 'samvat-information', name: 'Samvat Information', description: 'Era and calendar info' },
     { id: 'aayanam', name: 'Aayanam', description: 'Precession of equinoxes' },
-    { id: 'hora-timings', name: 'Hora Timings', description: 'Planetary hour timings' },
     { id: 'choghadiya-timings', name: 'Choghadiya Timings', description: 'Auspicious time periods' },
-    { id: 'abhijit-muhurat', name: 'Abhijit Muhurat', description: 'Most auspicious time' },
-    { id: 'amrit-kaal', name: 'Amrit Kaal', description: 'Nectar time period' },
-    { id: 'brahma-muhurat', name: 'Brahma Muhurat', description: 'Divine time period' },
-    { id: 'rahu-kalam', name: 'Rahu Kalam', description: 'Inauspicious time period' },
-    { id: 'yama-gandam', name: 'Yama Gandam', description: 'Yama\'s time period' },
-    { id: 'gulika-kalam', name: 'Gulika Kalam', description: 'Gulika\'s time period' },
-    { id: 'dur-muhurat', name: 'Dur Muhurat', description: 'Inauspicious muhurat' },
-    { id: 'varjyam', name: 'Varjyam', description: 'Forbidden time periods' },
-    { id: 'good-bad-times', name: 'Good & Bad Times', description: 'Overall auspiciousness' }
+  
+    
+   
   ]
 
   useEffect(() => {
@@ -143,6 +135,47 @@ export default function Home() {
     }
   }
 
+  // Helper to format various date/time strings (including "YYYY-MM-DD HH:MM:SS[.ffffff]") into 24h HH:MM
+  const formatTime24Exact = (dateTimeString) => {
+    try {
+      if (!dateTimeString) return 'N/A'
+      const raw = String(dateTimeString).trim()
+
+      // If it's just HH:MM or HH:MM:SS, return HH:MM
+      const hhmmssMatch = raw.match(/^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/)
+      if (hhmmssMatch) {
+        const hh = String(parseInt(hhmmssMatch[1], 10)).padStart(2, '0')
+        const mm = hhmmssMatch[2]
+        return `${hh}:${mm}`
+      }
+
+      // Try to normalize "YYYY-MM-DD HH:MM:SS(.ffffff)" to ISO by replacing space with 'T' and removing microseconds
+      let normalized = raw.replace(' ', 'T').replace(/\.(\d{1,6})$/, '')
+      let d = new Date(normalized)
+
+      // Fallback: if still invalid, try without the 'T'
+      if (isNaN(d.getTime())) {
+        const parts = raw.split(/[ T]/)
+        if (parts.length >= 2) {
+          const timePart = parts[1]
+          const tm = timePart.split(':')
+          if (tm.length >= 2) {
+            const hh = String(parseInt(tm[0], 10)).padStart(2, '0')
+            const mm = String(parseInt(tm[1], 10)).padStart(2, '0')
+            return `${hh}:${mm}`
+          }
+        }
+        return raw
+      }
+
+      // Format to 24-hour HH:MM using en-GB locale
+      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+    } catch (error) {
+      console.error('Error in formatTime24Exact:', error)
+      return String(dateTimeString)
+    }
+  }
+
   const fetchRealPanchangData = async () => {
     if (!userLocation || !selectedDate) return
 
@@ -167,10 +200,11 @@ export default function Home() {
         }
       }
 
-      // Fetch Panchang data and Sun/Moon data in parallel
-      const [panchangResults, sunMoonData] = await Promise.all([
+      // Fetch Panchang data, Sun/Moon data, and Auspicious/Inauspicious data in parallel
+      const [panchangResults, sunMoonData, auspiciousData] = await Promise.all([
         astrologyAPI.getPanchangData(payload),
-        astrologyAPI.getSunMoonData(userLocation.latitude, userLocation.longitude, date)
+        astrologyAPI.getSunMoonData(userLocation.latitude, userLocation.longitude, date),
+        astrologyAPI.getAuspiciousData({ ...payload, hours: 12, minutes: 0, seconds: 0 })
       ])
       
       // Update panchang data with real API results
@@ -247,10 +281,115 @@ export default function Home() {
         }
       }
 
+      // Debug logs: show raw API results for diagnostics
+      try {
+        console.groupCollapsed('[Panchang] Raw API results')
+        console.log('panchangResults:', panchangResults)
+        console.log('auspiciousData:', auspiciousData)
+        console.groupEnd()
+      } catch (_) {}
+
+      // Log Auspicious/Inauspicious fetch outcome per endpoint
+      if (auspiciousData) {
+        const endpointsToCheck = [
+          'rahu-kalam',
+          'yama-gandam',
+          'gulika-kalam',
+          'abhijit-muhurat',
+          'amrit-kaal',
+          'brahma-muhurat',
+          'dur-muhurat',
+          'varjyam',
+          'good-bad-times',
+        ]
+        endpointsToCheck.forEach((ep) => {
+          const res = auspiciousData.results?.[ep]
+          const err = auspiciousData.errors?.[ep]
+          if (res) {
+            console.log(`[Auspicious] ${ep} fetched:`, res)
+          } else if (err) {
+            console.error(`[Auspicious] ${ep} failed:`, err)
+          } else {
+            console.warn(`[Auspicious] ${ep} no data returned`)
+          }
+        })
+      }
+
+      // Populate Auspicious/Inauspicious times into UI state
+      if (auspiciousData && auspiciousData.results) {
+        const map = {
+          'rahu-kalam': 'rahukalam',
+          'yama-gandam': 'yamaganda',
+          'gulika-kalam': 'gulika',
+          'abhijit-muhurat': 'abhijitMuhurat',
+          'amrit-kaal': 'amritKaal',
+          'brahma-muhurat': 'brahmaMuhurat',
+          'dur-muhurat': 'durMuhurat',
+          'varjyam': 'varjyam',
+        }
+
+        const safeParse = (v) => {
+          try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return v }
+        }
+
+        const toRange = (start, end) => {
+          if (!start && !end) return null
+          const s = start ? formatTime24Exact(String(start)) : null
+          const e = end ? formatTime24Exact(String(end)) : null
+          if (s && e) return `${s} - ${e}`
+          return s || e
+        }
+
+        for (const [endpoint, target] of Object.entries(map)) {
+          const res = auspiciousData.results[endpoint]
+          if (!res) continue
+          let out = res.output
+          out = safeParse(out)
+          out = safeParse(out)
+          if (out && typeof out === 'object') {
+            const start = out.starts_at || out.start_time || out.start || out.from
+            const end = out.ends_at || out.end_time || out.end || out.to
+            const range = toRange(start, end)
+            if (range) {
+              updatedPanchangData[target] = range
+            }
+          } else if (typeof out === 'string') {
+            // Sometimes API returns a ready-made string
+            updatedPanchangData[target] = out
+          }
+        }
+
+        // Good & Bad Times (may include arrays)
+        if (auspiciousData.results['good-bad-times']) {
+          let out = auspiciousData.results['good-bad-times'].output
+          out = safeParse(out); out = safeParse(out)
+          if (out && typeof out === 'object') {
+            const toJoined = (arr) => {
+              if (!Array.isArray(arr)) return null
+              const parts = arr.map(item => {
+                const st = item.starts_at || item.start_time || item.start || item.from
+                const en = item.ends_at || item.end_time || item.end || item.to
+                return toRange(st, en)
+              }).filter(Boolean)
+              return parts.length ? parts.join(', ') : null
+            }
+            const good = toJoined(out.good_times || out.good)
+            const bad = toJoined(out.bad_times || out.bad)
+            const combined = [
+              good ? `Good: ${good}` : null,
+              bad ? `Bad: ${bad}` : null,
+            ].filter(Boolean).join('; ')
+            if (combined) updatedPanchangData.goodBadTimes = combined
+          } else if (typeof out === 'string') {
+            updatedPanchangData.goodBadTimes = out
+          }
+        }
+      }
+
       setPanchangData(updatedPanchangData)
 
       // Log any errors
-      const allErrors = { ...panchangResults.errors }
+      const allErrors = { ...panchangResults.errors, ...(auspiciousData?.errors || {}) }
       if (Object.keys(allErrors).length > 0) {
         console.warn('Some Panchang data failed to load:', allErrors)
         setPanchangError('Some data may not be available due to API limitations')
@@ -324,6 +463,12 @@ export default function Home() {
     { label: 'Rahukalam', time: panchangData.rahukalam },
     { label: 'Gulika', time: panchangData.gulika },
     { label: 'Yamaganda', time: panchangData.yamaganda },
+    { label: 'Abhijit Muhurat', time: panchangData.abhijitMuhurat },
+    { label: 'Brahma Muhurat', time: panchangData.brahmaMuhurat },
+    { label: 'Amrit Kaal', time: panchangData.amritKaal },
+    { label: 'Dur Muhurat', time: panchangData.durMuhurat },
+    { label: 'Varjyam', time: panchangData.varjyam },
+    { label: 'Good & Bad Times', time: panchangData.goodBadTimes },
   ]
 
   // Show form if option is selected
@@ -372,18 +517,44 @@ export default function Home() {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">TheGodSays</h1>
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-blue-600 mb-1">TheGodSays</h1>
           <p className="text-lg text-gray-600">{currentDate}</p>
         </div>
 
-        {/* Date Selector */}
-        <DateSelector
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          userLocation={userLocation}
-          onLocationChange={setUserLocation}
-        />
+        {/* Date & Location Selector */}
+        <div className="mb-8 p-6 bg-white rounded-xl shadow-md border border-gray-100">
+          <DateSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            userLocation={userLocation}
+            onLocationChange={setUserLocation}
+            pendingLocation={pendingLocation}
+            onPendingLocationChange={(loc) => setPendingLocation(loc)}
+          />
+
+        {/* Apply Selected Location Button */}
+        {pendingLocation && (
+          <div className="mt-4">
+            <Button
+              onClick={() => {
+                const lat = pendingLocation.latitude
+                const lon = pendingLocation.longitude
+                if (typeof lat === 'number' && typeof lon === 'number') {
+                  setUserLocation({ latitude: lat, longitude: lon })
+                }
+                setPendingLocation(null)
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto px-6 py-2 rounded-lg flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Use Selected Location
+            </Button>
+          </div>
+        )}
+        </div>
 
         {/* Loading and Error States */}
         {isLoadingPanchang && (
@@ -421,7 +592,10 @@ export default function Home() {
 
         {/* Panchang Grid */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
             {selectedDate === new Date().toISOString().split('T')[0] 
               ? "Today's Panchang" 
               : `Panchang for ${new Date(selectedDate).toLocaleDateString('en-US', { 
@@ -444,7 +618,12 @@ export default function Home() {
 
         {/* Inauspicious Timings */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Auspicious / Inauspicious</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Auspicious / Inauspicious
+          </h2>
           <TimingsSection timings={inauspiciousTimings} />
         </section>
 
@@ -463,12 +642,18 @@ export default function Home() {
 
         {/* Astrology Options Section */}
         <section className="mb-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Astrological Calculations</h2>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+              </svg>
+              Astrological Calculations
+            </h2>
             <p className="text-gray-600">Click on any option below to calculate detailed astrological data</p>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {astrologyOptions.map((option) => (
               <AstrologyOptionCard
                 key={option.id}
@@ -480,8 +665,8 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="text-center text-gray-500 text-sm mt-12">
-          <p>Powered by TheGodSays Panchang</p>
+        <footer className="text-center text-gray-500 text-sm mt-12 pb-6">
+          <p>Powered by <span className="text-blue-600">TheGodSays</span> Panchang</p>
         </footer>
       </main>
     </div>

@@ -65,31 +65,15 @@ const AstrologyOptionCard = ({ option, onClick }) => {
 
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 aspect-square ${getCardColor(option.id)}`}
-      onClick={() => onClick(option.id)}
+      className={`cursor-pointer transition-all duration-200 transform hover:scale-105 ${getCardColor(option.id)}`}
+      onClick={() => onClick(option)}
     >
-      <CardContent className="p-2 h-full flex flex-col justify-between">
-        {/* Icon and title */}
-        <div className="flex flex-col items-center space-y-1 text-center">
-          <div className="text-blue-600">
-            {getIcon(option.id)}
-          </div>
-          <div className="font-bold text-xs leading-tight text-gray-800">
-            {option.name}
-          </div>
+      <CardContent className="p-4 flex flex-col items-center text-center">
+        <div className="text-blue-600 mb-3 mt-2">
+          {getIcon(option.id)}
         </div>
-
-        {/* Description */}
-        <div className="text-center">
-          <p className="text-xs text-gray-600 leading-tight mb-2">
-            {option.description}
-          </p>
-        </div>
-
-        {/* Click indicator */}
-        <div className="flex items-center justify-center">
-          <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-        </div>
+        <CardTitle className="text-sm font-medium mb-1">{option.name}</CardTitle>
+        <p className="text-xs text-gray-600">{option.description}</p>
       </CardContent>
     </Card>
   )
