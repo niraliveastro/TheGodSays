@@ -665,7 +665,7 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="text-center text-gray-500 text-md mt-12 pb-6">
+        <footer className="text-center text-gray-400 text-md mt-12 pb-6">
           <p>Made with ❤️ By <span className="text-blue-600"> © TheGodSays Team</span></p>
         </footer>
       </main>
