@@ -665,7 +665,7 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="text-center text-gray-500 text-sm mt-12 pb-6">
+        <footer className="text-center text-gray-500 text-md mt-12 pb-6">
           <p>Powered by <span className="text-blue-600"> ©️TheGodSays </span>Panchang</p>
         </footer>
       </main>
