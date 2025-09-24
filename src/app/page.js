@@ -666,7 +666,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="text-center text-gray-500 text-sm mt-12 pb-6">
-          <p>Powered by <span className="text-blue-600"> ©️TheGodSays</span> Panchang</p>
+          <p>Powered by <span className="text-blue-600"> ©️TheGodSays </span>Panchang</p>
         </footer>
       </main>
     </div>
