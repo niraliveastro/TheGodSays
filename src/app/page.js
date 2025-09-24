@@ -666,7 +666,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="text-center text-gray-500 text-md mt-12 pb-6">
-          <p>Powered by <span className="text-blue-600"> ©️TheGodSays </span>Panchang</p>
+          <p>Made with ❤️ By <span className="text-blue-600"> © TheGodSays </span></p>
         </footer>
       </main>
     </div>
