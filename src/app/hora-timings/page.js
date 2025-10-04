@@ -63,28 +63,29 @@ export default function HoraTimingsPage() {
   }, [userLocation, selectedDate])
 
   const fetchHoraData = async (dateISO) => {
-    if (!userLocation) return
-
     setIsLoading(true)
     setError(null)
     
     try {
-      const now = new Date(dateISO || selectedDate)
+      // Real-time hora payload: today's date + current local time + local timezone
+      const now = new Date()
+      const tzNow = -now.getTimezoneOffset() / 60
       const payload = {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
         date: now.getDate(),
-        hours: 12,
-        minutes: 0,
-        seconds: 0,
+        hours: now.getHours(),
+        minutes: now.getMinutes(),
+        seconds: now.getSeconds(),
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        timezone: userLocation.timezone,
+        timezone: tzNow,
         config: {
           observation_point: 'geocentric',
           ayanamsha: 'lahiri'
         }
       }
+      console.log('[Hora] Payload', payload)
       // Use centralized API helper for real-time data
       const data = await astrologyAPI.getSingleCalculation('hora-timings', payload)
       setHoraData(data)

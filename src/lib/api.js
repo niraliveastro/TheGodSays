@@ -43,26 +43,44 @@ export const astrologyAPI = {
         console.log(`[API] → POST ${API_BASE_URL}/${endpoint}`, payload)
       } catch (_) {}
 
-      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        body: JSON.stringify(payload),
-      })
+      // Retry with exponential backoff on 429
+      let lastErr
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY,
+          },
+          body: JSON.stringify(payload),
+        })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Debug: log success response (trim if huge)
+          try {
+            const preview = typeof data === 'string' ? data.slice(0, 300) : data
+            console.log(`[API] ← OK ${endpoint}`, preview)
+          } catch (_) {}
+          return data
+        }
+
+        // If 429, backoff and retry
+        if (response.status === 429 && attempt < 2) {
+          const base = 400 * Math.pow(2, attempt)
+          const jitter = Math.floor(Math.random() * 150)
+          await new Promise(r => setTimeout(r, base + jitter))
+          continue
+        }
+
+        lastErr = new Error(`HTTP error! status: ${response.status}`)
+        break
       }
 
-      const data = await response.json()
-      // Debug: log success response (trim if huge)
-      try {
-        const preview = typeof data === 'string' ? data.slice(0, 300) : data
-        console.log(`[API] ← OK ${endpoint}`, preview)
-      } catch (_) {}
-      return data
+      if (lastErr) throw lastErr
+
+      // Fallback throw if we somehow exit loop without return
+      throw new Error('Request failed after retries')
     } catch (error) {
       console.error(`Error fetching ${optionId}:`, error)
       throw error
@@ -75,8 +93,8 @@ export const astrologyAPI = {
 
     // Process requests in parallel with a small delay to avoid rate limiting
     const promises = optionIds.map(async (optionId, index) => {
-      // Add small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, index * 100))
+      // Add small delay between requests to avoid rate limiting (more generous)
+      await new Promise(resolve => setTimeout(resolve, index * 250))
       
       try {
         const result = await this.getSingleCalculation(optionId, payload)
@@ -139,8 +157,8 @@ export const astrologyAPI = {
 
     // Process requests in parallel with a small delay to avoid rate limiting
     const promises = panchangEndpoints.map(async (endpoint, index) => {
-      // Add small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, index * 200))
+      // Add small delay between requests to avoid rate limiting (more generous)
+      await new Promise(resolve => setTimeout(resolve, index * 350))
       
       try {
         const result = await this.getSingleCalculation(endpoint, payload)
@@ -193,3 +211,64 @@ export const astrologyAPI = {
 // Export both for backward compatibility
 export const choghadiyaAPI = astrologyAPI
 export default astrologyAPI
+
+// --- Client-side helpers for Samvat info ---
+// Posts a payload to our Next.js route `/samvatinfo`
+export async function postSamvatInfo(payload) {
+  const res = await fetch('/samvatinfo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Failed to fetch /samvatinfo: ${res.status} ${errText}`)
+  }
+  return res.json()
+}
+
+// Gets real-time date/time and geolocation from the browser and posts to /samvatinfo
+// Usage (client components only): const data = await getRealtimeSamvatInfo()
+export async function getRealtimeSamvatInfo(options = {}) {
+  if (typeof window === 'undefined') {
+    throw new Error('getRealtimeSamvatInfo must be called on the client')
+  }
+
+  const now = new Date()
+  const tz = -now.getTimezoneOffset() / 60
+
+  const config = {
+    observation_point: options.observation_point || 'topocentric',
+    ayanamsha: options.ayanamsha || 'lahiri',
+    lunar_month_definition: options.lunar_month_definition || 'amanta',
+  }
+
+  const position = await new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      maximumAge: 60_000,
+      timeout: 15_000,
+    })
+  })
+
+  const { latitude, longitude } = position.coords
+
+  const payload = {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    date: now.getDate(),
+    hours: now.getHours(),
+    minutes: now.getMinutes(),
+    seconds: now.getSeconds(),
+    latitude,
+    longitude,
+    timezone: typeof options.timezone === 'number' ? options.timezone : tz,
+    config,
+  }
+
+  return postSamvatInfo(payload)
+}

@@ -5,6 +5,7 @@ import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Share, RefreshCw, MapPin, Calendar, Moon, Clock } from 'lucide-react'
+import astrologyAPI from '@/lib/api'
 
 export default function TithiTimingsPage() {
   const [tithiData, setTithiData] = useState(null)
@@ -77,26 +78,27 @@ export default function TithiTimingsPage() {
         seconds: now.getSeconds(),
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        timezone: userLocation.timezone,
+        // Use reliable browser timezone offset (hours). Example: IST => 5.5
+        timezone: -now.getTimezoneOffset() / 60,
         config: {
-          observation_point: 'geocentric',
+          // Keep consistent with the rest of the app/api usage
+          observation_point: 'topocentric',
           ayanamsha: 'lahiri'
         }
       }
 
-      console.log('Fetching tithi data with payload:', payload)
+      console.log('Fetching tithi data with payload (tithi-timings):', payload)
 
-      const response = await fetch('https://json.freeastrologyapi.com/tithi-durations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.status === 429) {
-        // Rate limit exceeded, use mock data
+      // Use centralized API wrapper and the correct endpoint
+      const data = await astrologyAPI.getSingleCalculation('tithi-timings', payload)
+      console.log('Tithi API response (wrapper):', data)
+      
+      const formattedData = formatTithiData(data)
+      setTithiData(formattedData)
+    } catch (error) {
+      console.error('Error fetching tithi data:', error)
+      // Graceful fallback on rate limiting
+      if (String(error?.message || '').includes('429')) {
         console.log('Rate limit exceeded, using mock data')
         setTithiData({
           number: 8,
@@ -106,21 +108,9 @@ export default function TithiTimingsPage() {
           completes_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()
         })
         setError('API rate limit exceeded. Showing sample data.')
-        return
+      } else {
+        setError('Failed to fetch tithi data. Please try again.')
       }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log('Tithi API response:', data)
-      
-      const formattedData = formatTithiData(data)
-      setTithiData(formattedData)
-    } catch (error) {
-      console.error('Error fetching tithi data:', error)
-      setError('Failed to fetch tithi data. Please try again.')
     } finally {
       setIsLoading(false)
     }

@@ -14,6 +14,9 @@ import DateSelector from '@/components/DateSelector'
 import { mockPanchangData } from '@/lib/mockData'
 import { astrologyAPI } from '@/lib/api'
 
+// Simple in-memory cache for home panchang fetches (reset on reload)
+const homePanchangCache = new Map() // key => { data, savedAt }
+
 export default function Home() {
   const [panchangData, setPanchangData] = useState(mockPanchangData)
   const [currentDate, setCurrentDate] = useState('')
@@ -184,6 +187,7 @@ export default function Home() {
 
     try {
       const date = new Date(selectedDate)
+      const tzNow = -new Date().getTimezoneOffset() / 60
       const payload = {
         year: date.getFullYear(),
         month: date.getMonth() + 1,
@@ -193,19 +197,42 @@ export default function Home() {
         seconds: 0,
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        timezone: 5.5, // Default to IST, can be calculated based on location
+        timezone: tzNow,
         config: {
-          observation_point: "geocentric",
+          observation_point: "topocentric",
           ayanamsha: "lahiri"
         }
       }
 
       // Fetch Panchang data, Sun/Moon data, and Auspicious/Inauspicious data in parallel
-      const [panchangResults, sunMoonData, auspiciousData] = await Promise.all([
+      const now = new Date()
+      const auspiciousPayload = {
+        ...payload,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        date: now.getDate(),
+        hours: now.getHours(),
+        minutes: now.getMinutes(),
+        seconds: now.getSeconds(),
+        timezone: tzNow,
+      }
+      try {
+        console.groupCollapsed('[Home] Payloads')
+        console.log('[Panchang] Payload', payload)
+        console.log('[Auspicious] Payload', auspiciousPayload)
+        console.groupEnd()
+      } catch {}
+
+      // Tolerate partial failures: do not reject if a single call returns 429
+      const [panchangSettled, sunMoonSettled, auspiciousSettled] = await Promise.allSettled([
         astrologyAPI.getPanchangData(payload),
         astrologyAPI.getSunMoonData(userLocation.latitude, userLocation.longitude, date),
-        astrologyAPI.getAuspiciousData({ ...payload, hours: 12, minutes: 0, seconds: 0 })
+        astrologyAPI.getAuspiciousData(auspiciousPayload)
       ])
+
+      const panchangResults = panchangSettled.status === 'fulfilled' ? panchangSettled.value : { results: {}, errors: { all: panchangSettled.reason?.message || 'failed' } }
+      const sunMoonData = sunMoonSettled.status === 'fulfilled' ? sunMoonSettled.value : null
+      const auspiciousData = auspiciousSettled.status === 'fulfilled' ? auspiciousSettled.value : { results: {}, errors: { all: auspiciousSettled.reason?.message || 'failed' } }
       
       // Update panchang data with real API results
       const updatedPanchangData = { ...mockPanchangData }
@@ -223,8 +250,11 @@ export default function Home() {
       // Process Nakshatra data
       if (panchangResults.results['nakshatra-durations']) {
         try {
-          const nakshatraData = JSON.parse(panchangResults.results['nakshatra-durations'].output)
-          updatedPanchangData.nakshatra = nakshatraData.name
+          let nakOut = panchangResults.results['nakshatra-durations'].output
+          try { if (typeof nakOut === 'string') nakOut = JSON.parse(nakOut) } catch {}
+          try { if (typeof nakOut === 'string') nakOut = JSON.parse(nakOut) } catch {}
+          const name = nakOut?.name || nakOut?.nakshatra?.name || nakOut?.nakshatra_name
+          if (name) updatedPanchangData.nakshatra = name
         } catch (e) {
           console.error('Error parsing nakshatra data:', e)
         }
@@ -285,6 +315,7 @@ export default function Home() {
       try {
         console.groupCollapsed('[Panchang] Raw API results')
         console.log('panchangResults:', panchangResults)
+        console.log('sunMoonData:', sunMoonData)
         console.log('auspiciousData:', auspiciousData)
         console.groupEnd()
       } catch (_) {}
@@ -387,17 +418,36 @@ export default function Home() {
       }
 
       setPanchangData(updatedPanchangData)
+      // Cache success to cut repeats (guard if cacheKey exists)
+      try {
+        const cacheKey = `${date.toISOString().slice(0,10)}|${userLocation.latitude.toFixed(3)},${userLocation.longitude.toFixed(3)}|${tzNow}`
+        homePanchangCache.set(cacheKey, { data: updatedPanchangData, savedAt: Date.now() })
+      } catch {}
 
-      // Log any errors
-      const allErrors = { ...panchangResults.errors, ...(auspiciousData?.errors || {}) }
-      if (Object.keys(allErrors).length > 0) {
-        console.warn('Some Panchang data failed to load:', allErrors)
-        setPanchangError('Some data may not be available due to API limitations')
+      // Decide banner severity
+      const hasAnyData = Boolean(
+        updatedPanchangData.tithi || updatedPanchangData.nakshatra || updatedPanchangData.yoga || updatedPanchangData.karana ||
+        updatedPanchangData.sunrise || updatedPanchangData.sunset || updatedPanchangData.moonrise || updatedPanchangData.moonset ||
+        updatedPanchangData.rahukalam || updatedPanchangData.gulika || updatedPanchangData.yamaganda ||
+        updatedPanchangData.abhijitMuhurat || updatedPanchangData.brahmaMuhurat || updatedPanchangData.amritKaal ||
+        updatedPanchangData.durMuhurat || updatedPanchangData.varjyam || updatedPanchangData.goodBadTimes
+      )
+      const allFailed = panchangSettled.status === 'rejected' && sunMoonSettled.status === 'rejected' && auspiciousSettled.status === 'rejected'
+      if (allFailed) {
+        setPanchangError('Failed to load real-time Panchang data. Please try again later.')
+      } else if (!hasAnyData) {
+        setPanchangError('Real-time Panchang data could not be populated due to API limits.')
+      } else {
+        // Show a softer note only if some endpoints failed
+        const fails = [panchangSettled, sunMoonSettled, auspiciousSettled].filter(r => r.status === 'rejected').length
+        if (fails > 0) {
+          setPanchangError('Some sections are limited due to API rate limits (429). Showing partial data.')
+        }
       }
 
     } catch (error) {
       console.error('Error fetching Panchang data:', error)
-      setPanchangError('Failed to load real-time Panchang data. Showing sample data.')
+      setPanchangError(`Failed to load real-time Panchang data. ${error?.message || ''}`)
     } finally {
       setIsLoadingPanchang(false)
     }
