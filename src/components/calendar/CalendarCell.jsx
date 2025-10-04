@@ -12,9 +12,9 @@ export default function CalendarCell({ cell, nakshatra }) {
     cell.isFestival ? 'bg-amber-100/80 border-amber-200 text-amber-800' : 'bg-gray-100 border-gray-200 text-gray-700'
   )
   const containerClasses = classNames(
-    'min-h-[150px] rounded-lg border overflow-hidden flex flex-col transition-all duration-150',
+    'min-h-[150px] rounded-lg border-4 border-gray-400 overflow-hidden flex flex-col transition-all duration-150',
     cell.isToday ? 'ring-2 ring-emerald-500' : '',
-    isOverflow ? 'bg-gray-50 border-gray-100 text-gray-400' : 'bg-white border-gray-200 hover:shadow-sm hover:-translate-y-[1px]'
+    isOverflow ? 'bg-gray-50 text-gray-400' : 'bg-white hover:shadow-sm hover:-translate-y-[1px]'
   )
 
   const dateClasses = classNames(
@@ -25,11 +25,11 @@ export default function CalendarCell({ cell, nakshatra }) {
   // For overflow (previous/next month) cells, render an empty placeholder to ensure only
   // the actual dates of the month are visible (28/29/30/31 as applicable)
   if (isOverflow) {
-    return <div className="min-h-[150px] rounded-lg border border-gray-100 bg-gray-50" />
+    return <div className="min-h-[150px] rounded-lg bg-gray-50 border-4 border-gray-400" style={{ border: '3px solid #9CA3AF' }} />
   }
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} style={{ border: '3px solid #9CA3AF' }}>
       <div className={bandClasses}>
         <div className="truncate font-medium flex items-center gap-1">
           <span>{cell.tithiBand || '—'}</span>
