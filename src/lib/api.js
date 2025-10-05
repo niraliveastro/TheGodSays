@@ -46,12 +46,15 @@ export const astrologyAPI = {
       // Retry with exponential backoff on 429
       let lastErr
       for (let attempt = 0; attempt < 3; attempt++) {
-        const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+        // Use server proxy when running on the client to avoid CORS and hide API key
+        const isClient = typeof window !== 'undefined'
+        const url = isClient ? `/api/astro/${endpoint}` : `${API_BASE_URL}/${endpoint}`
+        const headers = isClient
+          ? { 'Content-Type': 'application/json' }
+          : { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
+        const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': API_KEY,
-          },
+          headers,
           body: JSON.stringify(payload),
         })
 

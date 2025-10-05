@@ -39,7 +39,7 @@ export async function POST(request) {
     }
 
     // Call upstream FreeAstrology API via our helper
-    const result = await astrologyAPI.getSingleCalculation('samvat-information', payload)
+    const result = await astrologyAPI.getSingleCalculation('samvatinfo', payload)
 
     // Match requested output format: pass through upstream 'output' as-is
     // Upstream typically returns { statusCode: 200, output: "<json-string>" }

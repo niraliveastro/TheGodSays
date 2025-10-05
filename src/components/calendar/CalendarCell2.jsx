@@ -6,7 +6,7 @@ function classNames(...classes) {
 
 // Props: cell { date, monthOffset, tithiBand, sunrise, sunset, line1, line2, isFestival, isToday, tone, icons }
 // Optional: nakshatra, onClick
-export default function CalendarCell({ cell, nakshatra, onClick }) {
+export default function CalendarCell2({ cell, nakshatra, onClick }) {
   const isOverflow = cell.monthOffset !== 0
   const bandClasses = classNames(
     'px-2 py-1 text-[11px] border-b flex items-center justify-between',
@@ -24,7 +24,21 @@ export default function CalendarCell({ cell, nakshatra, onClick }) {
   )
 
   if (isOverflow) {
-    return <div className="min-h-[150px] rounded-lg bg-gray-50 border-4 border-gray-400" style={{ border: '3px solid #9CA3AF' }} />
+    return (
+      <div
+        className={classNames(
+          'min-h-[150px] rounded-lg bg-gray-50 border-4 border-gray-400',
+          onClick ? 'cursor-pointer hover:shadow-sm hover:-translate-y-[1px] transition-all duration-150' : ''
+        )}
+        style={{ border: '3px solid #9CA3AF' }}
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (onClick && (e.key === 'Enter' || e.key === ' ')) onClick()
+        }}
+      />
+    )
   }
 
   return (
@@ -37,7 +51,6 @@ export default function CalendarCell({ cell, nakshatra, onClick }) {
       onKeyDown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && onClick) onClick()
       }}
-      aria-label={`Calendar cell for ${cell.date}`}
     >
       <div className={bandClasses}>
         <div className="truncate font-medium flex items-center gap-1">

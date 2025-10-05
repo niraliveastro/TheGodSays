@@ -541,21 +541,7 @@ export default function CalendarPage() {
       try { console.log('[SamvatCache] MISS', samvatKey) } catch {}
 
       try {
-        // 1) Direct upstream first
-        try { console.log('[Samvat] Payload (direct) →', payload) } catch {}
-        const direct = await astrologyAPI.getSingleCalculation('samvat-information', payload)
-        const parsedD = await parseSamvat(direct?.output ?? direct)
-        const { number: nD, yearName: yD } = parsedD
-        if (!cancelled && (nD || yD)) {
-          try { console.log('[Samvat] Direct OK', { nD, yD }) } catch {}
-          setSamvat({ number: nD, yearName: yD })
-          setSamvatError(null)
-          setSamvatRaw('')
-          samvatCache.set(samvatKey, { samvat: { number: nD, yearName: yD }, savedAt: Date.now() })
-          return
-        }
-
-        // 2) Server route
+        // Prefer server route first to avoid CORS failures in browser
         try { console.log('[Samvat] Payload (/samvatinfo) →', payload) } catch {}
         const res = await postSamvatInfo(payload)
         try { console.log('[Samvat] Response (/samvatinfo) ←', res) } catch {}
@@ -569,6 +555,8 @@ export default function CalendarPage() {
           samvatCache.set(samvatKey, { samvat: { number, yearName }, savedAt: Date.now() })
           return
         }
+
+        // Do NOT call upstream directly from browser to avoid CORS. If route failed, continue to other fallbacks.
 
         // 3) Realtime helper
         const rt = await getRealtimeSamvatInfo()
