@@ -3,6 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 import PWAInstaller from '@/components/PWAInstaller'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
+import Navigation from '@/components/Navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <Providers>
+          <Navigation />
           {children}
           <PWAInstaller />
           <ServiceWorkerRegistration />

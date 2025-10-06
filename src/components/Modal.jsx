@@ -1,18 +1,32 @@
 "use client"
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export default function Modal({ open, onClose, title, children, footer }) {
-  if (!open) return null
-  try { console.log('[Modal.jsx] portal render', { open, title }) } catch {}
-  // Lock page scroll while modal is open
+  // Ensure a stable portal root element
+  const [rootEl, setRootEl] = useState(null)
+
   useEffect(() => {
+    if (typeof document === 'undefined') return
+    let root = document.getElementById('modal-root')
+    if (!root) {
+      root = document.createElement('div')
+      root.id = 'modal-root'
+      document.body.appendChild(root)
+    }
+    setRootEl(root)
+  }, [])
+
+  // Lock page scroll only while modal is open
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [])
+    return () => { document.body.style.overflow = prev }
+  }, [open])
+
+  try { console.log('[Modal.jsx] portal render', { open, title }) } catch {}
+
   const modalContent = (
     <div
       className="fixed inset-0 flex justify-center items-start overflow-hidden"
@@ -67,13 +81,7 @@ export default function Modal({ open, onClose, title, children, footer }) {
       </div>
     </div>
   )
-  if (typeof document === 'undefined') return null
-  // ensure a stable portal root
-  let root = document.getElementById('modal-root')
-  if (!root) {
-    root = document.createElement('div')
-    root.id = 'modal-root'
-    document.body.appendChild(root)
-  }
-  return createPortal(modalContent, root)
+  if (!open || !rootEl) return null
+  return createPortal(modalContent, rootEl)
 }
+

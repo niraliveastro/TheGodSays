@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, Clock, Globe, User, MapPin, Languages, ShieldCheck } from 'lucide-react'
@@ -136,7 +135,6 @@ export default function KundaliPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-indigo-50/40">
-      <Navigation />
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-sm flex flex-col items-center lg:min-h-[calc(100vh-4rem)] lg:justify-center">
         <div className="mb-5 text-center">
           <h1 className="text-2xl font-bold text-gray-800">Get Your Janam Kundali</h1>

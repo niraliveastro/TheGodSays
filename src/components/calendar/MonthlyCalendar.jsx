@@ -18,6 +18,23 @@ export default function MonthlyCalendar({ header, weekdays, month, onPrev, onNex
   const [loadingMore, setLoadingMore] = useState(false)
   const [moreData, setMoreData] = useState(null)
   const [detailsCache, setDetailsCache] = useState({}) // { [dateKey]: mergedResults }
+
+  // Local storage helpers (safe in browser only)
+  const STORAGE_PREFIX = 'tgs:date-details:'
+  const readFromStorage = (key) => {
+    try {
+      if (typeof window === 'undefined') return null
+      const raw = localStorage.getItem(STORAGE_PREFIX + key)
+      if (!raw) return null
+      return JSON.parse(raw)
+    } catch { return null }
+  }
+  const writeToStorage = (key, value) => {
+    try {
+      if (typeof window === 'undefined') return
+      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value))
+    } catch {}
+  }
   const formatTime = (val) => {
     try {
       if (!val) return '-'
@@ -130,10 +147,17 @@ export default function MonthlyCalendar({ header, weekdays, month, onPrev, onNex
     let cancelled = false
     const fetchDetails = async () => {
       if (!modalOpen || !modalDateKey) return
-      // 1) Serve from cache immediately if available
-      const cached = detailsCache?.[modalDateKey]
+      // 1) Serve from in-memory cache immediately if available
+      let cached = detailsCache?.[modalDateKey]
       if (cached) {
         setMoreData(cached)
+        return
+      }
+      // 2) Try localStorage cache
+      const stored = readFromStorage(modalDateKey)
+      if (stored) {
+        setMoreData(stored)
+        setDetailsCache(prev => ({ ...prev, [modalDateKey]: stored }))
         return
       }
       try {
@@ -210,6 +234,7 @@ export default function MonthlyCalendar({ header, weekdays, month, onPrev, onNex
 
           setMoreData(merged)
           setDetailsCache(prev => ({ ...prev, [modalDateKey]: merged }))
+          writeToStorage(modalDateKey, merged)
         }
       } catch (e) {
         console.warn('Auto-fetch details failed', e)
@@ -323,8 +348,8 @@ export default function MonthlyCalendar({ header, weekdays, month, onPrev, onNex
                 setModalDateKey(dateKey)
                 setModalCell(mergedCell)
                 setModalNakshatra(nakshatraName)
-                // Prime from cache if present, so UI shows instantly
-                const cached = detailsCache?.[dateKey]
+                // Prime from cache if present (in-memory or localStorage), so UI shows instantly
+                const cached = detailsCache?.[dateKey] || readFromStorage(dateKey)
                 setMoreData(cached || null)
                 // Defer opening to next tick to avoid the click bubbling to the backdrop and closing immediately
                 setTimeout(() => setModalOpen(true), 0)

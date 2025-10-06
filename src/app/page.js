@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Navigation from '@/components/Navigation'
 import { Button } from '@/components/ui/button'
 import PanchangCard from '@/components/PanchangCard'
 import TimingsSection from '@/components/TimingsSection'
@@ -16,6 +15,23 @@ import { astrologyAPI } from '@/lib/api'
 
 // Simple in-memory cache for home panchang fetches (reset on reload)
 const homePanchangCache = new Map() // key => { data, savedAt }
+
+// LocalStorage helpers for persistent cache between reloads
+const HOME_STORAGE_PREFIX = 'tgs:home:panchang:'
+const readHomeCache = (key) => {
+  try {
+    if (typeof window === 'undefined') return null
+    const raw = localStorage.getItem(HOME_STORAGE_PREFIX + key)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+const writeHomeCache = (key, value) => {
+  try {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(HOME_STORAGE_PREFIX + key, JSON.stringify(value))
+  } catch {}
+}
 
 export default function Home() {
   const [panchangData, setPanchangData] = useState(mockPanchangData)
@@ -188,6 +204,25 @@ export default function Home() {
     try {
       const date = new Date(selectedDate)
       const tzNow = -new Date().getTimezoneOffset() / 60
+      // Build a stable cache key by date + rounded location + tz
+      const cacheKey = `${date.toISOString().slice(0,10)}|${userLocation.latitude.toFixed(3)},${userLocation.longitude.toFixed(3)}|${tzNow}`
+
+      // 1) Check in-memory cache
+      const mem = homePanchangCache.get(cacheKey)
+      if (mem && mem.data) {
+        setPanchangData(mem.data)
+        setIsLoadingPanchang(false)
+        return
+      }
+      // 2) Check localStorage cache
+      const stored = readHomeCache(cacheKey)
+      if (stored && stored.data) {
+        setPanchangData(stored.data)
+        // warm in-memory cache
+        try { homePanchangCache.set(cacheKey, { data: stored.data, savedAt: stored.savedAt || Date.now() }) } catch {}
+        setIsLoadingPanchang(false)
+        return
+      }
       const payload = {
         year: date.getFullYear(),
         month: date.getMonth() + 1,
@@ -420,8 +455,8 @@ export default function Home() {
       setPanchangData(updatedPanchangData)
       // Cache success to cut repeats (guard if cacheKey exists)
       try {
-        const cacheKey = `${date.toISOString().slice(0,10)}|${userLocation.latitude.toFixed(3)},${userLocation.longitude.toFixed(3)}|${tzNow}`
         homePanchangCache.set(cacheKey, { data: updatedPanchangData, savedAt: Date.now() })
+        writeHomeCache(cacheKey, { data: updatedPanchangData, savedAt: Date.now() })
       } catch {}
 
       // Decide banner severity
@@ -525,7 +560,6 @@ export default function Home() {
   if (selectedOption && !astrologyResult) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AstrologyForm 
             option={selectedOption}
@@ -547,7 +581,6 @@ export default function Home() {
   if (selectedOption && astrologyResult) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AstrologyResult 
             option={selectedOption}
@@ -563,7 +596,6 @@ export default function Home() {
   // Show main home page with options
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}

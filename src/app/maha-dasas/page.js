@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Share, RefreshCw, MapPin, Calendar, Star } from 'lucide-react'
@@ -294,7 +293,6 @@ export default function MahaDasasPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}

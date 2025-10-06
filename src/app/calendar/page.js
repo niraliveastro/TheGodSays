@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Navigation from '@/components/Navigation'
 import MonthlyCalendar from '@/components/calendar/MonthlyCalendar'
 import { WEEKDAYS as weekdays, staticMonth as staticSep } from '@/lib/staticCalendarSep2025'
 import astrologyAPI from '@/lib/api'
@@ -612,7 +611,6 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <MonthlyCalendar header={headerWithSamvat} weekdays={weekdays} month={month} onPrev={handlePrev} onNext={handleNext} nakshatraMap={nakshatraMap} sunMap={sunMap} tithiMap={tithiMap} />
       </main>
