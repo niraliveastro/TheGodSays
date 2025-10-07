@@ -8,6 +8,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut as fbSignOut,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 
 const AuthContext = createContext({
@@ -17,6 +19,7 @@ const AuthContext = createContext({
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
+  signInWithGoogle: async () => {},
 });
 
 export function AuthProvider({ children }) {
@@ -35,6 +38,18 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      setUser(cred.user);
+      return cred.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
       setUser(cred.user);
       return cred.user;
     } finally {
@@ -67,7 +82,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut, setUser, setLoading }),
+    () => ({ user, loading, signIn, signUp, signOut, signInWithGoogle, setUser, setLoading }),
     [user, loading]
   );
 

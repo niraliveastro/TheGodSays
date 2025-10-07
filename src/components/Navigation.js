@@ -15,7 +15,7 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signIn, signUp, signOut } = useAuth()
+  const { user, signIn, signUp, signOut, signInWithGoogle } = useAuth()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -350,6 +350,29 @@ const Navigation = () => {
                   {authError}
                 </div>
               )}
+              {/* Social auth */}
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={async () => { setAuthError(''); try { await signInWithGoogle() } catch (e) { setAuthError('Google sign-in failed'); console.error(e) } }}
+                  className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                >
+                  {/* Inline Google G icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+                    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36 16.8 36 11 30.2 11 23s5.8-13 13-13c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 12.3 2 3 11.3 3 23s9.3 21 21 21c10.5 0 20-7.6 20-21 0-1.7-.2-3.3-.4-4.5z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 15.5 2 8.2 6.7 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.1 0 9.8-1.9 13.4-5.1l-6.2-5.1C29 35.5 26.7 36 24 36c-5.2 0-9.6-3.6-11.3-8.5l-6.5 5C8.1 38.9 15.4 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3.1 5.3-5.9 6.8l6.2 5.1C38.6 37.8 42 31.6 42 23c0-1.7-.2-3.3-.4-4.5z"/>
+                  </svg>
+                  <span className="text-sm font-medium text-gray-800">Continue with Google</span>
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="h-px bg-gray-200 flex-1" />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="h-px bg-gray-200 flex-1" />
+                </div>
+              </div>
+
               {authTab === 'signin' ? (
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div>
