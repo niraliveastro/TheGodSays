@@ -24,6 +24,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* Persistent modal portal root */}
+        <div id="modal-root" />
         <Providers>
           <Navigation />
           {children}
