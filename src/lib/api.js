@@ -27,7 +27,14 @@ const API_ENDPOINTS = {
   'dur-muhurat': 'dur-muhurat',
   'varjyam': 'varjyam',
   'good-bad-times': 'good-bad-times',
-  'horoscope-chart-svg-code': 'horoscope-chart-svg-code'
+  'horoscope-chart-svg-code': 'horoscope-chart-svg-code',
+  // Added for Predictions page
+  'planets': 'planets',
+  'vimsottari/dasa-information': 'vimsottari/dasa-information',
+  'shadbala/summary': 'shadbala/summary',
+  'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
+  // New combined endpoint returning maha + antar lists grouped by maha
+  'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
 }
 
 export const astrologyAPI = {
@@ -274,4 +281,55 @@ export async function getRealtimeSamvatInfo(options = {}) {
   }
 
   return postSamvatInfo(payload)
+}
+
+// --- Geocoding & Timezone helpers for Predictions ---
+// OpenStreetMap Nominatim geocoding (no key needed). Returns { lat, lon, display_name } or null
+export async function geocodePlace(query) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    if (!res.ok) throw new Error(`Geocode HTTP ${res.status}`)
+    const arr = await res.json()
+    if (!Array.isArray(arr) || arr.length === 0) return null
+    const first = arr[0]
+    return { latitude: parseFloat(first.lat), longitude: parseFloat(first.lon), label: first.display_name }
+  } catch (e) {
+    console.warn('Geocoding failed:', e?.message)
+    return null
+  }
+}
+
+// Get timezone offset in hours for a coordinate and date using IPGeolocation
+export async function getTimezoneOffsetHours(lat, lon) {
+  try {
+    const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
+    const url = `https://api.ipgeolocation.io/timezone?apiKey=${apiKey}&lat=${lat}&long=${lon}`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`TZ HTTP ${res.status}`)
+    const data = await res.json()
+    // API returns offset in seconds or strings; prefer offset in hours
+    let offset
+    if (typeof data.timezone_offset === 'number') offset = data.timezone_offset / 3600
+    if (typeof data.offset === 'number') offset = data.offset // already hours
+    if (typeof data.current_time === 'string') {
+      // Fallback: derive from GMT offset text like "+05:30"
+      const m = data?.current_time?.match(/GMT([+\-])(\d{2}):(\d{2})/)
+      if (m) {
+        const sign = m[1] === '-' ? -1 : 1
+        offset = sign * (parseInt(m[2], 10) + parseInt(m[3], 10) / 60)
+      }
+    }
+    if (typeof offset !== 'number' || Number.isNaN(offset)) {
+      offset = -new Date().getTimezoneOffset() / 60
+    }
+    // Clamp and round to nearest 0.5 hour for stability
+    const clamped = Math.max(-14, Math.min(14, offset))
+    return Math.round(clamped * 2) / 2
+  } catch (e) {
+    console.warn('Timezone lookup failed:', e?.message)
+    const fallback = -new Date().getTimezoneOffset() / 60
+    const clamped = Math.max(-14, Math.min(14, fallback))
+    return Math.round(clamped * 2) / 2
+  }
 }
