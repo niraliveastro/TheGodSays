@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,9 @@ export default function PredictionsPage() {
   const [selectedCoords, setSelectedCoords] = useState(null) // { latitude, longitude, label }
   const suggestTimer = useRef(null)
 
+  // Geolocation state
+  const [locating, setLocating] = useState(false)
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -25,6 +28,48 @@ export default function PredictionsPage() {
   const [antarLoading, setAntarLoading] = useState(false)
   const [antarError, setAntarError] = useState('')
   const [antarRows, setAntarRows] = useState([])
+
+  // Helper function to convert zodiac sign number to name
+  const getZodiacSign = (signNumber) => {
+    const signs = [
+      'Aries', 'Taurus', 'Gemini', 'Cancer', 
+      'Leo', 'Virgo', 'Libra', 'Scorpio', 
+      'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+    ];
+    return signs[(signNumber - 1) % 12];
+  }
+
+  // Reverse geocode for "Use Current Location"
+  async function reverseGeocodeCoords(lat, lon) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+      if (!res.ok) throw new Error('Reverse geocoding failed')
+      const data = await res.json()
+      return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`
+    } catch {
+      return `${lat.toFixed(3)}, ${lon.toFixed(3)}`
+    }
+  }
+
+  async function useMyLocation() {
+    if (typeof window === 'undefined' || !navigator.geolocation) return
+    setLocating(true)
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 })
+      })
+      const { latitude, longitude } = pos.coords
+      const label = await reverseGeocodeCoords(latitude, longitude)
+      setPlace(label)
+      setSelectedCoords({ latitude, longitude, label })
+      setSuggestions([])
+    } catch (e) {
+      setError('Could not access your location. Please allow permission or type the city manually.')
+    } finally {
+      setLocating(false)
+    }
+  }
 
   function validate() {
     if (!dob) return 'Please enter your Date of Birth.'
@@ -98,6 +143,7 @@ export default function PredictionsPage() {
         'shadbala/summary',
         'vimsottari/dasa-information',
         'vimsottari/maha-dasas',
+        'planets',
       ], payload)
 
       // 6) Parse outputs safely
@@ -148,6 +194,7 @@ export default function PredictionsPage() {
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
         vimsottari: vimsParsed,
+        planets: results?.['planets'] ? safeParse(safeParse(results['planets'].output ?? results['planets'])) : [],
         maha: mahaParsed,
         shadbala: finalShadbala,
         apiErrors: { ...errors, ...(innerError ? { 'shadbala/summary': innerError } : {}) },
@@ -308,13 +355,14 @@ export default function PredictionsPage() {
       return Object.keys(map).map((name) => {
         const v = map[name] || {}
         const signNum = v.current_sign != null ? Number(v.current_sign) : undefined
+        const currentSign = signNum ? `${getZodiacSign(signNum)} (${signNum})` : (v.sign_name || v.sign || v.rashi)
         return {
           name,
-          sign: signNum ? `${SIGN_NAMES[signNum - 1] || 'Sign ' + signNum} (${signNum})` : undefined,
-          nakshatra: undefined,
+          currentSign,
           house: v.house_number,
-          retro: String(v.isRetro).toLowerCase() === 'true',
-          longitude: v.fullDegree,
+          retro: (String(v.isRetro).toLowerCase() === 'true') || v.is_retro || v.retrograde || false,
+          fullDegree: typeof v.fullDegree === 'number' ? v.fullDegree : (typeof v.longitude === 'number' ? v.longitude : undefined),
+          normDegree: typeof v.normDegree === 'number' ? v.normDegree : undefined,
         }
       })
     }
@@ -322,14 +370,18 @@ export default function PredictionsPage() {
     // Fallbacks for other shapes we handled earlier
     const arr = Array.isArray(pl) ? pl : (pl.planets || pl.planet_positions || [])
     const list = Array.isArray(arr) ? arr : Object.values(arr || {})
-    return list.map((p) => ({
-      name: p.name || p.planet,
-      sign: p.sign || p.rashi || p.sign_name,
-      nakshatra: p.nakshatra?.name || p.nakshatra || p.nakshatra_name,
-      house: p.house || p.house_number,
-      retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === 'true',
-      longitude: p.longitude || p.fullDegree,
-    }))
+    return list.map((p) => {
+      const signNum = p.current_sign != null ? Number(p.current_sign) : undefined
+      const currentSign = signNum ? `${getZodiacSign(signNum)} (${signNum})` : (p.sign || p.rashi || p.sign_name)
+      return {
+        name: p.name || p.planet,
+        currentSign,
+        house: p.house || p.house_number,
+        retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === 'true',
+        fullDegree: typeof p.fullDegree === 'number' ? p.fullDegree : (typeof p.longitude === 'number' ? p.longitude : undefined),
+        normDegree: typeof p.normDegree === 'number' ? p.normDegree : undefined,
+      }
+    })
   }, [result])
 
   const ProgressBar = ({ value = 0 }) => (
@@ -354,67 +406,92 @@ export default function PredictionsPage() {
   }, [result, shadbalaRows])
 
   return (
-    <div className="flex justify-center w-full">
-      <div className="w-full max-w-6xl p-6">
-        <h1 className="text-3xl font-semibold mb-2">Predictions</h1>
-        <p className="text-gray-600 mb-6">Fill the form to fetch planetary placements, Vimshottari Dasha and Shadbala strengths.</p>
+    <div className="w-full">
+      {/* Page container with side gaps */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <h1 className="text-3xl font-semibold mb-1 text-center">Get Your Predictions</h1>
+        <p className="text-gray-600 mb-6 text-center">Enter your birth details to generate a personalized analysis.</p>
 
         {error ? (
           <div className="mb-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>
         ) : null}
 
-      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="md:col-span-2">
-          <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-          <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required className="focus:ring-2 focus:ring-blue-100" />
+      {/* Centered form card */}
+      <form onSubmit={onSubmit} className="mb-8 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900">Birth Details</h3>
+          <div className="hidden md:flex gap-2">
+            <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}>
+              {locating ? 'Detecting…' : 'Use Current Location'}
+            </Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
+            <Button type="reset" variant="outline" onClick={() => { setDob(''); setTob(''); setPlace(''); setResult(null); setError(''); setSelectedMaha(null) }}>Reset</Button>
+          </div>
         </div>
-        <div>
-          <label htmlFor="tob" className="block text-sm font-medium text-gray-700 mb-2">Time of Birth</label>
-          <Input id="tob" type="time" value={tob} onChange={(e) => setTob(e.target.value)} step="1" required className="focus:ring-2 focus:ring-blue-100" />
-        </div>
-        <div className="md:col-span-2 relative">
-          <label htmlFor="place" className="block text-sm font-medium text-gray-700 mb-2">Place of Birth</label>
-          <Input
-            id="place"
-            placeholder="City, Country"
-            value={place}
-            onChange={(e) => {
-              const q = e.target.value
-              setPlace(q)
-              setSelectedCoords(null)
-              fetchSuggestions(q)
-            }}
-            autoComplete="off"
-            required
-            className="focus:ring-2 focus:ring-blue-100"
-          />
-          <p className="text-xs text-gray-500 mt-2">Tip: Try "Mumbai, India" or "San Francisco, USA".</p>
-          {suggestions.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((s, i) => (
-                <button
-                  type="button"
-                  key={`${s.label}-${i}`}
-                  onClick={() => { setPlace(s.label); setSelectedCoords(s); setSuggestions([]) }}
-                  className="block w-full text-left px-4 py-3 hover:bg-blue-50 text-sm"
-                >
-                  {s.label}
-                </button>
-              ))}
-              {suggesting && (
-                <div className="px-3 py-2 text-xs text-gray-500">Searching…</div>
-              )}
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="md:col-span-2">
+            <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+            <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required className="focus:ring-2 focus:ring-blue-100" />
+            <p className="mt-1 text-xs text-gray-500">Format: YYYY-MM-DD</p>
+          </div>
+          <div className="md:col-span-1">
+            <label htmlFor="tob" className="block text-sm font-medium text-gray-700 mb-1">Time of Birth</label>
+            <Input id="tob" type="time" value={tob} onChange={(e) => setTob(e.target.value)} step="1" required className="focus:ring-2 focus:ring-blue-100" />
+            <p className="mt-1 text-xs text-gray-500">24h format HH:MM or HH:MM:SS</p>
+          </div>
+          <div className="md:col-span-2 relative">
+            <label htmlFor="place" className="block text-sm font-medium text-gray-700 mb-1">Place of Birth</label>
+            <div className="flex gap-2">
+              <Input
+                id="place"
+                placeholder="City, Country"
+                value={place}
+                onChange={(e) => {
+                  const q = e.target.value
+                  setPlace(q)
+                  setSelectedCoords(null)
+                  fetchSuggestions(q)
+                }}
+                autoComplete="off"
+                required
+                className="focus:ring-2 focus:ring-blue-100"
+              />
+              <Button type="button" variant="outline" className="whitespace-nowrap" onClick={useMyLocation} disabled={locating}>{locating ? 'Detecting…' : 'Use My Location'}</Button>
             </div>
-          )}
+            <p className="text-xs text-gray-500 mt-1">Tip: Try "Mumbai, India" or "San Francisco, USA".</p>
+            {suggestions.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-auto">
+                {suggestions.map((s, i) => (
+                  <button
+                    type="button"
+                    key={`${s.label}-${i}`}
+                    onClick={() => { setPlace(s.label); setSelectedCoords(s); setSuggestions([]) }}
+                    className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                {suggesting && (
+                  <div className="px-3 py-2 text-xs text-gray-500">Searching…</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="md:col-span-2 flex items-end gap-3">
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 shadow-sm" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
-          <Button type="reset" variant="outline" onClick={() => { setDob(''); setTob(''); setPlace(''); setResult(null); setError(''); setSelectedMaha(null) }}>Reset</Button>
+
+        {/* Mobile actions */}
+        <div className="mt-4 flex md:hidden flex-col gap-2">
+          <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}>{locating ? 'Detecting…' : 'Use Current Location'}</Button>
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
+            <Button type="reset" variant="outline" className="flex-1" onClick={() => { setDob(''); setTob(''); setPlace(''); setResult(null); setError(''); setSelectedMaha(null) }}>Reset</Button>
+          </div>
         </div>
       </form>
 
       {result && (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-5xl mx-auto">
           {/* Birth Details */}
           <section className="border border-gray-200 rounded-xl p-4 bg-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -441,14 +518,17 @@ export default function PredictionsPage() {
           {placements.length > 0 && (
           <section className="border border-gray-200 rounded-xl p-4 bg-white">
             <h3 className="text-lg font-semibold mb-3">Planet Placements (D1)</h3>
-            <div className="overflow-x-auto">
+            {/* Table for tablet/laptop+ (>=640px) */}
+            <div className="overflow-x-auto hidden sm:block">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <th className="px-6 py-3">Planet</th>
-                    <th className="px-6 py-3">Sign</th>
-                    <th className="px-6 py-3">Nakshatra</th>
+                    <th className="px-6 py-3">Current Sign</th>
                     <th className="px-6 py-3">House</th>
+                    <th className="px-6 py-3">Full Degree</th>
+                    <th className="px-6 py-3">Norm Degree</th>
+                    <th className="px-6 py-3">Retro</th>
                     <th className="px-6 py-3">Strength</th>
                     <th className="px-6 py-3 w-56">Ishta</th>
                     <th className="px-6 py-3 w-56">Kashta</th>
@@ -459,10 +539,12 @@ export default function PredictionsPage() {
                     const row = shadbalaRows.find((r) => (r.name || '').toLowerCase().startsWith((p.name || '').toLowerCase()))
                     return (
                       <tr key={p.name} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">{p.name}{p.retro ? ' (R)' : ''}</td>
-                        <td className="px-6 py-4 text-gray-700">{p.sign || '—'}</td>
-                        <td className="px-6 py-4 text-gray-700">{p.nakshatra || '—'}</td>
+                        <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
+                        <td className="px-6 py-4 text-gray-700">{p.currentSign || '—'}</td>
                         <td className="px-6 py-4 text-gray-700">{p.house ?? '—'}</td>
+                        <td className="px-6 py-4 text-gray-700">{typeof p.fullDegree === 'number' ? p.fullDegree.toFixed(2) + '°' : '—'}</td>
+                        <td className="px-6 py-4 text-gray-700">{typeof p.normDegree === 'number' ? p.normDegree.toFixed(2) + '°' : '—'}</td>
+                        <td className="px-6 py-4 text-gray-700">{p.retro ? 'Yes' : 'No'}</td>
                         <td className="px-6 py-4 text-gray-700">{row?.percent != null ? `${Number(row.percent).toFixed(1)} %` : '—'}</td>
                         <td className="px-6 py-4 w-56">
                           {row?.ishta != null ? (<div className="space-y-1"><ProgressBar value={Number(row.ishta)} /><div className="text-xs text-gray-500">{Number(row.ishta).toFixed(1)}%</div></div>) : '—'}
@@ -476,8 +558,43 @@ export default function PredictionsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile cards (<640px) */}
+            <div className="sm:hidden space-y-3">
+              {placements.map((p) => {
+                const row = shadbalaRows.find((r) => (r.name || '').toLowerCase().startsWith((p.name || '').toLowerCase()))
+                const pct = row?.percent != null ? Number(row.percent) : null
+                const ishta = row?.ishta != null ? Math.max(0, Math.min(100, Number(row.ishta))) : null
+                const kashta = row?.kashta != null ? Math.max(0, Math.min(100, Number(row.kashta))) : null
+                return (
+                  <div key={p.name} className="rounded-lg border border-gray-200 p-3 bg-white shadow-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-semibold text-gray-900">{p.name}</div>
+                      {p.retro ? (<span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">Retro</span>) : null}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[13px]">
+                      <div className="text-gray-500">Current Sign</div>
+                      <div className="text-gray-800">{p.currentSign || '—'}</div>
+                      <div className="text-gray-500">House</div>
+                      <div className="text-gray-800">{p.house ?? '—'}</div>
+                      <div className="text-gray-500">Full Degree</div>
+                      <div className="text-gray-800">{typeof p.fullDegree === 'number' ? p.fullDegree.toFixed(2) + '°' : '—'}</div>
+                      <div className="text-gray-500">Norm Degree</div>
+                      <div className="text-gray-800">{typeof p.normDegree === 'number' ? p.normDegree.toFixed(2) + '°' : '—'}</div>
+                      <div className="text-gray-500">Strength</div>
+                      <div className="text-gray-800">{pct != null ? `${pct.toFixed(1)} %` : '—'}</div>
+                      <div className="text-gray-500">Ishta</div>
+                      <div className="text-gray-800">{ishta != null ? `${ishta.toFixed(1)}%` : '—'}</div>
+                      <div className="text-gray-500">Kashta</div>
+                      <div className="text-gray-800">{kashta != null ? `${kashta.toFixed(1)}%` : '—'}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </section>
           )}
+
 
           {/* Shadbala Table (improved readability & UX) */}
           <section className="rounded-2xl border border-gray-200 bg-white w-full overflow-hidden shadow-sm mb-6">
@@ -491,50 +608,101 @@ export default function PredictionsPage() {
               {result?.apiErrors && result.apiErrors['shadbala/summary'] && (
                 <div className="mx-5 my-3 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded p-2">API error: {String(result.apiErrors['shadbala/summary'])}</div>
               )}
-              <div className="w-full">
-                {/* Sticky header */}
-                <div className="px-5 py-2 bg-white sticky top-0 z-10 border-b border-gray-100">
-                  <div className="grid grid-cols-12 text-xs font-medium text-gray-600">
-                    <div className="col-span-6">Planet</div>
-                    <div className="col-span-2">Strength</div>
-                    <div className="col-span-2">Ishta</div>
-                    <div className="col-span-2">Kashta</div>
-                  </div>
+              {/* Table for tablet/laptop+ (>=640px) */}
+              <div className="w-full hidden sm:block px-4 pb-2">
+                <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                  <table className="min-w-full bg-white">
+                    <thead className="bg-gray-50 text-xs font-medium text-gray-600">
+                      <tr>
+                        <th className="px-4 py-2 text-left w-1/2">Planet</th>
+                        <th className="px-4 py-2 text-left w-1/6">Strength</th>
+                        <th className="px-4 py-2 text-center w-1/6">Ishta</th>
+                        <th className="px-4 py-2 text-center w-1/6">Kashta</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {shadbalaRows.map((r) => {
+                        const pct = r.percent != null ? Number(r.percent) : null
+                        const ishta = r.ishta != null ? Math.max(0, Math.min(100, Number(r.ishta))) : null
+                        const kashta = r.kashta != null ? Math.max(0, Math.min(100, Number(r.kashta))) : null
+                        return (
+                          <tr key={r.name} className="hover:bg-gray-50">
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{r.retro ? 'ℝ' : '★'}</span>
+                                <span className="font-medium text-gray-900">{r.name}</span>
+                                {r.retro ? (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">Retro</span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2">
+                              {pct != null ? (
+                                <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full ${pct >= 120 ? 'bg-green-50 text-green-700 border border-green-200' : pct >= 100 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{pct.toFixed(1)} %</span>
+                              ) : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {ishta != null ? `${ishta.toFixed(1)}%` : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {kashta != null ? `${kashta.toFixed(1)}%` : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                {/* Scrollable body */}
-                <div className="max-h-[420px] overflow-auto">
-                  <div className="divide-y divide-gray-100">
-                    {shadbalaRows.map((r, idx) => {
-                      const pct = r.percent != null ? Number(r.percent) : null
-                      const ishta = r.ishta != null ? Math.max(0, Math.min(100, Number(r.ishta))) : null
-                      const kashta = r.kashta != null ? Math.max(0, Math.min(100, Number(r.kashta))) : null
-                      const bg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                      return (
-                        <div key={r.name} className={`grid grid-cols-12 items-center px-5 py-3 ${bg}`}>
-                          {/* Planet */}
-                          <div className="col-span-6 flex items-center gap-2">
+              </div>
+              {/* Mobile cards (<640px) */}
+              <div className="block sm:hidden px-3 pb-2">
+                <div className="space-y-3">
+                  {shadbalaRows.map((r) => {
+                    const pct = r.percent != null ? Number(r.percent) : null
+                    const ishta = r.ishta != null ? Math.max(0, Math.min(100, Number(r.ishta))) : null
+                    const kashta = r.kashta != null ? Math.max(0, Math.min(100, Number(r.kashta))) : null
+                    return (
+                      <div key={r.name} className="rounded-lg border border-gray-200 p-3 bg-white shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
                             <span className="text-base">{r.retro ? 'ℝ' : '★'}</span>
-                            <span className="font-medium text-gray-900">{r.name}</span>
-                            {r.retro ? (<span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">Retro</span>) : null}
+                            <span className="font-semibold text-gray-900 text-sm">{r.name}</span>
                           </div>
-                          {/* Strength */}
-                          <div className="col-span-2">
+                          <div>
                             {pct != null ? (
-                              <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full ${pct >= 120 ? 'bg-green-50 text-green-700 border border-green-200' : pct >= 100 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{pct.toFixed(1)} %</span>
-                            ) : '—'}
-                          </div>
-                          {/* Ishta */}
-                          <div className="col-span-2 text-center">
-                            <span className="text-sm font-medium">{ishta != null ? `${ishta.toFixed(1)}%` : '—'}</span>
-                          </div>
-                          {/* Kashta */}
-                          <div className="col-span-2 text-center">
-                            <span className="text-sm font-medium">{kashta != null ? `${kashta.toFixed(1)}%` : '—'}</span>
+                              <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${pct >= 120 ? 'bg-green-50 text-green-700 border border-green-200' : pct >= 100 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{pct.toFixed(1)}%</span>
+                            ) : (
+                              <span className="text-[11px] text-gray-500">—</span>
+                            )}
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div className="mt-2 grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-[11px] text-gray-500 mb-1">Ishta</div>
+                            {ishta != null ? (
+                              <div className="space-y-1">
+                                <ProgressBar value={ishta} />
+                                <div className="text-[11px] text-gray-600">{ishta.toFixed(1)}%</div>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-gray-500">—</div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-gray-500 mb-1">Kashta</div>
+                            {kashta != null ? (
+                              <div className="space-y-1">
+                                <ProgressBar value={kashta} />
+                                <div className="text-[11px] text-gray-600">{kashta.toFixed(1)}%</div>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-gray-500">—</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
