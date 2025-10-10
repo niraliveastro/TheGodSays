@@ -22,8 +22,20 @@ export default function MatchingPage() {
   const [result, setResult] = useState(null)
   const [mounted, setMounted] = useState(false)
 
+  // Chart: viewport-based sizes for alignment and responsiveness
+  const [vw, setVw] = useState(1024)
+
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Track viewport width for responsive chart sizing
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const update = () => setVw(window.innerWidth || 1024)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
   }, [])
 
   // Simple completion meter for micro-feedback
@@ -162,6 +174,12 @@ export default function MatchingPage() {
     const pct = outOf ? Math.round((score / outOf) * 100) : 0
     return { name: k.replace(/_/g, " "), score, outOf, pct }
   }) : [])
+
+  // Responsive, smaller sizes
+  const BAR_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380
+  const LINE_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380
+  const BAR_H = Math.round(BAR_W * 0.44)
+  const LINE_H = Math.round(LINE_W * 0.44)
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -380,16 +398,16 @@ export default function MatchingPage() {
               <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 min-w-0">
                 <div className="text-sm text-neutral-400 mb-3">Koot Scores (Bar)</div>
                 {kootData.length > 0 ? (
-                  <div className="w-full overflow-x-auto">
-                    <div className="inline-block">
-                      <BarChart width={520} height={256} data={kootData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <div className="w-full flex justify-center">
+                    <div className="max-w-[400px]" style={{ width: BAR_W }}>
+                      <BarChart width={BAR_W} height={BAR_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
                         <CartesianGrid stroke="#262626" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={36} />
+                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 10 }} />
                         <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1F2937', color: '#E5E7EB' }} />
                         <Bar dataKey="score" fill="#22D3EE" radius={[4, 4, 0, 0]} />
                       </BarChart>
-                    </div>
+                      </div>
                   </div>
                 ) : (
                   <div className="text-sm text-neutral-500">No chart data</div>
@@ -400,16 +418,16 @@ export default function MatchingPage() {
               <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 min-w-0">
                 <div className="text-sm text-neutral-400 mb-3">Koot Percentage (Line)</div>
                 {kootData.length > 0 ? (
-                  <div className="w-full overflow-x-auto">
-                    <div className="inline-block">
-                      <LineChart width={520} height={256} data={kootData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <div className="w-full flex justify-center">
+                    <div className="max-w-[400px]" style={{ width: LINE_W }}>
+                      <LineChart width={LINE_W} height={LINE_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
                         <CartesianGrid stroke="#262626" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 12 }} domain={[0, 100]} />
+                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={36} />
+                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 10 }} domain={[0, 100]} />
                         <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1F2937', color: '#E5E7EB' }} />
                         <Line type="monotone" dataKey="pct" stroke="#A78BFA" strokeWidth={2} dot={false} />
                       </LineChart>
-                    </div>
+                      </div>
                   </div>
                 ) : (
                   <div className="text-sm text-neutral-500">No chart data</div>
