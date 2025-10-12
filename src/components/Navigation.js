@@ -43,6 +43,7 @@ const Navigation = () => {
     { href: '/panchang/calender', label: 'Panchang', icon: Calendar },
     { href: '/matching', label: 'Matching', icon: BookOpen },
     { href: '/predictions', label: 'Predictions', icon: Star },
+    { href: '/transits', label: 'Transits', icon: Calendar },
     { href: '/account', label: 'My Account', icon: User },
   ]
 
