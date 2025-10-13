@@ -1,84 +1,4 @@
-// import { AccessToken } from 'livekit-server-sdk'
-// import { NextResponse } from 'next/server'
-
-// export async function POST(request) {
-//   try {
-//     const { astrologerId, userId, callId, roomName: providedRoomName } = await request.json()
-
-//     if (!astrologerId || !userId) {
-//       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
-//     }
-
-//     // Use provided room name or create a new one
-//     const roomName = providedRoomName || `astro-${astrologerId}-${userId}-${Date.now()}`
-
-//     // Determine participant role and create appropriate identity
-//     const isAstrologer = astrologerId === 'astrologer' || astrologerId.includes('astro')
-//     const participantIdentity = isAstrologer ? `astrologer-${roomName}` : `user-${roomName}`
-//     const participantName = isAstrologer ? `Astrologer-${roomName.slice(-6)}` : `User-${userId.slice(-6)}`
-
-//     // Create access token
-//     const token = new AccessToken(
-//       process.env.NEXT_PUBLIC_LIVEKIT_API_KEY,
-//       process.env.LIVEKIT_API_SECRET,
-//       {
-//         identity: participantIdentity,
-//         name: participantName,
-//       }
-//     )
-
-//     token.addGrant({
-//       room: roomName,
-//       roomJoin: true,
-//       canPublish: true,
-//       canSubscribe: true,
-//       canPublishData: true,
-//       canUpdateOwnMetadata: true,
-//     })
-
-//     const jwt = await token.toJwt()
-
-//     return NextResponse.json({
-//       token: jwt,
-//       roomName,
-//       wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL,
-//     })
-//   } catch (error) {
-//     console.error('Error creating LiveKit session:', error)
-//     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { AccessToken, VideoGrant } from 'livekit-server-sdk'
+import { AccessToken } from 'livekit-server-sdk'
 import { NextResponse } from 'next/server'
 
 export async function POST(request) {
@@ -97,30 +17,32 @@ export async function POST(request) {
     const participantIdentity = isAstrologer ? `astrologer-${roomName}` : `user-${roomName}`
     const participantName = isAstrologer ? `Astrologer-${roomName.slice(-6)}` : `User-${userId.slice(-6)}`
 
-    // Validate LiveKit credentials / URLs (try both PUBLIC and server-side names)
-    const apiKey = process.env.NEXT_PUBLIC_LIVEKIT_API_KEY || process.env.LIVEKIT_API_KEY
-    const apiSecret = process.env.LIVEKIT_API_SECRET || process.env.NEXT_PUBLIC_LIVEKIT_API_SECRET
-    const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_WS_URL || process.env.LIVEKIT_WS_URL
-
-    if (!apiKey || !apiSecret) {
-      console.error('LiveKit API key/secret not set. apiKey:', Boolean(apiKey), 'apiSecret:', Boolean(apiSecret))
-      return NextResponse.json({ error: 'LiveKit credentials not configured on server' }, { status: 500 })
-    }
-
     // Create access token
-    const token = new AccessToken(apiKey, apiSecret, {
-      identity: participantIdentity,
-      name: participantName,
+    const token = new AccessToken(
+      process.env.NEXT_PUBLIC_LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_SECRET,
+      {
+        identity: participantIdentity,
+        name: participantName,
+      }
+    )
+
+    token.addGrant({
+      room: roomName,
+      roomJoin: true,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+      canUpdateOwnMetadata: true,
     })
 
-    // Use the official grant class instead of passing a plain object
-    const grant = new VideoGrant({ room: roomName, roomJoin: true })
-    token.addGrant(grant)
+    const jwt = await token.toJwt()
 
-    // toJwt() returns a string synchronously
-    const jwt = token.toJwt()
-
-    return NextResponse.json({ token: jwt, roomName, wsUrl })
+    return NextResponse.json({
+      token: jwt,
+      roomName,
+      wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL,
+    })
   } catch (error) {
     console.error('Error creating LiveKit session:', error)
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
