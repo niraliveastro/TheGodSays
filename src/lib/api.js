@@ -86,6 +86,12 @@ export const astrologyAPI = {
           break
         }
 
+        // For 500 errors, don't throw - return error info instead
+        if (response.status >= 500) {
+          lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+          break
+        }
+
         lastErr = new Error(`HTTP error! status: ${response.status}`)
         break
       }
@@ -178,7 +184,12 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Only log warnings for non-500 errors to reduce noise
+        if (!error.message.includes('500')) {
+          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        } else {
+          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+        }
       }
     })
 
@@ -212,7 +223,12 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Only log warnings for non-500 errors to reduce noise
+        if (!error.message.includes('500')) {
+          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        } else {
+          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+        }
       }
     })
 
