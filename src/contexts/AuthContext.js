@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -11,25 +11,77 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 const AuthContext = createContext({
   user: null,
+  userProfile: null,
   loading: false,
-  // Placeholders to be wired to Firebase next
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
   signInWithGoogle: async () => {},
+  getUserId: () => null,
+  getUserRole: () => null,
 });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Fetch user profile from Firestore
+  const fetchUserProfile = async (uid) => {
+    try {
+      // Try users collection first
+      let docRef = doc(db, 'users', uid);
+      let docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return { ...docSnap.data(), collection: 'users' };
+      }
+      
+      // Try astrologers collection
+      docRef = doc(db, 'astrologers', uid);
+      docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return { ...docSnap.data(), collection: 'astrologers' };
+      }
+      
+      return null;
+    } catch (error) {
+      if (error.code === 'unavailable') {
+        console.warn('Firebase is offline - using cached data or default profile');
+        // Return a default profile for astrologers when offline
+        return { role: 'astrologer', name: 'Astrologer', collection: 'astrologers' };
+      }
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+  };
 
   // Observe auth state changes
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (fbUser) => {
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser || null);
+      
+      if (fbUser) {
+        const profile = await fetchUserProfile(fbUser.uid);
+        setUserProfile(profile);
+        // Persist role for quick redirect on next visit (fallback)
+        try {
+          if (typeof window !== 'undefined') {
+            if (profile?.role === 'astrologer') localStorage.setItem('tgs:role', 'astrologer')
+            else localStorage.removeItem('tgs:role')
+          }
+        } catch (e) { /* ignore */ }
+      } else {
+        setUserProfile(null);
+      }
+      
+      setInitialLoading(false);
     });
     return () => unsub();
   }, []);
@@ -39,7 +91,12 @@ export function AuthProvider({ children }) {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       setUser(cred.user);
-      return cred.user;
+      
+      // Fetch user profile to determine role
+      const profile = await fetchUserProfile(cred.user.uid);
+      setUserProfile(profile);
+      
+      return { user: cred.user, profile };
     } finally {
       setLoading(false);
     }
@@ -51,7 +108,12 @@ export function AuthProvider({ children }) {
       const provider = new GoogleAuthProvider();
       const cred = await signInWithPopup(auth, provider);
       setUser(cred.user);
-      return cred.user;
+      
+      // Fetch user profile to determine role
+      const profile = await fetchUserProfile(cred.user.uid);
+      setUserProfile(profile);
+      
+      return { user: cred.user, profile };
     } finally {
       setLoading(false);
     }
@@ -76,14 +138,41 @@ export function AuthProvider({ children }) {
     try {
       await fbSignOut(auth);
       setUser(null);
+      setUserProfile(null);
+      // Clear any persisted role flag so returning visitors aren't redirected incorrectly
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tgs:role')
+        }
+      } catch (e) { /* ignore */ }
     } finally {
       setLoading(false);
     }
   };
 
+  const getUserId = () => {
+    return user?.uid || null;
+  };
+
+  const getUserRole = () => {
+    return userProfile?.role || null;
+  };
+
   const value = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut, signInWithGoogle, setUser, setLoading }),
-    [user, loading]
+    () => ({ 
+      user, 
+      userProfile, 
+      loading: loading || initialLoading, 
+      signIn, 
+      signUp, 
+      signOut, 
+      signInWithGoogle, 
+      getUserId, 
+      getUserRole,
+      setUser, 
+      setLoading 
+    }),
+    [user, userProfile, loading, initialLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

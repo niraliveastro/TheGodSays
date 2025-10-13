@@ -1,8 +1,5 @@
-const API_BASE_URL = 'https://json.freeastrologyapi.com'
-// const API_KEY = '9ORk2PjfCu7PEINoF5spv1ytb291KxkY7ReqfVCP'
-// const API_KEY = 'dB1NJ3uudt6sVFA8amcXW8SjlzjXXn3l99W7XYES'
-// const API_KEY = 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c'
-const API_KEY =  'kUxWg1GeOt2u5MAmNzUrluncbRydgxl1sYs8Vihh'
+const API_BASE_URL = process.env.NEXT_PUBLIC_ASTRO_API_BASE_URL
+const API_KEY = process.env.NEXT_PUBLIC_ASTRO_API_KEY
 
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
@@ -34,9 +31,7 @@ const API_ENDPOINTS = {
   'shadbala/summary': 'shadbala/summary',
   'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
   // New combined endpoint returning maha + antar lists grouped by maha
-  'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas',
-  // Matching
-  'match-making/ashtakoot-score': 'match-making/ashtakoot-score'
+  'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
 }
 
 export const astrologyAPI = {
@@ -83,6 +78,12 @@ export const astrologyAPI = {
           const jitter = Math.floor(Math.random() * 150)
           await new Promise(r => setTimeout(r, base + jitter))
           continue
+        }
+
+        // If 403, API key is invalid - throw specific error
+        if (response.status === 403) {
+          lastErr = new Error('API authentication failed (403). Using fallback data.')
+          break
         }
 
         lastErr = new Error(`HTTP error! status: ${response.status}`)

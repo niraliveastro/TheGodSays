@@ -4,6 +4,7 @@ import { Providers } from './providers'
 import PWAInstaller from '@/components/PWAInstaller'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import Navigation from '@/components/Navigation'
+import AstrologerRedirect from '@/components/AstrologerRedirect'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,10 +24,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         {/* Persistent modal portal root */}
         <div id="modal-root" />
         <Providers>
+          <AstrologerRedirect />
           <Navigation />
           {children}
           <PWAInstaller />

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff } from 'lucide-react'
+import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -15,7 +15,7 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signIn, signUp, signOut, signInWithGoogle } = useAuth()
+  const { user, userProfile, signIn, signUp, signOut, signInWithGoogle } = useAuth()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -43,18 +43,27 @@ const Navigation = () => {
     { href: '/panchang/calender', label: 'Panchang', icon: Calendar },
     { href: '/matching', label: 'Matching', icon: BookOpen },
     { href: '/predictions', label: 'Predictions', icon: Star },
+    { href: '/talk-to-astrologer', label: 'Talk to Astrologer', icon: Phone },
     { href: '/account', label: 'My Account', icon: User },
   ]
 
+  // Debug user role
+  console.log('User profile:', userProfile)
+  console.log('User role:', userProfile?.role)
+  
+  // Filter navigation items based on user role
+  const filteredNavItems = userProfile?.role === 'astrologer' 
+    ? [{ href: '/account', label: 'My Account', icon: User }] // Only show My Account for astrologers
+    : navItems
+
   async function handleAccountClick() {
-    try { console.log('[Navigation] My Account clicked', { isAuthed: !!user }) } catch {}
     if (user) {
       setDisplayName(user.displayName || '')
-      // Open modal immediately; load Firestore profile in background
       setModalPosition('top-right')
       setShowProfileModal(true)
       try {
-        const ref = doc(db, 'users', user.uid)
+        const collection = userProfile?.role === 'astrologer' ? 'astrologers' : 'users'
+        const ref = doc(db, collection, user.uid)
         const snap = await getDoc(ref)
         if (snap.exists()) {
           const data = snap.data() || {}
@@ -62,31 +71,32 @@ const Navigation = () => {
           setDob(data.dob || '')
           setGender(data.gender || '')
           setLocation(data.location || '')
-        } else {
-          setPhone('')
-          setDob('')
-          setGender('')
-          setLocation('')
         }
-      } catch (e) { try { console.warn('[Navigation] Failed to load Firestore user doc', e) } catch {} }
+      } catch (e) { console.warn('Failed to load user profile', e) }
     } else {
-      // Open centered auth modal (do not navigate)
-      setAuthTab('signin')
-      setAuthError('')
-      setModalPosition('center')
-      setShowProfileModal(true)
+      router.push('/auth')
     }
   }
 
   async function onSignOutClick() {
     try {
+      const wasAstrologer = userProfile?.role === 'astrologer'
       await signOut()
-    } finally {
-      // Switch modal to center and show auth forms
-      setAuthTab('signin')
-      setAuthError('')
-      setModalPosition('center')
-      setShowProfileModal(true)
+      setShowProfileModal(false)
+
+      // Give React a microtask to propagate auth state changes to context consumers
+      await new Promise((res) => setTimeout(res, 50))
+
+      // Refresh current route data and then replace to the target route to avoid history noise
+      try { router.refresh() } catch (e) { /* ignore */ }
+
+      if (wasAstrologer) {
+        router.replace('/')
+      } else {
+        router.replace('/auth')
+      }
+    } catch (e) {
+      console.error('Sign out error:', e)
     }
   }
 
@@ -165,7 +175,7 @@ const Navigation = () => {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
+            {(userProfile?.role === 'astrologer' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
               const Icon = item.icon
               if (item.href === '/account') {
                 return (
@@ -215,7 +225,7 @@ const Navigation = () => {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              {navItems.map((item) => {
+              {(userProfile?.role === 'astrologer' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
                 const Icon = item.icon
                 if (item.href === '/account') {
                   return (
@@ -280,6 +290,16 @@ const Navigation = () => {
                   disabled
                 />
               </div>
+              {userProfile?.role && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <input
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 capitalize"
+                    value={userProfile.role}
+                    disabled
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <input

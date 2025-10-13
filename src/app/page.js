@@ -258,7 +258,7 @@ export default function Home() {
         console.groupEnd()
       } catch {}
 
-      // Tolerate partial failures: do not reject if a single call returns 429
+      // Tolerate partial failures: do not reject if a single call returns 429 or 403
       const [panchangSettled, sunMoonSettled, auspiciousSettled] = await Promise.allSettled([
         astrologyAPI.getPanchangData(payload),
         astrologyAPI.getSunMoonData(userLocation.latitude, userLocation.longitude, date),
@@ -268,6 +268,19 @@ export default function Home() {
       const panchangResults = panchangSettled.status === 'fulfilled' ? panchangSettled.value : { results: {}, errors: { all: panchangSettled.reason?.message || 'failed' } }
       const sunMoonData = sunMoonSettled.status === 'fulfilled' ? sunMoonSettled.value : null
       const auspiciousData = auspiciousSettled.status === 'fulfilled' ? auspiciousSettled.value : { results: {}, errors: { all: auspiciousSettled.reason?.message || 'failed' } }
+      
+      // Check if API authentication failed (403 error)
+      const hasAuthError = [panchangSettled, sunMoonSettled, auspiciousSettled].some(result => 
+        result.status === 'rejected' && result.reason?.message?.includes('403')
+      )
+      
+      if (hasAuthError) {
+        console.warn('API authentication failed, using mock data')
+        setPanchangData(mockPanchangData)
+        setPanchangError('Using sample data due to API authentication issues.')
+        setIsLoadingPanchang(false)
+        return
+      }
       
       // Update panchang data with real API results
       const updatedPanchangData = { ...mockPanchangData }
@@ -461,28 +474,42 @@ export default function Home() {
 
       // Decide banner severity
       const hasAnyData = Boolean(
-        updatedPanchangData.tithi || updatedPanchangData.nakshatra || updatedPanchangData.yoga || updatedPanchangData.karana ||
-        updatedPanchangData.sunrise || updatedPanchangData.sunset || updatedPanchangData.moonrise || updatedPanchangData.moonset ||
-        updatedPanchangData.rahukalam || updatedPanchangData.gulika || updatedPanchangData.yamaganda ||
-        updatedPanchangData.abhijitMuhurat || updatedPanchangData.brahmaMuhurat || updatedPanchangData.amritKaal ||
-        updatedPanchangData.durMuhurat || updatedPanchangData.varjyam || updatedPanchangData.goodBadTimes
+        updatedPanchangData.tithi !== mockPanchangData.tithi || 
+        updatedPanchangData.nakshatra !== mockPanchangData.nakshatra || 
+        updatedPanchangData.yoga !== mockPanchangData.yoga || 
+        updatedPanchangData.karana !== mockPanchangData.karana ||
+        updatedPanchangData.sunrise !== mockPanchangData.sunrise || 
+        updatedPanchangData.sunset !== mockPanchangData.sunset || 
+        updatedPanchangData.moonrise !== mockPanchangData.moonrise || 
+        updatedPanchangData.moonset !== mockPanchangData.moonset ||
+        updatedPanchangData.rahukalam !== mockPanchangData.rahukalam || 
+        updatedPanchangData.gulika !== mockPanchangData.gulika || 
+        updatedPanchangData.yamaganda !== mockPanchangData.yamaganda ||
+        updatedPanchangData.abhijitMuhurat !== mockPanchangData.abhijitMuhurat || 
+        updatedPanchangData.brahmaMuhurat !== mockPanchangData.brahmaMuhurat || 
+        updatedPanchangData.amritKaal !== mockPanchangData.amritKaal ||
+        updatedPanchangData.durMuhurat !== mockPanchangData.durMuhurat || 
+        updatedPanchangData.varjyam !== mockPanchangData.varjyam || 
+        updatedPanchangData.goodBadTimes !== mockPanchangData.goodBadTimes
       )
       const allFailed = panchangSettled.status === 'rejected' && sunMoonSettled.status === 'rejected' && auspiciousSettled.status === 'rejected'
       if (allFailed) {
-        setPanchangError('Failed to load real-time Panchang data. Please try again later.')
+        setPanchangError('Failed to load real-time Panchang data. Using sample data.')
       } else if (!hasAnyData) {
-        setPanchangError('Real-time Panchang data could not be populated due to API limits.')
+        setPanchangError('Real-time Panchang data could not be populated due to API limits. Using sample data.')
       } else {
         // Show a softer note only if some endpoints failed
         const fails = [panchangSettled, sunMoonSettled, auspiciousSettled].filter(r => r.status === 'rejected').length
         if (fails > 0) {
-          setPanchangError('Some sections are limited due to API rate limits (429). Showing partial data.')
+          setPanchangError('Some sections are limited due to API rate limits. Showing partial real-time data.')
         }
       }
 
     } catch (error) {
       console.error('Error fetching Panchang data:', error)
-      setPanchangError(`Failed to load real-time Panchang data. ${error?.message || ''}`)
+      // Fall back to mock data on any error
+      setPanchangData(mockPanchangData)
+      setPanchangError('Using sample Panchang data due to API issues.')
     } finally {
       setIsLoadingPanchang(false)
     }

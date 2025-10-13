@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = 'https://json.freeastrologyapi.com'
-const API_KEY = 'kUxWg1GeOt2u5MAmNzUrluncbRydgxl1sYs8Vihh'
+const API_BASE_URL = process.env.ASTRO_API_BASE_URL || ''
+const API_KEY = process.env.ASTRO_API_KEY || ''
 
 export async function POST(request, ctx) {
   try {
