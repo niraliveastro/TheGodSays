@@ -1,6 +1,14 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_ASTRO_API_BASE_URL
 const API_KEY = process.env.NEXT_PUBLIC_ASTRO_API_KEY
 
+// Validate API configuration on module load
+if (!API_BASE_URL) {
+  console.error('[API] NEXT_PUBLIC_ASTRO_API_BASE_URL is not configured')
+}
+if (!API_KEY) {
+  console.error('[API] NEXT_PUBLIC_ASTRO_API_KEY is not configured')
+}
+
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
   'tithi-durations': 'tithi-durations',
@@ -82,13 +90,15 @@ export const astrologyAPI = {
 
         // If 403, API key is invalid - throw specific error
         if (response.status === 403) {
-          lastErr = new Error('API authentication failed (403). Using fallback data.')
+          lastErr = new Error(`API authentication failed (403). The API key may be invalid or expired. Please check your API configuration.`)
+          console.error(`[API] Authentication failed for ${endpoint}:`, response.status, response.statusText)
           break
         }
 
         // For 500 errors, don't throw - return error info instead
         if (response.status >= 500) {
           lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+          console.error(`[API] Server error for ${endpoint}:`, response.status, response.statusText)
           break
         }
 
@@ -184,11 +194,11 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        // Only log warnings for non-500 errors to reduce noise
-        if (!error.message.includes('500')) {
-          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Log all errors for debugging but with different severity
+        if (error.message.includes('500')) {
+          console.warn(`[API] ${endpoint} temporarily unavailable (500 error):`, error.message)
         } else {
-          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+          console.error(`[API] Failed to fetch ${endpoint}:`, error.message)
         }
       }
     })
@@ -196,6 +206,41 @@ export const astrologyAPI = {
     await Promise.all(promises)
 
     return { results, errors }
+  },
+
+  // Method to check API health and availability
+  async checkAPIHealth() {
+    try {
+      const testPayload = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        date: new Date().getDate(),
+        hours: 12,
+        minutes: 0,
+        seconds: 0,
+        latitude: 28.6139,
+        longitude: 77.2090,
+        timezone: 5.5,
+        config: {
+          observation_point: "topocentric",
+          ayanamsha: "lahiri"
+        }
+      }
+
+      const response = await fetch(`${API_BASE_URL}/vedic-weekday`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+        },
+        body: JSON.stringify(testPayload),
+      })
+
+      return response.ok
+    } catch (error) {
+      console.error('[API] Health check failed:', error)
+      return false
+    }
   },
 
   // Method to fetch Auspicious/Inauspicious timings used on the Home page
@@ -223,11 +268,11 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        // Only log warnings for non-500 errors to reduce noise
-        if (!error.message.includes('500')) {
-          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Log all errors for debugging but with different severity
+        if (error.message.includes('500')) {
+          console.warn(`[API] ${endpoint} temporarily unavailable (500 error):`, error.message)
         } else {
-          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+          console.error(`[API] Failed to fetch ${endpoint}:`, error.message)
         }
       }
     })
@@ -352,3 +397,425 @@ export async function getTimezoneOffsetHours(lat, lon) {
     return Math.round(clamped * 2) / 2
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const API_BASE_URL = process.env.NEXT_PUBLIC_ASTRO_API_BASE_URL
+// const API_KEY = process.env.NEXT_PUBLIC_ASTRO_API_KEY
+
+// const API_ENDPOINTS = {
+//   'tithi-timings': 'tithi-timings',
+//   'tithi-durations': 'tithi-durations',
+//   'nakshatra-timings': 'nakshatra-timings',
+//   'nakshatra-durations': 'nakshatra-durations',
+//   'yoga-durations': 'yoga-durations',
+//   'karana-timings': 'karana-timings',
+//   'vedic-weekday': 'vedic-weekday',
+//   'lunar-month-info': 'lunar-month-info',
+//   'ritu-information': 'ritu-information',
+//   'samvat-information': 'samvat-information',
+//   'aayanam': 'aayanam',
+//   'hora-timings': 'hora-timings',
+//   'choghadiya-timings': 'choghadiya-timings',
+//   'abhijit-muhurat': 'abhijit-muhurat',
+//   'amrit-kaal': 'amrit-kaal',
+//   'brahma-muhurat': 'brahma-muhurat',
+//   'rahu-kalam': 'rahu-kalam',
+//   'yama-gandam': 'yama-gandam',
+//   'gulika-kalam': 'gulika-kalam',
+//   'dur-muhurat': 'dur-muhurat',
+//   'varjyam': 'varjyam',
+//   'good-bad-times': 'good-bad-times',
+//   'horoscope-chart-svg-code': 'horoscope-chart-svg-code',
+//   // Added for Predictions page
+//   'planets': 'planets',
+//   'vimsottari/dasa-information': 'vimsottari/dasa-information',
+//   'shadbala/summary': 'shadbala/summary',
+//   'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
+//   // New combined endpoint returning maha + antar lists grouped by maha
+//   'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
+// }
+
+// export const astrologyAPI = {
+//   async getSingleCalculation(optionId, payload) {
+//     try {
+//       const endpoint = API_ENDPOINTS[optionId]
+//       if (!endpoint) {
+//         throw new Error(`Unknown option: ${optionId}`)
+//       }
+
+//       // Debug: log outgoing request
+//       try {
+//         console.log(`[API] → POST ${API_BASE_URL}/${endpoint}`, payload)
+//       } catch (_) {}
+
+//       // Retry with exponential backoff on 429
+//       let lastErr
+//       for (let attempt = 0; attempt < 3; attempt++) {
+//         // Use server proxy when running on the client to avoid CORS and hide API key
+//         const isClient = typeof window !== 'undefined'
+//         const url = isClient ? `/api/astro/${endpoint}` : `${API_BASE_URL}/${endpoint}`
+//         const headers = isClient
+//           ? { 'Content-Type': 'application/json' }
+//           : { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
+//         const response = await fetch(url, {
+//           method: 'POST',
+//           headers,
+//           body: JSON.stringify(payload),
+//         })
+
+//         if (response.ok) {
+//           const data = await response.json()
+//           // Debug: log success response (trim if huge)
+//           try {
+//             const preview = typeof data === 'string' ? data.slice(0, 300) : data
+//             console.log(`[API] ← OK ${endpoint}`, preview)
+//           } catch (_) {}
+//           return data
+//         }
+
+//         // If 429, backoff and retry
+//         if (response.status === 429 && attempt < 2) {
+//           const base = 400 * Math.pow(2, attempt)
+//           const jitter = Math.floor(Math.random() * 150)
+//           await new Promise(r => setTimeout(r, base + jitter))
+//           continue
+//         }
+
+//         // If 403, API key is invalid - throw specific error
+//         if (response.status === 403) {
+//           lastErr = new Error('API authentication failed (403). Using fallback data.')
+//           break
+//         }
+
+//         // For 500 errors, don't throw - return error info instead
+//         if (response.status >= 500) {
+//           lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+//           break
+//         }
+
+//         lastErr = new Error(`HTTP error! status: ${response.status}`)
+//         break
+//       }
+
+//       if (lastErr) throw lastErr
+
+//       // Fallback throw if we somehow exit loop without return
+//       throw new Error('Request failed after retries')
+//     } catch (error) {
+//       console.error(`Error fetching ${optionId}:`, error)
+//       throw error
+//     }
+//   },
+
+//   async getMultipleCalculations(optionIds, payload) {
+//     const results = {}
+//     const errors = {}
+
+//     // Process requests in parallel with a small delay to avoid rate limiting
+//     const promises = optionIds.map(async (optionId, index) => {
+//       // Add small delay between requests to avoid rate limiting (more generous)
+//       await new Promise(resolve => setTimeout(resolve, index * 250))
+      
+//       try {
+//         const result = await this.getSingleCalculation(optionId, payload)
+//         results[optionId] = result
+//       } catch (error) {
+//         errors[optionId] = error.message
+//       }
+//     })
+
+//     await Promise.all(promises)
+
+//     return { results, errors }
+//   },
+
+//   // Legacy method for backward compatibility
+//   async getTimings(payload) {
+//     return this.getSingleCalculation('choghadiya-timings', payload)
+//   },
+
+//   // Method to fetch sun/moon data from IPGeolocation API
+//   async getSunMoonData(latitude, longitude, date) {
+//     try {
+//       const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
+//       const elevation = 10 // Default elevation
+      
+//       // Format date as YYYY-MM-DD
+//       const formattedDate = date instanceof Date ? date.toISOString().split('T')[0] : date
+      
+//       const url = `https://api.ipgeolocation.io/v2/astronomy?apiKey=${apiKey}&lat=${latitude}&long=${longitude}&elevation=${elevation}&date=${formattedDate}`
+      
+//       const response = await fetch(url, {
+//         method: 'GET',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//       })
+
+//       if (!response.ok) {
+//         throw new Error(`HTTP error! status: ${response.status}`)
+//       }
+
+//       const data = await response.json()
+//       return data
+//     } catch (error) {
+//       console.error('Error fetching sun/moon data:', error)
+//       throw error
+//     }
+//   },
+
+//   // Method to fetch Panchang data for home page
+//   async getPanchangData(payload) {
+//     const panchangEndpoints = [
+//       'tithi-durations', 
+//       'nakshatra-durations', 
+//       'yoga-durations', 
+//       'karana-timings'
+//     ]
+//     const results = {}
+//     const errors = {}
+
+//     // Process requests in parallel with a small delay to avoid rate limiting
+//     const promises = panchangEndpoints.map(async (endpoint, index) => {
+//       // Add small delay between requests to avoid rate limiting (more generous)
+//       await new Promise(resolve => setTimeout(resolve, index * 350))
+      
+//       try {
+//         const result = await this.getSingleCalculation(endpoint, payload)
+//         results[endpoint] = result
+//       } catch (error) {
+//         errors[endpoint] = error.message
+//         // Only log warnings for non-500 errors to reduce noise
+//         if (!error.message.includes('500')) {
+//           console.warn(`Failed to fetch ${endpoint}:`, error.message)
+//         } else {
+//           console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+//         }
+//       }
+//     })
+
+//     await Promise.all(promises)
+
+//     return { results, errors }
+//   },
+
+//   // Method to fetch Auspicious/Inauspicious timings used on the Home page
+//   async getAuspiciousData(payload) {
+//     const endpoints = [
+//       'rahu-kalam',
+//       'yama-gandam',
+//       'gulika-kalam',
+//       'abhijit-muhurat',
+//       'amrit-kaal',
+//       'brahma-muhurat',
+//       'dur-muhurat',
+//       'varjyam',
+//       'good-bad-times',
+//     ]
+
+//     const results = {}
+//     const errors = {}
+
+//     const promises = endpoints.map(async (endpoint, index) => {
+//       // slight staggering to be kind to rate limits
+//       await new Promise((r) => setTimeout(r, index * 120))
+//       try {
+//         const result = await this.getSingleCalculation(endpoint, payload)
+//         results[endpoint] = result
+//       } catch (error) {
+//         errors[endpoint] = error.message
+//         // Only log warnings for non-500 errors to reduce noise
+//         if (!error.message.includes('500')) {
+//           console.warn(`Failed to fetch ${endpoint}:`, error.message)
+//         } else {
+//           console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+//         }
+//       }
+//     })
+
+//     await Promise.all(promises)
+//     return { results, errors }
+//   }
+// }
+
+// // Export both for backward compatibility
+// export const choghadiyaAPI = astrologyAPI
+// export default astrologyAPI
+
+// // --- Client-side helpers for Samvat info ---
+// // Posts a payload to our Next.js route `/samvatinfo`
+// export async function postSamvatInfo(payload) {
+//   const res = await fetch('/samvatinfo', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(payload),
+//   })
+//   if (!res.ok) {
+//     const errText = await res.text().catch(() => '')
+//     throw new Error(`Failed to fetch /samvatinfo: ${res.status} ${errText}`)
+//   }
+//   return res.json()
+// }
+
+// // Gets real-time date/time and geolocation from the browser and posts to /samvatinfo
+// // Usage (client components only): const data = await getRealtimeSamvatInfo()
+// export async function getRealtimeSamvatInfo(options = {}) {
+//   if (typeof window === 'undefined') {
+//     throw new Error('getRealtimeSamvatInfo must be called on the client')
+//   }
+
+//   const now = new Date()
+//   const tz = -now.getTimezoneOffset() / 60
+
+//   const config = {
+//     observation_point: options.observation_point || 'topocentric',
+//     ayanamsha: options.ayanamsha || 'lahiri',
+//     lunar_month_definition: options.lunar_month_definition || 'amanta',
+//   }
+
+//   const position = await new Promise((resolve, reject) => {
+//     if (!navigator.geolocation) {
+//       reject(new Error('Geolocation not supported'))
+//       return
+//     }
+//     navigator.geolocation.getCurrentPosition(resolve, reject, {
+//       enableHighAccuracy: true,
+//       maximumAge: 60_000,
+//       timeout: 15_000,
+//     })
+//   })
+
+//   const { latitude, longitude } = position.coords
+
+//   const payload = {
+//     year: now.getFullYear(),
+//     month: now.getMonth() + 1,
+//     date: now.getDate(),
+//     hours: now.getHours(),
+//     minutes: now.getMinutes(),
+//     seconds: now.getSeconds(),
+//     latitude,
+//     longitude,
+//     timezone: typeof options.timezone === 'number' ? options.timezone : tz,
+//     config,
+//   }
+
+//   return postSamvatInfo(payload)
+// }
+
+// // --- Geocoding & Timezone helpers for Predictions ---
+// // OpenStreetMap Nominatim geocoding (no key needed). Returns { lat, lon, display_name } or null
+// export async function geocodePlace(query) {
+//   try {
+//     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+//     const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+//     if (!res.ok) throw new Error(`Geocode HTTP ${res.status}`)
+//     const arr = await res.json()
+//     if (!Array.isArray(arr) || arr.length === 0) return null
+//     const first = arr[0]
+//     return { latitude: parseFloat(first.lat), longitude: parseFloat(first.lon), label: first.display_name }
+//   } catch (e) {
+//     console.warn('Geocoding failed:', e?.message)
+//     return null
+//   }
+// }
+
+// // Get timezone offset in hours for a coordinate and date using IPGeolocation
+// export async function getTimezoneOffsetHours(lat, lon) {
+//   try {
+//     const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
+//     const url = `https://api.ipgeolocation.io/timezone?apiKey=${apiKey}&lat=${lat}&long=${lon}`
+//     const res = await fetch(url)
+//     if (!res.ok) throw new Error(`TZ HTTP ${res.status}`)
+//     const data = await res.json()
+//     // API returns offset in seconds or strings; prefer offset in hours
+//     let offset
+//     if (typeof data.timezone_offset === 'number') offset = data.timezone_offset / 3600
+//     if (typeof data.offset === 'number') offset = data.offset // already hours
+//     if (typeof data.current_time === 'string') {
+//       // Fallback: derive from GMT offset text like "+05:30"
+//       const m = data?.current_time?.match(/GMT([+\-])(\d{2}):(\d{2})/)
+//       if (m) {
+//         const sign = m[1] === '-' ? -1 : 1
+//         offset = sign * (parseInt(m[2], 10) + parseInt(m[3], 10) / 60)
+//       }
+//     }
+//     if (typeof offset !== 'number' || Number.isNaN(offset)) {
+//       offset = -new Date().getTimezoneOffset() / 60
+//     }
+//     // Clamp and round to nearest 0.5 hour for stability
+//     const clamped = Math.max(-14, Math.min(14, offset))
+//     return Math.round(clamped * 2) / 2
+//   } catch (e) {
+//     console.warn('Timezone lookup failed:', e?.message)
+//     const fallback = -new Date().getTimezoneOffset() / 60
+//     const clamped = Math.max(-14, Math.min(14, fallback))
+//     return Math.round(clamped * 2) / 2
+//   }
+// }
