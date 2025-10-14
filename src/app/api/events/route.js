@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
 
-// Store active SSE connections
-const connections = new Map()
-const globalConnections = new Set()
+// Store active SSE connections - maintain state across function invocations in Vercel
+if (typeof global !== 'undefined') {
+  if (!global.connections) global.connections = new Map()
+  if (!global.globalConnections) global.globalConnections = new Set()
+  var connections = global.connections
+  var globalConnections = global.globalConnections
+} else {
+  var connections = new Map()
+  var globalConnections = new Set()
+}
 
 export async function GET(request) {
   try {
@@ -63,11 +70,33 @@ export async function GET(request) {
                 connections.delete(astrologerId)
               }
             }
-          }, 15000) // Send heartbeat every 15 seconds for Vercel
+          }, 10000) // Send heartbeat every 10 seconds for better Vercel compatibility
 
-          // Clean up heartbeat on connection close
+          // Add connection health check
+          const healthCheckInterval = setInterval(() => {
+            try {
+              // Check if connection is still alive
+              if (controller.signal.aborted) {
+                clearInterval(heartbeatInterval)
+                clearInterval(healthCheckInterval)
+                return
+              }
+            } catch (error) {
+              console.error('Connection health check failed:', error)
+              clearInterval(heartbeatInterval)
+              clearInterval(healthCheckInterval)
+              if (isGlobal) {
+                globalConnections.delete(controller)
+              } else {
+                connections.delete(astrologerId)
+              }
+            }
+          }, 5000) // Check every 5 seconds
+
+          // Clean up heartbeat and health check on connection close
           request.signal.addEventListener('abort', () => {
             clearInterval(heartbeatInterval)
+            clearInterval(healthCheckInterval)
           })
 
         } catch (error) {
@@ -96,6 +125,21 @@ export async function GET(request) {
       timestamp: new Date().toISOString()
     })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Function to check if astrologer has active connection
+export function hasActiveConnection(astrologerId) {
+  return connections.has(astrologerId)
+}
+
+// Function to get connection status for debugging
+export function getConnectionStatus() {
+  return {
+    activeConnections: Array.from(connections.keys()),
+    globalConnections: globalConnections.size,
+    totalConnections: connections.size + globalConnections.size,
+    timestamp: new Date().toISOString()
   }
 }
 
