@@ -86,11 +86,12 @@ export async function POST(request) {
         }
 
         // Always notify astrologer about incoming call
-        const astrologer = astrologers.get(astrologerId)
-        if (astrologer) {
-          astrologer.pendingCalls = astrologer.pendingCalls || []
-          astrologer.pendingCalls.push(call.id)
-        }
+         const astrologer = astrologers.get(astrologerId)
+         if (astrologer) {
+           astrologer.pendingCalls = astrologer.pendingCalls || []
+           astrologer.pendingCalls.push(call.id)
+           astrologer.lastCallTime = new Date().toISOString() // Track last call time for polling
+         }
 
         // Broadcast real-time event
         console.log('Broadcasting new call event to astrologer:', astrologerId)
