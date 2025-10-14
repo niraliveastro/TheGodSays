@@ -2,8 +2,16 @@ import { NextResponse } from 'next/server'
 import { broadcastEvent } from '../events/route'
 
 // In-memory storage for demo purposes - in production, use a database
-const calls = new Map()
-const astrologers = new Map()
+// Using global variables to maintain state across function invocations in Vercel
+if (typeof global !== 'undefined') {
+  if (!global.calls) global.calls = new Map()
+  if (!global.astrologers) global.astrologers = new Map()
+  var calls = global.calls
+  var astrologers = global.astrologers
+} else {
+  var calls = new Map()
+  var astrologers = new Map()
+}
 
 // Helper function to get call queue for an astrologer
 const getCallQueue = (astrologerId) => {
@@ -154,6 +162,19 @@ export async function POST(request) {
         return NextResponse.json({
           success: true,
           pendingCalls,
+          timestamp: new Date().toISOString(),
+          connectionStatus: 'polling' // Indicate this is polling mode
+        })
+
+      case 'connection-status':
+        // Check connection status for debugging
+        const { hasActiveConnection, getConnectionStatus } = await import('../events/route.js')
+        const connectionStatus = getConnectionStatus()
+        const hasConnection = hasActiveConnection(astrologerId)
+        return NextResponse.json({
+          success: true,
+          hasActiveConnection: hasConnection,
+          connectionStatus,
           timestamp: new Date().toISOString()
         })
 
