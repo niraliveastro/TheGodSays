@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { LiveKitRoom, StageView, ControlsView } from '@livekit/react-components'
-import '@livekit/react-components/dist/index.css'
+import { LiveKitRoom, VideoConference } from '@livekit/components-react'
+import '@livekit/components-styles'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, PhoneOff } from 'lucide-react'
 
@@ -130,9 +130,9 @@ export default function VideoCallRoom() {
       </div>
 
       {/* Video Conference */}
-      <div className="h-[calc(100vh-80px)]">
+      <div className="h-[calc(100vh-80px)] video-conference-wrapper">
         <LiveKitRoom
-          url={wsUrl}
+          serverUrl={wsUrl}
           token={token}
           onDisconnected={handleDisconnect}
           onError={(error) => {
@@ -141,8 +141,7 @@ export default function VideoCallRoom() {
           }}
           style={{ height: '100%' }}
         >
-          <StageView />
-          <ControlsView />
+          <VideoConference />
         </LiveKitRoom>
       </div>
     </div>

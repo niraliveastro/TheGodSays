@@ -117,29 +117,38 @@ export default function TalkToAstrologer() {
       const callData = await callResponse.json()
 
       if (callData.success) {
+        let timeoutId
         // Set up polling to check call status
         const pollInterval = setInterval(async () => {
           try {
-            const statusResponse = await fetch(`/api/calls?astrologerId=${backendAstrologerId}`)
+            const statusResponse = await fetch(
+              `/api/calls?astrologerId=${backendAstrologerId}`
+            )
             const statusData = await statusResponse.json()
-            
+
             if (statusData.success) {
-              const call = statusData.calls.find(c => c.id === callData.call.id)
-              
+              const call = statusData.calls.find(
+                (c) => c.id === callData.call.id
+              )
+
               if (call?.status === 'active') {
+                clearTimeout(timeoutId)
                 clearInterval(pollInterval)
-                
+
                 // Create LiveKit session and join room
-                const sessionResponse = await fetch('/api/livekit/create-session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    astrologerId: backendAstrologerId,
-                    userId: callData.call.userId,
-                    callId: callData.call.id,
-                    roomName: call.roomName // Pass the existing room name
-                  })
-                })
+                const sessionResponse = await fetch(
+                  '/api/livekit/create-session',
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      astrologerId: backendAstrologerId,
+                      userId: callData.call.userId,
+                      callId: callData.call.id,
+                      roomName: call.roomName, // Pass the existing room name
+                    }),
+                  }
+                )
 
                 if (sessionResponse.ok) {
                   const { roomName } = await sessionResponse.json()
@@ -148,6 +157,7 @@ export default function TalkToAstrologer() {
                   alert('Failed to connect to video call. Please try again.')
                 }
               } else if (call?.status === 'rejected') {
+                clearTimeout(timeoutId)
                 clearInterval(pollInterval)
                 alert('Astrologer declined the call. Please try again later.')
               }
@@ -156,9 +166,9 @@ export default function TalkToAstrologer() {
             console.error('Error checking call status:', error)
           }
         }, 2000)
-        
+
         // Stop polling after 30 seconds
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           clearInterval(pollInterval)
           alert('Astrologer is not responding. Please try again.')
         }, 30000)

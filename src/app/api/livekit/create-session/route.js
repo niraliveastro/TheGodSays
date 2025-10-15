@@ -18,8 +18,9 @@ export async function POST(request) {
     const participantName = isAstrologer ? `Astrologer-${roomName.slice(-6)}` : `User-${userId.slice(-6)}`
 
     // Create access token
+    // Use a server-only LiveKit API key (do NOT expose this as NEXT_PUBLIC_...)
     const token = new AccessToken(
-      process.env.NEXT_PUBLIC_LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_KEY,
       process.env.LIVEKIT_API_SECRET,
       {
         identity: participantIdentity,

@@ -42,9 +42,8 @@ const Navigation = () => {
     { href: '/', label: 'Home', icon: Home },
     { href: '/panchang/calender', label: 'Panchang', icon: Calendar },
     { href: '/matching', label: 'Matching', icon: BookOpen },
-  { href: '/predictions', label: 'Predictions', icon: Star },
-  { href: '/talk-to-astrologer', label: 'Talk to Astrologer', icon: Phone },
-  { href: '/transits', label: 'Transits', icon: Calendar },
+    { href: '/predictions', label: 'Predictions', icon: Star },
+    { href: '/talk-to-astrologer', label: 'Talk to Astrologer', icon: Phone },
     { href: '/account', label: 'My Account', icon: User },
   ]
 

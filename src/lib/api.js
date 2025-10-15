@@ -1,5 +1,12 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_ASTRO_API_BASE_URL
-const API_KEY = process.env.NEXT_PUBLIC_ASTRO_API_KEY
+// Client-side config uses NEXT_PUBLIC_* variables. Server-side (API routes)
+// should use server-only variables: ASTRO_API_BASE_URL and ASTRO_API_KEY.
+const API_BASE_URL = typeof window === 'undefined'
+  ? process.env.ASTRO_API_BASE_URL
+  : process.env.NEXT_PUBLIC_ASTRO_API_BASE_URL
+
+const API_KEY = typeof window === 'undefined'
+  ? process.env.ASTRO_API_KEY
+  : process.env.NEXT_PUBLIC_ASTRO_API_KEY
 
 const API_ENDPOINTS = {
   'tithi-timings': 'tithi-timings',
@@ -86,6 +93,12 @@ export const astrologyAPI = {
           break
         }
 
+        // For 500 errors, don't throw - return error info instead
+        if (response.status >= 500) {
+          lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+          break
+        }
+
         lastErr = new Error(`HTTP error! status: ${response.status}`)
         break
       }
@@ -130,14 +143,18 @@ export const astrologyAPI = {
   // Method to fetch sun/moon data from IPGeolocation API
   async getSunMoonData(latitude, longitude, date) {
     try {
-      const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
+      // Move the IP Geolocation API key to an env var. For client usage,
+      // set NEXT_PUBLIC_IPGEO_API_KEY; for server usage set IPGEO_API_KEY.
+      const apiKey = typeof window === 'undefined'
+        ? process.env.IPGEO_API_KEY
+        : process.env.NEXT_PUBLIC_IPGEO_API_KEY
+
       const elevation = 10 // Default elevation
-      
       // Format date as YYYY-MM-DD
       const formattedDate = date instanceof Date ? date.toISOString().split('T')[0] : date
-      
-      const url = `https://api.ipgeolocation.io/v2/astronomy?apiKey=${apiKey}&lat=${latitude}&long=${longitude}&elevation=${elevation}&date=${formattedDate}`
-      
+
+      const url = `https://api.ipgeolocation.io/v2/astronomy?apiKey=${encodeURIComponent(apiKey || '')}&lat=${latitude}&long=${longitude}&elevation=${elevation}&date=${formattedDate}`
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -178,7 +195,12 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Only log warnings for non-500 errors to reduce noise
+        if (!error.message.includes('500')) {
+          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        } else {
+          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+        }
       }
     })
 
@@ -212,7 +234,12 @@ export const astrologyAPI = {
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
-        console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        // Only log warnings for non-500 errors to reduce noise
+        if (!error.message.includes('500')) {
+          console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        } else {
+          console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
+        }
       }
     })
 
@@ -306,8 +333,12 @@ export async function geocodePlace(query) {
 // Get timezone offset in hours for a coordinate and date using IPGeolocation
 export async function getTimezoneOffsetHours(lat, lon) {
   try {
-    const apiKey = 'ba3a23a8741a476aa204a863a77a2924'
-    const url = `https://api.ipgeolocation.io/timezone?apiKey=${apiKey}&lat=${lat}&long=${lon}`
+    // Use environment-configured IP geolocation API key. On the client use
+    // NEXT_PUBLIC_IPGEO_API_KEY; on the server use IPGEO_API_KEY.
+    const apiKey = typeof window === 'undefined'
+      ? process.env.IPGEO_API_KEY
+      : process.env.NEXT_PUBLIC_IPGEO_API_KEY
+    const url = `https://api.ipgeolocation.io/timezone?apiKey=${encodeURIComponent(apiKey || '')}&lat=${lat}&long=${lon}`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`TZ HTTP ${res.status}`)
     const data = await res.json()
