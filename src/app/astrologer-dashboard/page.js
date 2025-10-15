@@ -33,6 +33,8 @@ function AstrologerDashboardContent() {
         ])
       } catch (error) {
         console.error('Error initializing dashboard:', error)
+        // Set default offline status if fetch fails
+        setStatus('offline')
       } finally {
         setLoading(false)
       }
