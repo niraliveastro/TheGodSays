@@ -33,7 +33,22 @@ export default function TalkToAstrologer() {
         }
       } catch (error) {
         console.warn('Error parsing SSE message:', error)
+        // Don't break the connection on parse errors
       }
+    }
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error)
+      // Implement retry logic for global connections
+      setTimeout(() => {
+        console.log('Retrying global SSE connection...')
+        const newEventSource = new EventSource('/api/events?global=true')
+        newEventSource.onmessage = eventSource.onmessage
+        newEventSource.onerror = eventSource.onerror
+        eventSource.close()
+        // Replace the old eventSource reference
+        Object.setPrototypeOf(newEventSource, eventSource)
+      }, 5000)
     }
 
     return () => eventSource.close()
@@ -176,8 +191,8 @@ export default function TalkToAstrologer() {
                 )
 
                 if (sessionResponse.ok) {
-                  const { roomName } = await sessionResponse.json()
-                  router.push(`/talk-to-astrologer/room/${roomName}`)
+                  const sessionData = await sessionResponse.json()
+                  router.push(`/talk-to-astrologer/room/${sessionData.roomName}`)
                 } else {
                   alert('Failed to connect to video call. Please try again.')
                 }
