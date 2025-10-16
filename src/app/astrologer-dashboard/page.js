@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, User, Clock, CheckCircle, XCircle, Video } from 'lucide-react'
+import { doc, updateDoc, onSnapshot, collection, query, where } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import CallNotification from '@/components/CallNotification'
 import AuthGuard from '@/components/AuthGuard'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,258 +18,77 @@ function AstrologerDashboardContent() {
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [incomingCall, setIncomingCall] = useState(null)
-  const [sseStatus, setSseStatus] = useState('disconnected') // 'connected', 'connecting', 'disconnected', 'error'
   const { getUserId, userProfile } = useAuth()
   const astrologerId = getUserId()
   const router = useRouter()
 
   useEffect(() => {
-    if (!astrologerId) return
+    if (!astrologerId) return;
 
-    const initializeDashboard = async () => {
-      try {
-        await Promise.all([
-          fetchAstrologerStatus(),
-          fetchCalls(),
-          fetchQueue()
-        ])
-      } catch (error) {
-        console.error('Error initializing dashboard:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeDashboard()
-
-    // Set up Server-Sent Events for real-time updates with retry mechanism
-    let eventSource
-    let reconnectAttempts = 0
-    const maxReconnectAttempts = 5
-    const reconnectDelay = 1000 // Start with 1 second
-
-    const connectSSE = () => {
-      try {
-        setSseStatus('connecting')
-        console.log('Connecting to SSE for astrologer:', astrologerId, `(Attempt ${reconnectAttempts + 1})`)
-        eventSource = new EventSource(`/api/events?astrologerId=${astrologerId}`)
-
-        eventSource.onopen = () => {
-          console.log('SSE connection opened for astrologer:', astrologerId)
-          setSseStatus('connected')
-          reconnectAttempts = 0 // Reset reconnect attempts on successful connection
+    const unsubAstrologer = onSnapshot(doc(db, "astrologers", astrologerId), (doc) => {
+        const data = doc.data();
+        if (data) {
+            setStatus(data.status || 'offline');
         }
+    });
 
-        eventSource.onmessage = (event) => {
-          try {
-            console.log('Received SSE message:', event.data)
-            const data = JSON.parse(event.data)
+    const q = query(collection(db, "calls"), where("astrologerId", "==", astrologerId));
 
-            switch (data.type) {
-              case 'new-call':
-                console.log('New call received:', data.call)
-                if (data.call.status === 'pending') {
-                  setIncomingCall(data.call)
-                }
-                fetchCalls()
-                break
-              case 'call-status-updated':
-                fetchCalls()
-                fetchQueue()
-                break
-              case 'next-call':
-                if (data.call.status === 'pending') {
-                  setIncomingCall(data.call)
-                }
-                fetchCalls()
-                fetchQueue()
-                break
-              case 'connected':
-                console.log('Connected to real-time updates')
-                setSseStatus('connected')
-                break
-              case 'heartbeat':
-                // Update connection status on heartbeat
-                if (sseStatus !== 'connected') {
-                  setSseStatus('connected')
-                }
-                break
+    const unsubCalls = onSnapshot(q, (querySnapshot) => {
+        const callsList = [];
+        const queueList = [];
+        let newIncomingCall = null;
+        querySnapshot.forEach((doc) => {
+            const call = { id: doc.id, ...doc.data() };
+            if (call.status === 'pending') {
+                newIncomingCall = call;
             }
-          } catch (parseError) {
-            console.warn('Error parsing SSE message:', parseError)
-          }
+            if (call.status === 'queued') {
+                queueList.push(call);
+            }
+            callsList.push(call);
+        });
+
+        setCalls(callsList);
+        setQueue(queueList);
+        if (newIncomingCall) {
+            setIncomingCall(newIncomingCall);
         }
-
-        eventSource.onerror = (error) => {
-          console.error('SSE connection error:', {
-            error,
-            readyState: eventSource?.readyState,
-            url: eventSource?.url,
-            reconnectAttempts,
-            timestamp: new Date().toISOString()
-          })
-
-          setSseStatus('error')
-
-          // Close the current connection
-          if (eventSource) {
-            eventSource.close()
-          }
-
-          // Implement retry logic with exponential backoff
-          if (reconnectAttempts < maxReconnectAttempts) {
-            reconnectAttempts++
-            const delay = reconnectDelay * Math.pow(2, reconnectAttempts - 1) // Exponential backoff
-            console.log(`Retrying SSE connection in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`)
-            setSseStatus('connecting')
-
-            setTimeout(() => {
-              connectSSE()
-            }, delay)
-          } else {
-            console.error('Max SSE reconnection attempts reached. Giving up.')
-            setSseStatus('disconnected')
-          }
-        }
-      } catch (sseError) {
-        console.error('Could not establish SSE connection:', {
-          error: sseError,
-          reconnectAttempts,
-          timestamp: new Date().toISOString()
-        })
-      }
-    }
-
-    // Start the initial connection
-    connectSSE()
+        setLoading(false);
+    });
 
     return () => {
-      if (eventSource) {
-        eventSource.close()
-      }
+        unsubAstrologer();
+        unsubCalls();
     }
   }, [astrologerId])
 
-  const fetchAstrologerStatus = async () => {
-    try {
-      const response = await fetch(`/api/astrologer/status?astrologerId=${astrologerId}`)
-      const data = await response.json()
-      if (data.success) {
-        setStatus(data.status || 'offline')
-      }
-    } catch (error) {
-      console.error('Error fetching status:', error)
-    }
-  }
-
-  const fetchCalls = async () => {
-    try {
-      const response = await fetch(`/api/calls?astrologerId=${astrologerId}`)
-      const data = await response.json()
-      if (data.success) {
-        const previousCalls = calls
-        const newCalls = data.calls
-
-        // Check for new pending calls
-        const newPendingCalls = newCalls.filter(call =>
-          call.status === 'pending' &&
-          !previousCalls.find(prev => prev.id === call.id)
-        )
-
-        if (newPendingCalls.length > 0 && status === 'online') {
-          setIncomingCall(newPendingCalls[0])
-        }
-
-        setCalls(newCalls)
-      }
-    } catch (error) {
-      console.error('Error fetching calls:', error)
-    }
-  }
-
-  const fetchQueue = async () => {
-    try {
-      const response = await fetch('/api/calls', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'get-queue',
-          astrologerId
-        })
-      })
-      const data = await response.json()
-      if (data.success) {
-        setQueue(data.queue)
-      }
-    } catch (error) {
-      console.error('Error fetching queue:', error)
-    }
-  }
-
   const updateStatus = async (newStatus) => {
+    if (!astrologerId) return;
     try {
-      const response = await fetch('/api/astrologer/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          astrologerId,
-          status: newStatus,
-          action: `set-${newStatus}`
-        })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setStatus(newStatus)
-      }
+      const astrologerRef = doc(db, 'astrologers', astrologerId);
+      await updateDoc(astrologerRef, { status: newStatus });
+      setStatus(newStatus);
     } catch (error) {
-      console.error('Error updating status:', error)
+      console.error('Error updating status:', error);
     }
-  }
+  };
 
   const handleCallAction = async (callId, action) => {
     try {
-      const response = await fetch('/api/calls', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update-call-status',
-          callId,
-          astrologerId,
-          status: action
-        })
-      })
+      const callRef = doc(db, 'calls', callId);
+      const updateData = { status: action };
+      if (action === 'active') {
+        updateData.roomName = `astro-${astrologerId}-${Date.now()}`;
+      }
+      await updateDoc(callRef, updateData);
 
-      const data = await response.json()
-      if (data.success) {
-        // If accepting a call, update status to busy and navigate to room
-        if (action === 'active') {
-          await updateStatus('busy')
-          setIncomingCall(null)
-
-          // Wait a moment for the roomName to be generated, then fetch updated calls
-          setTimeout(async () => {
-            await fetchCalls()
-            // Get the updated call data to find the roomName
-            const updatedResponse = await fetch(`/api/calls?astrologerId=${astrologerId}`)
-            const updatedData = await updatedResponse.json()
-            if (updatedData.success) {
-              const updatedCall = updatedData.calls.find(call => call.id === callId)
-              if (updatedCall?.roomName) {
-                router.push(`/talk-to-astrologer/room/${updatedCall.roomName}`)
-              } else {
-                console.error('Room name not found for call:', callId)
-              }
-            }
-          }, 100)
-        } else {
-          fetchCalls() // Refresh calls list for other actions
-        }
-
-        // If ending a call, set status back to online
-        if (action === 'completed') {
-          await updateStatus('online')
-        }
+      if (action === 'active') {
+        await updateStatus('busy');
+        setIncomingCall(null);
+        router.push(`/talk-to-astrologer/room/${updateData.roomName}`);
+      } else if (action === 'completed' || action === 'rejected') {
+        await updateStatus('online');
       }
     } catch (error) {
       console.error('Error updating call:', error)
@@ -292,26 +113,6 @@ function AstrologerDashboardContent() {
       case 'busy': return 'bg-yellow-500'
       case 'offline': return 'bg-gray-500'
       default: return 'bg-gray-500'
-    }
-  }
-
-  const getSseStatusColor = (status) => {
-    switch (status) {
-      case 'connected': return 'bg-green-500'
-      case 'connecting': return 'bg-yellow-500'
-      case 'error': return 'bg-red-500'
-      case 'disconnected': return 'bg-gray-500'
-      default: return 'bg-gray-500'
-    }
-  }
-
-  const getSseStatusText = (status) => {
-    switch (status) {
-      case 'connected': return 'Real-time Connected'
-      case 'connecting': return 'Connecting...'
-      case 'error': return 'Connection Error'
-      case 'disconnected': return 'Disconnected'
-      default: return 'Unknown'
     }
   }
 
@@ -352,19 +153,6 @@ function AstrologerDashboardContent() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userProfile?.name || 'Astrologer'}</h1>
           <p className="text-gray-600">Manage your availability and handle client calls</p>
-
-          {/* Connection Status */}
-          <div className="mt-4 flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${getSseStatusColor(sseStatus)}`}></div>
-              <span className="text-sm text-gray-600">{getSseStatusText(sseStatus)}</span>
-            </div>
-            {sseStatus === 'error' && (
-              <span className="text-xs text-red-600">
-                (Will retry automatically)
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Status Management */}

@@ -458,6 +458,17 @@ select {
 /* Purple gradient for choghadiya */
 .from-purple-50 { --tw-gradient-from: #faf5ff; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(250, 245, 255, 0)); }
 .to-indigo-50 { --tw-gradient-to: #eef2ff; }
+
+.video-conference-container .lk-participant-tile {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #374151; /* gray-700 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.video-conference-container .lk-grid-layout {
+  gap: 12px;
+}
 .text-purple-800 { color: #6b21a8; }
 .border-purple-200 { border-color: #c4b5fd; }
 
@@ -524,7 +535,7 @@ select {
 
 /* Enhanced hover effects */
 .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
 
 /* Text utilities */
 .leading-tight { line-height: 1.25; }
@@ -612,10 +623,4 @@ select {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
-}
-
-.video-conference-wrapper .lk-participant-tile {
-  margin: 8px;
-  border-radius: 8px;
-  overflow: hidden;
 }

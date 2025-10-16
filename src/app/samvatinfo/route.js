@@ -1,55 +1,60 @@
 import { NextResponse } from 'next/server'
+import { validateRequired, validateCoordinates, validateDate, validateTime } from '@/lib/validation'
 import astrologyAPI from '../../lib/api'
 
-// POST /samvatinfo
-// Expects body with the schema provided by the user.
 export async function POST(request) {
   try {
     const body = await request.json()
 
-    // Basic validation: ensure required keys are present
+    // Validate required fields
     const requiredTop = ['year', 'month', 'date', 'hours', 'minutes', 'seconds', 'latitude', 'longitude', 'timezone']
-    for (const key of requiredTop) {
-      if (typeof body[key] === 'undefined') {
-        return NextResponse.json(
-          { statusCode: 400, error: `Missing required field: ${key}` },
-          { status: 400 }
-        )
-      }
+    validateRequired(body, requiredTop)
+
+    // Validate data types and ranges
+    validateDate(body.year, body.month, body.date)
+    validateTime(body.hours, body.minutes, body.seconds)
+    validateCoordinates(body.latitude, body.longitude)
+
+    // Validate timezone
+    const timezone = parseFloat(body.timezone)
+    if (isNaN(timezone) || timezone < -12 || timezone > 14) {
+      throw new Error('Invalid timezone')
     }
 
-    // Ensure config object with defaults if omitted
+    // Validate config object
+    const validObservationPoints = ['topocentric', 'geocentric']
+    const validAyanamshas = ['lahiri', 'sayana']
+    const validLunarMonths = ['amanta', 'purnimanta']
+
     const config = {
-      observation_point: body?.config?.observation_point || 'topocentric',
-      ayanamsha: body?.config?.ayanamsha || 'lahiri',
-      lunar_month_definition: body?.config?.lunar_month_definition || 'amanta',
+      observation_point: validObservationPoints.includes(body?.config?.observation_point) 
+        ? body.config.observation_point : 'topocentric',
+      ayanamsha: validAyanamshas.includes(body?.config?.ayanamsha) 
+        ? body.config.ayanamsha : 'lahiri',
+      lunar_month_definition: validLunarMonths.includes(body?.config?.lunar_month_definition) 
+        ? body.config.lunar_month_definition : 'amanta',
     }
 
     const payload = {
-      year: body.year,
-      month: body.month,
-      date: body.date,
-      hours: body.hours,
-      minutes: body.minutes,
-      seconds: body.seconds,
-      latitude: body.latitude,
-      longitude: body.longitude,
-      timezone: body.timezone,
+      year: parseInt(body.year),
+      month: parseInt(body.month),
+      date: parseInt(body.date),
+      hours: parseInt(body.hours),
+      minutes: parseInt(body.minutes),
+      seconds: parseInt(body.seconds),
+      latitude: parseFloat(body.latitude),
+      longitude: parseFloat(body.longitude),
+      timezone,
       config,
     }
 
-    // Call upstream FreeAstrology API via our helper
-    const result = await astrologyAPI.getSingleCalculation('samvatinfo', payload)
-
-    // Match requested output format: pass through upstream 'output' as-is
-    // Upstream typically returns { statusCode: 200, output: "<json-string>" }
-    // We only wrap with our own statusCode and forward the inner 'output'
+    const result = await astrologyAPI.getSingleCalculation('samvat-information', payload)
     return NextResponse.json({ statusCode: 200, output: result?.output ?? result })
   } catch (err) {
-    const message = err?.message || 'Unexpected error'
+    console.error('Samvatinfo API error:', err.message)
     return NextResponse.json(
-      { statusCode: 500, error: message },
-      { status: 500 }
+      { statusCode: 400, error: 'Invalid request parameters' },
+      { status: 400 }
     )
   }
 }

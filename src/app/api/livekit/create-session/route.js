@@ -5,30 +5,35 @@ export async function POST(request) {
   try {
     const { astrologerId, userId, callId, roomName: providedRoomName } = await request.json()
 
+    // Validate required parameters
     if (!astrologerId || !userId) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
 
-    // Use provided room name or create a new one
-    const roomName = providedRoomName || `astro-${astrologerId}-${userId}-${Date.now()}`
-
-    // Determine participant role and create appropriate identity
-    const isAstrologer = astrologerId === 'astrologer' || astrologerId.includes('astro')
-    const participantIdentity = isAstrologer ? `astrologer-${roomName}` : `user-${roomName}`
-    const participantName = isAstrologer ? `Astrologer-${roomName.slice(-6)}` : `User-${userId.slice(-6)}`
-
-    // Validate LiveKit configuration
-    if (!process.env.NEXT_PUBLIC_LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET || !process.env.NEXT_PUBLIC_LIVEKIT_WS_URL) {
-      console.error('LiveKit configuration missing:', {
-        hasApiKey: !!process.env.NEXT_PUBLIC_LIVEKIT_API_KEY,
-        hasSecret: !!process.env.LIVEKIT_API_SECRET,
-        hasWsUrl: !!process.env.NEXT_PUBLIC_LIVEKIT_WS_URL
-      })
-      return NextResponse.json({ error: 'LiveKit configuration error' }, { status: 500 })
+    // Validate parameter formats
+    if (typeof astrologerId !== 'string' || astrologerId.length > 100) {
+      return NextResponse.json({ error: 'Invalid astrologer ID' }, { status: 400 })
+    }
+    if (typeof userId !== 'string' || userId.length > 100) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
+    }
+    if (providedRoomName && (typeof providedRoomName !== 'string' || providedRoomName.length > 200)) {
+      return NextResponse.json({ error: 'Invalid room name' }, { status: 400 })
     }
 
-    // Create access token
-    // Use a server-only LiveKit API key (do NOT expose this as NEXT_PUBLIC_...)
+    // Validate environment variables
+    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+    }
+
+    // Sanitize room name
+    const roomName = providedRoomName || `astro-${astrologerId.slice(0, 20)}-${userId.slice(0, 20)}-${Date.now()}`
+
+    // Determine participant role
+    const isAstrologer = astrologerId.includes('astro') || astrologerId.includes('Astro')
+    const participantIdentity = isAstrologer ? `astrologer-${Date.now()}` : `user-${Date.now()}`
+    const participantName = isAstrologer ? `Astrologer` : `User`
+
     const token = new AccessToken(
       process.env.LIVEKIT_API_KEY,
       process.env.LIVEKIT_API_SECRET,
@@ -53,119 +58,9 @@ export async function POST(request) {
       token: jwt,
       roomName,
       wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL,
-    }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true',
-      }
     })
   } catch (error) {
     console.error('Error creating LiveKit session:', error)
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import { AccessToken } from 'livekit-server-sdk'
-// import { NextResponse } from 'next/server'
-
-// export async function POST(request) {
-//   try {
-//     const { astrologerId, userId, callId, roomName: providedRoomName } = await request.json()
-
-//     if (!astrologerId || !userId) {
-//       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
-//     }
-
-//     // Use provided room name or create a new one
-//     const roomName = providedRoomName || `astro-${astrologerId}-${userId}-${Date.now()}`
-
-//     // Determine participant role and create appropriate identity
-//     const isAstrologer = astrologerId === 'astrologer' || astrologerId.includes('astro')
-//     const participantIdentity = isAstrologer ? `astrologer-${roomName}` : `user-${roomName}`
-//     const participantName = isAstrologer ? `Astrologer-${roomName.slice(-6)}` : `User-${userId.slice(-6)}`
-
-//     // Create access token
-//     const token = new AccessToken(
-//       process.env.NEXT_PUBLIC_LIVEKIT_API_KEY,
-//       process.env.LIVEKIT_API_SECRET,
-//       {
-//         identity: participantIdentity,
-//         name: participantName,
-//       }
-//     )
-
-//     token.addGrant({
-//       room: roomName,
-//       roomJoin: true,
-//       canPublish: true,
-//       canSubscribe: true,
-//       canPublishData: true,
-//       canUpdateOwnMetadata: true,
-//     })
-
-//     const jwt = await token.toJwt()
-
-//     return NextResponse.json({
-//       token: jwt,
-//       roomName,
-//       wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL,
-//     })
-//   } catch (error) {
-//     console.error('Error creating LiveKit session:', error)
-//     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
-//   }
-// }

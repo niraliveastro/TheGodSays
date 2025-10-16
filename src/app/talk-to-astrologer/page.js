@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star, Video, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { collection, getDocs } from 'firebase/firestore'
+import { collection, getDocs, onSnapshot, query } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export default function TalkToAstrologer() {
@@ -16,27 +16,29 @@ export default function TalkToAstrologer() {
   const router = useRouter()
 
   useEffect(() => {
-    fetchAstrologers()
-    
-    // Set up real-time status updates
-    const eventSource = new EventSource('/api/events?global=true')
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'astrologer-status-updated') {
-          setAstrologers(prev => prev.map(astrologer => 
-            astrologer.id === data.astrologerId 
-              ? { ...astrologer, isOnline: data.status === 'online' }
-              : astrologer
-          ))
-        }
-      } catch (error) {
-        console.warn('Error parsing SSE message:', error)
-      }
-    }
-    
-    return () => eventSource.close()
+    const q = query(collection(db, "astrologers"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const astrologersList = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        astrologersList.push({
+          id: doc.id,
+          name: data.name,
+          specialization: data.specialization,
+          rating: data.rating || 4.5,
+          reviews: data.reviews || 0,
+          experience: data.experience,
+          languages: data.languages || ['English'],
+          isOnline: data.status === 'online',
+          bio: data.bio || `Expert in ${data.specialization}`,
+          verified: data.verified || false
+        });
+      });
+      setAstrologers(astrologersList);
+      setFetchingAstrologers(false);
+    });
+
+    return () => unsubscribe();
   }, [])
 
   const fetchAstrologers = async () => {
@@ -117,38 +119,31 @@ export default function TalkToAstrologer() {
       const callData = await callResponse.json()
 
       if (callData.success) {
-        let timeoutId
         // Set up polling to check call status
+        let timeoutId
         const pollInterval = setInterval(async () => {
           try {
-            const statusResponse = await fetch(
-              `/api/calls?astrologerId=${backendAstrologerId}`
-            )
+            const statusResponse = await fetch(`/api/calls?astrologerId=${backendAstrologerId}`)
             const statusData = await statusResponse.json()
-
+            
             if (statusData.success) {
-              const call = statusData.calls.find(
-                (c) => c.id === callData.call.id
-              )
-
+              const call = statusData.calls.find(c => c.id === callData.call.id)
+              
               if (call?.status === 'active') {
-                clearTimeout(timeoutId)
                 clearInterval(pollInterval)
-
+                clearTimeout(timeoutId)
+                
                 // Create LiveKit session and join room
-                const sessionResponse = await fetch(
-                  '/api/livekit/create-session',
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      astrologerId: backendAstrologerId,
-                      userId: callData.call.userId,
-                      callId: callData.call.id,
-                      roomName: call.roomName, // Pass the existing room name
-                    }),
-                  }
-                )
+                const sessionResponse = await fetch('/api/livekit/create-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    astrologerId: backendAstrologerId,
+                    userId: callData.call.userId,
+                    callId: callData.call.id,
+                    roomName: call.roomName
+                  })
+                })
 
                 if (sessionResponse.ok) {
                   const { roomName } = await sessionResponse.json()
@@ -157,8 +152,8 @@ export default function TalkToAstrologer() {
                   alert('Failed to connect to video call. Please try again.')
                 }
               } else if (call?.status === 'rejected') {
-                clearTimeout(timeoutId)
                 clearInterval(pollInterval)
+                clearTimeout(timeoutId)
                 alert('Astrologer declined the call. Please try again later.')
               }
             }
@@ -166,12 +161,13 @@ export default function TalkToAstrologer() {
             console.error('Error checking call status:', error)
           }
         }, 2000)
-
-        // Stop polling after 30 seconds
+        
+        // Stop polling after 60 seconds
         timeoutId = setTimeout(() => {
           clearInterval(pollInterval)
           alert('Astrologer is not responding. Please try again.')
-        }, 30000)
+          setLoading(false)
+        }, 60000)
       }
     } catch (error) {
       console.error('Error starting call:', error)
