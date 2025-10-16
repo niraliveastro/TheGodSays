@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from '@/lib/api'
 import Modal from '@/components/Modal'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'], weight: ['400','500','600','700'] })
 
 export default function PredictionsPage() {
   const [dob, setDob] = useState('') // yyyy-mm-dd
@@ -79,6 +82,8 @@ export default function PredictionsPage() {
   }
 
   const fmtTime = (h, m, s = 0) => `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  // Format time as HH:MM (used for displaying/storing input without seconds)
+  const fmtHM = (h, m) => `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
   const safeParse = (v) => {
     try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return v }
   }
@@ -190,7 +195,7 @@ export default function PredictionsPage() {
       }
 
       setResult({
-        input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
+        input: { dob, tob: fmtHM(H, Min), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
         vimsottari: vimsParsed,
@@ -406,25 +411,25 @@ export default function PredictionsPage() {
   }, [result, shadbalaRows])
 
   return (
-    <div className="w-full">
+    <div className={`${inter.className} w-full bg-gradient-to-b from-blue-50 to-white`}>
       {/* Page container with side gaps */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-3xl font-semibold mb-1 text-center">Get Your Predictions</h1>
-        <p className="text-gray-600 mb-6 text-center">Enter your birth details to generate a personalized analysis.</p>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-2 text-center bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight">Get Your Predictions</h1>
+        <p className="text-gray-600 mb-8 text-center text-base">Enter your birth details to generate a personalized analysis.</p>
 
         {error ? (
           <div className="mb-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>
         ) : null}
 
       {/* Centered form card */}
-      <form onSubmit={onSubmit} className="mb-8 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 max-w-2xl mx-auto">
+      <form onSubmit={onSubmit} className="mb-10 bg-white/80 backdrop-blur-sm p-5 md:p-7 rounded-2xl shadow-md ring-1 ring-gray-200 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base md:text-lg font-semibold text-gray-900">Birth Details</h3>
+          <h3 className="text-lg md:text-xl font-semibold text-gray-900">Birth Details</h3>
           <div className="hidden md:flex gap-2">
             <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}>
               {locating ? 'Detecting…' : 'Use Current Location'}
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm shadow-blue-200" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
             <Button type="reset" variant="outline" onClick={() => { setDob(''); setTob(''); setPlace(''); setResult(null); setError(''); setSelectedMaha(null) }}>Reset</Button>
           </div>
         </div>
@@ -437,8 +442,22 @@ export default function PredictionsPage() {
           </div>
           <div className="md:col-span-1">
             <label htmlFor="tob" className="block text-sm font-medium text-gray-700 mb-1">Time of Birth</label>
-            <Input id="tob" type="time" value={tob} onChange={(e) => setTob(e.target.value)} step="1" required className="focus:ring-2 focus:ring-blue-100" />
-            <p className="mt-1 text-xs text-gray-500">24h format HH:MM or HH:MM:SS</p>
+            <Input
+              id="tob"
+              type="time"
+              value={tob}
+              onChange={(e) => {
+                const v = e.target.value
+                const [h = '00', m = '00'] = String(v).split(':')
+                const hh = String(h).padStart(2, '0')
+                const mm = String(m).padStart(2, '0')
+                setTob(`${hh}:${mm}`)
+              }}
+              step="60"
+              required
+              className="focus:ring-2 focus:ring-blue-100"
+            />
+            <p className="mt-1 text-xs text-gray-500">24h format HH:MM</p>
           </div>
           <div className="md:col-span-2 relative">
             <label htmlFor="place" className="block text-sm font-medium text-gray-700 mb-1">Place of Birth</label>
@@ -481,10 +500,10 @@ export default function PredictionsPage() {
         </div>
 
         {/* Mobile actions */}
-        <div className="mt-4 flex md:hidden flex-col gap-2">
+        <div className="mt-5 flex md:hidden flex-col gap-2">
           <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}>{locating ? 'Detecting…' : 'Use Current Location'}</Button>
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
+            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm shadow-blue-200" disabled={submitting}>{submitting ? 'Calculating…' : 'Get Predictions'}</Button>
             <Button type="reset" variant="outline" className="flex-1" onClick={() => { setDob(''); setTob(''); setPlace(''); setResult(null); setError(''); setSelectedMaha(null) }}>Reset</Button>
           </div>
         </div>
@@ -493,31 +512,31 @@ export default function PredictionsPage() {
       {result && (
         <div className="space-y-6 max-w-5xl mx-auto">
           {/* Birth Details */}
-          <section className="border border-gray-200 rounded-xl p-4 bg-white">
+          <section className="rounded-2xl p-5 bg-white/90 backdrop-blur ring-1 ring-gray-200 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <div className="text-sm text-gray-500">Date of Birth</div>
-                <div className="font-semibold">{result.input.dob}</div>
+                <div className="text-xs uppercase tracking-wide text-gray-500">Date of Birth</div>
+                <div className="font-semibold text-gray-900">{result.input.dob}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Time of Birth</div>
-                <div className="font-semibold">{result.input.tob}</div>
+                <div className="text-xs uppercase tracking-wide text-gray-500">Time of Birth</div>
+                <div className="font-semibold text-gray-900">{result.input.tob}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Place</div>
-                <div className="font-semibold">{result.input.place}</div>
+                <div className="text-xs uppercase tracking-wide text-gray-500">Place</div>
+                <div className="font-semibold text-gray-900">{result.input.place}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Running Dasa</div>
-                <div className="font-semibold">{currentDashaChain || '—'}</div>
+                <div className="text-xs uppercase tracking-wide text-gray-500">Running Dasa</div>
+                <div className="font-semibold text-gray-900">{currentDashaChain || '—'}</div>
               </div>
             </div>
           </section>
 
           {/* Planet Placements (D1) */}
           {placements.length > 0 && (
-          <section className="border border-gray-200 rounded-xl p-4 bg-white">
-            <h3 className="text-lg font-semibold mb-3">Planet Placements (D1)</h3>
+          <section className="rounded-2xl p-5 bg-white/90 backdrop-blur ring-1 ring-gray-200 shadow-sm">
+            <h3 className="text-xl font-semibold mb-3 text-gray-900">Planet Placements (D1)</h3>
             {/* Table for tablet/laptop+ (>=640px) */}
             <div className="overflow-x-auto hidden sm:block">
               <table className="w-full">
@@ -597,9 +616,9 @@ export default function PredictionsPage() {
 
 
           {/* Shadbala Table (improved readability & UX) */}
-          <section className="rounded-2xl border border-gray-200 bg-white w-full overflow-hidden shadow-sm mb-6">
+          <section className="rounded-2xl ring-1 ring-gray-200 bg-white/90 backdrop-blur w-full overflow-hidden shadow-sm mb-6">
             <div className="px-6 py-5 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900">Shadbala & Ishta/Kashta</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Shadbala & Ishta/Kashta</h3>
             </div>
             <div className="px-0 py-2">
               {shadbalaRows.length === 0 && (

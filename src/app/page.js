@@ -723,26 +723,28 @@ export default function Home() {
         </section> */}
 
         {/* Astrology Options Section */}
-        <section className="mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-              </svg>
-              Astrological Calculations
-            </h2>
-            <p className="text-gray-600">Click on any option below to calculate detailed astrological data</p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {astrologyOptions.map((option) => (
-              <AstrologyOptionCard
-                key={option.id}
-                option={option}
-                onClick={handleOptionClick}
-              />
-            ))}
+        <section className="mb-10">
+          <div className="rounded-2xl border border-blue-200 bg-gradient-to-b from-blue-50/70 to-white p-5 sm:p-6">
+            <div className="text-center mb-5">
+              <h2 className="text-2xl font-bold text-blue-800 mb-1 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+                Astrological Calculations
+              </h2>
+              <p className="text-sm text-blue-800/80">Choose a calculation to open the prediction form</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {astrologyOptions.map((option) => (
+                <AstrologyOptionCard
+                  key={option.id}
+                  option={option}
+                  onClick={handleOptionClick}
+                />
+              ))}
+            </div>
           </div>
         </section>
 

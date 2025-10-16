@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Calendar, MapPin, Clock, Settings, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin, Clock, Settings, ArrowLeft, Sparkles } from 'lucide-react'
 
 const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
   const [formData, setFormData] = useState({
@@ -94,34 +94,45 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onBack}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </Button>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5" />
-            <span>{option.name}</span>
-          </CardTitle>
+    <Card className="shadow-lg border-gray-100 rounded-2xl">
+      <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onBack}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </Button>
+            <CardTitle className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <span className="tracking-tight">{option.name}</span>
+            </CardTitle>
+          </div>
+          <div className="hidden md:flex items-center text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+            <Sparkles className="w-3.5 h-3.5 mr-1" />
+            Precise inputs improve accuracy
+          </div>
         </div>
         <p className="text-sm text-gray-600 mt-2">{option.description}</p>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent className="pt-6">
+        {Object.keys(errors).length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+            Please correct the highlighted fields.
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-7">
           {/* Date and Time Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
               <Clock className="w-4 h-4" />
               <span>Date & Time</span>
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Year
@@ -219,7 +230,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
               <MapPin className="w-4 h-4" />
               <span>Location</span>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Latitude
@@ -234,6 +245,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
                   className={errors.latitude ? 'border-red-500' : ''}
                 />
                 {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+                <p className="text-xs text-gray-500 mt-1">Range: -90 to 90</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -249,6 +261,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
                   className={errors.longitude ? 'border-red-500' : ''}
                 />
                 {errors.longitude && <p className="text-red-500 text-xs mt-1">{errors.longitude}</p>}
+                <p className="text-xs text-gray-500 mt-1">Range: -180 to 180</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -261,6 +274,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
                   value={formData.timezone}
                   onChange={handleInputChange}
                 />
+                <p className="text-xs text-gray-500 mt-1">Example: IST = 5.5, UTC = 0</p>
               </div>
             </div>
           </div>
@@ -271,7 +285,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
               <Settings className="w-4 h-4" />
               <span>Configuration</span>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Observation Point
@@ -305,10 +319,17 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
 
           <Button 
             type="submit" 
-            className="w-full"
+            className="w-full h-11 font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow"
             disabled={isLoading}
           >
-            {isLoading ? 'Calculating...' : `Calculate ${option.name}`}
+            {isLoading ? (
+              <span className="inline-flex items-center">
+                <span className="mr-2 inline-block w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin"></span>
+                Calculating...
+              </span>
+            ) : (
+              `Calculate ${option.name}`
+            )}
           </Button>
         </form>
       </CardContent>

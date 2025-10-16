@@ -7,17 +7,17 @@ import { ArrowLeft, Download, Share } from 'lucide-react'
 const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
   if (!data || !data.output) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-gray-100 rounded-2xl">
+        <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
           <CardTitle className="flex items-center space-x-2">
             <ArrowLeft className="w-5 h-5" />
-            <span>{option.name} - No Data</span>
+            <span>{option.name} — No Data</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">No data available for this calculation.</p>
-            <Button onClick={onNewCalculation} variant="outline">
+          <div className="text-center py-10">
+            <p className="text-gray-600 mb-4">No data available for this calculation.</p>
+            <Button onClick={onNewCalculation} variant="outline" className="rounded-xl">
               Try Again
             </Button>
           </div>
@@ -91,8 +91,8 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-lg border-gray-100 rounded-2xl">
+      <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button 
@@ -105,7 +105,7 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
               <span>Back</span>
             </Button>
             <CardTitle className="flex items-center space-x-2">
-              <span>{option.name} - Results</span>
+              <span className="tracking-tight">{option.name} — Results</span>
             </CardTitle>
           </div>
           <div className="flex space-x-2">
@@ -113,7 +113,7 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
               variant="outline" 
               size="sm" 
               onClick={handleDownload}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 rounded-xl"
             >
               <Download className="w-4 h-4" />
               <span>Download</span>
@@ -122,7 +122,7 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
               variant="outline" 
               size="sm" 
               onClick={handleShare}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 rounded-xl"
             >
               <Share className="w-4 h-4" />
               <span>Share</span>
@@ -130,17 +130,17 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {parsedData ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(parsedData).map(([key, value]) => (
-              <div key={key} className="p-4 border rounded-lg bg-gray-50">
+              <div key={key} className="p-4 border rounded-xl bg-white shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="font-semibold text-gray-800 capitalize">
                     {key.replace(/_/g, ' ')}
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                    {typeof value}
+                  <span className="text-[10px] text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">
+                    {Array.isArray(value) ? 'array' : typeof value}
                   </span>
                 </div>
                 <div className="text-sm text-gray-700">
@@ -148,29 +148,29 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
                     <div className="space-y-1">
                       {Array.isArray(value) ? (
                         value.map((item, index) => (
-                          <div key={index} className="font-mono text-xs">
+                          <div key={index} className="font-mono text-xs bg-gray-50 border border-gray-100 rounded px-2 py-1">
                             {formatDateTime(item)}
                           </div>
                         ))
                       ) : (
-                        <div className="font-mono text-xs">
+                        <div className="font-mono text-xs bg-gray-50 border border-gray-100 rounded px-2 py-1">
                           {formatDateTime(value)}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="font-mono text-xs whitespace-pre-wrap">
+                    <pre className="font-mono text-xs whitespace-pre-wrap bg-gray-50 border border-gray-100 rounded p-2">
                       {formatValue(value)}
-                    </div>
+                    </pre>
                   )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">Unable to parse the result data.</p>
-            <Button onClick={onNewCalculation} variant="outline">
+          <div className="text-center py-10">
+            <p className="text-gray-600 mb-4">Unable to parse the result data.</p>
+            <Button onClick={onNewCalculation} variant="outline" className="rounded-xl">
               Try Again
             </Button>
           </div>

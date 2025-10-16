@@ -48,7 +48,15 @@ export default function MatchingPage() {
   function onChangePerson(setter, coordsSetter, suggestSetter, timerRef, key) {
     return (e) => {
       const v = e.target.value
-      setter((prev) => ({ ...prev, [key]: v }))
+      // Coerce time-of-birth to HH:MM (drop seconds)
+      if (key === "tob") {
+        const [h = "00", m = "00"] = String(v).split(":")
+        const hh = String(h).padStart(2, "0")
+        const mm = String(m).padStart(2, "0")
+        setter((prev) => ({ ...prev, [key]: `${hh}:${mm}` }))
+      } else {
+        setter((prev) => ({ ...prev, [key]: v }))
+      }
       if (key === "place") {
         coordsSetter(null)
         // Debounced suggestions
@@ -446,7 +454,7 @@ export default function MatchingPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">⏰ Time of Birth</label>
-                <Input type="time" step="1" value={female.tob} onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "tob")} required />
+                <Input type="time" step="60" value={female.tob} onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "tob")} required />
               </div>
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">📍 Place</label>
@@ -492,7 +500,7 @@ export default function MatchingPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">⏰ Time of Birth</label>
-                <Input type="time" step="1" value={male.tob} onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "tob")} required />
+                <Input type="time" step="60" value={male.tob} onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "tob")} required />
               </div>
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">📍 Place</label>
