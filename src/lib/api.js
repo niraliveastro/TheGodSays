@@ -127,9 +127,13 @@ export const astrologyAPI = {
       
       try {
         const result = await this.getSingleCalculation(optionId, payload)
-        results[optionId] = result
+        if (result !== null && result !== undefined) {
+          results[optionId] = result
+        } else {
+          errors[optionId] = 'Received null or undefined response'
+        }
       } catch (error) {
-        errors[optionId] = error.message
+        errors[optionId] = error?.message || 'Unknown error occurred'
       }
     })
 

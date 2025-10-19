@@ -162,12 +162,13 @@ export default function PredictionsPage() {
         shadbalaParsed = safeParse(shadbalaParsed.output)
       }
       try { console.log('[Predictions] Shadbala parsed →', shadbalaParsed) } catch {}
+      try { console.log('[Predictions] Results received →', results) } catch {}
 
       // 6b) If inner status indicates failure or we got an empty object, retry with fallbacks
       const looksEmpty = !shadbalaParsed || (typeof shadbalaParsed === 'object' && Object.keys(shadbalaParsed).length === 0)
-      const innerStatus = (typeof shadbalaParsed === 'object' && typeof shadbalaParsed.statusCode === 'number') ? shadbalaParsed.statusCode : undefined
+      const innerStatus = (shadbalaParsed && typeof shadbalaParsed === 'object' && typeof shadbalaParsed.statusCode === 'number') ? shadbalaParsed.statusCode : undefined
       let innerError = undefined
-      if (typeof shadbalaParsed === 'object' && shadbalaParsed.error) innerError = shadbalaParsed.error
+      if (shadbalaParsed && typeof shadbalaParsed === 'object' && shadbalaParsed.error) innerError = shadbalaParsed.error
 
       let finalShadbala = shadbalaParsed
       if (innerStatus && innerStatus !== 200) {

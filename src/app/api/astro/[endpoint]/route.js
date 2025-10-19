@@ -11,7 +11,8 @@ if (!API_BASE_URL || !API_KEY) {
 const ALLOWED_ENDPOINTS = [
   'tithi-timings', 'nakshatra-timings', 'yoga-durations', 'karana-timings',
   'hora-timings', 'choghadiya-timings', 'rahu-kalam', 'gulika-kalam',
-  'planets', 'shadbala/summary', 'vimsottari/maha-dasas', 'vimsottari/dasa-information'
+  'planets', 'shadbala/summary', 'vimsottari/maha-dasas', 'vimsottari/dasa-information',
+  'vimsottari/maha-dasas-and-antar-dasas'
 ]
 
 export async function POST(request, { params }) {

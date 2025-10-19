@@ -141,7 +141,7 @@ export default function VideoCallRoom() {
           }}
           style={{ height: '100%' }}
         >
-          <VideoConference className="video-conference-container" />
+          <VideoConference />
         </LiveKitRoom>
       </div>
     </div>

@@ -38,11 +38,11 @@ export default function Modal({ open, onClose, title, children, footer, position
     >
       <div
         className="absolute inset-0"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 0 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)', zIndex: 0 }}
         onClick={onClose}
       />
       <div
-        className="bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+        className="nav-glass rounded-xl shadow-xl border border-gray-200 flex flex-col overflow-hidden"
         style={{
           position: 'fixed',
           top: isTopRight ? topOffset : '50%',
@@ -54,7 +54,7 @@ export default function Modal({ open, onClose, title, children, footer, position
           height: isTopRight ? 'auto' : '88vh',
           maxHeight: isTopRight ? '80vh' : undefined,
           zIndex: 1,
-          outline: '1px solid rgba(16,185,129,0.4)'
+          outline: '1px solid rgba(59,130,246,0.25)'
         }}
         onClick={(e) => e.stopPropagation()}
       >

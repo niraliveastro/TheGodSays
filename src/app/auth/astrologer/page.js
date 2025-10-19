@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Star } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -150,16 +150,13 @@ export default function AstrologerAuth() {
                   <>
                     <div>
                       <label className="text-sm text-gray-600 mb-1 block">Full name</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-400">
-                          <User className="w-5 h-5" />
-                        </span>
+                      <div className="relative flex items-center">
                         <Input
                           type="text"
                           placeholder="Your full name"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          className="pl-11"
+                          className="pl-10 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
                           required
                         />
                       </div>
@@ -179,14 +176,11 @@ export default function AstrologerAuth() {
 
                     <div>
                       <label className="text-sm text-gray-600 mb-1 block">Specialization</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-400">
-                          <Star className="w-5 h-5" />
-                        </span>
+                      <div className="relative flex items-center">
                         <select
                           value={formData.specialization}
                           onChange={(e) => setFormData({...formData, specialization: e.target.value})}
-                          className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none bg-white"
                           required
                         >
                           <option value="">Select Specialization</option>
@@ -229,16 +223,13 @@ export default function AstrologerAuth() {
 
                 <div>
                   <label className="text-sm text-gray-600 mb-1 block">Email</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-3 text-gray-400">
-                      <Mail className="w-5 h-5" />
-                    </span>
+                  <div className="relative flex items-center">
                     <Input
                       type="email"
                       placeholder="your@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="pl-11"
+                      className="pl-10 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
                       required
                     />
                   </div>
@@ -246,23 +237,20 @@ export default function AstrologerAuth() {
 
                 <div>
                   <label className="text-sm text-gray-600 mb-1 block">Password</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-3 text-gray-400">
-                      <Lock className="w-5 h-5" />
-                    </span>
+                  <div className="relative flex items-center">
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Create a secure password"
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="pl-11 pr-10"
+                      className="pl-10 pr-12 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
                       required
                     />
 
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-500"
+                      className="absolute right-3 text-gray-500 hover:text-gray-700 z-10"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

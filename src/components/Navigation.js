@@ -163,14 +163,14 @@ const Navigation = () => {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <nav className="nav-glass border-b shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">👍</span>
             </div>
-            <span className="text-xl font-bold text-blue-600">TheGodSays</span>
+            <span className="text-2xl font-bold text-blue-600">TheGodSays</span>
           </Link>
           
           {/* Desktop Navigation */}
@@ -183,10 +183,10 @@ const Navigation = () => {
                     type="button"
                     key={item.href}
                     onClick={handleAccountClick}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       pathname === item.href
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -198,10 +198,10 @@ const Navigation = () => {
                  <Link
                    key={item.href}
                    href={item.href}
-                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                   className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                      pathname === item.href
-                       ? 'bg-blue-100 text-blue-700'
-                       : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                       ? 'bg-blue-600 text-white shadow-sm'
+                       : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                    }`}
                  >
                    <Icon className="w-4 h-4" />
@@ -232,10 +232,10 @@ const Navigation = () => {
                     <button
                       type="button"
                       key={item.href}
-                      className={`w-full text-left flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                        pathname === item.href
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                      className={`w-full text-left flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      pathname === item.href
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                       }`}
                       onClick={() => { setIsOpen(false); handleAccountClick() }}
                     >
@@ -248,10 +248,10 @@ const Navigation = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       pathname === item.href
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
                     }`}
                     onClick={() => setIsOpen(false)}
                   >

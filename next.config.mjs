@@ -9,8 +9,6 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Optimize for production
-  swcMinify: true,
   // Security headers
   async headers() {
     return [
