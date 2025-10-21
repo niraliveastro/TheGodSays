@@ -493,20 +493,20 @@ select {
 }
 
 /* LiveKit VideoConference avatar customization
-   - Make the placeholder fill the entire tile so the avatar covers the video area
-   - Remove the duplicate ::before emoji (LiveKit may already render an avatar element)
-   - Ensure any img/svg inside placeholder scale with object-fit:cover */
+    - Make the placeholder fill the entire tile so the avatar covers the video area
+    - Remove the duplicate ::before emoji (LiveKit may already render an avatar element)
+    - Ensure any img/svg inside placeholder scale with object-fit:cover */
 .lk-participant-tile[data-lk-video-muted="true"] .lk-participant-placeholder {
-  position: absolute !important;
-  inset: 0 !important; /* top:0; right:0; bottom:0; left:0 */
-  width: 100% !important;
-  height: 100% !important;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-}
+   position: absolute !important;
+   inset: 0 !important; /* top:0; right:0; bottom:0; left:0 */
+   width: 100% !important;
+   height: 100% !important;
+   background: linear-gradient(135deg, #4b5563 0%, #374151 100%) !important;
+   display: flex !important;
+   align-items: center !important;
+   justify-content: center !important;
+   padding: 0 !important;
+ }
 
 /* Ensure any intermediate LiveKit wrapper elements don't add padding, margin or their own backgrounds
    that create a smaller centered dark box. Target common LiveKit wrappers and the video element. */
@@ -555,17 +555,9 @@ select {
 }
 
 .lk-participant-tile[data-lk-video-muted="true"]::after {
-  content: "Camera is off" !important;
-  position: absolute !important;
-  bottom: 2.5rem !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  color: #9ca3af !important;
-  font-size: 0.75rem !important;
-  background: rgba(0, 0, 0, 0.6) !important;
-  padding: 0.25rem 0.5rem !important;
-  border-radius: 0.25rem !important;
-}
+   content: none !important;
+   display: none !important;
+ }
 .text-purple-800 { color: #6b21a8; }
 .border-purple-200 { border-color: #c4b5fd; }
 
