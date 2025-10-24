@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
       let docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { ...docSnap.data(), collection: 'users' };
+        return { ...docSnap.data(), role: 'user', collection: 'users' };
       }
       
       // Try astrologers collection
@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
       docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { ...docSnap.data(), collection: 'astrologers' };
+        return { ...docSnap.data(), role: 'astrologer', collection: 'astrologers' };
       }
       
       return null;
@@ -70,11 +70,18 @@ export function AuthProvider({ children }) {
       if (fbUser) {
         const profile = await fetchUserProfile(fbUser.uid);
         setUserProfile(profile);
-        // Persist role for quick redirect on next visit (fallback)
+        // Persist role and ID for quick access
         try {
           if (typeof window !== 'undefined') {
-            if (profile?.role === 'astrologer') localStorage.setItem('tgs:role', 'astrologer')
-            else localStorage.removeItem('tgs:role')
+            if (profile?.collection === 'astrologers') {
+              localStorage.setItem('tgs:role', 'astrologer')
+              localStorage.setItem('tgs:astrologerId', fbUser.uid)
+              localStorage.setItem('tgs:userId', fbUser.uid)
+            } else {
+              localStorage.setItem('tgs:role', 'user')
+              localStorage.setItem('tgs:userId', fbUser.uid)
+              localStorage.removeItem('tgs:astrologerId')
+            }
           }
         } catch (e) { /* ignore */ }
       } else {
@@ -139,10 +146,12 @@ export function AuthProvider({ children }) {
       await fbSignOut(auth);
       setUser(null);
       setUserProfile(null);
-      // Clear any persisted role flag so returning visitors aren't redirected incorrectly
+      // Clear any persisted data
       try {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('tgs:role')
+          localStorage.removeItem('tgs:userId')
+          localStorage.removeItem('tgs:astrologerId')
         }
       } catch (e) { /* ignore */ }
     } finally {
@@ -155,7 +164,7 @@ export function AuthProvider({ children }) {
   };
 
   const getUserRole = () => {
-    return userProfile?.role || null;
+    return userProfile?.collection === 'astrologers' ? 'astrologer' : 'user';
   };
 
   const value = useMemo(

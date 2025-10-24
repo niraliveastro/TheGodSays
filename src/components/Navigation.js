@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone } from 'lucide-react'
+import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -44,6 +44,7 @@ const Navigation = () => {
     { href: '/matching', label: 'Matching', icon: BookOpen },
     { href: '/predictions', label: 'Predictions', icon: Star },
     { href: '/talk-to-astrologer', label: 'Talk to Astrologer', icon: Phone },
+    { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/account', label: 'My Account', icon: User },
   ]
 
@@ -52,7 +53,7 @@ const Navigation = () => {
   console.log('User role:', userProfile?.role)
   
   // Filter navigation items based on user role
-  const filteredNavItems = userProfile?.role === 'astrologer' 
+  const filteredNavItems = userProfile?.collection === 'astrologers'
     ? [{ href: '/account', label: 'My Account', icon: User }] // Only show My Account for astrologers
     : navItems
 
@@ -62,7 +63,7 @@ const Navigation = () => {
       setModalPosition('top-right')
       setShowProfileModal(true)
       try {
-        const collection = userProfile?.role === 'astrologer' ? 'astrologers' : 'users'
+        const collection = userProfile?.collection === 'astrologers' ? 'astrologers' : 'users'
         const ref = doc(db, collection, user.uid)
         const snap = await getDoc(ref)
         if (snap.exists()) {
@@ -80,7 +81,7 @@ const Navigation = () => {
 
   async function onSignOutClick() {
     try {
-      const wasAstrologer = userProfile?.role === 'astrologer'
+      const wasAstrologer = userProfile?.collection === 'astrologers'
       await signOut()
       setShowProfileModal(false)
 
@@ -175,7 +176,7 @@ const Navigation = () => {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {(userProfile?.role === 'astrologer' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
+            {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
               const Icon = item.icon
               if (item.href === '/account') {
                 return (
@@ -225,7 +226,7 @@ const Navigation = () => {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              {(userProfile?.role === 'astrologer' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
+              {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
                 const Icon = item.icon
                 if (item.href === '/account') {
                   return (
@@ -290,12 +291,12 @@ const Navigation = () => {
                   disabled
                 />
               </div>
-              {userProfile?.role && (
+              {userProfile?.collection && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <input
                     className="w-full h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 capitalize"
-                    value={userProfile.role}
+                    value={userProfile.collection === 'astrologers' ? 'Astrologer' : 'User'}
                     disabled
                   />
                 </div>

@@ -34,10 +34,10 @@ export default function AstrologerAuth() {
       let result
       if (isLogin) {
         result = await signIn(formData.email, formData.password)
-        if (result.profile?.role === 'user') {
-          router.push('/talk-to-astrologer')
-        } else {
+        if (result.profile?.collection === 'astrologers') {
           router.push('/astrologer-dashboard')
+        } else {
+          router.push('/unauthorized')
         }
       } else {
         const user = await signUp(formData.email, formData.password, { displayName: formData.name })
@@ -100,10 +100,10 @@ export default function AstrologerAuth() {
         try { if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') } catch (e) {}
         router.push('/astrologer-dashboard')
       } else {
-        if (result.profile.role === 'user') {
-          router.push('/talk-to-astrologer')
-        } else {
+        if (result.profile.collection === 'astrologers') {
           router.push('/astrologer-dashboard')
+        } else {
+          router.push('/unauthorized')
         }
       }
     } catch (err) {

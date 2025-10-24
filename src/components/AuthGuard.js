@@ -17,7 +17,7 @@ export default function AuthGuard({ children, requireAuth = true, allowedRoles =
     }
 
     if (allowedRoles.length > 0 && userProfile) {
-      const userRole = userProfile.role
+      const userRole = userProfile.collection === 'astrologers' ? 'astrologer' : 'user'
       if (!allowedRoles.includes(userRole)) {
         router.push('/unauthorized')
         return
@@ -40,7 +40,7 @@ export default function AuthGuard({ children, requireAuth = true, allowedRoles =
     return null
   }
 
-  if (allowedRoles.length > 0 && userProfile && !allowedRoles.includes(userProfile.role)) {
+  if (allowedRoles.length > 0 && userProfile && !allowedRoles.includes(userProfile.collection === 'astrologers' ? 'astrologer' : 'user')) {
     return null
   }
 

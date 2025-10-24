@@ -14,28 +14,59 @@ export default function VideoCallRoom() {
   const [wsUrl, setWsUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [callDuration, setCallDuration] = useState(0)
 
   useEffect(() => {
     const initializeRoom = async () => {
       try {
         const roomName = params.room
-
-        // Get user role from localStorage or auth context
-        const userRole = typeof window !== 'undefined' ? localStorage.getItem('tgs:role') : null
+        const userRole = localStorage.getItem('tgs:role') || 'user'
+        const userId = localStorage.getItem('tgs:userId')
         const isAstrologer = userRole === 'astrologer'
 
-        // Create participant identity based on role
-        const participantId = isAstrologer
-          ? `astrologer-${roomName}`
-          : `user-${roomName}`
+        console.log('Video room initialization:', {
+          roomName,
+          userRole,
+          userId,
+          isAstrologer
+        })
+
+        if (!userId) {
+          throw new Error('User not authenticated - please log in again')
+        }
+
+        // Try to use pre-generated synchronized tokens first
+        const storedTokens = localStorage.getItem('tgs:sessionTokens')
+        const storedRoomName = localStorage.getItem('tgs:roomName')
+        const storedWsUrl = localStorage.getItem('tgs:wsUrl')
+
+        if (storedTokens && storedRoomName === roomName && storedWsUrl) {
+          const tokens = JSON.parse(storedTokens)
+          const userToken = isAstrologer ? tokens.astrologer : tokens.user
+          
+          if (userToken?.token) {
+            console.log('Using pre-generated synchronized token')
+            setToken(userToken.token)
+            setWsUrl(storedWsUrl)
+            return
+          }
+        }
+
+        // Fallback: Create individual session (backward compatibility)
+        console.log('Creating individual session token')
+        const astrologerId = localStorage.getItem('tgs:astrologerId')
+        const sessionAstrologerId = isAstrologer ? userId : (astrologerId || 'user-session')
 
         const response = await fetch('/api/livekit/create-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            astrologerId: isAstrologer ? 'astrologer' : 'user-session',
-            userId: participantId,
-            roomName
+            astrologerId: sessionAstrologerId,
+            userId: isAstrologer ? astrologerId : userId,
+            roomName,
+            callType: 'video',
+            role: isAstrologer ? 'astrologer' : 'user',
+            displayName: isAstrologer ? (localStorage.getItem('tgs:astrologerName') || 'Astrologer') : (localStorage.getItem('tgs:userName') || 'User')
           })
         })
 
@@ -47,9 +78,10 @@ export default function VideoCallRoom() {
         setToken(data.token)
         setWsUrl(data.wsUrl)
       } catch (err) {
-        console.error('Error initializing room:', err)
-        console.error('Room name:', roomName)
-        console.error('Participant role:', typeof window !== 'undefined' ? localStorage.getItem('tgs:role') : 'unknown')
+        console.error('Error initializing video room:', {
+          error: err.message,
+          roomName: params.room
+        })
         setError(`Failed to join video call: ${err.message}`)
       } finally {
         setLoading(false)
@@ -61,8 +93,81 @@ export default function VideoCallRoom() {
     }
   }, [params.room])
 
-  const handleDisconnect = () => {
-    router.push('/talk-to-astrologer')
+  // Call duration timer - start when room is successfully connected
+  useEffect(() => {
+    if (token && wsUrl) {
+      const timer = setInterval(() => {
+        setCallDuration(prev => prev + 1)
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [token, wsUrl])
+
+  const handleDisconnect = async () => {
+    console.log('Disconnecting from video call:', {
+      hasToken: !!token,
+      hasWsUrl: !!wsUrl,
+      roomName: params.room,
+      callDuration
+    })
+
+    // Clean up session data
+    localStorage.removeItem('tgs:sessionTokens')
+    localStorage.removeItem('tgs:roomName')
+    localStorage.removeItem('tgs:wsUrl')
+
+    // Only process billing if we're actually disconnecting from an active call
+    if (token && wsUrl && callDuration > 0) {
+      try {
+        // Calculate duration in minutes for billing
+        const durationMinutes = Math.ceil(callDuration / 60)
+
+        // Get call information from localStorage
+        const callId = localStorage.getItem('tgs:callId')
+        const userId = localStorage.getItem('tgs:userId')
+        const astrologerId = localStorage.getItem('tgs:astrologerId')
+
+        if (callId && userId && astrologerId) {
+          console.log('Finalizing billing for video call:', {
+            callId,
+            durationMinutes,
+            callDuration
+          })
+
+          // Call immediate settlement API
+          const billingResponse = await fetch('/api/billing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'immediate-settlement',
+              callId,
+              durationMinutes
+            })
+          })
+
+          if (billingResponse.ok) {
+            const billingData = await billingResponse.json()
+            console.log('Billing settled successfully:', billingData)
+          } else {
+            console.error('Failed to settle billing:', await billingResponse.text())
+          }
+        } else {
+          console.warn('Missing call information for billing:', {
+            callId,
+            userId,
+            astrologerId
+          })
+        }
+      } catch (error) {
+        console.error('Error during call settlement:', error)
+      }
+    }
+
+    // Redirect after processing
+    const userRole = localStorage.getItem('tgs:role')
+    const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+    router.push(redirectPath)
   }
 
   if (loading) {
@@ -83,9 +188,17 @@ export default function VideoCallRoom() {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-white text-xl font-semibold mb-2">Connection Failed</h2>
           <p className="text-gray-300 mb-6">{error}</p>
-          <Button onClick={() => router.push('/talk-to-astrologer')} variant="outline">
+          <Button onClick={() => {
+            // Clean up session data on error back navigation
+            localStorage.removeItem('tgs:sessionTokens')
+            localStorage.removeItem('tgs:roomName')
+            localStorage.removeItem('tgs:wsUrl')
+            const userRole = localStorage.getItem('tgs:role')
+            const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+            router.push(redirectPath)
+          }} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Astrologers
+            Back
           </Button>
         </div>
       </div>
@@ -111,7 +224,15 @@ export default function VideoCallRoom() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/talk-to-astrologer')}
+              onClick={() => {
+                // Clean up session data on back navigation
+                localStorage.removeItem('tgs:sessionTokens')
+                localStorage.removeItem('tgs:roomName')
+                localStorage.removeItem('tgs:wsUrl')
+                const userRole = localStorage.getItem('tgs:role')
+                const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+                router.push(redirectPath)
+              }}
               className="text-gray-300 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -135,6 +256,11 @@ export default function VideoCallRoom() {
           serverUrl={wsUrl}
           token={token}
           onDisconnected={handleDisconnect}
+          onConnected={() => {
+            console.log('Connected to video room:', {
+              roomName: params.room
+            })
+          }}
           onError={(error) => {
             console.error('LiveKit room error:', error)
             setError(`Video call error: ${error.message}`)

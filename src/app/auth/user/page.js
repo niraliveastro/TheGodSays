@@ -31,10 +31,10 @@ export default function UserAuth() {
       let result
       if (isLogin) {
         result = await signIn(formData.email, formData.password)
-        if (result.profile?.role === 'astrologer') {
-          router.push('/astrologer-dashboard')
-        } else {
+        if (result.profile?.collection === 'users') {
           router.push('/talk-to-astrologer')
+        } else {
+          router.push('/unauthorized')
         }
       } else {
         const user = await signUp(formData.email, formData.password, { displayName: formData.name })
@@ -67,10 +67,10 @@ export default function UserAuth() {
         })
         router.push('/talk-to-astrologer')
       } else {
-        if (result.profile.role === 'astrologer') {
-          router.push('/astrologer-dashboard')
-        } else {
+        if (result.profile.collection === 'users') {
           router.push('/talk-to-astrologer')
+        } else {
+          router.push('/unauthorized')
         }
       }
     } catch (err) {
