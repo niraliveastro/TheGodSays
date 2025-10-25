@@ -133,30 +133,45 @@ export default function PredictionsPage() {
 
       const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude)
 
-      const payload = {
-        year: Y,
-        month: M,
-        date: D,
-        hours: H,
-        minutes: Min,
-        seconds: S,
-        latitude: geo.latitude,
-        longitude: geo.longitude,
-        timezone: tz,
-        config: { observation_point: 'geocentric', ayanamsha: 'lahiri' }
-      }
+const payload = {
+  year: Y,
+  month: M,
+  date: D,
+  hours: H,
+  minutes: Min,
+  seconds: S,
+  latitude: geo.latitude,
+  longitude: geo.longitude,
+  timezone: tz,
+  config: {
+    observation_point: 'topocentric',
+    ayanamsha: 'tropical',
+    house_system: 'Placidus',
+    language: 'en'
+  }
+}
 
       const { results, errors } = await astrologyAPI.getMultipleCalculations([
         'shadbala/summary',
         'vimsottari/dasa-information',
         'vimsottari/maha-dasas',
-        'planets'
+        'planets',
+        'western/natal-wheel-chart'
       ], payload)
 
       const vimsRaw = results?.['vimsottari/dasa-information']
       const shadbalaRaw = results?.['shadbala/summary']
       const mahaRaw = results?.['vimsottari/maha-dasas']
 
+      // Parse Western Chart SVG
+const westernChartSvgRaw = results?.['western/natal-wheel-chart']
+const westernChartSvg = westernChartSvgRaw
+  ? (typeof westernChartSvgRaw.output === 'string'
+      ? westernChartSvgRaw.output
+      : typeof westernChartSvgRaw === 'string'
+      ? westernChartSvgRaw
+      : null)
+  : null
       const vimsParsed = vimsRaw ? safeParse(safeParse(vimsRaw.output ?? vimsRaw)) : null
       let mahaParsed = mahaRaw ? safeParse(safeParse(mahaRaw.output ?? mahaRaw)) : null
       if (mahaParsed && typeof mahaParsed === 'object' && mahaParsed.output) {
@@ -187,6 +202,7 @@ export default function PredictionsPage() {
         planets: results?.['planets'] ? safeParse(safeParse(results['planets'].output ?? results['planets'])) : [],
         maha: mahaParsed,
         shadbala: finalShadbala,
+        westernChartSvg,
         apiErrors: { ...errors }
       })
     } catch (err) {
@@ -563,28 +579,28 @@ export default function PredictionsPage() {
       </div>
     </div>
 
-    {/* Natal Chart */}
-    {result.input && (
-      <div className="card">
-        <div className="natal-header">
-          <div className="natal-header-icon">
-            <Star />
-          </div>
-          <h3 className="results-title">Natal Chart (D1)</h3>
-        </div>
-        <div className="chart-container">
-          <img
-            src={`https://api.vedicastroapi.com/v3-json/horoscope/chart-image/D1?dob=${result.input.dob}&tob=${result.input.tob}&lat=${result.coords.latitude}&lon=${result.coords.longitude}&tz=${result.input.tz}&api_key=89fdc2dd-2e22-5d30-ae39-4aba88e96db0&lang=en&chart_style=north-indian&chart_size=600&stroke_width=2`}
-            alt="Natal Chart"
-            className="chart-img"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.parentElement.innerHTML = '<div style="color:#6b7280;font-size:0.875rem;padding:2rem;">Chart image unavailable</div>'
-            }}
-          />
-        </div>
-      </div>
-    )}
+{/* Western Natal Wheel Chart */}
+{result?.westernChartSvg && result.westernChartSvg.trim().startsWith('<svg') ? (
+  <div
+    className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
+    style={{ maxWidth: '640px', margin: '0 auto' }}
+  >
+    <div
+      dangerouslySetInnerHTML={{ __html: result.westernChartSvg }}
+      className="w-full"
+      style={{ aspectRatio: '1 / 1' }}
+    />
+  </div>
+) : result && !result.westernChartSvg ? (
+  <div className="card mt-8 p-6 bg-yellow-50 border border-yellow-300 rounded-lg">
+    <p className="text-sm font-medium text-yellow-800">
+      Western chart not available.
+    </p>
+    <p className="text-xs text-yellow-600 mt-1">
+      Check: API key, internet, or try different birth details.
+    </p>
+  </div>
+) : null}
 
     {/* Planet Placements */}
     {placements.length > 0 && (
