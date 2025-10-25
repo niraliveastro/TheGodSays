@@ -3,10 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Sparkles, Star } from 'lucide-react'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -26,6 +23,7 @@ export default function AstrologerAuth() {
   const { signIn, signUp, signInWithGoogle, loading } = useAuth()
   const router = useRouter()
 
+  /* ──────  AUTH HANDLERS  ────── */
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -34,21 +32,20 @@ export default function AstrologerAuth() {
       let result
       if (isLogin) {
         result = await signIn(formData.email, formData.password)
-        if (result.profile?.role === 'user') {
-          router.push('/talk-to-astrologer')
-        } else {
-          router.push('/astrologer-dashboard')
-        }
+        if (result.profile?.role === 'user') router.push('/talk-to-astrologer')
+        else router.push('/astrologer-dashboard')
       } else {
-        const user = await signUp(formData.email, formData.password, { displayName: formData.name })
-        
+        const user = await signUp(formData.email, formData.password, {
+          displayName: formData.name
+        })
+
         await setDoc(doc(db, 'astrologers', user.uid), {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
+          phone: formData.phone || '',
           specialization: formData.specialization,
           experience: formData.experience,
-          languages: formData.languages.split(',').map(lang => lang.trim()),
+          languages: formData.languages.split(',').map(l => l.trim()),
           role: 'astrologer',
           status: 'offline',
           rating: 4.5,
@@ -62,14 +59,11 @@ export default function AstrologerAuth() {
         await fetch('/api/astrologer/status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            astrologerId: user.uid,
-            action: 'set-offline'
-          })
+          body: JSON.stringify({ astrologerId: user.uid, action: 'set-offline' })
         })
-        
-        // Persist role in localStorage so returning to the site redirects to dashboard
-        try { if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') } catch (e) {}
+
+        if (typeof window !== 'undefined')
+          localStorage.setItem('tgs:role', 'astrologer')
         router.push('/astrologer-dashboard')
       }
     } catch (err) {
@@ -80,7 +74,7 @@ export default function AstrologerAuth() {
   const handleGoogleAuth = async () => {
     try {
       const result = await signInWithGoogle()
-      
+
       if (!result.profile) {
         await setDoc(doc(db, 'astrologers', result.user.uid), {
           name: result.user.displayName,
@@ -97,110 +91,161 @@ export default function AstrologerAuth() {
           bio: 'Experienced astrologer providing guidance and insights.',
           createdAt: new Date().toISOString()
         })
-        try { if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') } catch (e) {}
+        if (typeof window !== 'undefined')
+          localStorage.setItem('tgs:role', 'astrologer')
         router.push('/astrologer-dashboard')
       } else {
-        if (result.profile.role === 'user') {
-          router.push('/talk-to-astrologer')
-        } else {
-          router.push('/astrologer-dashboard')
-        }
+        if (result.profile.role === 'user') router.push('/talk-to-astrologer')
+        else router.push('/astrologer-dashboard')
       }
     } catch (err) {
       setError(err.message)
     }
   }
 
+  /* ──────  RENDER  ────── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-yellow-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </div>
+    <div className="astrologer-auth-page">
+      {/* Animated background orbs */}
+      <div className="bg-orb bg-orb-1" />
+      <div className="bg-orb bg-orb-2" />
+      <div className="bg-orb bg-orb-3" />
 
-        <Card className="overflow-hidden shadow-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="hidden md:block bg-gradient-to-b from-yellow-500 to-orange-500 p-8 text-white">
-              <h2 className="text-2xl font-semibold mb-2">{isLogin ? 'Welcome back' : 'Join as an Astrologer'}</h2>
-              <p className="text-sm opacity-95">Create your profile and connect with seekers looking for guidance.</p>
-              <div className="mt-6">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="opacity-95">
-                    <path d="M12 2L15 8H9L12 2Z" fill="currentColor" />
-                  </svg>
-                  Get discovered by users
+      {/* Back button */}
+      <button
+        className="back-btn"
+        onClick={() => router.back()}
+        aria-label="Go back"
+      >
+        <ArrowLeft />
+      </button>
+
+      {/* Main container */}
+      <div className="astrologer-auth-container">
+        <div className="astrologer-auth-card">
+          <div className="accent-line" />
+
+          <div className="astrologer-auth-grid">
+            {/* LEFT – Promo Panel */}
+            <div className="astrologer-promo-panel">
+              <div className="promo-icon-badge">
+                <Sparkles />
+              </div>
+              
+              <h2 className="promo-title">
+                {isLogin ? 'Welcome Back' : 'Join Our Network'}
+              </h2>
+              
+              <p className="promo-subtitle">
+                {isLogin 
+                  ? 'Continue guiding seekers on their cosmic journey'
+                  : 'Share your wisdom and connect with seekers worldwide'
+                }
+              </p>
+
+              <div className="promo-features">
+                <div className="promo-feature">
+                  <Star className="promo-feature-icon" />
+                  <span>Build your reputation</span>
                 </div>
+                <div className="promo-feature">
+                  <Star className="promo-feature-icon" />
+                  <span>Flexible scheduling</span>
+                </div>
+                <div className="promo-feature">
+                  <Star className="promo-feature-icon" />
+                  <span>Connect with seekers</span>
+                </div>
+              </div>
+
+              <div className="promo-badge">
+                <Sparkles className="promo-badge-icon" />
+                <span>Trusted by thousands</span>
               </div>
             </div>
 
-            <div className="p-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{isLogin ? 'Astrologer Login' : 'Astrologer Sign Up'}</h1>
-              <p className="text-sm text-gray-500 mb-6">{isLogin ? 'Sign in to manage your sessions' : 'Create your astrologer profile'}</p>
+            {/* RIGHT – Form Panel */}
+            <div className="astrologer-form-panel">
+              {/* Header */}
+              <div className="form-panel-header">
+                <h1 className="form-panel-title">
+                  {isLogin ? 'Astrologer Sign In' : 'Create Astrologer Profile'}
+                </h1>
+                <p className="form-panel-subtitle">
+                  {isLogin 
+                    ? 'Access your dashboard and manage sessions'
+                    : 'Join our community of expert astrologers'
+                  }
+                </p>
+              </div>
 
+              {/* Error Alert */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+                <div className="error-alert" role="alert">
                   {error}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="astrologer-form" noValidate>
+                {/* ==== SIGN-UP ONLY FIELDS ==== */}
                 {!isLogin && (
                   <>
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Full name</label>
-                      <div className="relative flex items-center">
-                        <Input
-                          type="text"
-                          placeholder="Your full name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          className="pl-10 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Phone</label>
-                      <Input
-                        type="tel"
-                        placeholder="Phone number"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className=""
+                    {/* Name */}
+                    <div className="form-field">
+                      <label className="form-field-label">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Your full name"
+                        value={formData.name}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        className="form-field-input"
                         required
                       />
                     </div>
 
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Specialization</label>
-                      <div className="relative flex items-center">
-                        <select
-                          value={formData.specialization}
-                          onChange={(e) => setFormData({...formData, specialization: e.target.value})}
-                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 appearance-none bg-white"
-                          required
-                        >
-                          <option value="">Select Specialization</option>
-                          <option value="Vedic Astrology">Vedic Astrology</option>
-                          <option value="Tarot Reading">Tarot Reading</option>
-                          <option value="Numerology">Numerology</option>
-                          <option value="Palmistry">Palmistry</option>
-                        </select>
-                      </div>
+                    {/* Phone */}
+                    <div className="form-field">
+                      <label className="form-field-label">Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        value={formData.phone}
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        className="form-field-input"
+                        required
+                      />
                     </div>
 
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Experience</label>
+                    {/* Specialization */}
+                    <div className="form-field">
+                      <label className="form-field-label">Specialization</label>
                       <select
-                        value={formData.experience}
-                        onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                        value={formData.specialization}
+                        onChange={e => setFormData({ ...formData, specialization: e.target.value })}
+                        className="form-field-input"
                         required
                       >
-                        <option value="">Years of Experience</option>
+                        <option value="">Select your specialization</option>
+                        <option value="Vedic Astrology">Vedic Astrology</option>
+                        <option value="Tarot Reading">Tarot Reading</option>
+                        <option value="Numerology">Numerology</option>
+                        <option value="Palmistry">Palmistry</option>
+                        <option value="Vastu Shastra">Vastu Shastra</option>
+                        <option value="Face Reading">Face Reading</option>
+                      </select>
+                    </div>
+
+                    {/* Experience */}
+                    <div className="form-field">
+                      <label className="form-field-label">Years of Experience</label>
+                      <select
+                        value={formData.experience}
+                        onChange={e => setFormData({ ...formData, experience: e.target.value })}
+                        className="form-field-input"
+                        required
+                      >
+                        <option value="">Select experience level</option>
                         <option value="1-3 years">1-3 years</option>
                         <option value="3-5 years">3-5 years</option>
                         <option value="5-10 years">5-10 years</option>
@@ -208,87 +253,121 @@ export default function AstrologerAuth() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Languages</label>
-                      <Input
+                    {/* Languages */}
+                    <div className="form-field">
+                      <label className="form-field-label">Languages</label>
+                      <input
                         type="text"
-                        placeholder="Languages (e.g., Hindi, English)"
+                        placeholder="e.g., Hindi, English, Tamil"
                         value={formData.languages}
-                        onChange={(e) => setFormData({...formData, languages: e.target.value})}
+                        onChange={e => setFormData({ ...formData, languages: e.target.value })}
+                        className="form-field-input"
                         required
                       />
+                      <p className="form-field-helper">Separate multiple languages with commas</p>
                     </div>
                   </>
                 )}
 
-                <div>
-                  <label className="text-sm text-gray-600 mb-1 block">Email</label>
-                  <div className="relative flex items-center">
-                    <Input
-                      type="email"
-                      placeholder="your@email.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="pl-10 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
-                      required
-                    />
-                  </div>
+                {/* ==== COMMON FIELDS ==== */}
+                {/* Email */}
+                <div className="form-field">
+                  <label className="form-field-label">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    className="form-field-input"
+                    required
+                  />
                 </div>
 
-                <div>
-                  <label className="text-sm text-gray-600 mb-1 block">Password</label>
-                  <div className="relative flex items-center">
-                    <Input
+                {/* Password */}
+                <div className="form-field">
+                  <label className="form-field-label">Password</label>
+                  <div className="auth-input-wrapper">
+                    <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a secure password"
+                      placeholder="Enter your password"
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="pl-10 pr-12 w-full border-gray-300 focus:border-yellow-500 focus:ring-yellow-500"
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      className="form-field-input password-input"
                       required
                     />
-
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 text-gray-500 hover:text-gray-700 z-10"
+                      className="password-toggle"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff /> : <Eye />}
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <Button type="submit" className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white" disabled={loading}>
-                    {loading ? 'Processing...' : (isLogin ? 'Login' : 'Create account')}
-                  </Button>
-                </div>
-              </form>
-
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  onClick={handleGoogleAuth}
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="submit-btn"
                   disabled={loading}
                 >
-                  Continue with Google
-                </Button>
+                  {loading ? (
+                    <>
+                      <div className="spinner" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                  )}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="divider">
+                <div className="divider-line" />
+                <span className="divider-text">OR CONTINUE WITH</span>
+                <div className="divider-line" />
               </div>
 
-              <div className="mt-6 text-center text-sm">
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-yellow-600 hover:text-yellow-700"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
+              {/* Google Button */}
+              <button
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="google-btn"
+                type="button"
+              >
+                <svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 6.75c1.63 0 3.06.56 4.21 1.65l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                <span>Google</span>
+              </button>
+
+              {/* Toggle Login/Signup */}
+              <p className="toggle-text">
+                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                <button onClick={() => setIsLogin(!isLogin)} className="toggle-link" type="button">
+                  {isLogin ? 'Sign up now' : 'Sign in'}
                 </button>
-              </div>
+              </p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )
