@@ -1,0 +1,429 @@
+/* ================================================================== */
+/* AUTH LANDING PAGE */
+/* ================================================================== */
+.auth-landing-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.5rem;
+  background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-landing-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* ================================================================== */
+/* HEADER SECTION */
+/* ================================================================== */
+.auth-landing-header {
+  text-align: center;
+  margin-bottom: 4rem;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.landing-logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  border-radius: 18px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 12px 24px rgba(212, 175, 55, 0.3);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.landing-logo-icon {
+  width: 40px;
+  height: 40px;
+  color: white;
+}
+
+.landing-title {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  font-family: var(--font-heading);
+  background: linear-gradient(135deg, #1f2937, #374151);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.landing-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ================================================================== */
+/* CARDS GRID */
+/* ================================================================== */
+.auth-landing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .auth-landing-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ================================================================== */
+/* CHOICE CARDS */
+/* ================================================================== */
+.auth-choice-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  overflow: hidden;
+  animation: slideUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.auth-choice-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Glow Effect */
+.card-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+
+.auth-choice-card:hover .card-glow {
+  opacity: 0.4;
+}
+
+/* User Card Styling */
+.user-card {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.user-card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+}
+
+.user-glow {
+  top: -100px;
+  left: -100px;
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+/* Astrologer Card Styling */
+.astrologer-card {
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.astrologer-card:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.2);
+}
+
+.astrologer-glow {
+  bottom: -100px;
+  right: -100px;
+  width: 350px;
+  height: 350px;
+  background: linear-gradient(135deg, #d4af37, #f59e0b);
+}
+
+/* Delay second card animation */
+.auth-choice-card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+/* ================================================================== */
+/* CARD CONTENT */
+/* ================================================================== */
+.card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.card-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.user-icon-wrapper {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border: 2px solid #93c5fd;
+}
+
+.astrologer-icon-wrapper {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #fcd34d;
+}
+
+.auth-choice-card:hover .card-icon-wrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.user-icon-wrapper .card-icon {
+  color: #1e40af;
+}
+
+.astrologer-icon-wrapper .card-icon {
+  color: #b45309;
+}
+
+.card-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-family: var(--font-heading);
+}
+
+.card-description {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 2rem;
+  flex-grow: 1;
+}
+
+/* ================================================================== */
+/* CARD FEATURES */
+/* ================================================================== */
+.card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.card-feature {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #374151;
+  padding: 0.5rem;
+  background: rgba(249, 250, 251, 0.8);
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.auth-choice-card:hover .card-feature {
+  background: rgba(243, 244, 246, 1);
+}
+
+.feature-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-dot {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.astrologer-dot {
+  background: linear-gradient(135deg, #d4af37, #f59e0b);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+/* ================================================================== */
+/* CHOICE BUTTONS */
+/* ================================================================== */
+.choice-btn {
+  width: 100%;
+  height: 56px;
+  border-radius: 0.875rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.choice-btn:hover::before {
+  left: 100%;
+}
+
+.user-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.user-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4);
+}
+
+.astrologer-btn {
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.astrologer-btn:hover {
+  background: linear-gradient(135deg, #e6c04a, #c7a33a);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(212, 175, 55, 0.4);
+}
+
+.btn-arrow {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s;
+}
+
+.choice-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ================================================================== */
+/* FOOTER */
+/* ================================================================== */
+.auth-landing-footer {
+  text-align: center;
+  padding-top: 2rem;
+  animation: fadeIn 1s ease-out;
+  animation-delay: 0.3s;
+  animation-fill-mode: both;
+}
+
+.footer-text {
+  font-size: 0.95rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ================================================================== */
+/* RESPONSIVE */
+/* ================================================================== */
+@media (max-width: 767px) {
+  .auth-landing-page {
+    padding: 2rem 1rem;
+  }
+
+  .landing-title {
+    font-size: 2rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1rem;
+  }
+
+  .auth-landing-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .auth-landing-grid {
+    gap: 1.5rem;
+  }
+
+  .auth-choice-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+  }
+
+  .card-description {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-title {
+    font-size: 1.75rem;
+  }
+
+  .landing-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .landing-logo-badge {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+
+  .landing-logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .auth-choice-card {
+    padding: 1.5rem;
+  }
+
+  .card-icon-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .card-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
