@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Phone, PhoneOff, User, Clock, CheckCircle, XCircle, Video } from 'lucide-react'
+import { Phone, PhoneOff, User, Clock, CheckCircle, XCircle, Video, Settings } from 'lucide-react'
 import { doc, updateDoc, onSnapshot, collection, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import CallNotification from '@/components/CallNotification'
+import VoiceCallNotification from '@/components/VoiceCallNotification'
 import AuthGuard from '@/components/AuthGuard'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -86,7 +87,59 @@ function AstrologerDashboardContent() {
       if (action === 'active') {
         await updateStatus('busy');
         setIncomingCall(null);
-        router.push(`/talk-to-astrologer/room/${updateData.roomName}`);
+
+        // Get the call details first
+        const call = calls.find(c => c.id === callId) || incomingCall;
+        if (!call) {
+          console.error('Call not found:', callId);
+          await updateStatus('online');
+          return;
+        }
+
+        const route = call.callType === 'voice'
+          ? `/talk-to-astrologer/voice/${updateData.roomName}`
+          : `/talk-to-astrologer/room/${updateData.roomName}`;
+
+        // Create LiveKit session for the astrologer
+        try {
+          console.log('Creating LiveKit session for astrologer:', {
+            astrologerId,
+            roomName: updateData.roomName,
+            callType: call.callType || 'video'
+          })
+
+          // Store astrologer info in localStorage before joining
+          localStorage.setItem('tgs:role', 'astrologer')
+          localStorage.setItem('tgs:astrologerId', astrologerId)
+          localStorage.setItem('tgs:userId', astrologerId)
+
+          const sessionResponse = await fetch('/api/livekit/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              astrologerId: astrologerId,
+              userId: astrologerId,
+              roomName: updateData.roomName,
+              callType: call.callType || 'video',
+              role: 'astrologer',
+              displayName: userProfile?.name || 'Astrologer'
+            })
+          });
+
+          if (sessionResponse.ok) {
+            router.push(route);
+          } else {
+            console.error('Failed to create LiveKit session for astrologer');
+            const errorData = await sessionResponse.json().catch(() => ({}));
+            console.error('Session creation error details:', errorData);
+            alert(`Failed to join call: ${errorData.error || 'Unknown error'}. Please try again.`);
+            await updateStatus('online');
+          }
+        } catch (error) {
+          console.error('Error creating LiveKit session:', error);
+          alert('Failed to join call. Please try again.');
+          await updateStatus('online');
+        }
       } else if (action === 'completed' || action === 'rejected') {
         await updateStatus('online');
       }
@@ -140,19 +193,40 @@ function AstrologerDashboardContent() {
   return (
     <>
       {incomingCall && (
-        <CallNotification
-          call={incomingCall}
-          onAccept={handleAcceptCall}
-          onReject={handleRejectCall}
-          onClose={handleCloseNotification}
-        />
+        incomingCall.callType === 'voice' ? (
+          <VoiceCallNotification
+            call={incomingCall}
+            onAccept={handleAcceptCall}
+            onReject={handleRejectCall}
+            onClose={handleCloseNotification}
+          />
+        ) : (
+          <CallNotification
+            call={incomingCall}
+            onAccept={handleAcceptCall}
+            onReject={handleRejectCall}
+            onClose={handleCloseNotification}
+          />
+        )
       )}
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userProfile?.name || 'Astrologer'}</h1>
-          <p className="text-gray-600">Manage your availability and handle client calls</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userProfile?.name || 'Astrologer'}</h1>
+              <p className="text-gray-600">Manage your availability and handle client calls</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/astrologer-dashboard/pricing')}
+              className="flex items-center space-x-2"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Pricing Settings</span>
+            </Button>
+          </div>
         </div>
 
         {/* Status Management */}
@@ -204,7 +278,9 @@ function AstrologerDashboardContent() {
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">User {queuedCall.userId}</p>
+                      <p className="font-medium text-gray-900">
+                        {queuedCall.callType === 'voice' ? 'Voice Call' : 'Video Call'} - User {queuedCall.userId}
+                      </p>
                       <p className="text-sm text-gray-600">
                         Waiting since {new Date(queuedCall.createdAt).toLocaleTimeString()}
                       </p>
@@ -235,7 +311,9 @@ function AstrologerDashboardContent() {
                     <div className="flex items-center space-x-4">
                       <div className={`w-3 h-3 rounded-full ${getCallStatusColor(call.status)}`}></div>
                       <div>
-                        <p className="font-medium">Call from User {call.userId}</p>
+                        <p className="font-medium">
+                          {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from User {call.userId}
+                        </p>
                         <p className="text-sm text-gray-500">
                           {new Date(call.createdAt).toLocaleString()}
                         </p>
@@ -269,26 +347,63 @@ function AstrologerDashboardContent() {
                         <>
                           <Button
                             size="sm"
-                            onClick={() => {
+                            onClick={async () => {
                               if (call.roomName) {
-                                router.push(`/talk-to-astrologer/room/${call.roomName}`)
-                              } else {
-                                // Fallback: try to fetch updated call data
-                                fetchCalls()
-                                setTimeout(() => {
-                                  const updatedCall = calls.find(c => c.id === call.id)
-                                  if (updatedCall?.roomName) {
-                                    router.push(`/talk-to-astrologer/room/${updatedCall.roomName}`)
+                                const route = call.callType === 'voice'
+                                  ? `/talk-to-astrologer/voice/${call.roomName}`
+                                  : `/talk-to-astrologer/room/${call.roomName}`
+
+                                // Create LiveKit session for the astrologer
+                                try {
+                                  console.log('Creating LiveKit session for astrologer (Join Call):', {
+                                    astrologerId,
+                                    roomName: call.roomName,
+                                    callType: call.callType || 'video'
+                                  })
+
+                                  // Store astrologer info in localStorage before joining
+                                  localStorage.setItem('tgs:role', 'astrologer')
+                                  localStorage.setItem('tgs:astrologerId', astrologerId)
+                                  localStorage.setItem('tgs:userId', astrologerId)
+
+                                  const sessionResponse = await fetch('/api/livekit/create-session', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      astrologerId: astrologerId,
+                                      userId: astrologerId,
+                                      roomName: call.roomName,
+                                      callType: call.callType || 'video',
+                                      role: 'astrologer',
+                                      displayName: userProfile?.name || 'Astrologer'
+                                    })
+                                  });
+
+                                  if (sessionResponse.ok) {
+                                    router.push(route);
                                   } else {
-                                    console.error('Room name not available for call:', call.id)
+                                    console.error('Failed to create LiveKit session for astrologer');
+                                    const errorData = await sessionResponse.json().catch(() => ({}));
+                                    console.error('Session creation error details:', errorData);
+                                    alert(`Failed to join call: ${errorData.error || 'Unknown error'}. Please try again.`);
                                   }
-                                }, 200)
+                                } catch (error) {
+                                  console.error('Error creating LiveKit session:', error);
+                                  alert('Failed to join call. Please try again.');
+                                }
+                              } else {
+                                console.error('Room name not available for call:', call.id);
+                                alert('Call information not available. Please try again.');
                               }
                             }}
                             className="bg-green-600 hover:bg-green-700"
                           >
-                            <Video className="w-4 h-4 mr-2" />
-                            Join Call
+                            {call.callType === 'voice' ? (
+                              <Phone className="w-4 h-4 mr-2" />
+                            ) : (
+                              <Video className="w-4 h-4 mr-2" />
+                            )}
+                            Join {call.callType === 'voice' ? 'Voice' : 'Video'} Call
                           </Button>
                           <Button
                             size="sm"

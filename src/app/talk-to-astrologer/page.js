@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, Video, Search, Filter } from 'lucide-react'
+import { Star, Video, Phone, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { collection, getDocs, onSnapshot, query } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -17,7 +17,7 @@ export default function TalkToAstrologer() {
 
   useEffect(() => {
     const q = query(collection(db, "astrologers"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const astrologersList = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -34,6 +34,42 @@ export default function TalkToAstrologer() {
           verified: data.verified || false
         });
       });
+
+      // Fetch pricing for all astrologers
+      try {
+        const pricingResponse = await fetch('/api/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-all-pricing' })
+        });
+        const pricingData = await pricingResponse.json();
+        if (pricingData.success) {
+          const pricingMap = {};
+          pricingData.pricing.forEach(p => {
+            pricingMap[p.astrologerId] = p;
+          });
+          // Merge pricing into astrologers
+          astrologersList.forEach(astrologer => {
+            const pricing = pricingMap[astrologer.id];
+            if (pricing) {
+              astrologer.pricing = pricing;
+              astrologer.perMinuteCharge = pricing.pricingType === 'per_minute' ? pricing.finalPrice : null;
+            } else {
+              // Default pricing if not set
+              astrologer.pricing = { pricingType: 'per_minute', finalPrice: 50 };
+              astrologer.perMinuteCharge = 50;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching pricing:', error);
+        // Set default pricing for all
+        astrologersList.forEach(astrologer => {
+          astrologer.pricing = { pricingType: 'per_minute', finalPrice: 50 };
+          astrologer.perMinuteCharge = 50;
+        });
+      }
+
       setAstrologers(astrologersList);
       setFetchingAstrologers(false);
     });
@@ -60,6 +96,42 @@ export default function TalkToAstrologer() {
           verified: data.verified || false
         })
       })
+
+      // Fetch pricing for all astrologers
+      try {
+        const pricingResponse = await fetch('/api/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-all-pricing' })
+        });
+        const pricingData = await pricingResponse.json();
+        if (pricingData.success) {
+          const pricingMap = {};
+          pricingData.pricing.forEach(p => {
+            pricingMap[p.astrologerId] = p;
+          });
+          // Merge pricing into astrologers
+          astrologersList.forEach(astrologer => {
+            const pricing = pricingMap[astrologer.id];
+            if (pricing) {
+              astrologer.pricing = pricing;
+              astrologer.perMinuteCharge = pricing.pricingType === 'per_minute' ? pricing.finalPrice : null;
+            } else {
+              // Default pricing if not set
+              astrologer.pricing = { pricingType: 'per_minute', finalPrice: 50 };
+              astrologer.perMinuteCharge = 50;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching pricing:', error);
+        // Set default pricing for all
+        astrologersList.forEach(astrologer => {
+          astrologer.pricing = { pricingType: 'per_minute', finalPrice: 50 };
+          astrologer.perMinuteCharge = 50;
+        });
+      }
+
       setAstrologers(astrologersList)
     } catch (error) {
       console.error('Error fetching astrologers:', error)
@@ -75,16 +147,221 @@ export default function TalkToAstrologer() {
     return matchesSearch && matchesFilter
   })
 
-  const handleCallNow = async (astrologerId) => {
+  const handleVoiceCall = async (astrologerId) => {
     setLoading(true)
     try {
       // Use the actual astrologer ID from Firestore
       const backendAstrologerId = astrologerId
+      const userId = localStorage.getItem('tgs:userId')
 
-      // First check astrologer availability
-      const statusResponse = await fetch(`/api/astrologer/status?astrologerId=${backendAstrologerId}`)
+      if (!userId) {
+        alert('User not authenticated. Please log in again.')
+        router.push('/auth/user')
+        return
+      }
+
+      // First check wallet balance
+     const balanceResponse = await fetch('/api/billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate-balance',
+          userId,
+          astrologerId: backendAstrologerId
+        })
+      })
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json()
+        if (balanceData.success && !balanceData.validation.hasBalance) {
+          alert(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setLoading(false)
+          return
+        }
+      }
+
+      // Check astrologer availability
+     const statusResponse = await fetch(`/api/astrologer/status?astrologerId=${backendAstrologerId}`)
       const statusData = await statusResponse.json()
 
+      if (!statusData.success) {
+        alert('Unable to check astrologer availability. Please try again later.')
+        return
+      }
+
+      if (statusData.status === 'offline') {
+        alert('Astrologer is currently offline. Please try again later.')
+        return
+      }
+
+      if (statusData.status === 'busy') {
+        if (!confirm('Astrologer is currently busy. You will be added to the waiting queue. Do you want to continue?')) {
+          setLoading(false)
+          return
+        }
+      }
+
+      // Create voice call request
+      const callResponse = await fetch('/api/calls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-call',
+          astrologerId: backendAstrologerId,
+          userId,
+          callType: 'voice'
+        })
+      })
+
+      if (!callResponse.ok) throw new Error('Failed to create voice call request')
+
+      const callData = await callResponse.json()
+
+      if (callData.success) {
+        // Store call information in localStorage for billing settlement
+        localStorage.setItem('tgs:callId', callData.call.id)
+        localStorage.setItem('tgs:astrologerId', backendAstrologerId)
+
+        // Initialize billing for the call
+        try {
+          await fetch('/api/billing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'initialize-call',
+              callId: callData.call.id,
+              userId,
+              astrologerId: backendAstrologerId
+            })
+          })
+        } catch (billingError) {
+          console.error('Error initializing billing:', billingError)
+          // Continue with call even if billing fails
+        }
+
+        // Set up polling to check call status
+        let timeoutId
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await fetch(`/api/calls?astrologerId=${backendAstrologerId}`)
+            const statusData = await statusResponse.json()
+
+            if (statusData.success) {
+              const call = statusData.calls.find(c => c.id === callData.call.id)
+
+              if (call?.status === 'active') {
+                clearInterval(pollInterval)
+                clearTimeout(timeoutId)
+
+                // Create LiveKit session for voice call and join room
+                const sessionResponse = await fetch('/api/livekit/create-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    astrologerId: backendAstrologerId,
+                    userId: callData.call.userId,
+                    callId: callData.call.id,
+                    roomName: call.roomName,
+                    callType: 'voice',
+                    role: 'user',
+                    displayName: 'User'
+                  })
+                })
+
+                if (sessionResponse.ok) {
+                  const { roomName } = await sessionResponse.json()
+                  router.push(`/talk-to-astrologer/voice/${roomName}`)
+                } else {
+                  alert('Failed to connect to voice call. Please try again.')
+                }
+              } else if (call?.status === 'rejected') {
+                clearInterval(pollInterval)
+                clearTimeout(timeoutId)
+                // Cancel billing if call is rejected
+                try {
+                  await fetch('/api/billing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'cancel-call',
+                      callId: callData.call.id
+                    })
+                  })
+                } catch (cancelError) {
+                  console.error('Error cancelling billing:', cancelError)
+                }
+                alert('Astrologer declined the call. Please try again later.')
+              }
+            }
+          } catch (error) {
+            console.error('Error checking call status:', error)
+          }
+        }, 2000)
+
+        // Stop polling after 60 seconds
+        timeoutId = setTimeout(() => {
+          clearInterval(pollInterval)
+          // Cancel billing if call times out
+          try {
+            fetch('/api/billing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'cancel-call',
+                callId: callData.call.id
+              })
+            })
+          } catch (cancelError) {
+            console.error('Error cancelling billing:', cancelError)
+          }
+          alert('Astrologer is not responding. Please try again.')
+          setLoading(false)
+        }, 60000)
+      }
+    } catch (error) {
+      console.error('Error starting voice call:', error)
+      alert('Failed to start voice call. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVideoCall = async (astrologerId) => {
+    setLoading(true)
+    try {
+      // Use the actual astrologer ID from Firestore
+      const backendAstrologerId = astrologerId
+      const userId = localStorage.getItem('tgs:userId')
+
+      if (!userId) {
+        alert('User not authenticated. Please log in again.')
+        router.push('/auth/user')
+        return
+      }
+
+      // First check wallet balance
+      const balanceResponse = await fetch('/api/billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate-balance',
+          userId,
+          astrologerId: backendAstrologerId
+        })
+      })
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json()
+        if (balanceData.success && !balanceData.validation.hasBalance) {
+          alert(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setLoading(false)
+          return
+        }
+      }
+
+      // Check astrologer availability
+      const statusResponse = await fetch(`/api/astrologer/status?astrologerId=${backendAstrologerId}`)
+      const statusData = await statusResponse.json()
 
       if (!statusData.success) {
         alert('Unable to check astrologer availability. Please try again later.')
@@ -110,7 +387,7 @@ export default function TalkToAstrologer() {
         body: JSON.stringify({
           action: 'create-call',
           astrologerId: backendAstrologerId,
-          userId: `user-${Date.now()}`
+          userId
         })
       })
 
@@ -119,20 +396,41 @@ export default function TalkToAstrologer() {
       const callData = await callResponse.json()
 
       if (callData.success) {
+        // Store call information in localStorage for billing settlement
+        localStorage.setItem('tgs:callId', callData.call.id)
+        localStorage.setItem('tgs:astrologerId', backendAstrologerId)
+
+        // Initialize billing for the call
+        try {
+          await fetch('/api/billing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'initialize-call',
+              callId: callData.call.id,
+              userId,
+              astrologerId: backendAstrologerId
+            })
+          })
+        } catch (billingError) {
+          console.error('Error initializing billing:', billingError)
+          // Continue with call even if billing fails
+        }
+
         // Set up polling to check call status
         let timeoutId
         const pollInterval = setInterval(async () => {
           try {
             const statusResponse = await fetch(`/api/calls?astrologerId=${backendAstrologerId}`)
             const statusData = await statusResponse.json()
-            
+
             if (statusData.success) {
               const call = statusData.calls.find(c => c.id === callData.call.id)
-              
+
               if (call?.status === 'active') {
                 clearInterval(pollInterval)
                 clearTimeout(timeoutId)
-                
+
                 // Create LiveKit session and join room
                 const sessionResponse = await fetch('/api/livekit/create-session', {
                   method: 'POST',
@@ -141,7 +439,9 @@ export default function TalkToAstrologer() {
                     astrologerId: backendAstrologerId,
                     userId: callData.call.userId,
                     callId: callData.call.id,
-                    roomName: call.roomName
+                    roomName: call.roomName,
+                    role: 'user',
+                    displayName: 'User'
                   })
                 })
 
@@ -154,6 +454,19 @@ export default function TalkToAstrologer() {
               } else if (call?.status === 'rejected') {
                 clearInterval(pollInterval)
                 clearTimeout(timeoutId)
+                // Cancel billing if call is rejected
+                try {
+                  await fetch('/api/billing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'cancel-call',
+                      callId: callData.call.id
+                    })
+                  })
+                } catch (cancelError) {
+                  console.error('Error cancelling billing:', cancelError)
+                }
                 alert('Astrologer declined the call. Please try again later.')
               }
             }
@@ -161,10 +474,23 @@ export default function TalkToAstrologer() {
             console.error('Error checking call status:', error)
           }
         }, 2000)
-        
+
         // Stop polling after 60 seconds
         timeoutId = setTimeout(() => {
           clearInterval(pollInterval)
+          // Cancel billing if call times out
+          try {
+            fetch('/api/billing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'cancel-call',
+                callId: callData.call.id
+              })
+            })
+          } catch (cancelError) {
+            console.error('Error cancelling billing:', cancelError)
+          }
           alert('Astrologer is not responding. Please try again.')
           setLoading(false)
         }, 60000)
@@ -265,6 +591,12 @@ export default function TalkToAstrologer() {
                 <span className="text-sm text-gray-500">({astrologer.reviews} reviews)</span>
               </div>
 
+              {astrologer.perMinuteCharge && (
+                <div className="mb-3">
+                  <span className="text-sm font-semibold text-green-600">₹{astrologer.perMinuteCharge}/min</span>
+                </div>
+              )}
+
               <p className="text-sm text-gray-600 mb-4">{astrologer.bio}</p>
 
               <div className="mb-4">
@@ -278,18 +610,33 @@ export default function TalkToAstrologer() {
                 </div>
               </div>
 
-              <Button
-                onClick={() => handleCallNow(astrologer.id)}
-                disabled={!astrologer.isOnline || loading}
-                className={`w-full ${
-                  astrologer.isOnline 
-                    ? 'bg-green-600 hover:bg-green-700' 
-                    : 'bg-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Video className="w-4 h-4 mr-2" />
-                {astrologer.isOnline ? 'Video Call' : 'Offline'}
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => handleVideoCall(astrologer.id)}
+                  disabled={!astrologer.isOnline || loading}
+                  className={`flex-1 ${
+                    astrologer.isOnline
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Video className="w-4 h-4 mr-2" />
+                  {astrologer.isOnline ? 'Video Call' : 'Offline'}
+                </Button>
+                <Button
+                  onClick={() => handleVoiceCall(astrologer.id)}
+                  disabled={!astrologer.isOnline || loading}
+                  variant="outline"
+                  className={`flex-1 ${
+                    astrologer.isOnline
+                      ? 'border-green-600 text-green-600 hover:bg-green-50'
+                      : 'border-gray-400 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  {astrologer.isOnline ? 'Voice Call' : 'Offline'}
+                </Button>
+              </div>
             </div>
             ))}
           </div>

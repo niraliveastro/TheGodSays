@@ -22,7 +22,7 @@ const db = getFirestore()
 
 export async function POST(request) {
   try {
-    const { action, astrologerId, callId, userId, status } = await request.json()
+    const { action, astrologerId, callId, userId, status, callType = 'video' } = await request.json()
 
     // Validate action
     const validActions = ['create-call', 'update-call-status', 'get-queue', 'get-astrologer-calls']
@@ -40,6 +40,9 @@ export async function POST(request) {
     if (callId && (typeof callId !== 'string' || callId.length > 100)) {
       return NextResponse.json({ error: 'Invalid call ID' }, { status: 400 })
     }
+    if (callType && !['video', 'voice'].includes(callType)) {
+      return NextResponse.json({ error: 'Invalid call type' }, { status: 400 })
+    }
 
     switch (action) {
       case 'create-call':
@@ -55,6 +58,7 @@ export async function POST(request) {
           astrologerId,
           userId,
           status: isAstrologerAvailable ? 'pending' : 'queued',
+          callType,
           createdAt: new Date().toISOString(),
           roomName: null,
           position: null
@@ -65,6 +69,11 @@ export async function POST(request) {
         return NextResponse.json({ success: true, call: { id: callRef.id, ...callData } })
 
       case 'update-call-status':
+        // Validate callId is provided and valid
+        if (!callId || typeof callId !== 'string' || callId.length === 0) {
+          return NextResponse.json({ error: 'Valid callId is required' }, { status: 400 })
+        }
+
         const callToUpdateRef = db.collection('calls').doc(callId)
         const callToUpdateDoc = await callToUpdateRef.get()
 
@@ -74,7 +83,15 @@ export async function POST(request) {
 
         const updateData = { status }
         if (status === 'active') {
-          updateData.roomName = `astro-${astrologerId}-${userId}-${Date.now()}`
+          // Create a unique room name based on call type
+          const callToUpdateDoc = await callToUpdateRef.get()
+          const callType = callToUpdateDoc.data()?.callType || 'video'
+          updateData.roomName = `astro-${astrologerId}-${userId}-${Date.now()}-${callType}`
+          console.log('Creating room for call:', {
+            callId,
+            callType,
+            roomName: updateData.roomName
+          })
         }
 
         await callToUpdateRef.update(updateData)

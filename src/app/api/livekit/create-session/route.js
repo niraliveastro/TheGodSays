@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
-    const { astrologerId, userId, callId, roomName: providedRoomName } = await request.json()
+    const { astrologerId, userId, callId, roomName: providedRoomName, voiceOnly = false, role, displayName } = await request.json()
 
     // Validate required parameters
     if (!astrologerId || !userId) {
@@ -29,10 +29,23 @@ export async function POST(request) {
     // Sanitize room name
     const roomName = providedRoomName || `astro-${astrologerId.slice(0, 20)}-${userId.slice(0, 20)}-${Date.now()}`
 
-    // Determine participant role
-    const isAstrologer = astrologerId.includes('astro') || astrologerId.includes('Astro')
-    const participantIdentity = isAstrologer ? `astrologer-${Date.now()}` : `user-${Date.now()}`
-    const participantName = isAstrologer ? `Astrologer` : `User`
+    // Determine participant role and standardized identities/names
+    // Prefer explicit role from client; fallback: if userId equals astrologerId or prefixed, infer via presence
+    const normalizedRole = (role === 'astrologer' || role === 'user') ? role
+      : (typeof userId === 'string' && userId.startsWith('astrologer-')) ? 'astrologer'
+      : (typeof astrologerId === 'string' && astrologerId.startsWith('astrologer-')) ? 'astrologer'
+      : 'user'
+
+    const baseAstrologerId = String(astrologerId).replace(/^astrologer-/, '')
+    const baseUserId = String(userId).replace(/^user-/, '')
+
+    const participantIdentity = normalizedRole === 'astrologer'
+      ? `astrologer-${baseAstrologerId}`
+      : `user-${baseUserId}`
+
+    const participantName = (displayName && typeof displayName === 'string' && displayName.trim().length > 0)
+      ? displayName.trim()
+      : (normalizedRole === 'astrologer' ? 'Astrologer' : 'User')
 
     const token = new AccessToken(
       process.env.LIVEKIT_API_KEY,
@@ -52,12 +65,15 @@ export async function POST(request) {
       canUpdateOwnMetadata: true,
     })
 
+    // For voice-only calls, we'll handle video restrictions on the client side
+
     const jwt = await token.toJwt()
 
     return NextResponse.json({
       token: jwt,
       roomName,
       wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL,
+      voiceOnly,
     })
   } catch (error) {
     console.error('Error creating LiveKit session:', error)
