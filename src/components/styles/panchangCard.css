@@ -1,0 +1,177 @@
+/* ============================================= */
+/*  PANCHANG CARD - CLASSY DESIGN               */
+/* ============================================= */
+
+.panchang-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panchang-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    var(--color-gold),
+    transparent
+  );
+  opacity: 0;
+  transition: var(--transition-smooth);
+}
+
+.panchang-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+.panchang-card:hover::before {
+  opacity: 1;
+}
+
+.panchang-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.panchang-card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.15),
+    rgba(212, 175, 55, 0.08)
+  );
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.panchang-card-icon svg {
+  width: 20px;
+  height: 20px;
+  color: var(--color-gold);
+}
+
+.panchang-card-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.panchang-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  font-family: var(--font-heading);
+  line-height: 1.3;
+  margin: 0;
+}
+
+/* Specific icon colors for each card */
+.panchang-card[data-type="tithi"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(236, 72, 153, 0.08));
+}
+
+.panchang-card[data-type="tithi"] .panchang-card-icon svg {
+  color: #ec4899;
+}
+
+.panchang-card[data-type="nakshatra"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(124, 58, 237, 0.08));
+}
+
+.panchang-card[data-type="nakshatra"] .panchang-card-icon svg {
+  color: #7c3aed;
+}
+
+.panchang-card[data-type="yoga"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(79, 70, 229, 0.08));
+}
+
+.panchang-card[data-type="yoga"] .panchang-card-icon svg {
+  color: #4f46e5;
+}
+
+.panchang-card[data-type="karana"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+}
+
+.panchang-card[data-type="karana"] .panchang-card-icon svg {
+  color: #10b981;
+}
+
+.panchang-card[data-type="sunrise"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+}
+
+.panchang-card[data-type="sunrise"] .panchang-card-icon svg {
+  color: #f59e0b;
+}
+
+.panchang-card[data-type="sunset"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+}
+
+.panchang-card[data-type="sunset"] .panchang-card-icon svg {
+  color: #ef4444;
+}
+
+.panchang-card[data-type="moonrise"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08));
+}
+
+.panchang-card[data-type="moonrise"] .panchang-card-icon svg {
+  color: #3b82f6;
+}
+
+.panchang-card[data-type="moonset"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08));
+}
+
+.panchang-card[data-type="moonset"] .panchang-card-icon svg {
+  color: #6366f1;
+}
+
+@media (max-width: 768px) {
+  .panchang-card {
+    padding: 1.25rem;
+  }
+
+  .panchang-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .panchang-card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .panchang-card-label {
+    font-size: 0.8125rem;
+  }
+
+  .panchang-card-value {
+    font-size: 1.125rem;
+  }
+}

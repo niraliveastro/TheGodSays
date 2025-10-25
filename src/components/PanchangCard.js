@@ -1,39 +1,41 @@
-import { Card, CardContent } from '@/components/ui/card'
+import { Moon, Star, Sparkles, Disc, Sunrise as SunriseIcon, Sunset as SunsetIcon } from 'lucide-react'
+import './styles/panchangCard.css'
 
-const PanchangCard = ({ label, value }) => {
-  const getIcon = (label) => {
-    switch (label.toLowerCase()) {
-      case 'tithi':
-        return '🌙'
-      case 'nakshatra':
-        return '⭐'
-      case 'yoga':
-        return '🧘'
-      case 'karana':
-        return '⏰'
-      case 'sunrise':
-        return '🌅'
-      case 'sunset':
-        return '🌇'
-      case 'moonrise':
-        return '🌙'
-      case 'moonset':
-        return '🌚'
-      default:
-        return '📅'
-    }
-  }
-
-  return (
-    <Card className="p-4 text-center hover:shadow-md transition-shadow border-t-4 border-t-blue-500 bg-gradient-to-b from-blue-50 to-white">
-      <CardContent className="p-0">
-        <div className="text-3xl mb-3">{getIcon(label)}</div>
-        <div className="text-sm font-medium text-gray-600 mb-2">{label}</div>
-        <div className="text-lg font-semibold text-blue-700">{value}</div>
-      </CardContent>
-    </Card>
-  )
+const iconMap = {
+  'Tithi': Moon,
+  'Nakshatra': Star,
+  'Yoga': Sparkles,
+  'Karana': Disc,
+  'Sunrise': SunriseIcon,
+  'Sunset': SunsetIcon,
+  'Moonrise': Moon,
+  'Moonset': Moon,
 }
 
-export default PanchangCard
+const typeMap = {
+  'Tithi': 'tithi',
+  'Nakshatra': 'nakshatra',
+  'Yoga': 'yoga',
+  'Karana': 'karana',
+  'Sunrise': 'sunrise',
+  'Sunset': 'sunset',
+  'Moonrise': 'moonrise',
+  'Moonset': 'moonset',
+}
 
+export default function PanchangCard({ label, value }) {
+  const Icon = iconMap[label] || Star
+  const dataType = typeMap[label] || 'default'
+
+  return (
+    <div className="panchang-card" data-type={dataType}>
+      <div className="panchang-card-header">
+        <div className="panchang-card-icon">
+          <Icon />
+        </div>
+        <h3 className="panchang-card-label">{label}</h3>
+      </div>
+      <p className="panchang-card-value">{value}</p>
+    </div>
+  )
+}
