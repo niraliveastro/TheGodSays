@@ -1,0 +1,189 @@
+/* -------------------------------------------------
+   DATE SELECTOR – pure CSS (no Tailwind)
+   ------------------------------------------------- */
+
+/* ---- CARD (glass) ---- */
+.date-location-card {
+  @apply card;                     /* your existing glass-card style */
+}
+
+/* ---- ROW (two columns) ---- */
+.date-location-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.date-col {
+  flex: 1 1 280px;                 /* min-width for mobile */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- SECTION HEAD ---- */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.section-title {
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+/* ---- ICONS ---- */
+.icon { width: 1.25rem; height: 1.25rem; color: var(--color-gold); }
+.icon-sm { width: 0.875rem; height: 0.875rem; color: var(--color-gold); }
+.icon-spin { width: 1rem; height: 1rem; animation: spin 1s linear infinite; }
+.icon-spin-sm { width: 0.75rem; height: 0.75rem; animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ---- INPUTS ---- */
+.date-input,
+.location-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-gray-900);
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+.date-input:focus,
+.location-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, .2);
+}
+
+/* ---- DATE DISPLAY ---- */
+.date-display {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-gray-600);
+}
+
+/* ---- LOCATION ROW (input + button) ---- */
+.location-wrapper { position: relative; }
+.location-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---- LOCATION BUTTON ---- */
+.location-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-dark));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+}
+.location-btn:hover {
+  background: linear-gradient(135deg, #e6c04a, #c7a33a);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(212,175,55,.4);
+}
+.location-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ---- SUGGESTIONS ---- */
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 16rem;
+  overflow-y: auto;
+  z-index: 30;
+}
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: .875rem;
+  color: var(--color-gray-700);
+  border-bottom: 1px solid var(--color-gray-200);
+  transition: background .2s;
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background: rgba(212,175,55,.05); }
+
+/* ---- SEARCHING ---- */
+.searching {
+  margin-top: 0.5rem;
+  font-size: .875rem;
+  color: var(--color-gray-600);
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+/* ---- APPLY SECTION ---- */
+.apply-section {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+.apply-location-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem 1.5rem;
+  background: var(--color-gold);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---- ACTIVE / PENDING LOCATION STATUS ---- */
+.location-status {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: #ecfdf5;               /* light mint */
+  border: 1px solid #86efac;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+}
+.status-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #166534;                  /* dark green */
+  flex-shrink: 0;
+  margin-top: .125rem;
+}
+.status-text p { margin: 0; }
+.status-main {
+  font-size: .875rem;
+  color: #166534;
+}
+.status-sub {
+  font-size: .75rem;
+  color: #15803d;
+  margin-top: .125rem;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 640px) {
+  .date-location-row { flex-direction: column; }
+  .location-row { flex-direction: column; }
+  .location-btn { width: 100%; }
+}
