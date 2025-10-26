@@ -38,7 +38,7 @@ export default function UserAuth() {
 
     try {
       if (isLogin) {
-        result = await signIn(formData.email, formData.password)
+       const result = await signIn(formData.email, formData.password)
         if (result.profile?.collection === 'users') {
           router.push('/talk-to-astrologer')
         } else {
