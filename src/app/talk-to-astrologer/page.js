@@ -6,6 +6,8 @@ import { Star, Video, Phone, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { collection, getDocs, onSnapshot, query } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import CallConnectingNotification from '@/components/CallConnectingNotification'
+import Modal from '@/components/Modal'
 
 export default function TalkToAstrologer() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -13,6 +15,10 @@ export default function TalkToAstrologer() {
   const [loading, setLoading] = useState(false)
   const [astrologers, setAstrologers] = useState([])
   const [fetchingAstrologers, setFetchingAstrologers] = useState(true)
+  const [connectingCallType, setConnectingCallType] = useState(null) // 'video' or 'voice' or null
+  const [callStatus, setCallStatus] = useState('connecting') // 'connecting' or 'rejected'
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false)
+  const [balanceMessage, setBalanceMessage] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -160,8 +166,8 @@ export default function TalkToAstrologer() {
         return
       }
 
-      // First check wallet balance
-     const balanceResponse = await fetch('/api/billing', {
+      // First check wallet balance before setting connecting modal
+      const balanceResponse = await fetch('/api/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -174,11 +180,15 @@ export default function TalkToAstrologer() {
       if (balanceResponse.ok) {
         const balanceData = await balanceResponse.json()
         if (balanceData.success && !balanceData.validation.hasBalance) {
-          alert(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setBalanceMessage(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setIsBalanceModalOpen(true)
           setLoading(false)
           return
         }
       }
+
+      // Only set connecting modal if balance is sufficient
+      setConnectingCallType('voice')
 
       // Check astrologer availability
      const statusResponse = await fetch(`/api/astrologer/status?astrologerId=${backendAstrologerId}`)
@@ -270,6 +280,7 @@ export default function TalkToAstrologer() {
 
                 if (sessionResponse.ok) {
                   const { roomName } = await sessionResponse.json()
+                  setConnectingCallType(null)
                   router.push(`/talk-to-astrologer/voice/${roomName}`)
                 } else {
                   alert('Failed to connect to voice call. Please try again.')
@@ -290,7 +301,12 @@ export default function TalkToAstrologer() {
                 } catch (cancelError) {
                   console.error('Error cancelling billing:', cancelError)
                 }
-                alert('Astrologer declined the call. Please try again later.')
+                // Set rejection status and auto-close
+                setCallStatus('rejected')
+                setTimeout(() => {
+                  setConnectingCallType(null)
+                  setCallStatus('connecting')
+                }, 2000)
               }
             }
           } catch (error) {
@@ -314,12 +330,14 @@ export default function TalkToAstrologer() {
           } catch (cancelError) {
             console.error('Error cancelling billing:', cancelError)
           }
+          setConnectingCallType(null)
           alert('Astrologer is not responding. Please try again.')
           setLoading(false)
         }, 60000)
       }
     } catch (error) {
       console.error('Error starting voice call:', error)
+      setConnectingCallType(null)
       alert('Failed to start voice call. Please try again.')
     } finally {
       setLoading(false)
@@ -339,7 +357,7 @@ export default function TalkToAstrologer() {
         return
       }
 
-      // First check wallet balance
+      // First check wallet balance before setting connecting modal
       const balanceResponse = await fetch('/api/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -353,11 +371,15 @@ export default function TalkToAstrologer() {
       if (balanceResponse.ok) {
         const balanceData = await balanceResponse.json()
         if (balanceData.success && !balanceData.validation.hasBalance) {
-          alert(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setBalanceMessage(`Insufficient wallet balance. Required: ₹${balanceData.validation.minimumRequired}, Available: ₹${balanceData.validation.currentBalance}. Please recharge your wallet.`)
+          setIsBalanceModalOpen(true)
           setLoading(false)
           return
         }
       }
+
+      // Only set connecting modal if balance is sufficient
+      setConnectingCallType('video')
 
       // Check astrologer availability
       const statusResponse = await fetch(`/api/astrologer/status?astrologerId=${backendAstrologerId}`)
@@ -447,6 +469,7 @@ export default function TalkToAstrologer() {
 
                 if (sessionResponse.ok) {
                   const { roomName } = await sessionResponse.json()
+                  setConnectingCallType(null)
                   router.push(`/talk-to-astrologer/room/${roomName}`)
                 } else {
                   alert('Failed to connect to video call. Please try again.')
@@ -467,7 +490,12 @@ export default function TalkToAstrologer() {
                 } catch (cancelError) {
                   console.error('Error cancelling billing:', cancelError)
                 }
-                alert('Astrologer declined the call. Please try again later.')
+                // Set rejection status and auto-close
+                setCallStatus('rejected')
+                setTimeout(() => {
+                  setConnectingCallType(null)
+                  setCallStatus('connecting')
+                }, 2000)
               }
             }
           } catch (error) {
@@ -491,12 +519,14 @@ export default function TalkToAstrologer() {
           } catch (cancelError) {
             console.error('Error cancelling billing:', cancelError)
           }
+          setConnectingCallType(null)
           alert('Astrologer is not responding. Please try again.')
           setLoading(false)
         }, 60000)
       }
     } catch (error) {
       console.error('Error starting call:', error)
+      setConnectingCallType(null)
       alert('Failed to start video call. Please try again.')
     } finally {
       setLoading(false)
@@ -504,8 +534,18 @@ export default function TalkToAstrologer() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50 py-8">
+      {/* Connection Status Modal */}
+      <CallConnectingNotification 
+        isOpen={!!connectingCallType}
+        type={connectingCallType}
+        status={callStatus}
+        onTimeout={() => {
+          setConnectingCallType(null)
+          setCallStatus('connecting')
+          alert('Connection timed out. The astrologer may be unavailable. Please try again.')
+        }}
+      />      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Talk to Astrologer</h1>
@@ -648,6 +688,26 @@ export default function TalkToAstrologer() {
           </div>
         )}
       </div>
+
+      {/* Balance Modal */}
+      <Modal
+        open={isBalanceModalOpen}
+        onClose={() => setIsBalanceModalOpen(false)}
+        title="Insufficient Balance"
+      >
+        <div className="text-center">
+          <p className="mb-4 text-gray-700">{balanceMessage}</p>
+          <Button
+            onClick={() => {
+              router.push('/wallet')
+              setIsBalanceModalOpen(false)
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Add Money
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

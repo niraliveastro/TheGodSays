@@ -61,7 +61,7 @@ export default function VoiceCallNotification({ call, onAccept, onReject, onClos
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Voice Call</h3>
-                <p className="text-sm text-gray-600">From User {call.userId}</p>
+                <p className="text-sm text-gray-600">From Astrologer {call.userId}</p>
               </div>
             </div>
             <Button

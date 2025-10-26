@@ -19,8 +19,10 @@ export default function VoiceCallRoom() {
 
   useEffect(() => {
     const initializeRoom = async () => {
+      // Get user info from localStorage (outside try block for error handling)
       const userRole = localStorage.getItem('tgs:role') || 'user'
       const userId = localStorage.getItem('tgs:userId')
+      const astrologerId = localStorage.getItem('tgs:astrologerId')
       const isAstrologer = userRole === 'astrologer'
       
       try {
@@ -31,6 +33,7 @@ export default function VoiceCallRoom() {
           roomName,
           userRole,
           userId,
+          astrologerId,
           isAstrologer
         })
 
@@ -38,26 +41,8 @@ export default function VoiceCallRoom() {
           throw new Error('User not authenticated - please log in again')
         }
 
-        // Try to use pre-generated synchronized tokens first
-        const storedTokens = localStorage.getItem('tgs:sessionTokens')
-        const storedRoomName = localStorage.getItem('tgs:roomName')
-        const storedWsUrl = localStorage.getItem('tgs:wsUrl')
-
-        if (storedTokens && storedRoomName === roomName && storedWsUrl) {
-          const tokens = JSON.parse(storedTokens)
-          const userToken = isAstrologer ? tokens.astrologer : tokens.user
-          
-          if (userToken?.token) {
-            console.log('Using pre-generated synchronized token')
-            setToken(userToken.token)
-            setWsUrl(storedWsUrl)
-            return
-          }
-        }
-
-        // Fallback: Create individual session (backward compatibility)
-        console.log('Creating individual session token')
-        const astrologerId = localStorage.getItem('tgs:astrologerId')
+        // Create participant identity based on role
+        const participantId = isAstrologer ? `astrologer-${userId}` : `user-${userId}`
         const sessionAstrologerId = isAstrologer ? astrologerId : (astrologerId || 'user-session')
 
         const response = await fetch('/api/livekit/create-session', {
@@ -65,11 +50,11 @@ export default function VoiceCallRoom() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             astrologerId: sessionAstrologerId,
-            userId: isAstrologer ? astrologerId : userId,
+            userId: participantId,
             roomName,
             callType: 'voice',
             role: isAstrologer ? 'astrologer' : 'user',
-            displayName: isAstrologer ? (localStorage.getItem('tgs:astrologerName') || 'Astrologer') : (localStorage.getItem('tgs:userName') || 'User')
+            displayName: isAstrologer ? 'Astrologer' : 'User'
           })
         })
 
@@ -88,7 +73,8 @@ export default function VoiceCallRoom() {
             roomName,
             userRole,
             userId,
-            isAstrologer
+            isAstrologer,
+            participantId
           })
           throw new Error(`Session creation failed: ${errorData.error || 'Unknown error'}`)
         }
@@ -100,7 +86,8 @@ export default function VoiceCallRoom() {
           roomName: data.roomName,
           wsUrl: data.wsUrl,
           isAstrologer,
-          userRole
+          userRole,
+          participantId
         })
 
         if (!data.token || !data.wsUrl) {
@@ -110,12 +97,14 @@ export default function VoiceCallRoom() {
             dataKeys: Object.keys(data),
             roomName,
             isAstrologer,
-            userRole
+            userRole,
+            participantId
           })
           throw new Error('Invalid session data received from server')
         }
 
         console.log('Session data validated successfully')
+
         setToken(data.token)
         setWsUrl(data.wsUrl)
       } catch (err) {
@@ -146,71 +135,22 @@ export default function VoiceCallRoom() {
     return () => clearInterval(timer)
   }, [])
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = () => {
     console.log('Disconnecting from voice call:', {
       hasToken: !!token,
       hasWsUrl: !!wsUrl,
-      roomName: params.room,
-      callDuration
+      roomName: params.room
     })
-
-    // Clean up session data
-    localStorage.removeItem('tgs:sessionTokens')
-    localStorage.removeItem('tgs:roomName')
-    localStorage.removeItem('tgs:wsUrl')
-
-    // Only process billing if we're actually disconnecting from an active call
-    if (token && wsUrl && callDuration > 0) {
-      try {
-        // Calculate duration in minutes for billing
-        const durationMinutes = Math.ceil(callDuration / 60)
-
-        // Get call information from localStorage
-        const callId = localStorage.getItem('tgs:callId')
-        const userId = localStorage.getItem('tgs:userId')
-        const astrologerId = localStorage.getItem('tgs:astrologerId')
-
-        if (callId && userId && astrologerId) {
-          console.log('Finalizing billing for voice call:', {
-            callId,
-            durationMinutes,
-            callDuration
-          })
-
-          // Call immediate settlement API
-          const billingResponse = await fetch('/api/billing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'immediate-settlement',
-              callId,
-              durationMinutes
-            })
-          })
-
-          if (billingResponse.ok) {
-            const billingData = await billingResponse.json()
-            console.log('Billing settled successfully:', billingData)
-          } else {
-            console.error('Failed to settle billing:', await billingResponse.text())
-          }
-        } else {
-          console.warn('Missing call information for billing:', {
-            callId,
-            userId,
-            astrologerId
-          })
-        }
-      } catch (error) {
-        console.error('Error during call settlement:', error)
-      }
+    // Only redirect if we're actually disconnecting from an active call
+    // Don't redirect on initial load errors
+    if (token && wsUrl) {
+      const userRole = localStorage.getItem('tgs:role')
+      const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+      console.log('Redirecting after disconnect to:', redirectPath)
+      router.push(redirectPath)
+    } else {
+      console.log('Not redirecting - no active session')
     }
-
-    // Redirect after processing
-    const userRole = localStorage.getItem('tgs:role')
-    const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-    console.log('Redirecting after disconnect to:', redirectPath)
-    router.push(redirectPath)
   }
 
   const formatDuration = (seconds) => {
@@ -262,10 +202,6 @@ export default function VoiceCallRoom() {
               Retry Connection
             </Button>
             <Button onClick={() => {
-              // Clean up session data on error back navigation
-              localStorage.removeItem('tgs:sessionTokens')
-              localStorage.removeItem('tgs:roomName')
-              localStorage.removeItem('tgs:wsUrl')
               const userRole = localStorage.getItem('tgs:role')
               const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
               router.push(redirectPath)
@@ -316,10 +252,6 @@ export default function VoiceCallRoom() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                // Clean up session data on back navigation
-                localStorage.removeItem('tgs:sessionTokens')
-                localStorage.removeItem('tgs:roomName')
-                localStorage.removeItem('tgs:wsUrl')
                 const userRole = localStorage.getItem('tgs:role')
                 const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
                 router.push(redirectPath)
@@ -381,7 +313,7 @@ export default function VoiceCallRoom() {
                 // Don't auto-redirect on connection errors, let user manually disconnect
               }}
               onConnected={() => {
-                console.log('Successfully connected to voice room:', {
+                console.log('Successfully connected to LiveKit room:', {
                   roomName: params.room
                 })
                 // Clear any previous errors when successfully connected
