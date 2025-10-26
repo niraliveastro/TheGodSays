@@ -13,7 +13,7 @@ const ALLOWED_ENDPOINTS = [
   'rahu-kalam', 'gulika-kalam', 'yama-gandam', 'abhijit-muhurat',
   'amrit-kaal', 'brahma-muhurat', 'dur-muhurat', 'varjyam', 'good-bad-times',
   'planets', 'shadbala/summary', 'vimsottari/maha-dasas', 'vimsottari/dasa-information',
-  'vimsottari/maha-dasas-and-antar-dasas', 'western/natal-wheel-chart'
+  'vimsottari/maha-dasas-and-antar-dasas', 'western/natal-wheel-chart', 'horoscope-chart-svg-code'
 ]
 
 // Custom validation that handles optional fields properly
