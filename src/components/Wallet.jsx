@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Wallet as WalletIcon, Plus, History, CreditCard } from 'lucide-react'
+import { Wallet as WalletIcon, Plus, History, CreditCard, Loader2 } from 'lucide-react'
 
 export default function Wallet() {
   const { user, getUserId, userProfile } = useAuth()
@@ -16,318 +14,312 @@ export default function Wallet() {
 
   const userId = getUserId()
 
+  /* ------------------------------------------------------------------ */
+  /*  FETCH WALLET DATA                                                */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
-    if (userId) {
-      fetchWalletData()
-    }
+    if (userId) fetchWalletData()
   }, [userId])
 
   const fetchWalletData = async () => {
     try {
-      const response = await fetch('/api/payments/wallet', {
+      const res = await fetch('/api/payments/wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-balance', userId })
+        body: JSON.stringify({ action: 'get-balance', userId }),
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          const walletData = data.wallet
-          setWallet(walletData)
-        }
+      if (res.ok) {
+        const { success, wallet: data } = await res.json()
+        if (success) setWallet(data)
       }
-    } catch (error) {
-      console.error('Error fetching wallet data:', error)
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
 
-  const calculateBalanceFromTransactions = (transactions) => {
-    let balance = 0
-    if (!transactions || !Array.isArray(transactions)) {
-      return balance
-    }
-
-    transactions.forEach(transaction => {
-      if (transaction.status === 'completed') {
-        switch (transaction.type) {
-          case 'credit':
-            balance += transaction.amount
-            break
-          case 'debit':
-            balance -= transaction.amount
-            break
-          case 'hold':
-            //Hold transactions are temporary reservations and should not affect
-            //the final balance calculation. They will be either converted to
-            //debit transactions (for actual charges) or result in credit
-            //transactions (for refunds of unused amounts)
-            break
-          default:
-            break
-        }
-      } else if (transaction.status === 'pending' && transaction.type === 'hold') {
-        //Pending hold transactions should be deducted from available balance
-        //as they represent reserved funds
-        balance -= transaction.amount
-      }
-    })
-
-    return Math.round(balance * 100) / 100 // Round to 2 decimal places
-  }
-
+  /* ------------------------------------------------------------------ */
+  /*  RECHARGE HANDLER (Razorpay) – FIXED: NO TYPES                    */
+  /* ------------------------------------------------------------------ */
   const handleRecharge = async () => {
-    if (!rechargeAmount || rechargeAmount <= 0) {
+    if (!rechargeAmount || Number(rechargeAmount) <= 0) {
       alert('Please enter a valid amount')
       return
     }
 
     setRechargeLoading(true)
     try {
-      const response = await fetch('/api/payments/wallet', {
+      // 1. Create order
+      const orderRes = await fetch('/api/payments/wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'recharge',
           userId,
-          amount: parseFloat(rechargeAmount)
-        })
+          amount: parseFloat(rechargeAmount),
+        }),
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          // Get Razorpay key from server
-          const keyResponse = await fetch('/api/payments/config')
-          const keyData = await keyResponse.json()
-
-          if (!keyResponse.ok || !keyData.success) {
-            alert('Payment configuration error. Please try again.')
-            return
-          }
-
-          // Initialize Razorpay payment
-          const options = {
-            key: keyData.key,
-            amount: data.order.amount,
-            currency: data.order.currency,
-            name: 'The God Says',
-            description: 'Wallet Recharge',
-            order_id: data.order.id,
-            handler: async function (response) {
-              // Verify payment
-              const verifyResponse = await fetch('/api/payments/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  userId
-                })
-              })
-
-              if (verifyResponse.ok) {
-                const verifyData = await verifyResponse.json()
-                if (verifyData.success) {
-                  alert('Payment successful! Wallet updated.')
-                  setRechargeAmount('')
-                  setShowRechargeForm(false)
-                  fetchWalletData() // Refresh wallet data
-                } else {
-                  alert('Payment verification failed. Please contact support.')
-                }
-              } else {
-                alert('Payment verification failed. Please contact support.')
-              }
-            },
-            prefill: {
-              email: user?.email || '',
-              name: user?.displayName || ''
-            },
-            theme: {
-              color: '#3399cc'
-            }
-          }
-
-          const rzp = new window.Razorpay(options)
-          rzp.open()
-        } else {
-          alert('Failed to create payment order. Please try again.')
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        alert(`Failed to initiate recharge: ${errorData.error || 'Please try again.'}`)
+      const orderData = await orderRes.json()
+      if (!orderRes.ok || !orderData.success) {
+        alert(orderData.error ?? 'Failed to create payment order')
+        return
       }
-    } catch (error) {
-      console.error('Error during recharge:', error)
-      alert(`An error occurred: ${error.message || 'Please try again.'}`)
+
+      // 2. Get Razorpay key
+      const keyRes = await fetch('/api/payments/config')
+      const keyData = await keyRes.json()
+      if (!keyData.success) {
+        alert('Payment configuration error')
+        return
+      }
+
+      // 3. Open Razorpay – FIXED HERE
+      const options = {
+        key: keyData.key,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
+        name: 'The God Says',
+        description: 'Wallet Recharge',
+        order_id: orderData.order.id,
+        handler: async (resp) => {
+          // 4. Verify payment
+          const verifyRes = await fetch('/api/payments/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature: resp.razorpay_signature,
+              userId,
+            }),
+          })
+          const verifyData = await verifyRes.json()
+          if (verifyRes.ok && verifyData.success) {
+            alert('Payment successful! Wallet updated.')
+            setRechargeAmount('')
+            setShowRechargeForm(false)
+            fetchWalletData()
+          } else {
+            alert('Payment verification failed. Contact support.')
+          }
+        },
+        prefill: {
+          email: user?.email ?? '',
+          name: user?.displayName ?? '',
+        },
+        theme: { color: '#d4af37' }, // gold
+      }
+
+      const rzp = new (window).Razorpay(options)
+      rzp.open()
+    } catch (e) {
+      alert(`Error: ${e.message}`)
     } finally {
       setRechargeLoading(false)
     }
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  HELPERS                                                          */
+  /* ------------------------------------------------------------------ */
+  const formatCurrency = (amt) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amt)
 
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount)
-  }
-
-  const formatDate = (timestamp) => {
+  const formatDate = (ts) => {
     let date
-    if (timestamp && timestamp._seconds) {
-      // Firestore Timestamp in client format
-      date = new Date(timestamp._seconds * 1000)
-    } else if (timestamp && timestamp.toDate) {
-      // Firestore Timestamp
-      date = timestamp.toDate()
-    } else if (timestamp && timestamp.seconds) {
-      // Firestore Timestamp with seconds
-      date = new Date(timestamp.seconds * 1000)
-    } else {
-      // Regular Date or string
-      date = new Date(timestamp)
-    }
+    if (ts?._seconds) date = new Date(ts._seconds * 1000)
+    else if (ts?.toDate) date = ts.toDate()
+    else if (ts?.seconds) date = new Date(ts.seconds * 1000)
+    else date = new Date(ts)
 
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date'
-    }
-
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return isNaN(date.getTime())
+      ? 'Invalid Date'
+      : date.toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  RENDER                                                           */
+  /* ------------------------------------------------------------------ */
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader2 style={{ width: '2rem', height: '2rem', color: 'var(--color-gold)', animation: 'spin 1s linear infinite' }} />
+        <span style={{ marginLeft: '0.5rem', color: 'var(--color-gray-600)' }}>Loading wallet…</span>
       </div>
     )
   }
 
-  // Only regular users can access wallet, not astrologers
   if (userProfile?.collection === 'astrologers') {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h2>
-          <p className="text-gray-600">Wallet functionality is only available for regular users. Astrologers receive payments directly.</p>
+      <div style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            Access Restricted
+          </h2>
+          <p style={{ color: 'var(--color-gray-600)' }}>
+            Wallet functionality is only available for regular users. Astrologers receive payments directly.
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Wallet Balance Card */}
-      <Card className="p-6">
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="p-3 bg-blue-100 rounded-full">
-            <WalletIcon className="w-8 h-8 text-blue-600" />
+    <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
+
+      {/* ---------- BALANCE CARD ---------- */}
+      <div className="card" style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <div
+            style={{
+              width: '3rem',
+              height: '3rem',
+              background: '#dbeafe',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <WalletIcon style={{ width: '1.75rem', height: '1.75rem', color: '#2563eb' }} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Wallet Balance</h2>
-            <p className="text-gray-600">Manage your wallet and view transaction history</p>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+              Wallet Balance
+            </h2>
+            <p style={{ color: 'var(--color-gray-600)' }}>Manage your wallet and view history</p>
           </div>
         </div>
 
-        <div className="text-4xl font-bold text-green-600 mb-4">
+        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '1rem' }}>
           {formatCurrency(wallet.balance)}
         </div>
 
-        <div className="flex space-x-2">
-          <Button
-            onClick={() => setShowRechargeForm(!showRechargeForm)}
-            className="flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Money</span>
-          </Button>
-        </div>
-      </Card>
+        <button
+          onClick={() => setShowRechargeForm(!showRechargeForm)}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          <Plus style={{ width: '1rem', height: '1rem' }} />
+          <span>Add Money</span>
+        </button>
+      </div>
 
-      {/* Recharge Form */}
+      {/* ---------- RECHARGE FORM ---------- */}
       {showRechargeForm && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Recharge Wallet</h3>
-          <div className="space-y-4">
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
+            Recharge Wallet
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
                 Amount (₹)
               </label>
               <input
                 type="number"
                 value={rechargeAmount}
                 onChange={(e) => setRechargeAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g. 500"
                 min="1"
                 step="0.01"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: '0.5rem',
+                  background: 'var(--color-white)',
+                  fontSize: '1rem',
+                }}
               />
             </div>
-            <div className="flex space-x-2">
-              <Button
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
                 onClick={handleRecharge}
                 disabled={rechargeLoading || !rechargeAmount}
-                className="flex items-center space-x-2"
+                className="btn btn-primary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
               >
-                <CreditCard className="w-4 h-4" />
-                <span>{rechargeLoading ? 'Processing...' : 'Pay Now'}</span>
-              </Button>
-              <Button
-                variant="outline"
+                {rechargeLoading ? (
+                  <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <CreditCard style={{ width: '1rem', height: '1rem' }} />
+                )}
+                <span>{rechargeLoading ? 'Processing…' : 'Pay Now'}</span>
+              </button>
+
+              <button
                 onClick={() => setShowRechargeForm(false)}
+                className="btn btn-outline"
+                style={{ flex: 1 }}
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* Transaction History */}
-      <Card className="p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <History className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold">Transaction History</h3>
+      {/* ---------- TRANSACTION HISTORY ---------- */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <History style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-gray-600)' }} />
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Transaction History</h3>
         </div>
 
         {wallet.transactions.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No transactions yet</p>
+          <p style={{ textAlign: 'center', color: 'var(--color-gray-500)', padding: '1rem' }}>
+            No transactions yet
+          </p>
         ) : (
-          <div className="space-y-3">
-            {wallet.transactions.map((transaction, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{transaction.description}</p>
-                  <p className="text-sm text-gray-600">
-                    {formatDate(transaction.timestamp)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {wallet.transactions.map((t, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem',
+                  background: 'var(--color-gray-50)',
+                  borderRadius: '0.5rem',
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>{t.description}</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
+                    {formatDate(t.timestamp)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${
-                    transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'credit' ? '+' : '-'}
-                    {formatCurrency(transaction.amount)}
+
+                <div style={{ textAlign: 'right' }}>
+                  <p
+                    style={{
+                      fontWeight: 600,
+                      color: t.type === 'credit' ? '#16a34a' : '#dc2626',
+                    }}
+                  >
+                    {t.type === 'credit' ? '+' : '-'}
+                    {formatCurrency(t.amount)}
                   </p>
-                  <p className="text-xs text-gray-500 capitalize">{transaction.status}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', textTransform: 'capitalize' }}>
+                    {t.status}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   )
 }
