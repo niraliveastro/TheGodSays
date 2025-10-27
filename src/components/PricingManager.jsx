@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { DollarSign, Settings, Save, Calculator } from 'lucide-react'
+import { DollarSign, Settings, Save, Calculator, Loader2 } from 'lucide-react'
 
 export default function PricingManager() {
   const { userProfile, getUserId } = useAuth()
@@ -15,11 +13,14 @@ export default function PricingManager() {
     pricingType: 'per_minute',
     basePrice: '',
     discountPercent: '',
-    callDurationMins: ''
+    callDurationMins: '',
   })
 
   const astrologerId = getUserId()
 
+  /* ------------------------------------------------------------------ */
+  /*  FETCH CURRENT PRICING                                            */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
     if (astrologerId && userProfile?.role === 'astrologer') {
       fetchPricing()
@@ -28,176 +29,224 @@ export default function PricingManager() {
 
   const fetchPricing = async () => {
     try {
-      const response = await fetch('/api/pricing', {
+      const res = await fetch('/api/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-pricing', astrologerId })
+        body: JSON.stringify({ action: 'get-pricing', astrologerId }),
       })
-
-      if (response.ok) {
-        const data = await response.json()
+      if (res.ok) {
+        const data = await res.json()
         if (data.success) {
           setPricing(data.pricing)
           setFormData({
             pricingType: data.pricing.pricingType || 'per_minute',
-            basePrice: data.pricing.basePrice || '',
-            discountPercent: data.pricing.discountPercent || '',
-            callDurationMins: data.pricing.callDurationMins || ''
+            basePrice: data.pricing.basePrice?.toString() || '',
+            discountPercent: data.pricing.discountPercent?.toString() || '',
+            callDurationMins: data.pricing.callDurationMins?.toString() || '',
           })
         }
       }
-    } catch (error) {
-      console.error('Error fetching pricing:', error)
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  /* ------------------------------------------------------------------ */
+  /*  FORM HANDLERS – FIXED: NO TYPE ANNOTATIONS                       */
+  /* ------------------------------------------------------------------ */
+  const handleInput = (field, value) => {
+    setFormData((p) => ({ ...p, [field]: value }))
   }
 
   const handleSave = async () => {
-    if (!formData.basePrice || formData.basePrice <= 0) {
+    if (!formData.basePrice || Number(formData.basePrice) <= 0) {
       alert('Please enter a valid base price')
       return
     }
 
     setSaving(true)
     try {
-      // Prepare the data with proper types
-      const submitData = {
+      const payload = {
         action: 'set-pricing',
         astrologerId,
         pricingType: formData.pricingType,
         basePrice: parseFloat(formData.basePrice),
         discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : 0,
-        callDurationMins: formData.pricingType === 'per_call' && formData.callDurationMins ?
-          parseInt(formData.callDurationMins) : 30
+        callDurationMins:
+          formData.pricingType === 'per_call' && formData.callDurationMins
+            ? parseInt(formData.callDurationMins, 10)
+            : 30,
       }
 
-      console.log('Submitting pricing data:', submitData)
-
-      const response = await fetch('/api/pricing', {
+      const res = await fetch('/api/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submitData)
+        body: JSON.stringify(payload),
       })
+      const json = await res.json()
 
-      console.log('Response status:', response.status)
-      const data = await response.json()
-      console.log('Response data:', data)
-
-      if (response.ok) {
-        if (data.success) {
-          setPricing(data.pricing)
-          alert('Pricing updated successfully!')
-          // Refresh the form data with the saved pricing
-          setFormData({
-            pricingType: data.pricing.pricingType || 'per_minute',
-            basePrice: data.pricing.basePrice || '',
-            discountPercent: data.pricing.discountPercent || '',
-            callDurationMins: data.pricing.callDurationMins || ''
-          })
-        } else {
-          alert(`Failed to update pricing: ${data.error || 'Unknown error'}`)
-        }
+      if (res.ok && json.success) {
+        setPricing(json.pricing)
+        setFormData({
+          pricingType: json.pricing.pricingType || 'per_minute',
+          basePrice: json.pricing.basePrice?.toString() || '',
+          discountPercent: json.pricing.discountPercent?.toString() || '',
+          callDurationMins: json.pricing.callDurationMins?.toString() || '',
+        })
+        alert('Pricing updated successfully!')
       } else {
-        alert(`Failed to update pricing: ${data.error || 'Server error'}`)
+        alert(`Failed: ${json.error ?? 'unknown error'}`)
       }
-    } catch (error) {
-      console.error('Error updating pricing:', error)
-      alert(`An error occurred: ${error.message}`)
+    } catch (e) {
+      alert(`Error: ${e.message}`)
     } finally {
       setSaving(false)
     }
   }
 
-  const calculatePreview = () => {
+  /* ------------------------------------------------------------------ */
+  /*  PREVIEW CALCULATION                                              */
+  /* ------------------------------------------------------------------ */
+  const preview = (() => {
     if (!formData.basePrice) return null
-
-    const basePrice = parseFloat(formData.basePrice)
-    const discountPercent = parseFloat(formData.discountPercent) || 0
-    const finalPrice = basePrice * (1 - discountPercent / 100)
-
+    const base = parseFloat(formData.basePrice)
+    const disc = parseFloat(formData.discountPercent) || 0
+    const final = base * (1 - disc / 100)
     return {
-      basePrice,
-      discountPercent,
-      finalPrice,
-      monthly: formData.pricingType === 'per_minute' ? 'Varies' : `${Math.round(finalPrice * 30)}/month`
+      base,
+      disc,
+      final,
+      monthly:
+        formData.pricingType === 'per_minute'
+          ? 'Varies'
+          : `₹${Math.round(final * 30)} / month`,
     }
-  }
+  })()
 
-  const preview = calculatePreview()
-
+  /* ------------------------------------------------------------------ */
+  /*  RENDER                                                           */
+  /* ------------------------------------------------------------------ */
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div
+        style={{
+          minHeight: '200px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <Loader2
+            style={{
+              width: '2rem',
+              height: '2rem',
+              color: 'var(--color-gold)',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <p style={{ marginTop: '0.5rem', color: 'var(--color-gray-600)' }}>
+            Loading pricing…
+          </p>
+        </div>
       </div>
     )
   }
 
   if (userProfile?.role !== 'astrologer') {
     return (
-      <div className="text-center p-8">
-        <p className="text-gray-500">This feature is only available for astrologers.</p>
+      <div style={{ textAlign: 'center', padding: '2rem' }}>
+        <p style={{ color: 'var(--color-gray-500)' }}>
+          This feature is only available for astrologers.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Current Pricing Display */}
+    <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
+
+      {/* ---------- CURRENT PRICING ---------- */}
       {pricing && (
-        <Card className="p-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-green-100 rounded-full">
-              <DollarSign className="w-8 h-8 text-green-600" />
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <div
+              style={{
+                width: '3rem',
+                height: '3rem',
+                background: '#ecfccb',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <DollarSign style={{ width: '1.75rem', height: '1.75rem', color: '#65a30d' }} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Current Pricing</h2>
-              <p className="text-gray-600">Your current pricing configuration</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+                Current Pricing
+              </h2>
+              <p style={{ color: 'var(--color-gray-600)' }}>Your active configuration</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Pricing Type</p>
-              <p className="text-lg font-semibold capitalize">{pricing.pricingType.replace('_', ' ')}</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Base Price</p>
-              <p className="text-lg font-semibold">₹{pricing.basePrice}</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Final Price</p>
-              <p className="text-lg font-semibold">₹{pricing.finalPrice}</p>
-            </div>
+          <div
+            style={{
+              display: 'grid',
+              gap: '1rem',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            }}
+          >
+            {[
+              { label: 'Pricing Type', value: pricing.pricingType.replace('_', ' ') },
+              { label: 'Base Price', value: `₹${pricing.basePrice}` },
+              { label: 'Final Price', value: `₹${pricing.finalPrice}` },
+            ].map((i) => (
+              <div
+                key={i.label}
+                style={{
+                  textAlign: 'center',
+                  padding: '1rem',
+                  background: 'var(--color-gray-50)',
+                  borderRadius: '0.5rem',
+                }}
+              >
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>{i.label}</p>
+                <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>{i.value}</p>
+              </div>
+            ))}
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* Pricing Configuration Form */}
-      <Card className="p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Settings className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold">Update Pricing</h3>
+      {/* ---------- UPDATE FORM ---------- */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <Settings style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-gray-600)' }} />
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Update Pricing</h3>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
           {/* Pricing Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
               Pricing Type
             </label>
             <select
               value={formData.pricingType}
-              onChange={(e) => handleInputChange('pricingType', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => handleInput('pricingType', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+                fontSize: '1rem',
+              }}
             >
               <option value="per_minute">Per Minute</option>
               <option value="per_call">Per Call</option>
@@ -206,94 +255,136 @@ export default function PricingManager() {
 
           {/* Base Price */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
               Base Price (₹)
             </label>
             <input
               type="number"
               value={formData.basePrice}
-              onChange={(e) => handleInputChange('basePrice', e.target.value)}
-              placeholder="Enter base price"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => handleInput('basePrice', e.target.value)}
+              placeholder="e.g. 5.00"
               min="0"
               step="0.01"
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+                fontSize: '1rem',
+              }}
             />
           </div>
 
-          {/* Discount Percent */}
+          {/* Discount % */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Discount Percent (Optional)
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+              Discount Percent (optional)
             </label>
             <input
               type="number"
               value={formData.discountPercent}
-              onChange={(e) => handleInputChange('discountPercent', e.target.value)}
-              placeholder="Enter discount percentage"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => handleInput('discountPercent', e.target.value)}
+              placeholder="e.g. 10"
               min="0"
               max="100"
               step="0.01"
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+                fontSize: '1rem',
+              }}
             />
           </div>
 
-          {/* Call Duration (only for per_call) */}
+          {/* Call Duration – only for per_call */}
           {formData.pricingType === 'per_call' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Call Duration (Minutes)
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                Call Duration (minutes)
               </label>
               <input
                 type="number"
                 value={formData.callDurationMins}
-                onChange={(e) => handleInputChange('callDurationMins', e.target.value)}
-                placeholder="Enter call duration in minutes"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => handleInput('callDurationMins', e.target.value)}
+                placeholder="e.g. 30"
                 min="1"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: '0.5rem',
+                  background: 'var(--color-white)',
+                  fontSize: '1rem',
+                }}
               />
             </div>
           )}
 
-          {/* Preview */}
+          {/* ---------- PREVIEW ---------- */}
           {preview && (
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-2 mb-2">
-                <Calculator className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-blue-900">Price Preview</span>
+            <div
+              style={{
+                padding: '1rem',
+                background: '#dbeafe',
+                borderRadius: '0.5rem',
+                display: 'grid',
+                gap: '0.75rem',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Calculator style={{ width: '1rem', height: '1rem', color: '#2563eb' }} />
+                <span style={{ fontWeight: 600, color: '#1e40af' }}>Price Preview</span>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+
+              <div>
+                <span style={{ color: 'var(--color-gray-600)' }}>Base:</span>{' '}
+                <strong>₹{preview.base}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--color-gray-600)' }}>Final:</span>{' '}
+                <strong>₹{preview.final.toFixed(2)}</strong>
+              </div>
+              {preview.disc > 0 && (
                 <div>
-                  <span className="text-gray-600">Base Price: </span>
-                  <span className="font-semibold">₹{preview.basePrice}</span>
+                  <span style={{ color: 'var(--color-gray-600)' }}>Discount:</span>{' '}
+                  <strong style={{ color: '#16a34a' }}>{preview.disc}%</strong>
                 </div>
-                <div>
-                  <span className="text-gray-600">Final Price: </span>
-                  <span className="font-semibold">₹{preview.finalPrice.toFixed(2)}</span>
-                </div>
-                {preview.discountPercent > 0 && (
-                  <div>
-                    <span className="text-gray-600">Discount: </span>
-                    <span className="font-semibold text-green-600">{preview.discountPercent}%</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-gray-600">Est. Monthly: </span>
-                  <span className="font-semibold">{preview.monthly}</span>
-                </div>
+              )}
+              <div>
+                <span style={{ color: 'var(--color-gray-600)' }}>Est. Monthly:</span>{' '}
+                <strong>{preview.monthly}</strong>
               </div>
             </div>
           )}
 
-          <Button
+          {/* ---------- SAVE BUTTON ---------- */}
+          <button
             onClick={handleSave}
             disabled={saving || !formData.basePrice}
-            className="w-full flex items-center justify-center space-x-2"
+            className="btn btn-primary"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              marginTop: '0.5rem',
+            }}
           >
-            <Save className="w-4 h-4" />
-            <span>{saving ? 'Saving...' : 'Save Pricing'}</span>
-          </Button>
+            {saving ? (
+              <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Save style={{ width: '1rem', height: '1rem' }} />
+            )}
+            <span>{saving ? 'Saving…' : 'Save Pricing'}</span>
+          </button>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
