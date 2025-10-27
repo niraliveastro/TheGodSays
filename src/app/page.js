@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button'
 import PanchangCard from '@/components/PanchangCard'
 import TimingsSection from '@/components/TimingsSection'
 import FestivalCard from '@/components/FestivalCard'
-import HoraTimeline from '@/components/HoraTimeline'
 import AstrologyOptionCard from '@/components/AstrologyOptionCard'
 import AstrologyForm from '@/components/AstrologyForm'
 import AstrologyResult from '@/components/AstrologyResult'
 import DateSelector from '@/components/DateSelector'
 import { mockPanchangData } from '@/lib/mockData'
 import { astrologyAPI } from '@/lib/api'
+import { Calendar, MapPin, Sparkles, Sun, Moon, Clock, Star, AlertCircle } from 'lucide-react'
+import './home.css'
 
 // Simple in-memory cache for home panchang fetches (reset on reload)
 const homePanchangCache = new Map() // key => { data, savedAt }
@@ -622,147 +623,367 @@ export default function Home() {
 
   // Show main home page with options
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-blue-600 mb-1">TheGodSays</h1>
-          <p className="text-lg text-gray-600">{currentDate}</p>
-        </div>
+<>
+    {/* Full Page Background */}
+    <div className="home-page min-h-screen">
+      <div 
+        className="fixed inset-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234f46e5' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundSize: '60px 60px'
+        }}
+      />
 
-        {/* Date & Location Selector */}
-        <div className="mb-8 p-6 bg-white rounded-xl shadow-md border border-gray-100">
+      {/* Main Content */}
+      <main className="home-main relative z-10">
+
+        {/* ─────────────────────────────── HERO SECTION ─────────────────────────────── */}
+        <header className="hero-section">
+          <div className="hero-background">
+            <div className="hero-gradient-mesh"></div>
+            <div className="hero-constellation"></div>
+            <div className="hero-particles">
+              <span className="particle particle-1"></span>
+              <span className="particle particle-2"></span>
+              <span className="particle particle-3"></span>
+              <span className="particle particle-4"></span>
+              <span className="particle particle-5"></span>
+            </div>
+          </div>
+
+          <div className="hero-content-wrapper">
+            {/* Left Content */}
+            <div className="hero-left">
+              <div className="hero-badge">
+                <Sparkles className="hero-badge-icon" />
+                <span>Trusted Vedic Astrology Platform</span>
+              </div>
+
+              <h1 className="hero-main-title">
+                Unlock Your <span className="hero-highlight">Cosmic</span> Destiny
+              </h1>
+
+              <p className="hero-description">
+                Discover personalized Vedic insights, daily Panchang, and auspicious timings 
+                powered by ancient wisdom and modern precision.
+              </p>
+
+              <div className="hero-features-inline">
+                <div className="hero-pill">
+                  <Sun className="hero-pill-icon" />
+                  <span>Daily Panchang</span>
+                </div>
+                <div className="hero-pill">
+                  <Moon className="hero-pill-icon" />
+                  <span>Kundli Analysis</span>
+                </div>
+                <div className="hero-pill">
+                  <Star className="hero-pill-icon" />
+                  <span>Live Muhurat</span>
+                </div>
+              </div>
+
+              <div className="hero-actions">
+                <button 
+                  onClick={() => document.getElementById('panchang-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="hero-btn hero-btn-primary"
+                >
+                  <Calendar className="hero-btn-icon" />
+                  View Today's Panchang
+                </button>
+                <button 
+                  onClick={() => document.getElementById('astrology-options')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="hero-btn hero-btn-secondary"
+                >
+                  <Star className="hero-btn-icon" />
+                  Explore Tools
+                </button>
+              </div>
+
+              <div className="hero-stats">
+                <div className="hero-stat">
+                  <div className="hero-stat-number">50K+</div>
+                  <div className="hero-stat-label">Daily Users</div>
+                </div>
+                <div className="hero-stat-divider"></div>
+                <div className="hero-stat">
+                  <div className="hero-stat-number">99.9%</div>
+                  <div className="hero-stat-label">Accuracy</div>
+                </div>
+                <div className="hero-stat-divider"></div>
+                <div className="hero-stat">
+                  <div className="hero-stat-number">24/7</div>
+                  <div className="hero-stat-label">Available</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Visual */}
+            <div className="hero-right">
+              <div className="hero-visual-container">
+                <div className="zodiac-circle">
+                  <div className="zodiac-ring zodiac-ring-outer"></div>
+                  <div className="zodiac-ring zodiac-ring-middle"></div>
+                  <div className="zodiac-ring zodiac-ring-inner"></div>
+                  <div className="zodiac-center">
+                    <Sun className="zodiac-center-icon" />
+                  </div>
+{/* Zodiac Icons */}
+<div className="zodiac-icon zodiac-icon-1">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2L15 8L12 14L9 8L12 2Z M9 8L6 14L3 8 M15 8L18 14L21 8" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-2">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="8" cy="12" r="6" />
+    <circle cx="16" cy="12" r="6" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-3">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M6 4v16 M18 4v16 M6 8h12 M6 16h12" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-4">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="8" r="4" />
+    <circle cx="7" cy="16" r="4" />
+    <circle cx="17" cy="16" r="4" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-5">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 4v8l4 4" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-6">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 12h18 M8 6v12 M12 8v8 M16 10v4" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-7">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 6h18 M5 6v8a6 6 0 006 6h2a6 6 0 006-6V6" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-8">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2L14 8L20 10L14 12L12 18L10 12L4 10L10 8L12 2Z" />
+    <path d="M12 18v4" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-9">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 12L12 4L20 12 M12 4V20" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-10">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 6h6a6 6 0 016 6v6a6 6 0 01-6 6H3" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-11">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 8h16 M4 16h16 M8 4v16 M16 4v16" />
+  </svg>
+</div>
+<div className="zodiac-icon zodiac-icon-12">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />
+  </svg>
+</div>
+                </div>
+
+                <div className="hero-info-card hero-info-card-1">
+                  <Clock className="hero-info-icon" />
+                  <div className="hero-info-content">
+                    <div className="hero-info-label">Current Date</div>
+                    <div className="hero-info-value">{currentDate}</div>
+                  </div>
+                </div>
+
+                <div className="hero-info-card hero-info-card-2">
+                  <Moon className="hero-info-icon" />
+                  <div className="hero-info-content">
+                    <div className="hero-info-label">Tithi</div>
+                    <div className="hero-info-value">{panchangData.tithi.split(' ')[0]}</div>
+                  </div>
+                </div>
+
+                <div className="hero-info-card hero-info-card-3">
+                  <Star className="hero-info-icon" />
+                  <div className="hero-info-content">
+                    <div className="hero-info-label">Nakshatra</div>
+                    <div className="hero-info-value">{panchangData.nakshatra}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+        {/* ───────────────────────────── END HERO SECTION ───────────────────────────── */}
+
+{/* Main content sections wrapper */}
+<div className="content-sections-wrapper">
+  {/* DATE & LOCATION CARD */}
+  <div className="date-location-card">
           <DateSelector
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             userLocation={userLocation}
             onLocationChange={setUserLocation}
             pendingLocation={pendingLocation}
-            onPendingLocationChange={(loc) => setPendingLocation(loc)}
+      onPendingLocationChange={setPendingLocation}
           />
-
-        {/* Apply Selected Location Button */}
         {pendingLocation && (
-          <div className="mt-4">
-            <Button
+      <button
               onClick={() => {
-                const lat = pendingLocation.latitude
-                const lon = pendingLocation.longitude
-                if (typeof lat === 'number' && typeof lon === 'number') {
-                  setUserLocation({ latitude: lat, longitude: lon })
-                }
+          setUserLocation({ latitude: pendingLocation.latitude, longitude: pendingLocation.longitude })
                 setPendingLocation(null)
               }}
-              className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto px-6 py-2 rounded-lg flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Use Selected Location
-            </Button>
-          </div>
+        className="apply-location-btn"
+      >
+        <MapPin />
+        Apply Selected Location
+      </button>
         )}
         </div>
 
-        {/* Loading and Error States */}
+  {/* LOADING STATE */}
         {isLoadingPanchang && (
-          <div className="text-center py-8">
-            <div className="inline-flex items-center space-x-2 text-blue-600">
-              <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-              <span>Loading real-time Panchang data...</span>
+    <div className="loading-container">
+      <div className="loading-content">
+        <div className="loading-spinner"></div>
+        <span>Loading real-time cosmic data...</span>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Fetching Tithi, Nakshatra, Yoga, Karana from astrology API
-            </p>
-            <p className="text-sm text-gray-500">
-              Fetching Sunrise, Sunset, Moonrise & Moonset from IPGeolocation API
-            </p>
+      <p className="loading-text">Tithi • Nakshatra • Sunrise • Muhurta</p>
           </div>
         )}
 
+  {/* STATUS BANNERS */}
         {panchangError && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm">{panchangError}</p>
+    <div className="status-banner status-banner-error">
+      <p className="status-banner-text">{panchangError}</p>
           </div>
         )}
 
-        {/* Success indicator when data is loaded */}
         {!isLoadingPanchang && !panchangError && userLocation && (
-          <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 text-sm">
-              ✅ Real-time Panchang data loaded for your location
+    <div className="status-banner status-banner-success">
+      <p className="status-banner-text">
+        Real-time Panchang loaded for your location
             </p>
-            <p className="text-green-700 text-xs mt-1">
-              Astrological data from Free Astrology API • Sun/Moon data from IPGeolocation API
+      <p className="status-banner-subtext">
+        Powered by Vedic API • Sun/Moon via IPGeolocation
             </p>
           </div>
         )}
 
-        {/* Panchang Grid */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+{/* PANCHANG GRID */}
+<section className="panchang-section" id="panchang-section">
+  <div className="panchang-header-wrapper">
+    <div className="panchang-date-badge">
+      <Calendar />
+      <span>Vedic Calendar</span>
+    </div>
+    <h2 className="section-header">
+      <Calendar className="section-icon section-icon-blue" />
             {selectedDate === new Date().toISOString().split('T')[0] 
               ? "Today's Panchang" 
-              : `Panchang for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+        : `Panchang • ${new Date(selectedDate).toLocaleDateString('en-US', {
+            weekday: 'long',
                   day: 'numeric', 
                   month: 'long', 
                   year: 'numeric' 
                 })}`
             }
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {panchangItems.map((item, index) => (
-              <PanchangCard
-                key={index}
-                label={item.label}
-                value={item.value}
-              />
+    <p className="panchang-description">
+      Essential celestial elements for auspicious planning
+    </p>
+  </div>
+  
+  <div className="panchang-grid-container">
+    <div className="panchang-grid">
+      {panchangItems.map((item, i) => (
+        <PanchangCard key={i} label={item.label} value={item.value} />
             ))}
           </div>
+  </div>
         </section>
 
-        {/* Inauspicious Timings */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Auspicious / Inauspicious
+{/* AUSPICIOUS / INAUSPICIOUS TIMINGS */}
+<section className="timings-section">
+  <div className="timings-section-container">
+    <div className="timings-header-wrapper">
+      <div className="timings-header-left">
+        <div className="timings-header-badge">
+          <AlertCircle />
+          <span>Important Timings</span>
+        </div>
+        <h2 className="section-header">
+          <Clock className="section-icon section-icon-red" />
+          Auspicious & Inauspicious Periods
           </h2>
+        <p className="timings-description">
+          Plan your day with precise Vedic time calculations
+        </p>
+      </div>
+      
+      <div className="timings-header-right">
+        <div className="timings-legend">
+          <span className="timings-legend-dot auspicious"></span>
+          <span>Auspicious</span>
+        </div>
+        <div className="timings-legend">
+          <span className="timings-legend-dot inauspicious"></span>
+          <span>Inauspicious</span>
+        </div>
+      </div>
+    </div>
+    
+    <div className="timings-content">
           <TimingsSection timings={inauspiciousTimings} />
+    </div>
+  </div>
         </section>
 
-        {/* Festival Card */}
+{/* FESTIVAL HIGHLIGHT */}
         {panchangData.festivals.length > 0 && (
-          <section className="mb-8">
+  <section className="festival-section-enhanced">
+    <div className="festival-content-grid">
+      <div className="festival-left">
+        <div className="festival-badge">
+          <Sparkles className="festival-badge-icon" />
+          <span>Special Day</span>
+        </div>
+        <h2 className="festival-main-title">Today's Festival</h2>
+        <p className="festival-description">
+          Celebrating auspicious moments and sacred traditions
+        </p>
+      </div>
+      <div className="festival-right">
+        <div className="festival-card-wrapper">
             <FestivalCard festival={panchangData.festivals[0]} />
+        </div>
+      </div>
+    </div>
           </section>
         )}
 
-        {/* Hora Timings */}
-       {/* <section className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Hora Timings</h2>
-          <HoraTimeline horas={panchangData.horaTimings} />
-        </section> */}
-
-        {/* Astrology Options Section */}
-        <section className="mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-              </svg>
-              Astrological Calculations
+  {/* ASTROLOGY OPTIONS GRID */}
+  <section className="astrology-section" id="astrology-options">
+    <div className="astrology-header">
+      <h2 className="astrology-title">
+        <Star />
+        Explore Vedic Calculations
             </h2>
-            <p className="text-gray-600">Click on any option below to calculate detailed astrological data</p>
+      <p className="astrology-subtitle">
+        Tap any tool to compute detailed astrological insights
+      </p>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+    <div className="astrology-grid">
             {astrologyOptions.map((option) => (
               <AstrologyOptionCard
                 key={option.id}
@@ -772,12 +993,51 @@ export default function Home() {
             ))}
           </div>
         </section>
+</div>
 
-        {/* Footer */}
-        <footer className="text-center text-gray-500 text-md mt-12 pb-6">
-          <p>Made with ❤️ By <span className="text-blue-600"> © TheGodSays Team</span></p>
+          {/* FOOTER */}
+          <footer className="home-footer">
+            <p>
+              Made with <span className="text-red-500">❤️</span> by{' '}
+              <span className="footer-brand">TheGodSays Team</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Vedic wisdom meets modern precision
+            </p>
         </footer>
       </main>
     </div>
+
+      {/* FORM VIEW */}
+      {selectedOption && !astrologyResult && (
+        <div className="form-view">
+          <div className="form-container">
+            <AstrologyForm
+              option={selectedOption}
+              onSubmit={handleFormSubmit}
+              onBack={handleBackToOptions}
+              isLoading={isLoading}
+            />
+            {error && <div className="error-message">{error}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* RESULT VIEW */}
+      {selectedOption && astrologyResult && (
+        <div className="result-view">
+          <div className="result-container">
+            <AstrologyResult
+              option={selectedOption}
+              data={astrologyResult}
+              onBack={handleBackToOptions}
+              onNewCalculation={handleNewCalculation}
+            />
+          </div>
+        </div>
+      )}
+
+
+    </>
   )
 }

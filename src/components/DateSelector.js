@@ -1,17 +1,31 @@
+/* DateSelector.js – pure JS (no TypeScript, no Tailwind) */
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Calendar, MapPin } from 'lucide-react'
+import { Calendar, MapPin, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import './styles/dateSelector.css'
 
-export default function DateSelector({ selectedDate, onDateChange, userLocation, onLocationChange, pendingLocation, onPendingLocationChange }) {
+export default function DateSelector(props) {
+  const {
+    selectedDate,
+    onDateChange,
+    userLocation,
+    onLocationChange,
+    pendingLocation,
+    onPendingLocationChange,
+  } = props
+
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const searchAbortRef = useRef(null)
 
+  /* -------------------------------------------------
+   *  GET CURRENT LOCATION
+   * ------------------------------------------------- */
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by this browser.')
@@ -25,169 +39,207 @@ export default function DateSelector({ selectedDate, onDateChange, userLocation,
         onLocationChange({ latitude, longitude })
         setIsLocationLoading(false)
       },
-      (error) => {
-        console.error('Error getting location:', error)
-        // Fallback to Delhi, India
+      () => {
+        // fallback to Delhi
         onLocationChange({ latitude: 28.6139, longitude: 77.2090 })
         setIsLocationLoading(false)
       }
     )
   }
 
-  // Fetch location suggestions from OpenStreetMap Nominatim
+  /* -------------------------------------------------
+   *  FETCH LOCATION SUGGESTIONS
+   * ------------------------------------------------- */
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!query || query.trim().length < 3) {
+      if (!query?.trim() || query.trim().length < 3) {
         setSuggestions([])
         return
       }
+
       try {
         setIsSearching(true)
-        if (searchAbortRef.current) {
-          searchAbortRef.current.abort()
-        }
+        if (searchAbortRef.current) searchAbortRef.current.abort()
         const controller = new AbortController()
         searchAbortRef.current = controller
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(
+          query
+        )}`
         const res = await fetch(url, {
           headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'TheGodSays/1.0 (contact: none)'
+            Accept: 'application/json',
+            'User-Agent': 'TheGodSays/1.0 (contact: none)',
           },
-          signal: controller.signal
+          signal: controller.signal,
         })
         const data = await res.json()
-        const mapped = data.map(item => ({
+        const mapped = data.map((item) => ({
           displayName: item.display_name,
           latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon)
+          longitude: parseFloat(item.lon),
         }))
         setSuggestions(mapped)
-      } catch (e) {
-        // Ignore abort errors
+      } catch {
+        // ignore abort errors
       } finally {
         setIsSearching(false)
       }
     }
 
-    const handle = setTimeout(fetchSuggestions, 300)
-    return () => clearTimeout(handle)
+    const timer = setTimeout(fetchSuggestions, 300)
+    return () => clearTimeout(timer)
   }, [query])
 
   const handleSuggestionSelect = (sugg) => {
     setQuery(sugg.displayName)
     setSuggestions([])
-    onPendingLocationChange && onPendingLocationChange(sugg)
+    onPendingLocationChange?.(sugg)
   }
 
-  const formatDateForInput = (date) => {
-    if (!date) return ''
-    const d = new Date(date)
-    return d.toISOString().split('T')[0]
-  }
+  /* -------------------------------------------------
+   *  DATE HELPERS
+   * ------------------------------------------------- */
+  const formatDateForInput = (date) =>
+    date ? new Date(date).toISOString().split('T')[0] : ''
+  const formatDateForDisplay = (date) =>
+    date
+      ? new Date(date).toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : ''
 
-  const formatDateForDisplay = (date) => {
-    if (!date) return ''
-    const d = new Date(date)
-    return d.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-
+  /* -------------------------------------------------
+   *  RENDER
+   * ------------------------------------------------- */
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          <span className="font-medium">Select Date</span>
-        </div>
-        <div className="relative">
+    <div className="date-location-card">
+      {/* ==== FLEX ROW ==== */}
+      <div className="date-location-row">
+        {/* ---- DATE ---- */}
+        <div className="date-col">
+          <div className="section-head">
+            <Calendar className="icon" />
+            <span className="section-title">Select Date</span>
+          </div>
+
           <Input
             type="date"
             value={formatDateForInput(selectedDate)}
             onChange={(e) => onDateChange(e.target.value)}
-            className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+            className="date-input"
           />
-          <div className="mt-2 text-sm text-gray-600">
-            {formatDateForDisplay(selectedDate)}
-          </div>
+
+          <div className="date-display">{formatDateForDisplay(selectedDate)}</div>
         </div>
-      </div>
-      
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="h-5 w-5 text-blue-600" />
-          <span className="font-medium">Search Location</span>
-        </div>
-        <div className="relative">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Enter city name"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
-            />
-            <Button
-              onClick={handleGetCurrentLocation}
-              disabled={isLocationLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-            >
-              {isLocationLoading ? (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Loading...</span>
-                </div>
-              ) : (
-                "Use My Location"
-              )}
-            </Button>
+
+        {/* ---- LOCATION ---- */}
+        <div className="date-col">
+          <div className="section-head">
+            <MapPin className="icon" />
+            <span className="section-title">Search Location</span>
           </div>
-          
-          {/* Location suggestions */}
-          {suggestions.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((sugg, i) => (
-                <button
-                  key={i}
-                  className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm"
-                  onClick={() => handleSuggestionSelect(sugg)}
-                >
-                  {sugg.displayName}
-                </button>
-              ))}
+
+          <div className="location-wrapper">
+            <div className="location-row">
+              <Input
+                type="text"
+                placeholder="Enter city name"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="location-input"
+              />
+
+              <Button
+                onClick={handleGetCurrentLocation}
+                disabled={isLocationLoading}
+                className="location-btn"
+              >
+                {isLocationLoading ? (
+                  <>
+                    <Loader2 className="icon-spin" />
+                    Loading…
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="icon" />
+                    My Location
+                  </>
+                )}
+              </Button>
             </div>
-          )}
-          
-          {isSearching && (
-            <div className="mt-2 text-sm text-gray-600 flex items-center">
-              <div className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin mr-2"></div>
-              <span>Searching locations...</span>
-            </div>
-          )}
+
+            {/* ---- SUGGESTIONS ---- */}
+            {suggestions.length > 0 && (
+              <div className="suggestions">
+                {suggestions.map((sugg, i) => (
+                  <button
+                    key={i}
+                    className="suggestion-item"
+                    onClick={() => handleSuggestionSelect(sugg)}
+                  >
+                    <MapPin className="icon-sm" />
+                    {sugg.displayName}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ---- SEARCHING ---- */}
+            {isSearching && (
+              <div className="searching">
+                <Loader2 className="icon-spin-sm" />
+                Searching locations…
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Location Display */}
+      {/* ==== APPLY PENDING LOCATION ==== */}
+      {pendingLocation && (
+        <div className="apply-section">
+          <Button
+            onClick={() => {
+              onLocationChange({
+                latitude: pendingLocation.latitude,
+                longitude: pendingLocation.longitude,
+              })
+              onPendingLocationChange?.(undefined)
+            }}
+            className="apply-location-btn"
+          >
+            <Check className="icon" />
+            Apply Location
+          </Button>
+        </div>
+      )}
+
+      {/* ==== ACTIVE / PENDING DISPLAY ==== */}
       {(userLocation || pendingLocation) && (
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">
-            <MapPin className="w-4 h-4 inline mr-1" />
-            {pendingLocation ? (
-              <span>
-                Selected: {pendingLocation.displayName || `${pendingLocation.latitude.toFixed(4)}, ${pendingLocation.longitude.toFixed(4)}`}
-              </span>
-            ) : (
-              <span>
-                Active: {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-green-600 mt-1">
-            Sun & Moon timings calculated for this location
-          </p>
+        <div className="location-status">
+          <MapPin className="status-icon" />
+          <div className="status-text">
+            <p className="status-main">
+              {pendingLocation ? (
+                <>
+                  <strong>Selected:</strong>{' '}
+                  {pendingLocation.displayName ??
+                    `${pendingLocation.latitude.toFixed(4)}, ${pendingLocation.longitude.toFixed(4)}`}
+                </>
+              ) : (
+                <>
+                  <strong>Active:</strong>{' '}
+                  {userLocation?.latitude.toFixed(4)}, {userLocation?.longitude.toFixed(4)}
+                </>
+              )}
+            </p>
+            <p className="status-sub">
+              Sun &amp; Moon timings calculated for this location
+            </p>
+          </div>
         </div>
       )}
     </div>
