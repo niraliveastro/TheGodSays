@@ -1,204 +1,239 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { Star, User, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Modal from '@/components/Modal';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react'
+import { Star, User, Trash2, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import Modal from '@/components/Modal'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ReviewModal({ open, onClose, astrologerId, astrologerName, onSubmit }) {
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [reviews, setReviews] = useState([]);
-  const [loadingReviews, setLoadingReviews] = useState(false);
-  const [filter, setFilter] = useState('All');
-  const { user } = useAuth();
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [loadingReviews, setLoadingReviews] = useState(false)
+  const [filter, setFilter] = useState('All')
+  const { user } = useAuth()
 
-  const handleStarClick = (starIndex) => {
-    setRating(starIndex + 1);
-  };
+  const handleStarClick = (i) => setRating(i + 1)
 
   const fetchReviews = async () => {
-    if (!astrologerId) return;
-    setLoadingReviews(true);
+    if (!astrologerId) return
+    setLoadingReviews(true)
     try {
-      const response = await fetch(`/api/reviews?astrologerId=${astrologerId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setReviews(data.reviews);
-        }
+      const res = await fetch(`/api/reviews?astrologerId=${astrologerId}`)
+      if (res.ok) {
+        const { success, reviews } = await res.json()
+        if (success) setReviews(reviews)
       }
-    } catch (error) {
-      console.error('Failed to fetch reviews:', error);
+    } catch (e) {
+      console.error(e)
     } finally {
-      setLoadingReviews(false);
+      setLoadingReviews(false)
     }
-  };
+  }
 
   useEffect(() => {
-    if (open && astrologerId) {
-      fetchReviews();
-    }
-  }, [open, astrologerId]);
+    if (open && astrologerId) fetchReviews()
+  }, [open, astrologerId])
 
-  const filteredReviews = reviews.filter(review => {
-    if (filter === 'All') return true;
-    return review.rating === parseInt(filter);
-  });
+  const filteredReviews = reviews.filter(r =>
+    filter === 'All' ? true : r.rating === parseInt(filter)
+  )
 
   const handleSubmit = async () => {
-    if (rating === 0) {
-      alert('Please select a rating.');
-      return;
-    }
-    setSubmitting(true);
+    if (rating === 0) return alert('Please select a rating.')
+    setSubmitting(true)
     try {
-      const userId = user?.uid || localStorage.getItem('tgs:userId');
-      if (!userId) {
-        alert('User not authenticated. Please log in again.');
-        return;
-      }
-      await onSubmit({ astrologerId, userId, rating, comment });
-      setRating(0);
-      setComment('');
-      fetchReviews(); // Refresh reviews after submission
-    } catch (error) {
-      alert('Failed to submit review. Please try again.');
+      const userId = user?.uid || localStorage.getItem('tgs:userId')
+      if (!userId) return alert('User not authenticated.')
+      await onSubmit({ astrologerId, userId, rating, comment })
+      setRating(0)
+      setComment('')
+      fetchReviews()
+    } catch (e) {
+      alert('Failed to submit review.')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleDeleteReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to delete this review?')) {
-      return;
-    }
+    if (!confirm('Delete this review?')) return
     try {
-      const response = await fetch(`/api/reviews?astrologerId=${astrologerId}&reviewId=${reviewId}`, {
+      const res = await fetch(`/api/reviews?astrologerId=${astrologerId}&reviewId=${reviewId}`, {
         method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete review');
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      fetchReviews(); // Refresh reviews after deletion
-    } catch (error) {
-      alert('Failed to delete review. Please try again.');
+      })
+      if (!res.ok) throw new Error()
+      fetchReviews()
+    } catch (e) {
+      alert('Failed to delete review.')
     }
-  };
+  }
 
   return (
     <Modal open={open} onClose={onClose} title={`Reviews for ${astrologerName}`}>
-      <div className="space-y-6">
-        {/* Submission Form */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+        {/* ---------- SUBMIT FORM ---------- */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Submit Your Review</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-              <div className="flex space-x-1">
-                {[...Array(5)].map((_, index) => (
-                  <Star
-                    key={index}
-                    className={`w-8 h-8 cursor-pointer ${
-                      index < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`}
-                    onClick={() => handleStarClick(index)}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">{rating} out of 5 stars</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Comment</label>
-              <div className="flex items-center space-x-3">
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  rows={2}
-                  placeholder="Share your experience..."
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
+            Submit Your Review
+          </h3>
+
+          {/* Rating */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+              Rating
+            </label>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  style={{
+                    width: '2rem',
+                    height: '2rem',
+                    cursor: 'pointer',
+                    fill: i < rating ? '#facc15' : 'none',
+                    color: i < rating ? '#facc15' : '#d1d5db',
+                  }}
+                  onClick={() => handleStarClick(i)}
                 />
-                <Button onClick={handleSubmit} disabled={submitting} className="px-6 py-3 h-auto whitespace-nowrap">
-                  {submitting ? 'Submitting...' : 'Send'}
-                </Button>
-              </div>
+              ))}
             </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>
+              {rating} out of 5 stars
+            </p>
+          </div>
+
+          {/* Comment + Submit */}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience..."
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+                fontSize: '1rem',
+                resize: 'none',
+                minHeight: '4rem',
+              }}
+            />
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="btn btn-primary"
+              style={{ height: 'fit-content', padding: '0.75rem 1.5rem' }}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+                  Submitting...
+                </>
+              ) : (
+                'Send'
+              )}
+            </Button>
           </div>
         </div>
 
-        {/* Reviews Panel */}
-        <div className="border-t pt-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Reviews</h3>
+        {/* ---------- REVIEWS PANEL ---------- */}
+        <div style={{ borderTop: '1px solid var(--color-gray-200)', paddingTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Reviews</h3>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="p-2 border border-gray-300 rounded-md"
+              style={{
+                padding: '0.5rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+              }}
             >
               <option value="All">All Ratings</option>
-              <option value="5">5 Stars</option>
-              <option value="4">4 Stars</option>
-              <option value="3">3 Stars</option>
-              <option value="2">2 Stars</option>
-              <option value="1">1 Star</option>
+              {[5, 4, 3, 2, 1].map(n => (
+                <option key={n} value={n}>{n} Stars</option>
+              ))}
             </select>
           </div>
+
           {loadingReviews ? (
-            <p>Loading reviews...</p>
+            <p style={{ textAlign: 'center', color: 'var(--color-gray-500)' }}>
+              <Loader2 style={{ display: 'inline-block', width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+              Loading reviews...
+            </p>
           ) : filteredReviews.length === 0 ? (
-            <p>No reviews yet.</p>
+            <p style={{ textAlign: 'center', color: 'var(--color-gray-500)' }}>No reviews yet.</p>
           ) : (
-            <div className="space-y-4 max-h-80 overflow-y-auto">
-              {filteredReviews.map((review) => (
-                <div key={review.id} className="border-b pb-3">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      {review.userPhoto ? (
+            <div style={{ maxHeight: '20rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {filteredReviews.map(r => (
+                <div key={r.id} style={{ paddingBottom: '0.75rem', borderBottom: '1px solid var(--color-gray-200)' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div style={{ flexShrink: 0 }}>
+                      {r.userPhoto ? (
                         <img
-                          src={review.userPhoto}
-                          alt={review.userName || 'User'}
-                          className="w-8 h-8 rounded-full object-cover"
+                          src={r.userPhoto}
+                          alt={r.userName || 'User'}
+                          style={{ width: '2rem', height: '2rem', borderRadius: '50%', objectFit: 'cover' }}
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-gray-500" />
+                        <div style={{
+                          width: '2rem',
+                          height: '2rem',
+                          background: '#e5e7eb',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <User style={{ width: '1rem', height: '1rem', color: '#6b7280' }} />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900">
-                            {review.userName || 'Anonymous User'}
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>
+                            {r.userName || 'Anonymous User'}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(review.timestamp).toLocaleDateString()}
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+                            {new Date(r.timestamp).toLocaleDateString()}
                           </span>
                         </div>
                         {user?.uid === astrologerId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteReview(review.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          <button
+                            onClick={() => handleDeleteReview(r.id)}
+                            className="btn btn-ghost"
+                            style={{ color: '#dc2626' }}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                            <Trash2 style={{ width: '1rem', height: '1rem' }} />
+                          </button>
                         )}
                       </div>
-                      <div className="flex items-center mb-2">
-                        {[...Array(5)].map((_, index) => (
+
+                      <div style={{ display: 'flex', gap: '0.125rem', marginBottom: '0.5rem' }}>
+                        {[...Array(5)].map((_, i) => (
                           <Star
-                            key={index}
-                            className={`w-4 h-4 ${
-                              index < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                            }`}
+                            key={i}
+                            style={{
+                              width: '1rem',
+                              height: '1rem',
+                              fill: i < r.rating ? '#facc15' : 'none',
+                              color: i < r.rating ? '#facc15' : '#d1d5db',
+                            }}
                           />
                         ))}
                       </div>
-                      <p className="text-sm text-gray-700">{review.comment}</p>
+
+                      <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-700)' }}>
+                        {r.comment}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -208,5 +243,5 @@ export default function ReviewModal({ open, onClose, astrologerId, astrologerNam
         </div>
       </div>
     </Modal>
-  );
+  )
 }

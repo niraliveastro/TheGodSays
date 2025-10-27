@@ -1,8 +1,7 @@
-// src/app/talk-to-astrologer/page.js
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Star,
   Video,
@@ -12,40 +11,40 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import CallConnectingNotification from '@/components/CallConnectingNotification';
-import Modal from '@/components/Modal';
-import ReviewModal from '@/components/ReviewModal';
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import CallConnectingNotification from '@/components/CallConnectingNotification'
+import Modal from '@/components/Modal'
+import ReviewModal from '@/components/ReviewModal'
 
 export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterSpecialization, setFilterSpecialization] = useState('');
-  const [astrologers, setAstrologers] = useState([]);
-  const [fetchingAstrologers, setFetchingAstrologers] = useState(true);
-  const [connectingCallType, setConnectingCallType] = useState(null); // 'video' | 'voice' | null
-  const [callStatus, setCallStatus] = useState('connecting');
-  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-  const [balanceMessage, setBalanceMessage] = useState('');
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedAstrologer, setSelectedAstrologer] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterSpecialization, setFilterSpecialization] = useState('')
+  const [astrologers, setAstrologers] = useState([])
+  const [fetchingAstrologers, setFetchingAstrologers] = useState(true)
+  const [connectingCallType, setConnectingCallType] = useState(null) // 'video' | 'voice' | null
+  const [callStatus, setCallStatus] = useState('connecting')
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false)
+  const [balanceMessage, setBalanceMessage] = useState('')
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [selectedAstrologer, setSelectedAstrologer] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  const router = useRouter();
+  const router = useRouter()
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologers + pricing + reviews                         */
   /* --------------------------------------------------------------- */
   const fetchAndUpdateAstrologers = async () => {
     try {
-      const snap = await getDocs(collection(db, 'astrologers'));
+      const snap = await getDocs(collection(db, 'astrologers'))
       const list = snap.docs.map((doc) => {
-        const d = doc.data();
+        const d = doc.data()
         return {
           id: doc.id,
           name: d.name,
@@ -57,8 +56,8 @@ export default function TalkToAstrologer() {
           isOnline: d.status === 'online',
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
-        };
-      });
+        }
+      })
 
       /* ---- Pricing ---- */
       try {
@@ -66,63 +65,63 @@ export default function TalkToAstrologer() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'get-all-pricing' }),
-        });
-        const data = await res.json();
+        })
+        const data = await res.json()
         if (data.success) {
-          const map = {};
-          data.pricing.forEach((p) => (map[p.astrologerId] = p));
+          const map = {}
+          data.pricing.forEach((p) => (map[p.astrologerId] = p))
           list.forEach((a) => {
-            const p = map[a.id];
+            const p = map[a.id]
             if (p) {
-              a.pricing = p;
-              a.perMinuteCharge = p.pricingType === 'per_minute' ? p.finalPrice : null;
+              a.pricing = p
+              a.perMinuteCharge = p.pricingType === 'per_minute' ? p.finalPrice : null
             } else {
-              a.pricing = { pricingType: 'per_minute', finalPrice: 50 };
-              a.perMinuteCharge = 50;
+              a.pricing = { pricingType: 'per_minute', finalPrice: 50 }
+              a.perMinuteCharge = 50
             }
-          });
+          })
         }
       } catch (e) {
-        console.error('Pricing fetch error:', e);
+        console.error('Pricing fetch error:', e)
         list.forEach((a) => {
-          a.pricing = { pricingType: 'per_minute', finalPrice: 50 };
-          a.perMinuteCharge = 50;
-        });
+          a.pricing = { pricingType: 'per_minute', finalPrice: 50 }
+          a.perMinuteCharge = 50
+        })
       }
 
       /* ---- Reviews & rating recalc ---- */
       const updated = await Promise.all(
         list.map(async (a) => {
           try {
-            const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
+            const res = await fetch(`/api/reviews?astrologerId=${a.id}`)
             if (res.ok) {
-              const { success, reviews } = await res.json();
+              const { success, reviews } = await res.json()
               if (success) {
-                const total = reviews.reduce((s, r) => s + r.rating, 0);
-                const avg = reviews.length ? (total / reviews.length).toFixed(1) : 0;
-                return { ...a, rating: parseFloat(avg), reviews: reviews.length };
+                const total = reviews.reduce((s, r) => s + r.rating, 0)
+                const avg = reviews.length ? (total / reviews.length).toFixed(1) : 0
+                return { ...a, rating: parseFloat(avg), reviews: reviews.length }
               }
             }
           } catch (e) {
-            console.error(`Reviews error for ${a.id}:`, e);
+            console.error(`Reviews error for ${a.id}:`, e)
           }
-          return a;
+          return a
         })
-      );
+      )
 
-      setAstrologers(updated);
+      setAstrologers(updated)
     } catch (e) {
-      console.error('Astrologers fetch error:', e);
+      console.error('Astrologers fetch error:', e)
     } finally {
-      setFetchingAstrologers(false);
+      setFetchingAstrologers(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchAndUpdateAstrologers();
-    const id = setInterval(fetchAndUpdateAstrologers, 30_000);
-    return () => clearInterval(id);
-  }, []);
+    fetchAndUpdateAstrologers()
+    const id = setInterval(fetchAndUpdateAstrologers, 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
@@ -130,22 +129,22 @@ export default function TalkToAstrologer() {
   const filteredAstrologers = astrologers.filter((a) => {
     const matchesSearch =
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.specialization.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = !filterSpecialization || a.specialization === filterSpecialization;
-    return matchesSearch && matchesFilter;
-  });
+      a.specialization.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = !filterSpecialization || a.specialization === filterSpecialization
+    return matchesSearch && matchesFilter
+  })
 
   /* --------------------------------------------------------------- */
   /*  Voice / Video call handlers                                    */
   /* --------------------------------------------------------------- */
   const startCall = async (type, astrologerId) => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const userId = localStorage.getItem('tgs:userId');
+      const userId = localStorage.getItem('tgs:userId')
       if (!userId) {
-        alert('Please log in first.');
-        router.push('/auth/user');
-        return;
+        alert('Please log in first.')
+        router.push('/auth/user')
+        return
       }
 
       /* ---- Balance check ---- */
@@ -157,30 +156,30 @@ export default function TalkToAstrologer() {
           userId,
           astrologerId,
         }),
-      });
+      })
       if (balRes.ok) {
-        const { success, validation } = await balRes.json();
+        const { success, validation } = await balRes.json()
         if (success && !validation.hasBalance) {
           setBalanceMessage(
             `Insufficient balance. Need ₹${validation.minimumRequired}, you have ₹${validation.currentBalance}.`
-          );
-          setIsBalanceModalOpen(true);
-          setLoading(false);
-          return;
+          )
+          setIsBalanceModalOpen(true)
+          setLoading(false)
+          return
         }
       }
 
-      setConnectingCallType(type);
+      setConnectingCallType(type)
 
       /* ---- Availability ---- */
-      const statusRes = await fetch(`/api/astrologer/status?astrologerId=${astrologerId}`);
-      const { success, status } = await statusRes.json();
+      const statusRes = await fetch(`/api/astrologer/status?astrologerId=${astrologerId}`)
+      const { success, status } = await statusRes.json()
 
-      if (!success) throw new Error('Cannot check astrologer status.');
-      if (status === 'offline') throw new Error('Astrologer is offline.');
+      if (!success) throw new Error('Cannot check astrologer status.')
+      if (status === 'offline') throw new Error('Astrologer is offline.')
       if (status === 'busy' && !confirm('Astrologer is busy. Join queue?')) {
-        setLoading(false);
-        return;
+        setLoading(false)
+        return
       }
 
       /* ---- Create call ---- */
@@ -193,12 +192,12 @@ export default function TalkToAstrologer() {
           userId,
           callType: type,
         }),
-      });
-      if (!callRes.ok) throw new Error('Failed to create call.');
-      const { call } = await callRes.json();
+      })
+      if (!callRes.ok) throw new Error('Failed to create call.')
+      const { call } = await callRes.json()
 
-      localStorage.setItem('tgs:callId', call.id);
-      localStorage.setItem('tgs:astrologerId', astrologerId);
+      localStorage.setItem('tgs:callId', call.id)
+      localStorage.setItem('tgs:astrologerId', astrologerId)
 
       /* ---- Init billing ---- */
       await fetch('/api/billing', {
@@ -210,18 +209,18 @@ export default function TalkToAstrologer() {
           userId,
           astrologerId,
         }),
-      }).catch(() => {});
+      }).catch(() => {})
 
       /* ---- Poll status ---- */
-      let timeoutId;
+      let timeoutId
       const poll = setInterval(async () => {
-        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`);
-        const sData = await sRes.json();
-        const c = sData.calls?.find((c) => c.id === call.id);
+        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`)
+        const sData = await sRes.json()
+        const c = sData.calls?.find((c) => c.id === call.id)
 
         if (c?.status === 'active') {
-          clearInterval(poll);
-          clearTimeout(timeoutId);
+          clearInterval(poll)
+          clearTimeout(timeoutId)
           const sessRes = await fetch('/api/livekit/create-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -234,107 +233,107 @@ export default function TalkToAstrologer() {
               role: 'user',
               displayName: 'User',
             }),
-          });
+          })
           if (sessRes.ok) {
-            const { roomName } = await sessRes.json();
-            setConnectingCallType(null);
+            const { roomName } = await sessRes.json()
+            setConnectingCallType(null)
             router.push(
               type === 'video'
-                ? `/talk-to-astrologer/room/${roomName}`
+                ? `/talk-to-astrologer/video/${roomName}`
                 : `/talk-to-astrologer/voice/${roomName}`
-            );
+            )
           } else {
-            alert('Failed to join room.');
+            alert('Failed to join room.')
           }
         } else if (c?.status === 'rejected') {
-          clearInterval(poll);
-          clearTimeout(timeoutId);
+          clearInterval(poll)
+          clearTimeout(timeoutId)
           await fetch('/api/billing', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'cancel-call', callId: call.id }),
-          }).catch(() => {});
-          setCallStatus('rejected');
+          }).catch(() => {})
+          setCallStatus('rejected')
           setTimeout(() => {
-            setConnectingCallType(null);
-            setCallStatus('connecting');
-          }, 2000);
+            setConnectingCallType(null)
+            setCallStatus('connecting')
+          }, 2000)
         }
-      }, 2000);
+      }, 2000)
 
       timeoutId = setTimeout(() => {
-        clearInterval(poll);
+        clearInterval(poll)
         fetch('/api/billing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'cancel-call', callId: call.id }),
-        }).catch(() => {});
-        setConnectingCallType(null);
-        alert('Astrologer not responding.');
-        setLoading(false);
-      }, 60_000);
+        }).catch(() => {})
+        setConnectingCallType(null)
+        alert('Astrologer not responding.')
+        setLoading(false)
+      }, 60_000)
     } catch (e) {
-      console.error(e);
-      setConnectingCallType(null);
-      alert(e.message || 'Call failed.');
+      console.error(e)
+      setConnectingCallType(null)
+      alert(e.message || 'Call failed.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleVoiceCall = (id) => startCall('voice', id);
-  const handleVideoCall = (id) => startCall('video', id);
+  const handleVoiceCall = (id) => startCall('voice', id)
+  const handleVideoCall = (id) => startCall('video', id)
 
   /* --------------------------------------------------------------- */
   /*  Review helpers                                                 */
   /* --------------------------------------------------------------- */
   const handleOpenReview = (astrologer) => {
-    const userId = localStorage.getItem('tgs:userId');
+    const userId = localStorage.getItem('tgs:userId')
     if (!userId) {
-      alert('Please log in to leave a review.');
-      router.push('/auth/user');
-      return;
+      alert('Please log in to leave a review.')
+      router.push('/auth/user')
+      return
     }
-    setSelectedAstrologer(astrologer);
-    setIsReviewModalOpen(true);
-  };
+    setSelectedAstrologer(astrologer)
+    setIsReviewModalOpen(true)
+  }
 
   const handleSubmitReview = async ({ astrologerId, userId, rating, comment }) => {
     const res = await fetch('/api/reviews', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ astrologerId, userId, rating, comment }),
-    });
-    if (!res.ok) throw new Error('Failed to submit review');
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message);
-    // UI will refresh via the 30-sec poll
-  };
+    })
+    if (!res.ok) throw new Error('Failed to submit review')
+    const data = await res.json()
+    if (!data.success) throw new Error(data.message)
+  }
 
+  
   /* --------------------------------------------------------------- */
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
+
   return (
     <>
-      {/* Connection modal */}
+      {/* Connection notification */}
       <CallConnectingNotification
         isOpen={!!connectingCallType}
         status={callStatus}
         type={connectingCallType}
         onTimeout={() => {
-          setConnectingCallType(null);
-          setCallStatus('connecting');
-          alert('Connection timed out.');
+          setConnectingCallType(null)
+          setCallStatus('connecting')
+          alert('Connection timed out.')
         }}
       />
 
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', padding: '2rem 0' }}>
         <div className="container">
+
           {/* Header */}
-          <header className="text-center" style={{ marginTop: '3rem' }}>
-            <h1 style={{ fontSize: '2.75rem', fontWeight: 700 }}>
-              Talk to Astrologer
-            </h1>
+          <header style={{ textAlign: 'center', marginTop: '3rem' }}>
+            <h1 style={{ fontSize: '2.75rem', fontWeight: 700 }}>Talk to Astrologer</h1>
             <p
               style={{
                 fontSize: '1.125rem',
@@ -378,13 +377,12 @@ export default function TalkToAstrologer() {
                     transition: 'var(--transition-fast)',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--color-gold)';
-                    e.target.style.boxShadow =
-                      '0 0 0 3px rgba(212, 175, 55, 0.2)';
+                    e.target.style.borderColor = 'var(--color-gold)'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--color-gray-300)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = 'var(--color-gray-300)'
+                    e.target.style.boxShadow = 'none'
                   }}
                 />
               </div>
@@ -398,7 +396,7 @@ export default function TalkToAstrologer() {
                     transform: 'translateY(-50%)',
                     width: '1.25rem',
                     height: '1.25rem',
-                    color: 'var(--color-gold)',
+                    color: 'var(--color-goldignition',
                   }}
                 />
                 <select
@@ -418,13 +416,12 @@ export default function TalkToAstrologer() {
                     outline: 'none',
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--color-gold)';
-                    e.target.style.boxShadow =
-                      '0 0 0 3px rgba(212, 175, 55, 0.2)';
+                    e.target.style.borderColor = 'var(--color-gold)'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--color-gray-300)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = 'var(--color-gray-300)'
+                    e.target.style.boxShadow = 'none'
                   }}
                 >
                   <option value="">All Specializations</option>
@@ -437,13 +434,13 @@ export default function TalkToAstrologer() {
             </div>
           </div>
 
-          {/* Loading */}
+          {/* Loading skeletons – 2 per row */}
           {fetchingAstrologers && (
             <div
               style={{
                 display: 'grid',
                 gap: '1.5rem',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))',
+                gridTemplateColumns: 'repeat(2, minmax(22rem, 1fr))',
                 marginTop: '1.5rem',
               }}
             >
@@ -456,70 +453,27 @@ export default function TalkToAstrologer() {
                     animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '1rem',
-                      marginBottom: '1rem',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '4rem',
-                        height: '4rem',
-                        background: 'var(--color-gray-200)',
-                        borderRadius: '50%',
-                      }}
-                    />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ width: '4rem', height: '4rem', background: 'var(--color-gray-200)', borderRadius: '50%' }} />
                     <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          height: '1.25rem',
-                          background: 'var(--color-gray-200)',
-                          borderRadius: '0.25rem',
-                          width: '8rem',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-                      <div
-                        style={{
-                          height: '1rem',
-                          background: 'var(--color-gray-200)',
-                          borderRadius: '0.25rem',
-                          width: '6rem',
-                        }}
-                      />
+                      <div style={{ height: '1.25rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '8rem', marginBottom: '0.5rem' }} />
+                      <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '6rem' }} />
                     </div>
                   </div>
-                  <div
-                    style={{
-                      height: '1rem',
-                      background: 'var(--color-gray-200)',
-                      borderRadius: '0.25rem',
-                      marginBottom: '0.5rem',
-                    }}
-                  />
-                  <div
-                    style={{
-                      height: '1rem',
-                      background: 'var(--color-gray-200)',
-                      borderRadius: '0.25rem',
-                      width: '75%',
-                    }}
-                  />
+                  <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', marginBottom: '0.5rem' }} />
+                  <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '75%' }} />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Astrologers */}
+          {/* Astrologer cards – 2 per row */}
           {!fetchingAstrologers && filteredAstrologers.length > 0 && (
             <div
               style={{
                 display: 'grid',
                 gap: '1.5rem',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))',
+                gridTemplateColumns: 'repeat(2, minmax(22rem, 1fr))',
                 marginTop: '1.5rem',
               }}
             >
@@ -531,16 +485,15 @@ export default function TalkToAstrologer() {
                     padding: '1.5rem',
                     transition: 'var(--transition-smooth)',
                     cursor: 'pointer',
+                    minWidth: '22rem',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow =
-                      'var(--shadow-xl), var(--shadow-glow)';
+                    e.currentTarget.style.transform = 'translateY(-4px)'
+                    e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow =
-                      'var(--shadow-lg), var(--shadow-glow)';
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)'
                   }}
                 >
                   {/* Avatar + Online */}
@@ -560,10 +513,7 @@ export default function TalkToAstrologer() {
                           fontSize: '1.25rem',
                         }}
                       >
-                        {a.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
+                        {a.name.split(' ').map((n) => n[0]).join('')}
                       </div>
                       <div
                         style={{
@@ -670,36 +620,43 @@ export default function TalkToAstrologer() {
                     </div>
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action buttons – SAME SIZE, ALL VISIBLE */}
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <Button
                       onClick={() => handleVideoCall(a.id)}
                       disabled={!a.isOnline || loading}
-                      className={`flex-1 ${a.isOnline ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      className="btn btn-primary"
+                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
                     >
                       {loading && connectingCallType === 'video' ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
                       ) : (
-                        <Video className="w-4 h-4 mr-2" />
+                        <Video style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
                       )}
                       {a.isOnline ? 'Video Call' : 'Offline'}
                     </Button>
 
-                    <button
+                    <Button
                       onClick={() => handleVoiceCall(a.id)}
                       disabled={!a.isOnline || loading}
                       variant="outline"
-                      className={`flex-1 ${a.isOnline ? 'border-green-600 text-green-600 hover:bg-green-50' : 'border-gray-400 text-gray-400 cursor-not-allowed'}`}
+                      className="btn btn-outline"
+                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
                     >
                       {loading && connectingCallType === 'voice' ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
                       ) : (
-                        <Phone className="w-4 h-4 mr-2" />
+                        <Phone style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
                       )}
                       {a.isOnline ? 'Voice Call' : 'Offline'}
-                    </button>
+                    </Button>
 
-                    <Button onClick={() => handleOpenReview(a)} variant="outline">
+                    <Button
+                      onClick={() => handleOpenReview(a)}
+                      variant="outline"
+                      className="btn btn-outline"
+                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
+                    >
                       Review
                     </Button>
                   </div>
@@ -710,7 +667,7 @@ export default function TalkToAstrologer() {
 
           {/* Empty state */}
           {!fetchingAstrologers && filteredAstrologers.length === 0 && (
-            <div className="text-center" style={{ padding: '4rem 0' }}>
+            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
               <div
                 style={{
                   width: '6rem',
@@ -759,8 +716,8 @@ export default function TalkToAstrologer() {
             <p style={{ color: 'var(--color-gray-700)', marginBottom: '1.5rem' }}>{balanceMessage}</p>
             <button
               onClick={() => {
-                router.push('/wallet');
-                setIsBalanceModalOpen(false);
+                router.push('/wallet')
+                setIsBalanceModalOpen(false)
               }}
               className="btn btn-primary"
               style={{ padding: '0.75rem 2rem' }}
@@ -775,8 +732,8 @@ export default function TalkToAstrologer() {
           <ReviewModal
             open={isReviewModalOpen}
             onClose={() => {
-              setIsReviewModalOpen(false);
-              setSelectedAstrologer(null);
+              setIsReviewModalOpen(false)
+              setSelectedAstrologer(null)
             }}
             astrologerId={selectedAstrologer.id}
             astrologerName={selectedAstrologer.name}
@@ -785,23 +742,16 @@ export default function TalkToAstrologer() {
         )}
       </div>
 
-      {/* Local CSS animations */}
+      {/* Local animations */}
       <style jsx>{`
         @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
         @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </>
-  );
+  )
 }

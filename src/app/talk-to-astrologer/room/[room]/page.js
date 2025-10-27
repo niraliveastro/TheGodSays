@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { LiveKitRoom, VideoConference } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, PhoneOff } from 'lucide-react'
+import { ArrowLeft, PhoneOff, Loader2 } from 'lucide-react'
 
 export default function VideoCallRoom() {
   const params = useParams()
@@ -19,27 +18,13 @@ export default function VideoCallRoom() {
     const initializeRoom = async () => {
       try {
         const roomName = params.room
-
-        // Get user info from localStorage
         const userRole = localStorage.getItem('tgs:role') || 'user'
         const userId = localStorage.getItem('tgs:userId')
         const astrologerId = localStorage.getItem('tgs:astrologerId')
-        
         const isAstrologer = userRole === 'astrologer'
-        
-        console.log('Video room initialization:', {
-          roomName,
-          userRole,
-          userId,
-          astrologerId,
-          isAstrologer
-        })
 
-        if (!userId) {
-          throw new Error('User not authenticated - please log in again')
-        }
+        if (!userId) throw new Error('User not authenticated')
 
-        // Create participant identity based on role
         const participantId = isAstrologer ? `astrologer-${userId}` : `user-${userId}`
         const sessionAstrologerId = isAstrologer ? userId : (astrologerId || 'user-session')
 
@@ -56,41 +41,47 @@ export default function VideoCallRoom() {
           })
         })
 
-        if (!response.ok) {
-          throw new Error('Failed to create session')
-        }
+        if (!response.ok) throw new Error('Failed to create session')
 
         const data = await response.json()
         setToken(data.token)
         setWsUrl(data.wsUrl)
       } catch (err) {
-        console.error('Error initializing video room:', {
-          error: err.message,
-          roomName: params.room
-        })
         setError(`Failed to join video call: ${err.message}`)
       } finally {
         setLoading(false)
       }
     }
 
-    if (params.room) {
-      initializeRoom()
-    }
+    if (params.room) initializeRoom()
   }, [params.room])
 
   const handleDisconnect = () => {
-    const userRole = localStorage.getItem('tgs:role')
-    const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-    router.push(redirectPath)
+    const role = localStorage.getItem('tgs:role')
+    const path = role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+    router.push(path)
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Connecting to video call...</p>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 style={{
+            width: '3rem',
+            height: '3rem',
+            color: '#fbbf24',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
+          <p style={{ color: 'white', fontSize: '1.125rem' }}>
+            Connecting to video call...
+          </p>
         </div>
       </div>
     )
@@ -98,19 +89,39 @@ export default function VideoCallRoom() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-white text-xl font-semibold mb-2">Connection Failed</h2>
-          <p className="text-gray-300 mb-6">{error}</p>
-          <Button onClick={() => {
-            const userRole = localStorage.getItem('tgs:role')
-            const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-            router.push(redirectPath)
-          }} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem'
+      }}>
+        <div style={{
+          maxWidth: '28rem',
+          background: 'rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '1rem',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>Warning</div>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            Connection Failed
+          </h2>
+          <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>{error}</p>
+
+          <button
+            onClick={() => {
+              const role = localStorage.getItem('tgs:role')
+              router.push(role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer')
+            }}
+            className="btn btn-outline"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+          >
+            <ArrowLeft style={{ width: '1rem', height: '1rem' }} />
             Back
-          </Button>
+          </button>
         </div>
       </div>
     )
@@ -118,59 +129,85 @@ export default function VideoCallRoom() {
 
   if (!token || !wsUrl) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white">Unable to connect to video call.</p>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: 'white', fontSize: '1.125rem' }}>
+            Unable to connect to video call.
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)'
+    }}>
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
+      <header style={{
+        background: 'rgba(0,0,0,0.3)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid rgba(255,255,255,0.2)',
+        padding: '1rem'
+      }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
               onClick={() => {
-                const userRole = localStorage.getItem('tgs:role')
-                const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-                router.push(redirectPath)
+                const role = localStorage.getItem('tgs:role')
+                router.push(role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer')
               }}
-              className="text-gray-300 hover:text-white"
+              className="btn btn-ghost"
+              style={{ color: '#d1d5db' }}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
               Back
-            </Button>
-            <h1 className="text-white font-semibold">Video Consultation</h1>
+            </button>
+            <h1 style={{ color: 'white', fontWeight: 600 }}>Video Consultation</h1>
           </div>
-          <Button
+
+          <button
             onClick={handleDisconnect}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="btn btn-danger"
           >
-            <PhoneOff className="w-4 h-4 mr-2" />
+            <PhoneOff style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
             End Call
-          </Button>
+          </button>
         </div>
-      </div>
+      </header>
 
       {/* Video Conference */}
-      <div className="h-[calc(100vh-80px)] max-w-7xl mx-auto">
-        <LiveKitRoom
-          serverUrl={wsUrl}
-          token={token}
-          onDisconnected={handleDisconnect}
-          onError={(error) => {
-            console.error('LiveKit room error:', error)
-            setError(`Video call error: ${error.message}`)
-          }}
-          style={{ height: '100%' }}
-        >
-          <VideoConference />
-        </LiveKitRoom>
+      <div style={{
+        height: 'calc(100vh - 80px)',
+        padding: '1rem',
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        <div className="card" style={{
+          width: '100%',
+          maxWidth: '80rem',
+          background: 'rgba(0,0,0,0.2)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: '1rem',
+          overflow: 'hidden'
+        }}>
+          <LiveKitRoom
+            serverUrl={wsUrl}
+            token={token}
+            onDisconnected={handleDisconnect}
+            onError={(err) => setError(`Video call error: ${err.message}`)}
+            style={{ height: '100%' }}
+          >
+            <VideoConference />
+          </LiveKitRoom>
+        </div>
       </div>
     </div>
   )
