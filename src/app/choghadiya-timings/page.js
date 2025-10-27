@@ -1,73 +1,66 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Download, Share, RefreshCw, MapPin, Calendar, Zap, Star } from 'lucide-react'
-import astrologyAPI from '@/lib/api'
+import { useState, useEffect } from 'react';
+import {
+  Download,
+  Share,
+  RefreshCw,
+  MapPin,
+  Calendar,
+  Zap,
+  Star,
+  Sun,
+  Cloud,
+  DollarSign,
+  Car,
+  AlertCircle,
+  Skull,
+  Zap as ZapIcon,
+} from 'lucide-react';
+import astrologyAPI from '@/lib/api';
 
 export default function ChoghadiyaTimingsPage() {
-  const [choghadiyaData, setChoghadiyaData] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [userLocation, setUserLocation] = useState(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [choghadiyaData, setChoghadiyaData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update current time every minute
+  /* ---------- Clock ---------- */
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000) // Update every minute
+    const t = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
-    return () => clearInterval(timer)
-  }, [])
-
-  // Get user's location
+  /* ---------- Geolocation ---------- */
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        (pos) => {
           setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            timezone: new Date().getTimezoneOffset() / -60
-          })
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            timezone: new Date().getTimezoneOffset() / -60,
+          });
         },
-        (error) => {
-          console.log('Geolocation error:', error)
-          // Fallback to Delhi, India
-          setUserLocation({
-            latitude: 28.6139,
-            longitude: 77.2090,
-            timezone: 5.5
-          })
-        }
-      )
+        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 })
+      );
     } else {
-      // Fallback to Delhi, India
-      setUserLocation({
-        latitude: 28.6139,
-        longitude: 77.2090,
-        timezone: 5.5
-      })
+      setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 });
     }
-  }, [])
+  }, []);
 
-  // Fetch choghadiya data when location is available
+  /* ---------- Fetch ---------- */
   useEffect(() => {
-    if (userLocation) {
-      fetchChoghadiyaData()
-    }
-  }, [userLocation])
+    if (userLocation) fetchChoghadiyaData();
+  }, [userLocation]);
 
   const fetchChoghadiyaData = async () => {
-    if (!userLocation) return
-
-    setIsLoading(true)
-    setError(null)
-
+    if (!userLocation) return;
+    setIsLoading(true);
+    setError(null);
     try {
-      const now = new Date()
+      const now = new Date();
       const payload = {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
@@ -78,354 +71,234 @@ export default function ChoghadiyaTimingsPage() {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         timezone: userLocation.timezone,
-        config: {
-          observation_point: 'geocentric',
-          ayanamsha: 'lahiri'
-        }
-      }
-      // Use centralized API helper
-      const data = await astrologyAPI.getSingleCalculation('choghadiya-timings', payload)
-      setChoghadiyaData(data)
-    } catch (error) {
-      console.error('Error fetching choghadiya data:', error)
-      setError('Failed to fetch choghadiya data. Please try again.')
+        config: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
+      };
+      const data = await astrologyAPI.getSingleCalculation('choghadiya-timings', payload);
+      setChoghadiyaData(data);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to fetch timings.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const formatChoghadiyaData = (data) => {
-    try {
-      console.log('Raw API response:', data)
-      
-      // Parse the nested JSON
-      let parsed = JSON.parse(data.output)
-      console.log('Parsed choghadiya data:', parsed)
-      
-      return parsed
-    } catch (error) {
-      console.error('Error parsing choghadiya data:', error)
-      console.log('Raw output that failed to parse:', data.output)
-      return null
-    }
-  }
+  /* ---------- Helpers ---------- */
+  const parse = (raw) => {
+    try { return JSON.parse(raw.output); } catch { return null; }
+  };
+  const fmt = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  const formatDateTime = (dateTimeString) => {
-    try {
-      const date = new Date(dateTimeString)
-      return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      })
-    } catch (error) {
-      return dateTimeString
-    }
-  }
+  const iconMap = {
+    amrit: Sun,
+    shubh: Cloud,
+    labh: DollarSign,
+    char: Car,
+    rog: AlertCircle,
+    kaal: Skull,
+    udveg: ZapIcon,
+  };
+  const getIcon = (name) => {
+    const Comp = iconMap[name.toLowerCase()] || Star;
+    return <Comp style={{ width: 28, height: 28 }} />;
+  };
 
-  const getChoghadiyaColor = (name) => {
-    switch (name.toLowerCase()) {
-      case 'amrit':
-        return 'bg-green-100 border-green-300 text-green-800'
-      case 'shubh':
-        return 'bg-blue-100 border-blue-300 text-blue-800'
-      case 'labh':
-        return 'bg-purple-100 border-purple-300 text-purple-800'
-      case 'char':
-        return 'bg-yellow-100 border-yellow-300 text-yellow-800'
-      case 'rog':
-        return 'bg-red-100 border-red-300 text-red-800'
-      case 'kaal':
-        return 'bg-gray-100 border-gray-300 text-gray-800'
-      case 'udveg':
-        return 'bg-orange-100 border-orange-300 text-orange-800'
-      default:
-        return 'bg-gray-100 border-gray-300 text-gray-800'
-    }
-  }
+  const descMap = {
+    amrit: 'Most auspicious time for all activities',
+    shubh: 'Auspicious time for important work',
+    labh: 'Good for financial & business activities',
+    char: 'Good for travel and movement',
+    rog: 'Avoid important activities',
+    kaal: 'Inauspicious – avoid all activities',
+    udveg: 'Stressful time – avoid decisions',
+  };
+  const getDesc = (name) => descMap[name.toLowerCase()] || 'Choghadiya period';
 
-  const getChoghadiyaIcon = (name) => {
-    switch (name.toLowerCase()) {
-      case 'amrit':
-        return '🍯'
-      case 'shubh':
-        return '✨'
-      case 'labh':
-        return '💰'
-      case 'char':
-        return '🚀'
-      case 'rog':
-        return '⚠️'
-      case 'kaal':
-        return '💀'
-      case 'udveg':
-        return '⚡'
-      default:
-        return '⭐'
-    }
-  }
+  const isCurrent = (p) => {
+    const n = Date.now();
+    return n >= new Date(p.starts_at) && n <= new Date(p.ends_at);
+  };
 
-  const getChoghadiyaDescription = (name) => {
-    switch (name.toLowerCase()) {
-      case 'amrit':
-        return 'Most auspicious time for all activities'
-      case 'shubh':
-        return 'Auspicious time for important work'
-      case 'labh':
-        return 'Good for financial and business activities'
-      case 'char':
-        return 'Good for travel and movement'
-      case 'rog':
-        return 'Avoid important activities, health issues possible'
-      case 'kaal':
-        return 'Inauspicious time, avoid all activities'
-      case 'udveg':
-        return 'Stressful time, avoid important decisions'
-      default:
-        return 'Choghadiya period'
-    }
-  }
-
-  const isCurrentChoghadiya = (choghadiya) => {
-    const now = new Date()
-    const startTime = new Date(choghadiya.starts_at)
-    const endTime = new Date(choghadiya.ends_at)
-    return now >= startTime && now <= endTime
-  }
-
-  const handleRefresh = () => {
-    fetchChoghadiyaData()
-  }
-
+  const handleRefresh = () => fetchChoghadiyaData();
   const handleDownload = () => {
-    if (!choghadiyaData) return
-    
-    const dataStr = JSON.stringify(choghadiyaData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'choghadiya-timings-result.json'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
+    if (!choghadiyaData) return;
+    const blob = new Blob([JSON.stringify(choghadiyaData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'choghadiya-timings.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
   const handleShare = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Choghadiya Timings Result',
-          text: 'Check out my current choghadiya timings',
-          url: window.location.href
-        })
-      } catch (error) {
-        console.log('Error sharing:', error)
-      }
+      try { await navigator.share({ title: 'Choghadiya', url: location.href }); } catch {}
     } else {
-      navigator.clipboard.writeText(window.location.href)
-      alert('Link copied to clipboard!')
+      navigator.clipboard.writeText(location.href);
+      alert('Link copied!');
     }
-  }
+  };
 
-  const parsedChoghadiyaData = choghadiyaData ? formatChoghadiyaData(choghadiyaData) : null
+  const parsed = choghadiyaData ? parse(choghadiyaData) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <Zap className="w-8 h-8 text-purple-600" />
-            <h1 className="text-3xl font-bold text-purple-600">Choghadiya Timings</h1>
-          </div>
-          <p className="text-lg text-gray-600">Current auspicious and inauspicious time periods</p>
+    <>
+      {/* ====================== CSS ====================== */}
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :global(body){margin:0;background:#fdfbf7;font-family:'Inter',sans-serif;}
+        .app{max-width:1200px;margin:0 auto;padding:2rem 1rem;position:relative;}
+        .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.18;animation:float 22s ease-in-out infinite;}
+        .orb1{top:10%;left:10%;width:500px;height:500px;background:linear-gradient(135deg,#d4af37,#7c3aed);}
+        .orb2{bottom:10%;right:10%;width:600px;height:600px;background:linear-gradient(135deg,#7c3aed,#b8972e);animation-delay:7s;}
+        .orb3{top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;background:radial-gradient(circle,#d4af37,transparent);animation-delay:14s;}
+        @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.1)}}
+
+        .header{text-align:center;margin-bottom:2.5rem;}
+        .headerIcon{width:64px;height:64px;background:linear-gradient(135deg,#d4af37,#b8972e);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;box-shadow:0 0 30px rgba(212,175,55,.3);}
+        .title{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;background:linear-gradient(135deg,#d4af37,#b8972e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0;}
+        .subtitle{color:#555;margin-top:.5rem;}
+
+        .infoBar{background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,.2);border-radius:1.5rem;padding:1rem;display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-bottom:2rem;box-shadow:0 0 30px rgba(212,175,55,.2);}
+        .infoItem{display:flex;align-items:center;gap:.5rem;font-size:.95rem;}
+        .infoItem svg{width:1.1rem;height:1.1rem;color:#d4af37;}
+        .infoLabel{font-weight:500;color:#444;}
+        .infoValue{font-weight:600;color:#111;}
+        .pulse{animation:pulse 2s infinite;}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+        .actionBar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.5rem;}
+        .btn{display:flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;background:#fff;border:1.5px solid #e5e7eb;border-radius:.875rem;font-size:.925rem;font-weight:500;color:#444;cursor:pointer;transition:all .3s ease;}
+        .btn:hover{background:#f9fafb;border-color:#d4af37;color:#b8972e;transform:translateY(-1px);}
+        .btn:disabled{opacity:.5;cursor:not-allowed;}
+        .spin{animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        .stateBox{text-align:center;padding:4rem 2rem;background:rgba(255,255,255,.9);border-radius:1.5rem;border:1px solid #e5e7eb;}
+        .spinner{width:3.5rem;height:3.5rem;border:5px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;}
+
+        .resultsHeader{text-align:center;margin-bottom:2rem;}
+        .resultsHeader h2{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;display:inline-flex;align-items:center;gap:.5rem;color:#111;}
+        .resultsHeader svg{color:#d4af37;}
+
+        .grid{display:grid;gap:1.5rem;grid-template-columns:1fr;}
+        @media (min-width:640px){.grid{grid-template-columns:repeat(2,1fr);}}
+        @media (min-width:1024px){.grid{grid-template-columns:repeat(3,1fr);}}
+
+        .card{position:relative;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,.25);border-radius:1.5rem;overflow:hidden;transition:transform .3s,box-shadow .3s;box-shadow:0 8px 32px rgba(0,0,0,.08);}
+        .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,.12);}
+        .accent{height:5px;}
+        .current{border:2px solid #d4af37 !important;box-shadow:0 0 0 5px rgba(212,175,55,.3),0 16px 40px rgba(212,175,55,.25) !important;}
+        .current .accent{background:linear-gradient(90deg,#d4af37,#b8972e);}
+
+        .amrit .accent{background:linear-gradient(90deg,#22c55e,#16a34a);}
+        .shubh .accent{background:linear-gradient(90deg,#3b82f6,#2563eb);}
+        .labh .accent{background:linear-gradient(90deg,#a855f7,#9333ea);}
+        .char .accent{background:linear-gradient(90deg,#f59e0b,#d97706);}
+        .rog .accent{background:linear-gradient(90deg,#ef4444,#dc2626);}
+        .kaal .accent{background:linear-gradient(90deg,#475569,#334155);}
+        .udveg .accent{background:linear-gradient(90deg,#f97316,#ea580c);}
+
+        .cardBody{padding:1.5rem 1.75rem;display:flex;gap:1rem;align-items:flex-start;}
+        .iconBox{width:56px;height:56px;border-radius:1rem;display:flex;align-items:center;justify-content:center;color:#fff;}
+        .titleGroup h3{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;margin:0;color:#111;}
+        .desc{font-size:.875rem;color:#555;margin-top:.25rem;}
+        .liveBadge{display:flex;align-items:center;gap:.4rem;background:rgba(212,175,55,.2);color:#b8972e;padding:.375rem .875rem;border-radius:9999px;font-size:.75rem;font-weight:700;text-transform:uppercase;border:1px solid rgba(212,175,55,.4);}
+        .pulseDot{width:9px;height:9px;background:#d4af37;border-radius:50%;animation:pulse 2s infinite;}
+        .timeRow{display:flex;justify-content:space-between;margin-bottom:.75rem;font-size:1rem;}
+        .timeLabel{font-weight:600;color:#666;}
+        .timeValue{font-family:'Courier New',monospace;font-weight:700;color:#111;}
+        .footer{padding:1rem 1.75rem;border-top:1px solid rgba(212,175,55,.2);text-align:center;background:rgba(255,255,255,.6);font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:#666;}
+      `}</style>
+
+      {/* ====================== JSX ====================== */}
+      <div className="app">
+        {/* floating orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
         </div>
 
-        {/* Current Time and Location Info */}
-        <div className="mb-6">
-          <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {currentTime.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {currentTime.toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: true
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {userLocation ? 
-                      `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 
-                      'Getting location...'
-                    }
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Header */}
+        <header className="header">
+          <div className="headerIcon"><Zap style={{ width: 36, height: 36, color: '#fff' }} /></div>
+          <h1 className="title">Choghadiya Timings</h1>
+          <p className="subtitle">Auspicious &amp; Inauspicious Muhurats for Today</p>
+        </header>
+
+        {/* Info Bar */}
+        <div className="infoBar">
+          <div className="infoItem"><Calendar /><span className="infoLabel">Date:</span><span className="infoValue">{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+          <div className="infoItem"><Calendar /><span className="infoLabel">Time:</span><span className="infoValue pulse">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span></div>
+          <div className="infoItem"><MapPin /><span className="infoLabel">Location:</span><span className="infoValue">{userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 'Detecting...'}</span></div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="flex items-center space-x-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
-            </Button>
-          </div>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleDownload}
-              disabled={!choghadiyaData}
-              className="flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleShare}
-              disabled={!choghadiyaData}
-              className="flex items-center space-x-2"
-            >
-              <Share className="w-4 h-4" />
-              <span>Share</span>
-            </Button>
+        <div className="actionBar">
+          <button onClick={handleRefresh} disabled={isLoading} className="btn"><RefreshCw className={isLoading ? 'spin' : ''} />Refresh</button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={handleDownload} disabled={!choghadiyaData} className="btn"><Download />Download</button>
+            <button onClick={handleShare} disabled={!choghadiyaData} className="btn"><Share />Share</button>
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading */}
         {isLoading && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600">Calculating current choghadiya timings...</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Error State */}
-        {error && !choghadiyaData && (
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="text-center py-8">
-              <p className="text-yellow-800 mb-4">{error}</p>
-              <Button onClick={handleRefresh} variant="outline">
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Rate Limit Warning */}
-        {error && choghadiyaData && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm">
-              ⚠️ {error} This is sample data for demonstration.
-            </p>
+          <div className="stateBox">
+            <div className="spinner" />
+            <p>Calculating Choghadiya timings...</p>
           </div>
         )}
 
-        {/* Choghadiya Results */}
-        {parsedChoghadiyaData && !isLoading && (
-          <div className="space-y-6">
-            <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-purple-800">
-                  <Star className="w-5 h-5" />
-                  <span>Choghadiya Timings</span>
-                </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Auspicious and inauspicious time periods for today
-                </p>
-              </CardHeader>
-            </Card>
+        {/* Error */}
+        {error && !choghadiyaData && (
+          <div className="stateBox" style={{ borderColor: '#fca5a5', background: '#fee2e2' }}>
+            <p style={{ color: '#b91c1c' }}>{error}</p>
+            <button onClick={handleRefresh} className="btn" style={{ marginTop: '1rem' }}>Try Again</button>
+          </div>
+        )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(parsedChoghadiyaData).map(([key, choghadiya]) => {
-                const isCurrent = isCurrentChoghadiya(choghadiya)
+        {/* Results */}
+        {parsed && !isLoading && (
+          <>
+            <div className="resultsHeader"><Star /><h2>Today's Choghadiya Periods</h2></div>
+
+            <div className="grid">
+              {Object.entries(parsed).map(([key, p]) => {
+                const cur = isCurrent(p);
+                const type = p.name.toLowerCase();
+
                 return (
-                  <Card 
-                    key={key} 
-                    className={`${getChoghadiyaColor(choghadiya.name)} transition-all duration-200 hover:shadow-md m-1 md:m-2 ${
-                      isCurrent ? 'ring-2 ring-purple-500 ring-opacity-70' : ''
-                    }`}
-                  >
-                    <CardHeader className="py-2">
-                      <CardTitle className="flex items-center space-x-2 text-base sm:text-lg font-bold leading-tight">
-                        <span className="text-xl sm:text-2xl">{getChoghadiyaIcon(choghadiya.name)}</span>
-                        <span className="font-extrabold text-base sm:text-lg">{choghadiya.name}</span>
-                        {isCurrent && (
-                          <div className="ml-auto">
-                            <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
-                          </div>
+                  <div key={key} className={`card ${type} ${cur ? 'current' : ''}`}>
+                    <div className="accent" />
+                    <div className="cardBody">
+                      <div className="iconBox" style={{ background: `linear-gradient(135deg, var(--${type}-color, #999), var(--${type}-dark, #666))` }}>
+                        {getIcon(p.name)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div className="titleGroup">
+                          <h3>{p.name}</h3>
+                          <p className="desc">{getDesc(p.name)}</p>
+                        </div>
+                        {cur && (
+                          <div className="liveBadge"><div className="pulseDot" />LIVE</div>
                         )}
-                      </CardTitle>
-                      <p className="text-[11px] sm:text-xs opacity-80 leading-snug font-semibold truncate" title={getChoghadiyaDescription(choghadiya.name)}>
-                        {getChoghadiyaDescription(choghadiya.name)}
-                      </p>
-                      {isCurrent && (
-                        <div className="text-[11px] font-bold text-purple-700 uppercase tracking-wide">
-                          🔴 LIVE
-                        </div>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-2 p-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[11px] sm:text-sm font-semibold">
-                          <span className="font-bold">Starts:</span>
-                          <span className="font-mono text-[11px] sm:text-sm font-bold text-right">
-                            {formatDateTime(choghadiya.starts_at)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] sm:text-sm font-semibold">
-                          <span className="font-bold">Ends:</span>
-                          <span className="font-mono text-[11px] sm:text-sm font-bold text-right">
-                            {formatDateTime(choghadiya.ends_at)}
-                          </span>
-                        </div>
                       </div>
-                      
-                      <div className="pt-1 border-t border-current/20">
-                        <div className="text-[10px] sm:text-[11px] text-center font-bold">
-                          Period #{key}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
+                    </div>
+
+                    <div className="cardBody" style={{ paddingTop: 0 }}>
+                      <div className="timeRow"><span className="timeLabel">Starts</span><span className="timeValue">{fmt(p.starts_at)}</span></div>
+                      <div className="timeRow"><span className="timeLabel">Ends</span><span className="timeValue">{fmt(p.ends_at)}</span></div>
+                    </div>
+
+                    <div className="footer">Period #{key}</div>
+                  </div>
+                );
               })}
             </div>
-          </div>
+          </>
         )}
-      </main>
-    </div>
-  )
+      </div>
+    </>
+  );
 }

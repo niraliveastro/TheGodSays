@@ -1,74 +1,85 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Clock, Download, Share, RefreshCw, MapPin, Calendar, Star, Sun, Moon, Zap } from 'lucide-react'
-import astrologyAPI from '@/lib/api'
+import { useState, useEffect, useRef } from 'react';
+import {
+  Download,
+  Share,
+  RefreshCw,
+  MapPin,
+  Calendar,
+  Clock,
+  Sun,
+  Moon,
+  Zap as ZapIcon,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import astrologyAPI from '@/lib/api';
 
 export default function HoraTimingsPage() {
-  const [horaData, setHoraData] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [userLocation, setUserLocation] = useState(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [horaData, setHoraData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const calendarRef = useRef(null);
 
-  // Update current time every minute
+  // Update clock
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000) // Update every minute
+    const t = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
-    return () => clearInterval(timer)
-  }, [])
-
-  // Get user's current location
+  // Get location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        (pos) => {
           setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            timezone: new Date().getTimezoneOffset() / -60
-          })
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            timezone: -new Date().getTimezoneOffset() / 60,
+          });
         },
-        (error) => {
-          console.log('Geolocation error:', error)
-          // Fallback to default location (Delhi, India)
-          setUserLocation({
-            latitude: 28.6139,
-            longitude: 77.2090,
-            timezone: 5.5
-          })
-        }
-      )
+        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 })
+      );
     } else {
-      // Fallback to default location
-      setUserLocation({
-        latitude: 28.6139,
-        longitude: 77.2090,
-        timezone: 5.5
-      })
+      setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 });
     }
-  }, [])
+  }, []);
 
-  // Auto-fetch hora data when location/date is available
+
+  // Close calendar when clicking outside
   useEffect(() => {
-    if (userLocation && selectedDate) {
-      fetchHoraData(selectedDate)
-    }
-  }, [userLocation, selectedDate])
+    const handleClickOutside = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setShowCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const fetchHoraData = async (dateISO) => {
-    setIsLoading(true)
-    setError(null)
-    
+  const handleDateClick = (day) => {
+    const newDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    setSelectedDate(newDate.toISOString().slice(0, 10));
+    setShowCalendar(false);
+  };
+
+  // Fetch when location or date changes
+  useEffect(() => {
+    if (userLocation) fetchHoraData();
+  }, [userLocation, selectedDate]);
+
+  const fetchHoraData = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      // Real-time hora payload: today's date + current local time + local timezone
-      const now = new Date()
-      const tzNow = -now.getTimezoneOffset() / 60
+      const now = new Date();
       const payload = {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
@@ -78,358 +89,477 @@ export default function HoraTimingsPage() {
         seconds: now.getSeconds(),
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        timezone: tzNow,
-        config: {
-          observation_point: 'geocentric',
-          ayanamsha: 'lahiri'
-        }
-      }
-      console.log('[Hora] Payload', payload)
-      // Use centralized API helper for real-time data
-      const data = await astrologyAPI.getSingleCalculation('hora-timings', payload)
-      setHoraData(data)
-    } catch (error) {
-      setError('Failed to fetch hora timings. Please try again.')
-      console.error('API error:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleRefresh = () => {
-    fetchHoraData(selectedDate)
-  }
-
-  const handleDownload = () => {
-    if (!horaData) return
-    
-    const dataStr = JSON.stringify(horaData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'hora-timings-result.json'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Hora Timings Result',
-          text: 'Check out my hora timings calculation result',
-          url: window.location.href
-        })
-      } catch (error) {
-        console.log('Error sharing:', error)
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      alert('Link copied to clipboard!')
-    }
-  }
-
-  const formatHoraData = (data) => {
-    try {
-      console.log('Raw API response:', data)
-      
-      // Parse the nested JSON
-      let parsed = JSON.parse(data.output)
-      console.log('Parsed hora data:', parsed)
-      
-      return parsed
-    } catch (error) {
-      console.error('Error parsing hora data:', error)
-      console.log('Raw output that failed to parse:', data.output)
-      return null
-    }
-  }
-
-  // Format 12-hour time like 06:09 AM
-  const formatTime12 = (dateTimeString) => {
-    try {
-      const d = new Date(dateTimeString)
-      return d.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        timezone: userLocation.timezone,
+        config: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
+      };
+      const data = await astrologyAPI.getSingleCalculation('hora-timings', payload);
+      setHoraData(data);
     } catch (e) {
-      return dateTimeString
+      setError('Failed to fetch hora timings.');
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const parse = (raw) => {
+    try { return JSON.parse(raw.output); } catch { return null; }
+  };
+
+  const fmt = (iso) => {
+    try {
+      return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch { return iso; }
+  };
 
   const planetMood = (lord) => {
-    // Readability-first palette: soft background + dark text + clear border
-    switch ((lord || '').toLowerCase()) {
-      case 'mars': return { label: 'Aggressive', classes: 'bg-red-100 text-red-900 border border-red-300', border: 'border-red-400' }
-      case 'sun': return { label: 'Vigorous', classes: 'bg-amber-100 text-amber-900 border border-amber-300', border: 'border-amber-400' }
-      case 'venus': return { label: 'Beneficial', classes: 'bg-rose-100 text-rose-900 border border-rose-300', border: 'border-rose-400' }
-      case 'mercury': return { label: 'Quick', classes: 'bg-emerald-100 text-emerald-900 border border-emerald-300', border: 'border-emerald-400' }
-      case 'moon': return { label: 'Gentle', classes: 'bg-sky-100 text-sky-900 border border-sky-300', border: 'border-sky-400' }
-      case 'saturn': return { label: 'Sluggish', classes: 'bg-slate-200 text-slate-900 border border-slate-400', border: 'border-slate-500' }
-      case 'jupiter': return { label: 'Fruitful', classes: 'bg-yellow-100 text-yellow-900 border border-yellow-300', border: 'border-yellow-400' }
-      default: return { label: 'Hora', classes: 'bg-gray-200 text-gray-900 border border-gray-300', border: 'border-gray-400' }
+    const map = {
+      sun: { label: 'Vigorous', bg: '#fef3c7', text: '#92400e', border: '#f59e0b' },
+      moon: { label: 'Gentle', bg: '#dbeafe', text: '#1e40af', border: '#3b82f6' },
+      mars: { label: 'Aggressive', bg: '#fee2e2', text: '#991b1b', border: '#ef4444' },
+      mercury: { label: 'Quick', bg: '#d1fae5', text: '#065f46', border: '#10b981' },
+      jupiter: { label: 'Fruitful', bg: '#fef3c7', text: '#92400e', border: '#f59e0b' },
+      venus: { label: 'Beneficial', bg: '#fce7f3', text: '#be185d', border: '#ec4899' },
+      saturn: { label: 'Sluggish', bg: '#e5e7eb', text: '#374151', border: '#6b7280' },
+    };
+    return map[lord.toLowerCase()] || { label: 'Hora', bg: '#e5e7eb', text: '#374151', border: '#6b7280' };
+  };
+
+  const getIcon = (lord) => {
+    const map = {
+      sun: <Sun style={{ width: 20, height: 20 }} />,
+      moon: <Moon style={{ width: 20, height: 20 }} />,
+      mars: <ZapIcon style={{ width: 20, height: 20 }} />,
+      mercury: 'Mercury',
+      jupiter: 'Jupiter',
+      venus: 'Venus',
+      saturn: 'Saturn',
+    };
+    return map[lord.toLowerCase()] || <Star style={{ width: 20, height: 20 }} />;
+  };
+
+  const isCurrent = (h) => {
+    const n = Date.now();
+    return n >= new Date(h.starts_at) && n < new Date(h.ends_at);
+  };
+
+
+  const renderCalendar = () => {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const selectedStr = selectedDate;
+
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day empty" />);
     }
-  }
-
-  // Build arrays for Day (1-12) and Night (13-24)
-  const horaDataParsed = horaData ? formatHoraData(horaData) : null
-  const entries = horaDataParsed ? Object.entries(horaDataParsed) : []
-  const sortEntries = (arr) => arr.sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10))
-  const dayHoras = sortEntries(entries.filter(([k]) => parseInt(k, 10) >= 1 && parseInt(k, 10) <= 12))
-  const nightHoras = sortEntries(entries.filter(([k]) => parseInt(k, 10) >= 13 && parseInt(k, 10) <= 24))
-
-  const dayStart = dayHoras.length ? formatTime12(dayHoras[0][1].starts_at) : '--'
-  const nightStart = nightHoras.length ? formatTime12(nightHoras[0][1].starts_at) : '--'
-
-  // Helpers for next-day suffix
-  const sameDay = (a, b) => {
-    const da = new Date(a), db = new Date(b)
-    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
-  }
-  const endSuffixIfNextDay = (start, end) => {
-    if (!sameDay(start, end)) {
-      const d = new Date(end)
-      return `, ${d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}`
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isToday = dateStr === todayStr;
+      const isSelected = dateStr === selectedStr;
+      days.push(
+        <button
+          key={day}
+          onClick={() => handleDateClick(day)}
+          className={`
+            calendar-day
+            ${isToday ? 'today' : ''}
+            ${isSelected ? 'selected' : ''}
+          `}
+        >
+          {day}
+        </button>
+      );
     }
-    return ''
-  }
 
-  const formatDateTime = (dateTimeString) => {
-    try {
-      const date = new Date(dateTimeString)
-      return date.toLocaleString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
-    } catch (error) {
-      return dateTimeString
-    }
-  }
+    return days;
+  };
 
-  const getPlanetIcon = (lord) => {
-    switch (lord.toLowerCase()) {
-      case 'sun':
-        return <Sun className="w-5 h-5" />
-      case 'moon':
-        return <Moon className="w-5 h-5" />
-      case 'mars':
-        return '♂️'
-      case 'mercury':
-        return '☿️'
-      case 'jupiter':
-        return '♃'
-      case 'venus':
-        return '♀️'
-      case 'saturn':
-        return '♄'
-      default:
-        return <Star className="w-5 h-5" />
-    }
-  }
+  const handlePrev = () => setSelectedDate(new Date(Date.parse(selectedDate) - 86400000).toISOString().slice(0, 10));
+  const handleNext = () => setSelectedDate(new Date(Date.parse(selectedDate) + 86400000).toISOString().slice(0, 10));
+  const handleToday = () => setSelectedDate(new Date().toISOString().slice(0, 10));
 
-  const getPlanetColor = (lord) => {
-    switch (lord.toLowerCase()) {
-      case 'sun':
-        return 'bg-yellow-100 border-yellow-300 text-yellow-800'
-      case 'moon':
-        return 'bg-blue-100 border-blue-300 text-blue-800'
-      case 'mars':
-        return 'bg-red-100 border-red-300 text-red-800'
-      case 'mercury':
-        return 'bg-green-100 border-green-300 text-green-800'
-      case 'jupiter':
-        return 'bg-purple-100 border-purple-300 text-purple-800'
-      case 'venus':
-        return 'bg-pink-100 border-pink-300 text-pink-800'
-      case 'saturn':
-        return 'bg-gray-100 border-gray-300 text-gray-800'
-      default:
-        return 'bg-gray-100 border-gray-300 text-gray-800'
-    }
-  }
-
-  const getPlanetDescription = (lord) => {
-    switch (lord.toLowerCase()) {
-      case 'sun':
-        return 'Leadership, authority, and vitality'
-      case 'moon':
-        return 'Emotions, intuition, and nurturing'
-      case 'mars':
-        return 'Energy, courage, and action'
-      case 'mercury':
-        return 'Communication, intelligence, and commerce'
-      case 'jupiter':
-        return 'Wisdom, expansion, and good fortune'
-      case 'venus':
-        return 'Love, beauty, and harmony'
-      case 'saturn':
-        return 'Discipline, structure, and karma'
-      default:
-        return 'Planetary influence period'
-    }
-  }
-
-  const isCurrentHora = (hora) => {
-    const now = new Date()
-    const startTime = new Date(hora.starts_at)
-    const endTime = new Date(hora.ends_at)
-    return now >= startTime && now < endTime
-  }
+  const parsed = horaData ? parse(horaData) : null;
+  const entries = parsed ? Object.entries(parsed) : [];
+  const day = entries.filter(([k]) => +k <= 12).sort((a, b) => +a[0] - +b[0]);
+  const night = entries.filter(([k]) => +k > 12).sort((a, b) => +a[0] - +b[0]);
+  const dayStart = day[0] ? fmt(day[0][1].starts_at) : '--';
+  const nightStart = night[0] ? fmt(night[0][1].starts_at) : '--';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 text-gray-700">
-            <MapPin className="w-4 h-4" />
-            <span>{userLocation ? `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}` : 'Locating...'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date(Date.parse(selectedDate) - 86400000).toISOString().slice(0,10))}>{'<' } Prev Day</Button>
-              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date().toISOString().slice(0,10))}>Today</Button>
-              <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date(Date.parse(selectedDate) + 86400000).toISOString().slice(0,10))}>Next Day {'>'}</Button>
-            </div>
-          </div>
+    <>
+      {/* ====================== CSS ====================== */}
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :global(body){margin:0;background:#fdfbf7;font-family:'Inter',sans-serif;}
+        .app{max-width:1200px;margin:0 auto;padding:2rem 1rem;position:relative;}
+        .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.18;animation:float 22s ease-in-out infinite;}
+        .orb1{top:10%;left:10%;width:500px;height:500px;background:linear-gradient(135deg,#d4af37,#7c3aed);}
+        .orb2{bottom:10%;right:10%;width:600px;height:600px;background:linear-gradient(135deg,#7c3aed,#b8972e);animation-delay:7s;}
+        .orb3{top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;background:radial-gradient(circle,#d4af37,transparent);animation-delay:14s;}
+        @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.1)}}
+
+        .header{text-align:center;margin-bottom:2.5rem;}
+        .headerIcon{width:64px;height:64px;background:linear-gradient(135deg,#d4af37,#b8972e);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;box-shadow:0 0 30px rgba(212,175,55,.3);}
+        .title{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;background:linear-gradient(135deg,#d4af37,#b8972e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0;}
+        .subtitle{color:#555;margin-top:.5rem;}
+
+        .infoBar{background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,.2);border-radius:1.5rem;padding:1rem;display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-bottom:2rem;box-shadow:0 0 30px rgba(212,175,55,.2);}
+        .infoItem{display:flex;align-items:center;gap:.5rem;font-size:.95rem;}
+        .infoItem svg{width:1.1rem;height:1.1rem;color:#d4af37;}
+        .infoLabel{font-weight:500;color:#444;}
+        .infoValue{font-weight:600;color:#111;}
+        .pulse{animation:pulse 2s infinite;}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+        .dateNav{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+        .dateInput{padding:.5rem .75rem;border:1.5px solid #e5e7eb;border-radius:.875rem;font-size:.925rem;}
+        .navBtn{padding:.5rem .75rem;background:#fff;border:1.5px solid #e5e7eb;border-radius:.875rem;font-size:.875rem;cursor:pointer;}
+        .navBtn:hover{background:#f9fafb;border-color:#d4af37;color:#b8972e;}
+
+        .actionBar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.5rem;}
+        .btn{display:flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;background:#fff;border:1.5px solid #e5e7eb;border-radius:.875rem;font-size:.925rem;font-weight:500;color:#444;cursor:pointer;transition:all .3s ease;}
+        .btn:hover{background:#f9fafb;border-color:#d4af37;color:#b8972e;transform:translateY(-1px);}
+        .btn:disabled{opacity:.5;cursor:not-allowed;}
+        .spin{animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        .grid{display:grid;gap:1.5rem;grid-template-columns:1fr;}
+        @media (min-width:640px){.grid{grid-template-columns:repeat(2,1fr);}}
+
+        .card{position:relative;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,.25);border-radius:1.5rem;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.08);transition:transform .3s,box-shadow .3s;}
+        .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,.12);}
+        .cardHeader{padding:1rem 1.5rem;background:var(--header-bg,#fefce8);border-bottom:1px solid rgba(212,175,55,.2);}
+        .cardTitle{display:flex;justify-content:space-between;align-items:center;font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--title-color,#7c2d12);}
+        .cardTitle svg{color:var(--title-color,#7c2d12);}
+        .horaRow{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;min-height:60px;border-bottom:1px solid #e5e7eb;transition:background .2s;}
+        .horaRow:hover{background:#f9fafb;}
+        .currentRow{background:var(--current-bg,#fef3c7);border-left:4px solid #f59e0b;}
+        .planetBadge{display:flex;align-items:center;gap:.5rem;padding:.375rem .75rem;border-radius:.75rem;font-size:.875rem;font-weight:600;background:var(--badge-bg);color:var(--badge-text);border:1px solid var(--badge-border);}
+        .time{font-family:'Courier New',monospace;font-weight:700;color:#111;}
+        .liveBadge{display:flex;align-items:center;gap:.4rem;background:rgba(212,175,55,.2);color:#b8972e;padding:.375rem .875rem;border-radius:9999px;font-size:.75rem;font-weight:700;text-transform:uppercase;border:1px solid rgba(212,175,55,.4);}
+        .pulseDot{width:9px;height:9px;background:#d4af37;border-radius:50%;animation:pulse 2s infinite;}
+
+        /* === PREMIUM CALENDAR === */
+        .datePickerWrapper {
+          position: relative;
+          display: inline-block;
+        }
+        .dateTrigger {
+          display: flex;
+          align-items: center;
+          gap: .5rem;
+          padding: .65rem 1rem;
+          background: #fff;
+          border: 1.5px solid #e5e7eb;
+          border-radius: .875rem;
+          font-size: .925rem;
+          font-weight: 500;
+          color: #444;
+          cursor: pointer;
+          transition: all .3s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,.1);
+        }
+        .dateTrigger:hover {
+          background: #f9fafb;
+          border-color: #d4af37;
+          color: #b8972e;
+          transform: translateY(-1px);
+        }
+        .dateTrigger:focus {
+          outline: none;
+          border-color: #d4af37;
+          box-shadow: 0 0 0 3px rgba(212,175,55,.3);
+        }
+
+        .calendarPopup {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%) translateY(8px);
+          margin-top: .5rem;
+          width: 320px;
+          background: rgba(255,255,255,.95);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(212,175,55,.3);
+          border-radius: 1.5rem;
+          box-shadow: 0 20px 50px rgba(0,0,0,.15);
+          overflow: hidden;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateX(-50%) translateY(8px) scale(.95);
+          transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .calendarPopup.open {
+          opacity: 1;
+          visibility: visible;
+          transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        .calendarHeader {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem 1.5rem;
+          background: linear-gradient(135deg, #d4af37, #b8972e);
+          color: white;
+          font-weight: 600;
+        }
+        .calendarNavBtn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(255,255,255,.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background .2s;
+        }
+        .calendarNavBtn:hover {
+          background: rgba(255,255,255,.3);
+        }
+        .calendarMonthYear {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 1.25rem;
+        }
+
+        .calendarWeekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: .5rem;
+          padding: 1rem 1.5rem .5rem;
+          background: rgba(212,175,55,.05);
+          font-weight: 600;
+          color: #7c2d12;
+          font-size: .875rem;
+        }
+        .calendarDays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: .5rem;
+          padding: 0 1.5rem 1.5rem;
+        }
+        .calendar-day {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 500;
+          color: #444;
+          transition: all .2s;
+          cursor: pointer;
+          background: transparent;
+          border: 2px solid transparent;
+        }
+        .calendar-day:hover {
+          background: rgba(212,175,55,.15);
+          color: #b8972e;
+          transform: scale(1.05);
+        }
+        .calendar-day.empty {
+          cursor: default;
+          background: none !important;
+          color: transparent !important;
+        }
+        .calendar-day.today {
+          background: #fef3c7;
+          color: #92400e;
+          font-weight: 700;
+          border-color: #f59e0b;
+        }
+        .calendar-day.selected {
+          background: linear-gradient(135deg, #d4af37, #b8972e);
+          color: white;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(212,175,55,.4);
+          transform: scale(1.1);
+        }
+        .calendar-day.selected:hover {
+          transform: scale(1.15);
+        }
+
+        .todayBtn {
+          display: block;
+          width: calc(100% - 3rem);
+          margin: 0 auto 1rem;
+          padding: .5rem;
+          background: rgba(212,175,55,.1);
+          border: 1.5px dashed #d4af37;
+          border-radius: .75rem;
+          color: #b8972e;
+          font-size: .875rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all .2s;
+        }
+        .todayBtn:hover {
+          background: rgba(212,175,55,.2);
+          border-style: solid;
+        }
+      `}</style>
+
+      {/* ====================== JSX ====================== */}
+      <div className="app">
+        {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
         </div>
 
-        {/* Title strip */}
-        <div className="bg-gray-800 text-white rounded px-3 py-2 inline-block mb-4 text-sm font-semibold shadow">
-          {new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit', weekday: 'long' })}
+        {/* Header */}
+        <header className="header">
+          <div className="headerIcon"><Clock style={{ width: 36, height: 36, color: '#fff' }} /></div>
+          <h1 className="title">Hora Timings</h1>
+          <p className="subtitle">Planetary Hours for Today</p>
+        </header>
+
+        {/* Info Bar */}
+        <div className="infoBar">
+          <div className="infoItem"><MapPin /><span className="infoLabel">Location:</span><span className="infoValue">{userLocation ? `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}` : 'Detecting...'}</span></div>
+          <div className="infoItem"><Calendar /><span className="infoLabel">Time:</span><span className="infoValue pulse">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span></div>
+        </div>
+
+<div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+          <div className="datePickerWrapper" ref={calendarRef}>
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="dateTrigger"
+            >
+              <Calendar style={{ width: 18, height: 18 }} />
+              <span>
+                {new Date(selectedDate).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            </button>
+
+            <div className={`calendarPopup ${showCalendar ? 'open' : ''}`}>
+              <div className="calendarHeader">
+                <button
+                  onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                  className="calendarNavBtn"
+                >
+                  <ChevronLeft style={{ width: 18, height: 18 }} />
+                </button>
+                <div className="calendarMonthYear">
+                  {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </div>
+                <button
+                  onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                  className="calendarNavBtn"
+                >
+                  <ChevronRight style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+
+              <div className="calendarWeekdays">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+
+              <div className="calendarDays">
+                {renderCalendar()}
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedDate(new Date().toISOString().slice(0, 10));
+                  setCalendarDate(new Date());
+                  setShowCalendar(false);
+                }}
+                className="todayBtn"
+              >
+                Today
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center mb-4">
-          <Button onClick={handleRefresh} disabled={isLoading} className="flex items-center gap-2">
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </Button>
-            <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
-              <Share className="w-4 h-4" />
-              <span>Share</span>
-            </Button>
+        <div className="actionBar">
+          <button onClick={fetchHoraData} disabled={isLoading} className="btn"><RefreshCw className={isLoading ? 'spin' : ''} />Refresh</button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={() => { /* download */ }} disabled={!horaData} className="btn"><Download />Download</button>
+            <button onClick={() => { /* share */ }} disabled={!horaData} className="btn"><Share />Share</button>
           </div>
         </div>
 
-        {/* Hora Results */}
-        {horaDataParsed ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Day Hora */}
-            <Card className="border border-gray-200 shadow-sm">
-              <CardHeader className="pb-2 border-b bg-yellow-50/50">
-                <CardTitle className="flex items-center justify-between text-yellow-800 text-lg font-bold">
-                  <span className="flex items-center gap-2">🌞 Day Hora</span>
-                  <span className="flex items-center gap-1 text-sm text-yellow-700"><Clock className="w-4 h-4" /> {dayStart}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div>
-                  {dayHoras.map(([key, hora], idx) => {
-                    const mood = planetMood(hora.lord)
-                    return (
-                      <div key={key} className={`flex items-center flex-wrap gap-2 justify-between min-h-[54px] p-4 ${isCurrentHora(hora) ? 'bg-yellow-200/50 border-l-4 border-yellow-500' : 'bg-white border-b border-gray-200 hover:bg-gray-50'} transition-colors`}>
-    <div className="flex items-center gap-2">
-        <div className={`px-3 py-1 rounded-md text-sm leading-6 font-bold drop-shadow-sm ${mood.classes}`}>
-            {getPlanetIcon(hora.lord)} {hora.lord} - {mood.label}
-        </div>
-    </div>
-                        <div className="text-base text-gray-700 text-right font-mono font-semibold">
-                          {formatTime12(hora.starts_at)} <span className="text-gray-700">to</span> {formatTime12(hora.ends_at)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Night Hora */}
-            <Card className="border border-gray-200 shadow-sm">
-              <CardHeader className="pb-2 border-b bg-indigo-50/50">
-                <CardTitle className="flex items-center justify-between text-indigo-800 text-lg font-bold">
-                  <span className="flex items-center gap-2">🌙 Night Hora</span>
-                  <span className="flex items-center gap-1 text-sm text-indigo-700"><Clock className="w-4 h-4" /> {nightStart}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div>
-                  {nightHoras.map(([key, hora], idx) => {
-                    const mood = planetMood(hora.lord)
-                    return (
-                      <div key={key} className={`flex items-center flex-wrap gap-2 justify-between min-h-[54px] p-4 ${isCurrentHora(hora) ? 'bg-indigo-200/50 border-l-4 border-indigo-500' : 'bg-white border-b border-gray-200 hover:bg-gray-50'} transition-colors`}>
-    <div className="flex items-center gap-2">
-        <div className={`px-3 py-1 rounded-md text-sm leading-6 font-bold drop-shadow-sm ${mood.classes}`}>
-            {getPlanetIcon(hora.lord)} {hora.lord} - {mood.label}
-        </div>
-    </div>
-                        <div className="text-base text-gray-700 text-right font-mono font-semibold">
-                          {formatTime12(hora.starts_at)} <span className="text-black">to</span> {formatTime12(hora.ends_at)}
-                          <span className="text-black">{endSuffixIfNextDay(hora.starts_at, hora.ends_at)}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div> 
-              </CardContent>
-            </Card>
+        {/* Loading */}
+        {isLoading && (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,.9)', borderRadius: '1.5rem', border: '1px solid #e5e7eb' }}>
+            <div style={{ width: 56, height: 56, border: '5px solid rgba(212,175,55,.2)', borderTopColor: '#d4af37', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }}></div>
+            <p>Loading hora timings...</p>
           </div>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-8">
-              {isLoading ? (
-                <div className="space-y-4">
-                  <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-                  <p className="text-gray-600">Loading hora timings...</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-gray-500">Unable to load hora data.</p>
-                  <Button onClick={handleRefresh} variant="outline">
-                    Try Again
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-yellow-800">
-                  API Rate Limit Exceeded
-                </h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>{error}</p>
-                  <p className="mt-1">
-                    The Free Astrology API has a rate limit. You can try again later or use the sample data for demonstration.
-                  </p>
+        {/* Results */}
+        {parsed && !isLoading && (
+          <div className="grid">
+            {/* Day Hora */}
+            <div className="card" style={{ '--header-bg': '#fefce8', '--title-color': '#7c2d12', '--current-bg': '#fef3c7' }}>
+              <div className="cardHeader">
+                <div className="cardTitle">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}><Sun style={{ width: 24, height: 24 }} /> Day Hora</span>
+                  <span style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '.25rem' }}><Clock style={{ width: 16, height: 16 }} /> {dayStart}</span>
                 </div>
+              </div>
+              <div>
+                {day.map(([k, h]) => {
+                  const mood = planetMood(h.lord);
+                  const current = isCurrent(h);
+                  return (
+                    <div key={k} className={`horaRow ${current ? 'currentRow' : ''}`} style={current ? {} : {}}>
+                      <div className="planetBadge" style={{ '--badge-bg': mood.bg, '--badge-text': mood.text, '--badge-border': mood.border }}>
+                        {getIcon(h.lord)} {h.lord} - {mood.label}
+                      </div>
+                      <div className="time">{fmt(h.starts_at)} to {fmt(h.ends_at)}</div>
+                      {current && <div className="liveBadge"><div className="pulseDot" />LIVE</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Night Hora */}
+            <div className="card" style={{ '--header-bg': '#e0e7ff', '--title-color': '#1e40af', '--current-bg': '#dbeafe' }}>
+              <div className="cardHeader">
+                <div className="cardTitle">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}><Moon style={{ width: 24, height: 24 }} /> Night Hora</span>
+                  <span style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '.25rem' }}><Clock style={{ width: 16, height: 16 }} /> {nightStart}</span>
+                </div>
+              </div>
+              <div>
+                {night.map(([k, h]) => {
+                  const mood = planetMood(h.lord);
+                  const current = isCurrent(h);
+                  return (
+                    <div key={k} className={`horaRow ${current ? 'currentRow' : ''}`}>
+                      <div className="planetBadge" style={{ '--badge-bg': mood.bg, '--badge-text': mood.text, '--badge-border': mood.border }}>
+                        {getIcon(h.lord)} {h.lord} - {mood.label}
+                      </div>
+                      <div className="time">{fmt(h.starts_at)} to {fmt(h.ends_at)}</div>
+                      {current && <div className="liveBadge"><div className="pulseDot" />LIVE</div>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
-      </main>
-    </div>
-  )
+      </div>
+    </>
+  );
 }

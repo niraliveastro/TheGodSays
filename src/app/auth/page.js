@@ -1,61 +1,108 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { User, Star, ArrowRight } from 'lucide-react'
+import { User, Star, ArrowRight, Sparkles } from 'lucide-react'
+import styles from './auth.module.css'  
 
 export default function AuthLanding() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-sky-50 to-indigo-50 flex items-start justify-center py-16 px-4">
-      <div className="w-full max-w-5xl">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">Welcome to TheGodSays</h1>
-          <p className="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">Connect with experienced astrologers or share your expertise with seekers worldwide.</p>
+    <div className={styles['auth-landing-page']}>
+      {/* Animated background orbs */}
+      <div className={`${styles['bg-orb']} ${styles['bg-orb-1']}`} />
+      <div className={`${styles['bg-orb']} ${styles['bg-orb-2']}`} />
+      <div className={`${styles['bg-orb']} ${styles['bg-orb-3']}`} />
+
+      <div className={styles['auth-landing-container']}>
+        {/* Header */}
+        <div className={styles['auth-landing-header']}>
+          <div className={styles['landing-logo-badge']}>
+            <Sparkles className={styles['landing-logo-icon']} />
+          </div>
+          <h1 className={styles['landing-title']}>Welcome to TheGodSays</h1>
+          <p className={styles['landing-subtitle']}>
+            Connect with experienced astrologers or share your expertise with seekers worldwide.
+          </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 items-stretch">
-          {/* User card */}
-          <Card className="group relative overflow-hidden p-8 rounded-2xl transform transition duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer" onClick={() => router.push('/auth/user')}>
-            <div className="absolute -left-16 -top-16 w-48 h-48 bg-gradient-to-br from-blue-200 to-transparent rounded-full opacity-40 pointer-events-none"></div>
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="flex-1 text-center">
-                <div className="mx-auto w-20 h-20 flex items-center justify-center mb-6">
-                  <User className="w-10 h-10 text-blue-700" />
+        {/* Cards */}
+        <div className={styles['auth-landing-grid']}>
+          {/* User Card */}
+          <div 
+            className={`${styles['auth-choice-card']} ${styles['user-card']}`}
+            onClick={() => router.push('/auth/user')}
+          >
+            <div className={`${styles['card-glow']} ${styles['user-glow']}`} />
+            <div className={styles['card-content']}>
+              <div className={`${styles['card-icon-wrapper']} ${styles['user-icon-wrapper']}`}>
+                <User className={styles['card-icon']} />
+              </div>
+              <h2 className={styles['card-title']}>I am a User</h2>
+              <p className={styles['card-description']}>
+                Seek guidance from experienced astrologers for life questions, career decisions, and personal growth.
+              </p>
+              <div className={styles['card-features']}>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['user-dot']}`} />
+                  <span>Expert Consultations</span>
                 </div>
-                <h2 className="text-2xl font-semibold text-slate-900 mb-3">I am a User</h2>
-                <p className="text-slate-600 mb-6 px-6">Seek guidance from experienced astrologers for life questions, career decisions, and personal growth.</p>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['user-dot']}`} />
+                  <span>Personalized Readings</span>
+                </div>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['user-dot']}`} />
+                  <span>24/7 Availability</span>
+                </div>
               </div>
-              <div>
-                <Button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow" onClick={() => router.push('/auth/user')}>
-                  Continue as User
-                  <ArrowRight className="w-4 h-4 opacity-90" />
-                </Button>
-              </div>
+              <button className={`${styles['choice-btn']} ${styles['user-btn']}`}>
+                <span>Continue as User</span>
+                <ArrowRight className={styles['btn-arrow']} />
+              </button>
             </div>
-          </Card>
+          </div>
 
-          {/* Astrologer card */}
-          <Card className="group relative overflow-hidden p-8 rounded-2xl transform transition duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer border-yellow-100" onClick={() => router.push('/auth/astrologer')}>
-            <div className="absolute -right-16 -bottom-16 w-56 h-56 bg-gradient-to-br from-yellow-50 to-transparent rounded-full opacity-40 pointer-events-none"></div>
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="flex-1 text-center">
-                <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-gradient-to-br from-yellow-50 to-yellow-100">
-                  <Star className="w-10 h-10 text-yellow-700" />
+          {/* Astrologer Card */}
+          <div 
+            className={`${styles['auth-choice-card']} ${styles['astrologer-card']}`}
+            onClick={() => router.push('/auth/astrologer')}
+          >
+            <div className={`${styles['card-glow']} ${styles['astrologer-glow']}`} />
+            <div className={styles['card-content']}>
+              <div className={`${styles['card-icon-wrapper']} ${styles['astrologer-icon-wrapper']}`}>
+                <Star className={styles['card-icon']} />
+              </div>
+              <h2 className={styles['card-title']}>I am an Astrologer</h2>
+              <p className={styles['card-description']}>
+                Share your astrological expertise and help people find clarity while building your practice.
+              </p>
+              <div className={styles['card-features']}>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['astrologer-dot']}`} />
+                  <span>Build Your Reputation</span>
                 </div>
-                <h2 className="text-2xl font-semibold text-slate-900 mb-3">I am an Astrologer</h2>
-                <p className="text-slate-600 mb-6 px-6">Share your astrological expertise and help people find clarity while building your practice.</p>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['astrologer-dot']}`} />
+                  <span>Flexible Scheduling</span>
+                </div>
+                <div className={styles['card-feature']}>
+                  <div className={`${styles['feature-dot']} ${styles['astrologer-dot']}`} />
+                  <span>Global Reach</span>
+                </div>
               </div>
-              <div>
-                <Button className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow" onClick={() => router.push('/auth/astrologer')}>
-                  Continue as Astrologer
-                  <ArrowRight className="w-4 h-4 opacity-90" />
-                </Button>
-              </div>
+              <button className={`${styles['choice-btn']} ${styles['astrologer-btn']}`}>
+                <span>Continue as Astrologer</span>
+                <ArrowRight className={styles['btn-arrow']} />
+              </button>
             </div>
-          </Card>
+          </div>
+        </div>
+
+        <div className={styles['auth-landing-footer']}>
+          <p className={styles['footer-text']}>
+            Join thousands of seekers and guides on their cosmic journey
+          </p>
         </div>
       </div>
     </div>
