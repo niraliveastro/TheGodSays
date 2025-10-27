@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone, Wallet } from 'lucide-react'
+import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone, Wallet, ChevronDown, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -30,6 +30,7 @@ const Navigation = () => {
   const [showPwSignin, setShowPwSignin] = useState(false)
   const [showPwSignup, setShowPwSignup] = useState(false)
   const [showPwConfirm, setShowPwConfirm] = useState(false)
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false)
 
   // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
@@ -38,6 +39,30 @@ const Navigation = () => {
     }
   }, [user, showProfileModal])
 
+  // Close more dropdown when mobile menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowMoreDropdown(false)
+    }
+  }, [isOpen])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMoreDropdown && !event.target.closest('[data-dropdown-container]')) {
+        setShowMoreDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [showMoreDropdown])
+
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/panchang/calender', label: 'Panchang', icon: Calendar },
@@ -45,6 +70,15 @@ const Navigation = () => {
     { href: '/predictions', label: 'Predictions', icon: Star },
     { href: '/talk-to-astrologer', label: 'Talk to Astrologer', icon: Phone },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { 
+      href: null, 
+      label: 'More', 
+      icon: MoreHorizontal,
+      children: [
+        { href: '/numerology', label: 'Numerology' },
+        { href: '/transit', label: 'Transit' }
+      ]
+    },
     { href: '/account', label: 'My Account', icon: User },
   ]
 
@@ -179,6 +213,7 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
               const Icon = item.icon
+              
               if (item.href === '/account') {
                 return (
                   <button
@@ -196,6 +231,57 @@ const Navigation = () => {
                   </button>
                 )
               }
+
+              // Handle dropdown menu (More) 
+              if (item.children) {
+                const isActive = item.children.some(child => pathname === child.href)
+                return (
+                  <div 
+                    key={item.label} 
+                    className="relative"
+                    data-dropdown-container
+                    onMouseEnter={() => setShowMoreDropdown(true)}
+                    onMouseLeave={() => setShowMoreDropdown(false)}
+                  >
+                    <div
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </div>
+                    
+                    {showMoreDropdown && (
+                      <>
+                        {/* Invisible bridge to prevent dropdown from closing */}
+                        <div className="absolute top-full left-0 w-40 sm:w-48 h-1 bg-transparent"></div>
+                        <div className="absolute top-full right-0 sm:left-0 mt-1 w-40 sm:w-48 bg-white rounded-lg shadow-lg border z-50 opacity-100 visible pointer-events-auto transition-all duration-300 ease-in-out">
+                          <div className="py-2">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`block px-3 sm:px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-700 ${
+                                  pathname === child.href
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              }
+
               return (
                  <Link
                    key={item.href}
@@ -229,6 +315,7 @@ const Navigation = () => {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
               {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
                 const Icon = item.icon
+                
                 if (item.href === '/account') {
                   return (
                     <button
@@ -246,6 +333,55 @@ const Navigation = () => {
                     </button>
                   )
                 }
+
+                // Handle dropdown menu (More) in mobile
+                if (item.children) {
+                  const isActive = item.children.some(child => pathname === child.href)
+                  return (
+                    <div key={item.label} data-dropdown-container>
+                      {/* More button */}
+                      <button
+                        type="button"
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-blue-500 ${
+                          isActive
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                        }`}
+                        onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                      >
+                        <div className="flex items-center">
+                          <Icon className="w-5 h-5" />
+                          <span className="ml-2">{item.label}</span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showMoreDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {/* Expandable children */}
+                      {showMoreDropdown && (
+                        <div className="ml-7 mt-1 space-y-1">
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                pathname === child.href
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50'
+                              }`}
+                              onClick={() => {
+                                setIsOpen(false)
+                                setShowMoreDropdown(false)
+                              }}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
                 return (
                   <Link
                     key={item.href}
