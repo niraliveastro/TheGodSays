@@ -14,7 +14,8 @@ const firebaseConfig = {
 }
 
 let app = null
-if (typeof window !== 'undefined') {
+// Initialize Firebase for both client and server
+if (typeof window !== 'undefined' || typeof process !== 'undefined') {
   // Warn if required config is missing
   if (!firebaseConfig.apiKey) {
     // eslint-disable-next-line no-console
@@ -25,6 +26,6 @@ if (typeof window !== 'undefined') {
   app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
 }
 
-// Export auth and db when running in the browser; export null on server
-export const auth = typeof window !== 'undefined' && app ? getAuth(app) : null
-export const db = typeof window !== 'undefined' && app ? getFirestore(app) : null
+// Export auth and db for both client and server
+export const auth = app ? getAuth(app) : null
+export const db = app ? getFirestore(app) : null
