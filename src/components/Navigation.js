@@ -260,37 +260,30 @@ const Navigation = () => {
                 return (
                   <div 
                     key={item.label} 
-                    className="relative"
+                    className="nav-dropdown"
                     data-dropdown-container
                     onMouseEnter={() => setShowMoreDropdown(true)}
                     onMouseLeave={() => setShowMoreDropdown(false)}
                   >
-                    <div
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
-                      }`}
+                    <button
+                      className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
                       onClick={() => setShowMoreDropdown(!showMoreDropdown)}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon />
                       <span>{item.label}</span>
-                    </div>
+                    </button>
                     
                     {showMoreDropdown && (
                       <>
-                        {/* Invisible bridge to prevent dropdown from closing */}
-                        <div className="absolute top-full left-0 w-40 sm:w-48 h-1 bg-transparent"></div>
-                        <div className="absolute top-full right-0 sm:left-0 mt-1 w-40 sm:w-48 bg-white rounded-lg shadow-lg border z-50 opacity-100 visible pointer-events-auto transition-all duration-300 ease-in-out">
-                          <div className="py-2">
+                        <div className="nav-dropdown-bridge"></div>
+                        <div className="nav-dropdown-menu">
+                          <div className="nav-dropdown-content">
                             {item.children.map((child) => (
                               <Link
                                 key={child.href}
                                 href={child.href}
-                                className={`block px-3 sm:px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-700 ${
-                                  pathname === child.href
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-700'
+                                className={`nav-dropdown-item ${
+                                  pathname === child.href ? 'active' : ''
                                 }`}
                               >
                                 {child.label}
@@ -359,31 +352,25 @@ const Navigation = () => {
                       {/* More button */}
                       <button
                         type="button"
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-blue-500 ${
-                          isActive
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-gray-700 hover:text-blue-700 hover:bg-blue-50'
-                        }`}
+                        className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
                         onClick={() => setShowMoreDropdown(!showMoreDropdown)}
                       >
                         <div className="flex items-center">
-                          <Icon className="w-5 h-5" />
-                          <span className="ml-2">{item.label}</span>
+                          <Icon />
+                          <span style={{ marginLeft: '0.5rem' }}>{item.label}</span>
                         </div>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showMoreDropdown ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`chevron-icon ${showMoreDropdown ? 'rotated' : ''}`} />
                       </button>
                       
                       {/* Expandable children */}
                       {showMoreDropdown && (
-                        <div className="ml-7 mt-1 space-y-1">
+                        <div className="nav-mobile-dropdown-content">
                           {item.children.map((child) => (
                             <Link
                               key={child.href}
                               href={child.href}
-                              className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                pathname === child.href
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50'
+                              className={`nav-mobile-dropdown-item ${
+                                pathname === child.href ? 'active' : ''
                               }`}
                               onClick={() => {
                                 setIsOpen(false)

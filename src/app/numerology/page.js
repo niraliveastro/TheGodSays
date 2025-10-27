@@ -1,32 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Calculator, Star, Hash, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { useState, useEffect, useMemo } from 'react'
+import { Calculator, User, Calendar, Save, Trash2 } from 'lucide-react'
+import './numerology.css'
 
 export default function NumerologyPage() {
   const [fullName, setFullName] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [result, setResult] = useState(null)
   const [history, setHistory] = useState([])
 
-  // Numerology calculations
+  // Numerology data constants
   const PYTHAGOREAN_MAP = {
-    A: 1, J: 1, S: 1, B: 2, K: 2, T: 2, C: 3, L: 3, U: 3, D: 4, M: 4, V: 4,
-    E: 5, N: 5, W: 5, F: 6, O: 6, X: 6, G: 7, P: 7, Y: 7, H: 8, Q: 8, Z: 8,
-    I: 9, R: 9
+    A:1, J:1, S:1, B:2, K:2, T:2, C:3, L:3, U:3, D:4, M:4, V:4,
+    E:5, N:5, W:5, F:6, O:6, X:6, G:7, P:7, Y:7, H:8, Q:8, Z:8, I:9, R:9
   }
 
   const CHALDEAN_MAP = {
-    A: 1, I: 1, J: 1, Q: 1, Y: 1, B: 2, K: 2, R: 2, C: 3, G: 3, L: 3, S: 3,
-    D: 4, M: 4, T: 4, E: 5, H: 5, N: 5, X: 5, U: 6, V: 6, W: 6, O: 7, Z: 7,
-    F: 8, P: 8
+    A:1, I:1, J:1, Q:1, Y:1, B:2, K:2, R:2, C:3, G:3, L:3, S:3,
+    D:4, M:4, T:4, E:5, H:5, N:5, X:5, U:6, V:6, W:6, O:7, Z:7, F:8, P:8
   }
 
   const VOWELS_STANDARD = ['A', 'E', 'I', 'O', 'U']
   const MASTER_NUMBERS = [11, 22, 33]
+  const NUMEROLOGY_HISTORY_KEY = 'numerology_history_v2'
 
   const NUMBER_TRAITS = {
     1: { archetype: "Pioneer / Leader", Fame: 4, Wealth: 4, Luck: 3, Health: 2, Speed: 5 },
@@ -41,20 +37,21 @@ export default function NumerologyPage() {
   }
 
   const TIMING_ANALYSIS = {
-    1: "Early Success (before 30). Natural leadership abilities manifest quickly.",
-    5: "Early Success (before 30). Dynamic energy creates rapid opportunities.",
-    8: "Mid-Life Wealth (35–45). Executive power peaks in maturity.",
-    7: "Delayed Fame / Lasting Legacy. Deep wisdom develops over time.",
-    2: "Collaborative Timing. Success through partnerships and cooperation.",
-    3: "Creative Flow Timing. Artistic and expressive talents shine through.",
-    4: "Methodical Timing. Steady building creates lasting foundations.",
-    6: "Service Timing. Healing and nurturing abilities guide the path.",
-    9: "Humanitarian Timing. Visionary leadership serves the greater good.",
-    11: "Master Intuition Timing. Spiritual insights guide major decisions.",
-    22: "Master Builder Timing. Large-scale manifestation abilities.",
-    33: "Master Teacher Timing. Wisdom and guidance for humanity."
+    1: "Early Success (before 30). Strong leadership presence opens doors quickly.",
+    5: "Early Success (before 30). Adaptability creates opportunities early.",
+    8: "Mid-Life Wealth (35–45). Material success peaks during prime years.",
+    7: "Delayed Fame / Lasting Legacy. Recognition comes later but endures.",
+    2: "Collaborative Timing. Success through partnerships and relationships.",
+    3: "Creative Flow Timing. Artistic and expressive talents flourish.",
+    4: "Methodical Timing. Steady progress with consistent effort.",
+    6: "Service Timing. Fulfillment through helping others.",
+    9: "Humanitarian Timing. Impact through service to humanity.",
+    11: "Master Intuition Timing. Spiritual insights guide success.",
+    22: "Master Builder Timing. Large-scale projects and lasting impact.",
+    33: "Master Teacher Timing. Wisdom and guidance for others."
   }
 
+  // Helper functions
   const reduceNumber = (num) => {
     if (num === null || isNaN(num) || num === 0) return null
     let current = num
@@ -68,20 +65,20 @@ export default function NumerologyPage() {
     return current
   }
 
-  const isVowel = (char, string, index) => {
+  const isVowel = (char, str, index) => {
     if (VOWELS_STANDARD.includes(char)) return true
     if (char === 'Y') {
-      const prevVowel = index > 0 ? VOWELS_STANDARD.includes(string[index - 1]) : false
-      const nextVowel = index < string.length - 1 ? VOWELS_STANDARD.includes(string[index + 1]) : false
+      const prevVowel = index > 0 ? VOWELS_STANDARD.includes(str[index - 1]) : false
+      const nextVowel = index < str.length - 1 ? VOWELS_STANDARD.includes(str[index + 1]) : false
       if (!prevVowel && !nextVowel) return true
-      if (index === string.length - 1 && !prevVowel) return true
+      if (index === str.length - 1 && !prevVowel) return true
       if (index === 0 && !nextVowel) return true
     }
     return false
   }
 
-  const reduceLifePathComponent = (num) => {
-    let sum = num
+  const reduceLifePathComponent = (n) => {
+    let sum = n
     while (sum > 9 && ![11, 22, 33].includes(sum)) {
       sum = sum.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0)
     }
@@ -107,7 +104,7 @@ export default function NumerologyPage() {
     const chalTraits = NUMBER_TRAITS[chaldean] || {}
     const metrics = ['Fame', 'Wealth', 'Luck', 'Health', 'Speed']
     const output = {}
-
+    
     for (const metric of metrics) {
       const average = ((pythTraits[metric] || 0) + (chalTraits[metric] || 0)) / 2
       output[metric.toLowerCase()] = {
@@ -118,6 +115,7 @@ export default function NumerologyPage() {
     return output
   }
 
+  // Main calculation function
   const performCalculation = (rawName, dateStr) => {
     const name = rawName.trim()
     const lifePath = calculateLifePath(dateStr)
@@ -137,7 +135,6 @@ export default function NumerologyPage() {
 
     if (name) {
       const cleaned = name.toUpperCase().replace(/[^A-Z]/g, '')
-      
       for (let i = 0; i < cleaned.length; i++) {
         const char = cleaned[i]
         const pythValue = PYTHAGOREAN_MAP[char] || 0
@@ -152,7 +149,7 @@ export default function NumerologyPage() {
           consonantSum += pythValue
         }
       }
-
+      
       destiny = reduceNumber(pythagoreanTotal)
       soul = reduceNumber(vowelSum)
       dream = reduceNumber(consonantSum)
@@ -185,536 +182,493 @@ export default function NumerologyPage() {
     }
   }
 
-  const calculateAndDisplay = () => {
-    const res = performCalculation(fullName, birthDate)
-    setResult(res)
+  // Calculate results whenever inputs change
+  const results = useMemo(() => {
+    return performCalculation(fullName, birthDate) || {}
+  }, [fullName, birthDate])
+
+  // History management
+  const getHistory = () => {
+    try {
+      const stored = localStorage.getItem(NUMEROLOGY_HISTORY_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch (e) {
+      return []
+    }
+  }
+
+  const saveToHistory = (result) => {
+    let currentHistory = getHistory()
+    const key = `${result.name.toUpperCase()}-${result.dob}`
+    currentHistory = currentHistory.filter(item => `${item.name.toUpperCase()}-${item.dob}` !== key)
+    currentHistory.unshift(result)
+    if (currentHistory.length > 10) currentHistory = currentHistory.slice(0, 10)
+    localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(currentHistory))
+    setHistory(currentHistory)
   }
 
   const saveCurrentResult = () => {
-    if (result && result.lifePath !== null && result.destiny !== null) {
-      const newHistory = [result, ...history.filter(item => 
-        `${item.name.toUpperCase()}-${item.dob}` !== `${result.name.toUpperCase()}-${result.dob}`
-      )].slice(0, 10)
-      
-      setHistory(newHistory)
-      localStorage.setItem('numerology_history_v2', JSON.stringify(newHistory))
+    if (results && results.lifePath !== null && results.destiny !== null) {
+      saveToHistory(results)
     }
   }
 
   const deleteHistoryItem = (id) => {
-    const newHistory = history.filter(item => item.id !== id)
-    setHistory(newHistory)
-    localStorage.setItem('numerology_history_v2', JSON.stringify(newHistory))
+    const updated = history.filter(item => item.id !== id)
+    localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(updated))
+    setHistory(updated)
   }
 
   const clearHistory = () => {
+    localStorage.removeItem(NUMEROLOGY_HISTORY_KEY)
     setHistory([])
-    localStorage.removeItem('numerology_history_v2')
   }
 
+  // Load history on component mount
   useEffect(() => {
-    calculateAndDisplay()
-  }, [fullName, birthDate])
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('numerology_history_v2')
-      if (saved) {
-        setHistory(JSON.parse(saved))
-      }
-    } catch (e) {
-      console.warn('Failed to load history:', e)
-    }
+    setHistory(getHistory())
   }, [])
 
-  const canSave = result && result.destiny !== null && result.lifePath !== null && result.composite !== null
+  // Check if save button should be enabled
+  const canSave = results && results.destiny !== null && results.lifePath !== null && results.composite !== null
+
+  // Helper function to render detail rows
+  const renderDetailRow = (label, data) => {
+    if (!data) return null
+    
+    return (
+      <div key={label} className="detail-item">
+        <span className="detail-label">{label}:</span>
+        <div className="progress-bar-container">
+          <div 
+            className="progress-bar-fill" 
+            style={{width: `${data.percent}%`}}
+          ></div>
+        </div>
+        <span className="detail-percent">{data.percent.toFixed(0)}%</span>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:py-8 md:py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="numerology-container">
+      <div className="numerology-content">
         {/* Header */}
-        <header className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-800 mb-4 sm:mb-6 lg:mb-8">
+        <header className="numerology-header">
+          <h1 className="numerology-title">
             Universal Numerology Analyzer
           </h1>
-          <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl text-gray-600 max-w-4xl mx-auto px-4">
+          <p className="numerology-subtitle">
             Composite Scoring System: Inner Engine (Pythagorean) × Outer Vehicle (Chaldean)
           </p>
         </header>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 gap-6 lg:gap-8 xl:gap-12 items-start">
-          {/* CENTERED FORM - Smaller width */}
-          <div className="flex justify-center mb-8 lg:mb-12">
-            <div className="w-full max-w-xs sm:max-w-sm">
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div>
-                    <label htmlFor="fullName" className="block text-lg sm:text-xl lg:text-2xl font-bold text-gray-700 mb-2 sm:mb-3">
-                      Full Birth Name:
-                    </label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="e.g., Emily Ann Brown"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="text-lg sm:text-xl lg:text-2xl h-12 sm:h-14 lg:h-16"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="birthDate" className="block text-lg sm:text-xl lg:text-2xl font-bold text-gray-700 mb-2 sm:mb-3">
-                      Date of Birth (Required for Life Path & Timing):
-                    </label>
-                    <Input
-                      id="birthDate"
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => setBirthDate(e.target.value)}
-                      className="text-lg sm:text-xl lg:text-2xl h-12 sm:h-14 lg:h-16"
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={saveCurrentResult}
-                    disabled={!canSave}
-                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-semibold"
-                    size="lg"
-                  >
-                    Save Calculation to History
-                  </Button>
+        {/* Form Section - Centered */}
+        <div className="form-container">
+          <div className="form-wrapper">
+            <div className="form-card">
+              {/* Form Header */}
+              <div className="form-header">
+                <div className="form-icon-circle">
+                  <Calculator className="w-7 h-7 text-white" />
                 </div>
-              </Card>
+                <h3 className="form-header-title">Your Details</h3>
+                <p className="form-header-subtitle">Enter your information below</p>
+              </div>
+
+              {/* Full Name Input */}
+              <div className="input-group">
+                <label htmlFor="fullName" className="input-label">
+                  <User className="w-4 h-4 input-label-icon" style={{color: '#d97706'}} />
+                  Full Birth Name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  placeholder="e.g., Emily Ann Brown"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              
+              {/* Date of Birth Input */}
+              <div className="input-group">
+                <label htmlFor="birthDate" className="input-label">
+                  <Calendar className="w-4 h-4 input-label-icon" style={{color: '#9333ea'}} />
+                  Date of Birth
+                  <span className="required-badge">*Required</span>
+                </label>
+                <input
+                  id="birthDate"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="input-field date-input"
+                />
+                <p className="input-hint">Required for Life Path & Timing analysis</p>
+              </div>
+              
+              {/* Save Button */}
+              <button
+                onClick={saveCurrentResult}
+                disabled={!canSave}
+                className="save-button"
+              >
+                <Save className="w-5 h-5" />
+                Save to History
+              </button>
+              
+              {/* Info Text */}
+              <div className="info-box">
+                <p className="info-text">
+                  💡 Your calculation will be saved for comparison in the history table below
+                </p>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* MAIN CONTENT */}
-          <main className="space-y-8 sm:space-y-12 lg:space-y-16">
-            {/* Outer Vehicle Section - Horizontal Row Format */}
-            <section className="space-y-6 sm:space-y-8">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-800 border-b pb-4 mb-6 sm:mb-8 text-center">
+        {/* Results Section */}
+        <div className="space-y-12">
+          {/* 1) Outer Vehicle FIRST */}
+          <section className="results-section">
+              <h2 className="section-title outer-vehicle">
                 Outer Vehicle: Chaldean Vibration & Manifestation
               </h2>
-              <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:gap-10 xl:gap-12">
-                <Card className="p-6 sm:p-8 lg:p-10 hover:shadow-2xl transition-shadow duration-300 border-2">
-                  <CardContent className="p-0 text-center">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-500 uppercase tracking-wider mb-3 sm:mb-4">
-                      Pythagorean Total (Raw = Reduced)
-                    </p>
-                    <p className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-gray-800 mb-3 sm:mb-4">
-                      {result?.pythagoreanTotal ? `${result.pythagoreanTotal} = ${result.pythagoreanReduced}` : '-'}
-                    </p>
-                    <p className="text-base sm:text-lg lg:text-xl text-gray-500">
-                      Raw sum and its reduced digit used for Destiny.
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="p-6 sm:p-8 lg:p-10 hover:shadow-2xl transition-shadow duration-300 border-2">
-                  <CardContent className="p-0 text-center">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600 uppercase tracking-wider mb-3 sm:mb-4">
-                      Chaldean Total (Raw = Reduced)
-                    </p>
-                    <p className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-gray-800 mb-3 sm:mb-4">
-                      {result?.chaldeanTotal ? `${result.chaldeanTotal} = ${result.chaldeanReduced}` : '-'}
-                    </p>
-                    <p className="text-base sm:text-lg lg:text-xl text-gray-500">
-                      Esoteric vibration used in composite scoring.
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid-2">
+                <div className="result-card blue center">
+                  <p className="card-label text-blue-600">
+                    Pythagorean Total (Raw = Reduced)
+                  </p>
+                  <p className="card-value text-blue-700">
+                    {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+                  </p>
+                  <p className="card-description">
+                    Raw sum and its reduced digit used for Destiny.
+                  </p>
+                </div>
+                <div className="result-card yellow center">
+                  <p className="card-label text-yellow-600">
+                    Chaldean Total (Raw = Reduced)
+                  </p>
+                  <p className="card-value text-yellow-700">
+                    {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+                  </p>
+                  <p className="card-description">
+                    Esoteric vibration used in composite scoring.
+                  </p>
+                </div>
               </div>
             </section>
 
-            {/* Inner Engine Section */}
-            <section className="space-y-6 sm:space-y-8">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-800 border-b pb-4 mb-6 sm:mb-8 text-center">
+            {/* 2) Inner Engine */}
+            <section className="results-section">
+              <h2 className="section-title inner-engine">
                 Inner Engine (Pythagorean): Purpose & Psychology
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Destiny / Expression (#1)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-blue-700 ${MASTER_NUMBERS.includes(result?.destiny) ? 'text-red-500' : ''}`}>
-                      {result?.destiny || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Life purpose, public path (Pythagorean total reduced).
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid-3">
+                <div className="result-card blue center">
+                  <p className="card-label text-blue-600">
+                    Destiny / Expression (#1)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : 'text-blue-700'}`}>
+                    {results.destiny || '-'}
+                  </div>
+                  <p className="card-description">
+                    Life purpose, public path (Pythagorean total reduced).
+                  </p>
+                </div>
                 
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Soul Urge / Heart's Desire (#2)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-green-700 ${MASTER_NUMBERS.includes(result?.soulUrge) ? 'text-red-500' : ''}`}>
-                      {result?.soulUrge || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Innermost desires (Vowels only).
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="result-card green center">
+                  <p className="card-label text-green-600">
+                    Soul Urge / Heart's Desire (#2)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : 'text-green-700'}`}>
+                    {results.soulUrge || '-'}
+                  </div>
+                  <p className="card-description">
+                    Innermost desires (Vowels only).
+                  </p>
+                </div>
                 
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-teal-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Personality / Dream (#3)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-teal-700 ${MASTER_NUMBERS.includes(result?.dream) ? 'text-red-500' : ''}`}>
-                      {result?.dream || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Outer impression (Consonants only).
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="result-card teal center">
+                  <p className="card-label text-teal-600">
+                    Personality / Dream (#3)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : 'text-teal-700'}`}>
+                    {results.dream || '-'}
+                  </div>
+                  <p className="card-description">
+                    Outer impression (Consonants only).
+                  </p>
+                </div>
               </div>
             </section>
 
-            {/* Timing Section */}
-            <section className="space-y-6 sm:space-y-8">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-800 border-b pb-4 mb-6 sm:mb-8 text-center">
+            {/* 3) Timing */}
+            <section className="results-section">
+              <h2 className="section-title timing">
                 Timing & Karmic Script (DOB & Composite)
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Power Number (#4)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-red-700 ${MASTER_NUMBERS.includes(result?.powerNumber) ? 'text-red-500' : ''}`}>
-                      {result?.powerNumber || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Activation Frequency (Life Path + Destiny).
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid-3">
+                <div className="result-card red center">
+                  <p className="card-label text-red-600">
+                    Power Number (#4)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : 'text-red-700'}`}>
+                    {results.powerNumber || '-'}
+                  </div>
+                  <p className="card-description">
+                    Activation Frequency (Life Path + Destiny).
+                  </p>
+                </div>
                 
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Life Path (#5)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-orange-700 ${MASTER_NUMBERS.includes(result?.lifePath) ? 'text-red-500' : ''}`}>
-                      {result?.lifePath || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Unchangeable karmic script and timing modifier.
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="result-card orange center">
+                  <p className="card-label text-orange-600">
+                    Life Path (#5)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : 'text-orange-700'}`}>
+                    {results.lifePath || '-'}
+                  </div>
+                  <p className="card-description">
+                    Unchangeable karmic script and timing modifier.
+                  </p>
+                </div>
                 
-                <Card className="p-8 sm:p-10 lg:p-12 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-2">
-                  <CardContent className="p-0">
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 uppercase tracking-wider mb-4 sm:mb-6">
-                      Day Number (Mulank - #6)
-                    </p>
-                    <div className={`text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold mb-4 sm:mb-6 text-purple-700 ${MASTER_NUMBERS.includes(result?.mulank) ? 'text-red-500' : ''}`}>
-                      {result?.mulank || '-'}
-                    </div>
-                    <p className="text-lg sm:text-xl lg:text-2xl text-gray-500">
-                      Innate, core daily characteristics.
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="result-card purple center">
+                  <p className="card-label text-purple-600">
+                    Day Number (Mulank - #6)
+                  </p>
+                  <div className={`card-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : 'text-purple-700'}`}>
+                    {results.mulank || '-'}
+                  </div>
+                  <p className="card-description">
+                    Innate, core daily characteristics.
+                  </p>
+                </div>
               </div>
             </section>
 
             {/* Composite Scoring */}
             {canSave && (
-              <section className="space-y-6 sm:space-y-8">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-800 border-b pb-3">
+              <section className="results-section">
+                <h2 className="section-title composite">
                   Composite Performance Scoring (Inner Engine × Outer Vehicle)
                 </h2>
                 
-                <Card className="p-4 sm:p-6 lg:p-8 border-l-4 border-green-500 bg-green-50">
-                  <CardContent className="p-0">
-                    <h3 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-                      Composite Index Summary
-                    </h3>
-                    <p className="text-base sm:text-lg lg:text-xl text-gray-700 mb-4 sm:mb-6 font-medium italic">
-                      Pythagorean Engine: <strong className="text-blue-600">{result?.destiny} ({NUMBER_TRAITS[result?.destiny]?.archetype || '-'})</strong> |
-                      Chaldean Vehicle: <strong className="text-yellow-600">{result?.chaldeanReduced} ({NUMBER_TRAITS[result?.chaldeanReduced]?.archetype || '-'})</strong>
-                    </p>
-                    
-                    {result?.composite && (
-                      <div className="space-y-4 sm:space-y-6">
-                        {Object.entries(result.composite).map(([key, data]) => (
-                          <div key={key} className="flex items-center justify-between py-3 px-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center space-x-4">
-                              <span className="font-semibold text-gray-700 text-lg sm:text-xl lg:text-2xl capitalize min-w-0">
-                                {key} Index:
-                              </span>
-                              <span className="text-yellow-500 text-xl sm:text-2xl lg:text-3xl">
-                                {'★'.repeat(Math.round(data.stars))}
-                              </span>
-                            </div>
-                            <span className="font-bold text-gray-800 text-xl sm:text-2xl lg:text-3xl">
-                              {data.percent.toFixed(0)}%
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                <div className="composite-card">
+                  <h3 className="composite-title">Composite Index Summary</h3>
+                  <p className="composite-subtitle">
+                    Pythagorean Engine: <strong>{results.destiny} ({(NUMBER_TRAITS[results.destiny] || {}).archetype || '-'})</strong> |
+                    Chaldean Vehicle: <strong>{results.chaldeanReduced} ({(NUMBER_TRAITS[results.chaldeanReduced] || {}).archetype || '-'})</strong>
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    {results.composite && (
+                      <>
+                        {renderDetailRow('Fame Index', results.composite.fame)}
+                        {renderDetailRow('Wealth Index', results.composite.wealth)}
+                        {renderDetailRow('Luck Index', results.composite.luck)}
+                        {renderDetailRow('Health Index', results.composite.health)}
+                        {renderDetailRow('Speed Index', results.composite.speed)}
+                      </>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Timing Analysis */}
-                {result?.lifePath && (
-                  <Card className="p-4 sm:p-6 lg:p-8 bg-blue-50 border-l-4 border-blue-500">
-                    <CardContent className="p-0">
-                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
-                        Timing Analysis (Life Path Modifier)
-                      </h3>
-                      <div className="space-y-4 sm:space-y-6">
-                        <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                          {TIMING_ANALYSIS[result.lifePath] || "General Life Path timing suggests a steady pace of development."}
-                        </p>
-                        {result.powerNumber && (
-                          <div className="bg-white p-3 sm:p-4 rounded-lg border border-blue-200">
-                            <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                              Your <strong className="text-blue-600">Power Number is {result.powerNumber}</strong>{' '}
-                              {(result.powerNumber === 1 || result.powerNumber === 5) 
-                                ? <span className="text-green-600 font-medium">(High Activation). This accelerates your Life Path's potential.</span>
-                                : <span className="text-orange-600 font-medium">(Steady Activation). Expect compounding results with patience.</span>
-                              }
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                {results.lifePath !== null && results.powerNumber !== null && (
+                  <div className="timing-card" style={{marginTop: '2rem'}}>
+                    <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
+                    <div className="timing-content">
+                      <p>{TIMING_ANALYSIS[results.lifePath] || "General Life Path timing suggests a steady pace of development."}</p>
+                      <p style={{marginTop: '1rem'}}>
+                        Your <strong>Power Number is {results.powerNumber}</strong> {(results.powerNumber === 1 || results.powerNumber === 5) 
+                          ? "(High Activation). This accelerates your Life Path's potential." 
+                          : "(Steady Activation). Expect compounding results with patience."}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </section>
             )}
 
-            {/* History Section */}
-            <section className="space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-3">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-800">
-                  Calculation History (12-Point Comparison)
-                </h2>
+            {/* History */}
+            <section className="results-section">
+              <div className="history-header">
+                <h2 className="section-title history" style={{border: 'none', padding: 0, margin: 0}}>Calculation History (12-Point Comparison)</h2>
                 {history.length > 0 && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
+                  <button
                     onClick={clearHistory}
-                    className="text-base sm:text-lg lg:text-xl"
+                    className="clear-history-btn"
                   >
                     Clear History
-                  </Button>
+                  </button>
                 )}
               </div>
               
-              <Card className="p-2 sm:p-4 lg:p-6">
+              <div className="history-card">
                 {history.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Calculator className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-400" />
-                    </div>
-                    <p className="text-gray-500 italic text-base sm:text-lg lg:text-xl">
-                      No calculation history yet. Save your first calculation to start building your numerology profile.
-                    </p>
-                  </div>
+                  <p className="history-empty">No calculation history yet.</p>
                 ) : (
-                  <div className="overflow-x-auto -mx-2 sm:mx-0">
-                    <div className="min-w-[800px] sm:min-w-full">
-                      <table className="w-full bg-white rounded-lg shadow-inner">
-                        <thead>
-                          <tr className="bg-gray-100 text-gray-600 uppercase text-sm sm:text-base lg:text-lg leading-normal">
-                            <th className="py-3 px-2 sm:px-3 text-left sticky left-0 bg-gray-100 min-w-[120px] sm:min-w-[150px] z-10">
-                              Name / DOB
-                            </th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-blue-600 font-bold min-w-[40px]">#1</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-green-600 font-bold min-w-[40px]">#2</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-teal-600 font-bold min-w-[40px]">#3</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-red-600 font-bold min-w-[40px]">#4</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-orange-600 font-bold min-w-[40px]">#5</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-purple-600 font-bold min-w-[40px]">#6</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-yellow-600 font-bold min-w-[40px]">#7</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-red-700 font-bold min-w-[50px] sm:min-w-[70px]">Fame</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-yellow-700 font-bold min-w-[50px] sm:min-w-[70px]">Wealth</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-blue-700 font-bold min-w-[50px] sm:min-w-[70px]">Luck</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-green-700 font-bold min-w-[50px] sm:min-w-[70px]">Health</th>
-                            <th className="py-3 px-1 sm:px-2 text-center text-indigo-700 font-bold min-w-[50px] sm:min-w-[70px]">Speed</th>
-                            <th className="py-3 px-1 sm:px-2 text-center sticky right-0 bg-gray-100 min-w-[40px] z-10"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-gray-600 text-sm sm:text-base lg:text-lg">
-                          {history.map((item) => (
-                            <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                              <td className="py-3 px-2 sm:px-3 text-left font-semibold text-gray-800 sticky left-0 bg-white z-10">
-                                <div className="whitespace-nowrap">
-                                  <div className="font-medium text-sm sm:text-base lg:text-lg">
-                                    {item.name.length > 15 ? item.name.slice(0, 12) + '...' : item.name}
-                                  </div>
-                                  <div className="text-sm sm:text-base text-gray-400">
-                                    {item.dob ? item.dob.slice(5) : 'N/A'}
-                                  </div>
-                                </div>
+                  <div className="history-table-container">
+                    <table className="history-table">
+                      <thead>
+                        <tr>
+                          <th>Name / DOB</th>
+                          <th className="text-blue-600">#1</th>
+                          <th className="text-green-600">#2</th>
+                          <th className="text-teal-600">#3</th>
+                          <th className="text-red-600">#4</th>
+                          <th className="text-orange-600">#5</th>
+                          <th className="text-purple-600">#6</th>
+                          <th className="text-yellow-600">#7</th>
+                          <th className="text-red-700">Fame</th>
+                          <th className="text-yellow-700">Wealth</th>
+                          <th className="text-blue-700">Luck</th>
+                          <th className="text-green-700">Health</th>
+                          <th className="text-indigo-700">Speed</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.map((item) => {
+                          const displayName = item.name.length > 20 ? item.name.slice(0, 17) + '...' : item.name
+                          const displayDob = item.dob ? item.dob.slice(5) : 'N/A'
+                          const metrics = item.composite || {
+                            fame: { percent: 0 },
+                            wealth: { percent: 0 },
+                            luck: { percent: 0 },
+                            health: { percent: 0 },
+                            speed: { percent: 0 }
+                          }
+                          
+                          return (
+                            <tr key={item.id}>
+                              <td title={`${item.name} (${item.dob || 'N/A'})`}>
+                                <span className="history-name">{displayName}</span>
+                                <span className="history-dob">{displayDob}</span>
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.destiny) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.destiny) ? 'font-bold text-red-600' : ''}>
                                 {item.destiny || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.soulUrge) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.soulUrge) ? 'font-bold text-red-600' : ''}>
                                 {item.soulUrge || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.dream) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.dream) ? 'font-bold text-red-600' : ''}>
                                 {item.dream || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.powerNumber) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.powerNumber) ? 'font-bold text-red-600' : ''}>
                                 {item.powerNumber || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.lifePath) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.lifePath) ? 'font-bold text-red-600' : ''}>
                                 {item.lifePath || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.mulank) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.mulank) ? 'font-bold text-red-600' : ''}>
                                 {item.mulank || '-'}
                               </td>
-                              <td className={`py-3 px-1 sm:px-2 text-center ${MASTER_NUMBERS.includes(item.chaldeanReduced) ? 'font-bold text-red-500' : 'font-medium'}`}>
+                              <td className={MASTER_NUMBERS.includes(item.chaldeanReduced) ? 'font-bold text-red-600' : ''}>
                                 {item.chaldeanReduced || '-'}
                               </td>
-                              <td className="py-3 px-1 sm:px-2 text-center text-xs font-semibold">
-                                {item.composite?.fame?.percent?.toFixed(0) || 0}%
-                              </td>
-                              <td className="py-3 px-1 sm:px-2 text-center text-xs font-semibold">
-                                {item.composite?.wealth?.percent?.toFixed(0) || 0}%
-                              </td>
-                              <td className="py-3 px-1 sm:px-2 text-center text-xs font-semibold">
-                                {item.composite?.luck?.percent?.toFixed(0) || 0}%
-                              </td>
-                              <td className="py-3 px-1 sm:px-2 text-center text-xs font-semibold">
-                                {item.composite?.health?.percent?.toFixed(0) || 0}%
-                              </td>
-                              <td className="py-3 px-1 sm:px-2 text-center text-xs font-semibold">
-                                {item.composite?.speed?.percent?.toFixed(0) || 0}%
-                              </td>
-                              <td className="py-3 px-1 sm:px-2 text-center sticky right-0 bg-white z-10">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                              <td className="font-semibold">{metrics.fame.percent.toFixed(0)}%</td>
+                              <td className="font-semibold">{metrics.wealth.percent.toFixed(0)}%</td>
+                              <td className="font-semibold">{metrics.luck.percent.toFixed(0)}%</td>
+                              <td className="font-semibold">{metrics.health.percent.toFixed(0)}%</td>
+                              <td className="font-semibold">{metrics.speed.percent.toFixed(0)}%</td>
+                              <td>
+                                <button
                                   onClick={() => deleteHistoryItem(item.id)}
-                                  className="text-red-400 hover:text-red-600 h-8 w-8 p-0"
+                                  className="delete-btn"
+                                  aria-label={`Delete ${item.name}`}
                                 >
-                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                </Button>
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </td>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
-              </Card>
+              </div>
             </section>
 
             {/* System Charts */}
-            <section className="space-y-4 sm:space-y-6">
-              <Card className="p-4 sm:p-6 lg:p-8">
-                <CardContent className="p-0 space-y-4 sm:space-y-6">
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 border-b pb-3">
-                    Understanding the Core Systems
-                  </h2>
-                  <p className="text-sm sm:text-base text-gray-600 italic leading-relaxed">
-                    The <strong className="text-blue-600">Pythagorean System</strong> (Inner Self) is used for Destiny, Soul Urge, and Dream.
-                    The <strong className="text-yellow-600">Chaldean System</strong> (Outer Manifestation) is used for material reality and timing influence.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                    <div className="space-y-3 sm:space-y-4">
-                      <h3 className="text-base sm:text-lg font-semibold text-blue-700">
-                        Pythagorean Chart (Inner Self)
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-xs sm:text-sm">
-                          <thead>
-                            <tr>
-                              {[1,2,3,4,5,6,7,8,9].map(num => (
-                                <th key={num} className="border border-gray-300 bg-blue-50 p-2 sm:p-3 text-center font-bold text-blue-700">
-                                  {num}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              {['A','B','C','D','E','F','G','H','I'].map(letter => (
-                                <td key={letter} className="border border-gray-300 p-2 sm:p-3 text-center font-medium">
-                                  {letter}
-                                </td>
-                              ))}
-                            </tr>
-                            <tr>
-                              {['J','K','L','M','N','O','P','Q','R'].map(letter => (
-                                <td key={letter} className="border border-gray-300 p-2 sm:p-3 text-center font-medium">
-                                  {letter}
-                                </td>
-                              ))}
-                            </tr>
-                            <tr>
-                              {['S','T','U','V','W','X','Y','Z',''].map(letter => (
-                                <td key={letter} className="border border-gray-300 p-2 sm:p-3 text-center font-medium">
-                                  {letter}
-                                </td>
-                              ))}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3 sm:space-y-4">
-                      <h3 className="text-base sm:text-lg font-semibold text-yellow-700">
-                        Chaldean Chart (Outer Manifestation)
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-xs sm:text-sm">
-                          <thead>
-                            <tr>
-                              {[1,2,3,4,5,6,7,8].map(num => (
-                                <th key={num} className="border border-gray-300 bg-yellow-50 p-2 sm:p-3 text-center font-bold text-yellow-700">
-                                  {num}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">A, I, J, Q, Y</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">B, K, R</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">C, G, L, S</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">D, M, T</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">E, H, N, X</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">U, V, W</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">O, Z</td>
-                              <td className="border border-gray-300 p-2 sm:p-3 text-center font-medium text-xs sm:text-sm">F, P</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+            <section className="system-charts-card">
+              <h2 className="system-charts-title">
+                Understanding the Core Systems
+              </h2>
+              <p className="system-charts-description">
+                The <strong>Pythagorean System</strong> (Inner Self) is used for Destiny, Soul Urge, and Dream.
+                The <strong>Chaldean System</strong> (Outer Manifestation) is used for material reality and timing influence.
+              </p>
+              
+              <div className="grid-2">
+                <div>
+                  <h3 className="chart-title pythagorean">Pythagorean Chart (Inner Self)</h3>
+                  <div className="chart-table-container">
+                    <table className="chart-table pythagorean">
+                      <thead>
+                        <tr>
+                          {[1,2,3,4,5,6,7,8,9].map(num => (
+                            <th key={num}>{num}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td>
+                        </tr>
+                        <tr>
+                          <td>J</td><td>K</td><td>L</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td>
+                        </tr>
+                        <tr>
+                          <td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td><td></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                
+                <div>
+                  <h3 className="chart-title chaldean">Chaldean Chart (Outer Manifestation)</h3>
+                  <div className="chart-table-container">
+                    <table className="chart-table chaldean">
+                      <thead>
+                        <tr>
+                          {[1,2,3,4,5,6,7,8].map(num => (
+                            <th key={num}>{num}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>A, I, J, Q, Y</td>
+                          <td>B, K, R</td>
+                          <td>C, G, L, S</td>
+                          <td>D, M, T</td>
+                          <td>E, H, N, X</td>
+                          <td>U, V, W</td>
+                          <td>O, Z</td>
+                          <td>F, P</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </section>
 
-            <footer className="text-center text-xs sm:text-sm text-gray-500 pt-4 sm:pt-6">
-              <p className="leading-relaxed max-w-4xl mx-auto">
+            <footer className="numerology-footer">
+              <p>
                 12-Point Analysis Summary (history): 1-Destiny, 2-Soul Urge, 3-Dream, 4-Power, 5-Life Path, 
                 6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
               </p>
             </footer>
-          </main>
         </div>
       </div>
     </div>
   )
 }
+    

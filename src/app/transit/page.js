@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Star, Moon, Sun, Zap, Eye } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import './transit.css'
 
 export default function TransitPage() {
   const [result, setResult] = useState(null)
@@ -341,213 +340,175 @@ export default function TransitPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 px-2 sm:py-6 sm:px-4 md:py-8 lg:py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="transit-container">
+      <div className="transit-content">
         {/* Header */}
-        <header className="text-center mb-6 sm:mb-8 md:mb-12 lg:mb-16">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10rem] font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
+        <header className="transit-header">
+          <h1 className="transit-title">
             Planetary Transit
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl text-gray-600 max-w-4xl mx-auto px-2 sm:px-4">
+          <p className="transit-subtitle">
             Current planetary movements and their cosmic influences
           </p>
         </header>
 
         {/* Results */}
         {result && (
-          <main className="space-y-6 sm:space-y-8 md:space-y-12 lg:space-y-16">
-            {/* Next Immediate Transits - Moved to top with real-time countdown */}
-            <section className="space-y-4 sm:space-y-6 md:space-y-8">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-gray-800 border-b pb-3 sm:pb-4 mb-4 sm:mb-6 md:mb-8 text-center">
+          <main>
+            {/* Next Immediate Transits - Countdown */}
+            <section className="transit-section">
+              <h2 className="section-title">
                 Next Immediate Transits
               </h2>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 lg:gap-8 xl:gap-10">
-                <Card className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 hover:shadow-2xl transition-shadow duration-300 border-3 bg-gradient-to-br from-orange-200 via-pink-200 to-red-200 border-orange-400">
-                  <CardContent className="p-0 text-center h-full flex flex-col justify-center">
-                    <h4 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-orange-900 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
-                      Venus enters Libra
-                    </h4>
-                    <p className="text-orange-800 font-medium mb-3 sm:mb-4 md:mb-6 lg:mb-8 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
-                      November 2, 2025, 13:15:33
-                    </p>
-                    <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold text-orange-900 bg-orange-100/70 rounded-xl py-2 sm:py-3 md:py-4 lg:py-5 px-3 sm:px-4 md:px-6 lg:px-8 border-2 border-orange-400 shadow-md backdrop-blur-sm min-h-[3rem] sm:min-h-[4rem] md:min-h-[5rem] lg:min-h-[6rem] xl:min-h-[7rem] flex items-center justify-center">
-                      <span className="font-mono tracking-wider text-center">{venusCountdown}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="countdown-grid">
+                <div className="countdown-card venus">
+                  <h4 className="countdown-title venus">
+                    Venus enters Libra
+                  </h4>
+                  <p className="countdown-date venus">
+                    November 2, 2025, 13:15:33
+                  </p>
+                  <div className="countdown-timer venus">
+                    {venusCountdown}
+                  </div>
+                </div>
                 
-                <Card className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 hover:shadow-2xl transition-shadow duration-300 border-3 bg-gradient-to-br from-pink-200 via-purple-200 to-violet-200 border-pink-400">
-                  <CardContent className="p-0 text-center h-full flex flex-col justify-center">
-                    <h4 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-purple-900 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
-                      Moon enters Capricorn
-                    </h4>
-                    <p className="text-purple-800 font-medium mb-3 sm:mb-4 md:mb-6 lg:mb-8 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl">
-                      October 28, 2025, 22:14:42
-                    </p>
-                    <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold text-purple-900 bg-pink-100/70 rounded-xl py-2 sm:py-3 md:py-4 lg:py-5 px-3 sm:px-4 md:px-6 lg:px-8 border-2 border-pink-400 shadow-md backdrop-blur-sm min-h-[3rem] sm:min-h-[4rem] md:min-h-[5rem] lg:min-h-[6rem] xl:min-h-[7rem] flex items-center justify-center">
-                      <span className="font-mono tracking-wider text-center">{moonCountdown}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="countdown-card moon">
+                  <h4 className="countdown-title moon">
+                    Moon enters Capricorn
+                  </h4>
+                  <p className="countdown-date moon">
+                    October 28, 2025, 22:14:42
+                  </p>
+                  <div className="countdown-timer moon">
+                    {moonCountdown}
+                  </div>
+                </div>
               </div>
             </section>
 
             {/* Current Planetary Transits Table */}
-            <section className="space-y-4 sm:space-y-6 md:space-y-8">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-gray-800 border-b pb-3 sm:pb-4 mb-4 sm:mb-6 md:mb-8 text-center">
+            <section className="transit-section">
+              <h2 className="section-title">
                 Current Planetary Transits
               </h2>
-              <Card className="p-2 sm:p-4 md:p-6 lg:p-8 hover:shadow-2xl transition-shadow duration-300 border-2">
-                <CardContent className="p-0">
-                  <div className="table-scroll-container">
-                    <table className="w-full min-w-[640px] border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead>
-                        <tr className="bg-gradient-to-r from-blue-50 to-blue-100">
-                          <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-blue-200 whitespace-nowrap">
-                            Planet
-                          </th>
-                          <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-blue-200 whitespace-nowrap">
-                            Current Sign
-                          </th>
-                          <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-blue-200 whitespace-nowrap">
-                            Duration
-                          </th>
-                          <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-blue-200 whitespace-nowrap">
-                            Started
-                          </th>
-                          <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-blue-200 whitespace-nowrap">
-                            Ends
-                          </th>
+              <div className="transit-table-card">
+                <div className="table-scroll-container">
+                  <table className="transit-table">
+                    <thead>
+                      <tr>
+                        <th>Planet</th>
+                        <th>Current Sign</th>
+                        <th>Duration</th>
+                        <th>Started</th>
+                        <th>Ends</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.currentTransits.map((transit, index) => (
+                        <tr key={index}>
+                          <td>
+                            <div className="planet-cell">
+                              <span className="planet-symbol">{transit.symbol}</span>
+                              <span className="planet-name">{transit.planet}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="sign-badge">
+                              {transit.currentSign}
+                            </span>
+                          </td>
+                          <td className="transit-time">
+                            {transit.duration}
+                          </td>
+                          <td className="transit-time">
+                            {transit.startDate}
+                          </td>
+                          <td className="transit-time">
+                            {transit.endDate}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {result.currentTransits.map((transit, index) => (
-                          <tr key={index} className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
-                            index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                          }`}>
-                            <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center">
-                              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                                <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl">{transit.symbol}</span>
-                                <span className="font-semibold text-gray-800 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl whitespace-nowrap">{transit.planet}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center">
-                              <span className="inline-block bg-blue-100 text-blue-800 px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-full text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-medium whitespace-nowrap">
-                                {transit.currentSign}
-                              </span>
-                            </td>
-                            <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center text-gray-600 font-medium text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl">
-                              <span className="whitespace-nowrap">{transit.duration}</span>
-                            </td>
-                            <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl">
-                              <span className="whitespace-nowrap">{transit.startDate}</span>
-                            </td>
-                            <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl">
-                              <span className="whitespace-nowrap">{transit.endDate}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </section>
 
             {/* Upcoming Transits by Planet - Tabbed Interface */}
-            <section className="space-y-4 sm:space-y-6 md:space-y-8">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-gray-800 border-b pb-3 sm:pb-4 mb-4 sm:mb-6 md:mb-8 text-center">
+            <section className="transit-section">
+              <h2 className="section-title">
                 Upcoming Planetary Transits (Next 6 Months)
               </h2>
-              <Card className="p-2 sm:p-4 md:p-6 lg:p-8 hover:shadow-2xl transition-shadow duration-300 border-2">
-                <CardContent className="p-0">
-                  {/* Planet Tabs */}
-                  <div className="w-full overflow-x-auto">
-                    <div className="flex gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8 border-b pb-3 sm:pb-4 min-w-max">
-                      {Object.keys(result.upcomingTransits).map((planet) => (
-                        <button
-                          key={planet}
-                          onClick={() => setSelectedPlanet(planet)}
-                          className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 font-medium rounded-lg transition-all duration-200 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl whitespace-nowrap flex-shrink-0 ${
-                            selectedPlanet === planet
-                              ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-gray-100 shadow-lg transform scale-105 border-2 border-blue-300'
-                              : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50 border border-gray-200'
-                          }`}
-                        >
-                          {planet}
-                        </button>
-                      ))}
-                    </div>
+              <div className="transit-table-card">
+                {/* Planet Tabs */}
+                <div className="planet-tabs-container">
+                  <div className="planet-tabs">
+                    {Object.keys(result.upcomingTransits).map((planet) => (
+                      <button
+                        key={planet}
+                        onClick={() => setSelectedPlanet(planet)}
+                        className={`planet-tab ${selectedPlanet === planet ? 'active' : ''}`}
+                      >
+                        {planet}
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Selected Planet's Transits */}
-                  <div className="mt-4 sm:mt-6 md:mt-8">
-                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-800 mb-4 sm:mb-6 md:mb-8 text-center">
-                      {selectedPlanet} Transits
-                    </h3>
-                    
-                    {result.upcomingTransits[selectedPlanet].length > 0 ? (
-                      <div className="table-scroll-container">
-                        <table className="w-full min-w-[480px] border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                          <thead>
-                            <tr className="bg-gradient-to-r from-green-50 to-green-100">
-                              <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-green-200 whitespace-nowrap">
-                                Sign
-                              </th>
-                              <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-green-200 whitespace-nowrap">
-                                Entry Date
-                              </th>
-                              <th className="text-center py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 font-bold text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl border-b-2 border-green-200 whitespace-nowrap">
-                                Time
-                              </th>
+                {/* Selected Planet's Transits */}
+                <div>
+                  <h3 className="planet-tab-title">
+                    {selectedPlanet} Transits
+                  </h3>
+                  
+                  {result.upcomingTransits[selectedPlanet].length > 0 ? (
+                    <div className="table-scroll-container">
+                      <table className="upcoming-table">
+                        <thead>
+                          <tr>
+                            <th>Sign</th>
+                            <th>Entry Date</th>
+                            <th>Time</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {result.upcomingTransits[selectedPlanet].map((transit, index) => (
+                            <tr key={index}>
+                              <td>
+                                <span className="upcoming-sign-badge">
+                                  {transit.sign}
+                                </span>
+                              </td>
+                              <td className="transit-date">
+                                {new Date(transit.date).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </td>
+                              <td className="transit-time">
+                                {new Date(transit.date).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {result.upcomingTransits[selectedPlanet].map((transit, index) => (
-                              <tr key={index} className={`border-b border-gray-100 hover:bg-green-50 transition-colors duration-200 ${
-                                index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                              }`}>
-                                <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center">
-                                  <span className="inline-block bg-green-100 text-green-800 px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-full text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-medium whitespace-nowrap">
-                                    {transit.sign}
-                                  </span>
-                                </td>
-                                <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center text-gray-700 font-medium text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl">
-                                  <span className="whitespace-nowrap">
-                                    {new Date(transit.date).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
-                                  </span>
-                                </td>
-                                <td className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 text-center text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl">
-                                  <span className="whitespace-nowrap">
-                                    {new Date(transit.date).toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-state-card">
+                        <span className="empty-state-text">
+                          No transits scheduled for {selectedPlanet} in the next 6 months
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-center py-8 sm:py-12 md:py-16">
-                        <Card className="p-4 sm:p-6 md:p-8 lg:p-10 bg-gray-100 border-2 border-dashed border-gray-300">
-                          <CardContent className="p-0">
-                            <span className="text-gray-500 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl italic">
-                              No transits scheduled for {selectedPlanet} in the next 6 months
-                            </span>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
             </section>
           </main>
         )}
