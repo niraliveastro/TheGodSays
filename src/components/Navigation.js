@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone, Wallet, Sparkles } from 'lucide-react'
+import { Home, User, Menu, X, Calendar, Star, BookOpen, Eye, EyeOff, Phone, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateProfile } from 'firebase/auth'
 import { db } from '@/lib/firebase'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
-import './navigation.css'
+import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -18,20 +17,21 @@ const Navigation = () => {
   const router = useRouter()
   const { user, userProfile, signIn, signUp, signOut, signInWithGoogle } = useAuth()
   const [showProfileModal, setShowProfileModal] = useState(false)
-  const [displayName, setDisplayName] = useState('')
+  const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
-  const [modalPosition, setModalPosition] = useState('center')
+  const [modalPosition, setModalPosition] = useState('center') // 'center' | 'top-right'
   const [phone, setPhone] = useState('')
   const [dob, setDob] = useState('')
   const [gender, setGender] = useState('')
   const [location, setLocation] = useState('')
-  const [authTab, setAuthTab] = useState('signin')
+  const [authTab, setAuthTab] = useState('signin') // 'signin' | 'signup'
   const [authError, setAuthError] = useState('')
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const [showPwSignin, setShowPwSignin] = useState(false)
   const [showPwSignup, setShowPwSignup] = useState(false)
   const [showPwConfirm, setShowPwConfirm] = useState(false)
 
+  // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
     if (user && showProfileModal) {
       setModalPosition('top-right')
@@ -48,16 +48,18 @@ const Navigation = () => {
     { href: '/account', label: 'My Account', icon: User },
   ]
 
+  // Debug user role
   console.log('User profile:', userProfile)
   console.log('User role:', userProfile?.role)
   
+  // Filter navigation items based on user role
   const filteredNavItems = userProfile?.collection === 'astrologers'
-    ? [{ href: '/account', label: 'My Account', icon: User }]
+    ? [{ href: '/account', label: 'My Account', icon: User }] // Only show My Account for astrologers
     : navItems
 
   async function handleAccountClick() {
     if (user) {
-      setDisplayName(user.displayName || '')
+      setName(user.displayName || '')
       setModalPosition('top-right')
       setShowProfileModal(true)
       try {
@@ -66,6 +68,7 @@ const Navigation = () => {
         const snap = await getDoc(ref)
         if (snap.exists()) {
           const data = snap.data() || {}
+          setName(data.name || data.displayName || user.displayName || '')
           setPhone(data.phone || '')
           setDob(data.dob || '')
           setGender(data.gender || '')
@@ -82,8 +85,13 @@ const Navigation = () => {
       const wasAstrologer = userProfile?.collection === 'astrologers'
       await signOut()
       setShowProfileModal(false)
+
+      // Give React a microtask to propagate auth state changes to context consumers
       await new Promise((res) => setTimeout(res, 50))
+
+      // Refresh current route data and then replace to the target route to avoid history noise
       try { router.refresh() } catch (e) { /* ignore */ }
+
       if (wasAstrologer) {
         router.replace('/')
       } else {
@@ -103,6 +111,7 @@ const Navigation = () => {
     const password = form.get('password')?.toString() || ''
     try {
       await signIn(email, password)
+      // After auth, modal position will switch to top-right via effect
     } catch (err) {
       setAuthError('Failed to sign in. Please check your credentials.')
       console.error('Nav SignIn error', err)
@@ -127,7 +136,7 @@ const Navigation = () => {
     }
     try {
       await signUp(email, password, { displayName: name })
-      setDisplayName(name)
+      setName(name)
     } catch (err) {
       setAuthError('Failed to create account. Please try again.')
       console.error('Nav SignUp error', err)
@@ -141,12 +150,12 @@ const Navigation = () => {
     if (!user) return
     setSaving(true)
     try {
-      await updateProfile(user, { displayName })
+      await updateProfile(user, { displayName: name })
       const ref = doc(db, 'users', user.uid)
-      const payload = { phone, dob, gender, location, email: user.email || '', displayName }
+      const payload = { name, phone, dob, gender, location, email: user.email || '' }
       const existing = await getDoc(ref)
       if (existing.exists()) {
-        await updateDoc(ref, payload)
+        await updateDoc(ref, { ...payload, displayName: deleteField() })
       } else {
         await setDoc(ref, payload)
       }
@@ -156,18 +165,18 @@ const Navigation = () => {
   }
 
   return (
-    <nav className="enhanced-nav">
-      <div className="nav-container">
-        <div className="nav-content">
-          <Link href="/" className="nav-logo-wrapper">
-            <div className="nav-logo-icon">
-              <Sparkles />
+    <nav className="nav-glass border-b shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">👍</span>
             </div>
-            <span className="nav-logo-text">TheGodSays</span>
+            <span className="text-2xl font-bold text-blue-600">TheGodSays</span>
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="nav-desktop">
+          <div className="hidden md:flex items-center space-x-8">
             {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
               const Icon = item.icon
               if (item.href === '/account') {
@@ -176,39 +185,48 @@ const Navigation = () => {
                     type="button"
                     key={item.href}
                     onClick={handleAccountClick}
-                    className={`nav-button ${pathname === item.href ? 'nav-link-active' : ''}`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      pathname === item.href
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                    }`}
                   >
-                    <Icon />
+                    <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </button>
                 )
               }
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`nav-link ${pathname === item.href ? 'nav-link-active' : ''}`}
-                >
-                  <Icon />
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })}
+                 <Link
+                   key={item.href}
+                   href={item.href}
+                   className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                     pathname === item.href
+                       ? 'bg-blue-600 text-white shadow-sm'
+                       : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                   }`}
+                 >
+                   <Icon className="w-4 h-4" />
+                   <span>{item.label}</span>
+                 </Link>
+               )
+             })}
+           </div>
+
+           {/* Mobile menu button */}
+           <div className="md:hidden flex items-center">
+             <Button
+               variant="ghost"
+               onClick={() => setIsOpen(!isOpen)}
+             >
+               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+             </Button>
           </div>
-
-          {/* Mobile menu button */}
-          <button
-            className="nav-mobile-btn"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X /> : <Menu />}
-          </button>
         </div>
-
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="nav-mobile-menu">
-            <div className="nav-mobile-menu-content">
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
               {(userProfile?.collection === 'astrologers' || pathname === '/astrologer-dashboard' ? [{ href: '/account', label: 'My Account', icon: User }] : navItems).map((item) => {
                 const Icon = item.icon
                 if (item.href === '/account') {
@@ -216,10 +234,14 @@ const Navigation = () => {
                     <button
                       type="button"
                       key={item.href}
-                      className={`nav-mobile-button ${pathname === item.href ? 'nav-mobile-link-active' : ''}`}
+                      className={`w-full text-left flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      pathname === item.href
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                      }`}
                       onClick={() => { setIsOpen(false); handleAccountClick() }}
                     >
-                      <Icon />
+                      <Icon className="w-5 h-5" />
                       <span>{item.label}</span>
                     </button>
                   )
@@ -228,10 +250,14 @@ const Navigation = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`nav-mobile-link ${pathname === item.href ? 'nav-mobile-link-active' : ''}`}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      pathname === item.href
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50'
+                    }`}
                     onClick={() => setIsOpen(false)}
                   >
-                    <Icon />
+                    <Icon className="w-5 h-5" />
                     <span>{item.label}</span>
                   </Link>
                 )
@@ -239,8 +265,7 @@ const Navigation = () => {
             </div>
           </div>
         )}
-
-        {/* Profile Modal */}
+        {/* Profile Modal top-right */}
         <Modal
           open={showProfileModal}
           onClose={() => setShowProfileModal(false)}
@@ -254,8 +279,8 @@ const Navigation = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   className="w-full h-10 px-3 py-2 border border-gray-200 rounded-md"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Your Name"
                 />
               </div>
@@ -347,12 +372,14 @@ const Navigation = () => {
                   {authError}
                 </div>
               )}
+              {/* Social auth */}
               <div className="space-y-3">
                 <button
                   type="button"
                   onClick={async () => { setAuthError(''); try { await signInWithGoogle() } catch (e) { setAuthError('Google sign-in failed'); console.error(e) } }}
                   className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
                 >
+                  {/* Inline Google G icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
                     <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36 16.8 36 11 30.2 11 23s5.8-13 13-13c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 12.3 2 3 11.3 3 23s9.3 21 21 21c10.5 0 20-7.6 20-21 0-1.7-.2-3.3-.4-4.5z"/>
                     <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 15.5 2 8.2 6.7 6.3 14.7z"/>

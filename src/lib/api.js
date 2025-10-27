@@ -38,82 +38,83 @@ const API_ENDPOINTS = {
   'shadbala/summary': 'shadbala/summary',
   'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
   // New combined endpoint returning maha + antar lists grouped by maha
-  'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas',
-  // Natal Chart
-  'western/natal-wheel-chart': 'western/natal-wheel-chart',
+  'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
 }
 
 export const astrologyAPI = {
-async getSingleCalculation(optionId, payload) {
-  const endpoint = API_ENDPOINTS[optionId]
-  if (!endpoint) throw new Error(`Unknown option: ${optionId}`)
-
-  let lastErr
-  for (let attempt = 0; attempt < 3; attempt++) {
+  async getSingleCalculation(optionId, payload) {
     try {
-      const isClient = typeof window !== 'undefined'
-
-      const hasSlashes = endpoint.includes('/')
-      const proxyPath = hasSlashes ? endpoint : endpoint
-      const url = isClient 
-        ? `/api/astro/${proxyPath}` 
-        : `${API_BASE_URL}/${endpoint}`
-
-      const headers = isClient
-        ? { 'Content-Type': 'application/json' }
-        : { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        try {
-          const preview = typeof data === 'string' ? data.slice(0, 300) : data
-          console.log(`[API] OK ${endpoint}`, preview)
-        } catch (_) {}
-        return data
+      const endpoint = API_ENDPOINTS[optionId]
+      if (!endpoint) {
+        throw new Error(`Unknown option: ${optionId}`)
       }
 
-      if (response.status === 429 && attempt < 2) {
-        const base = 400 * Math.pow(2, attempt)
-        const jitter = Math.floor(Math.random() * 150)
-        await new Promise(r => setTimeout(r, base + jitter))
-        continue
-      }
+      // Debug: log outgoing request
+      try {
+        console.log(`[API] → POST ${API_BASE_URL}/${endpoint}`, payload)
+      } catch (_) {}
 
-      if (response.status === 403) {
-        lastErr = new Error('API authentication failed (403). Using fallback data.')
+      // Retry with exponential backoff on 429
+      let lastErr
+      for (let attempt = 0; attempt < 3; attempt++) {
+        // Use server proxy when running on the client to avoid CORS and hide API key
+        const isClient = typeof window !== 'undefined'
+        const url = isClient ? `/api/astro/${endpoint}` : `${API_BASE_URL}/${endpoint}`
+        const headers = isClient
+          ? { 'Content-Type': 'application/json' }
+          : { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Debug: log success response (trim if huge)
+          try {
+            const preview = typeof data === 'string' ? data.slice(0, 300) : data
+            console.log(`[API] ← OK ${endpoint}`, preview)
+          } catch (_) {}
+          return data
+        }
+
+        // If 429, backoff and retry
+        if (response.status === 429 && attempt < 2) {
+          const base = 400 * Math.pow(2, attempt)
+          const jitter = Math.floor(Math.random() * 150)
+          await new Promise(r => setTimeout(r, base + jitter))
+          continue
+        }
+
+        // If 403, API key is invalid - throw specific error
+        if (response.status === 403) {
+          lastErr = new Error('API authentication failed (403). Using fallback data.')
+          break
+        }
+
+        // For 500 errors, don't throw - return error info instead
+        if (response.status >= 500) {
+          lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+          break
+        }
+
+        lastErr = new Error(`HTTP error! status: ${response.status}`)
         break
       }
 
-      if (response.status >= 500) {
-        lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
-        break
-      }
+      if (lastErr) throw lastErr
 
-      lastErr = new Error(`HTTP error! status: ${response.status}`)
-      break
-
+      // Fallback throw if we somehow exit loop without return
+      throw new Error('Request failed after retries')
     } catch (error) {
-      // This catch now belongs to the `try` inside the loop
-      console.error(`Attempt ${attempt + 1} failed for ${optionId}:`, error.message)
-      if (attempt === 2) {
-        throw error // Only throw on last attempt
-      }
-      // On earlier attempts, continue retrying
+      console.error(`Error fetching ${optionId}:`, error)
+      throw error
     }
-  }
-
-  if (lastErr) throw lastErr
-  throw new Error('Request failed after retries')
-},
+  },
 
   async getMultipleCalculations(optionIds, payload) {
     const results = {}

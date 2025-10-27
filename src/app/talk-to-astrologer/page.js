@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star, Video, Phone, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { collection, getDocs, onSnapshot, query } from 'firebase/firestore'
+import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import CallConnectingNotification from '@/components/CallConnectingNotification'
 import Modal from '@/components/Modal'
+import ReviewModal from '@/components/ReviewModal'
 
 export default function TalkToAstrologer() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -19,11 +20,13 @@ export default function TalkToAstrologer() {
   const [callStatus, setCallStatus] = useState('connecting') // 'connecting' or 'rejected'
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false)
   const [balanceMessage, setBalanceMessage] = useState('')
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [selectedAstrologer, setSelectedAstrologer] = useState(null)
   const router = useRouter()
 
-  useEffect(() => {
-    const q = query(collection(db, "astrologers"));
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+  const fetchAndUpdateAstrologers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'astrologers'));
       const astrologersList = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -31,7 +34,7 @@ export default function TalkToAstrologer() {
           id: doc.id,
           name: data.name,
           specialization: data.specialization,
-          rating: data.rating || 4.5,
+          rating: data.rating || 0,
           reviews: data.reviews || 0,
           experience: data.experience,
           languages: data.languages || ['English'],
@@ -76,11 +79,42 @@ export default function TalkToAstrologer() {
         });
       }
 
-      setAstrologers(astrologersList);
-      setFetchingAstrologers(false);
-    });
+      // Fetch actual reviews and recalculate ratings for accuracy
+      const updatedAstrologersList = await Promise.all(astrologersList.map(async (astrologer) => {
+        try {
+          const reviewsResponse = await fetch(`/api/reviews?astrologerId=${astrologer.id}`);
+          if (reviewsResponse.ok) {
+            const reviewsData = await reviewsResponse.json();
+            if (reviewsData.success) {
+              const totalReviews = reviewsData.reviews.length;
+              const totalRating = reviewsData.reviews.reduce((sum, review) => sum + review.rating, 0);
+              const averageRating = totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : 0;
+              return {
+                ...astrologer,
+                rating: parseFloat(averageRating),
+                reviews: totalReviews
+              };
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching reviews for astrologer ${astrologer.id}:`, error);
+        }
+        return astrologer;
+      }));
 
-    return () => unsubscribe();
+      setAstrologers(updatedAstrologersList);
+      setFetchingAstrologers(false);
+    } catch (error) {
+      console.error('Error fetching astrologers:', error);
+      setFetchingAstrologers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAndUpdateAstrologers(); // Initial fetch
+    const interval = setInterval(fetchAndUpdateAstrologers, 30000); // Fetch every 30 seconds
+
+    return () => clearInterval(interval);
   }, [])
 
   const fetchAstrologers = async () => {
@@ -93,7 +127,7 @@ export default function TalkToAstrologer() {
           id: doc.id,
           name: data.name,
           specialization: data.specialization,
-          rating: data.rating || 4.5,
+          rating: data.rating || 0,
           reviews: data.reviews || 0,
           experience: data.experience,
           languages: data.languages || ['English'],
@@ -102,6 +136,29 @@ export default function TalkToAstrologer() {
           verified: data.verified || false
         })
       })
+
+      // Fetch actual reviews and recalculate ratings for accuracy
+      const updatedAstrologersList = await Promise.all(astrologersList.map(async (astrologer) => {
+        try {
+          const reviewsResponse = await fetch(`/api/reviews?astrologerId=${astrologer.id}`);
+          if (reviewsResponse.ok) {
+            const reviewsData = await reviewsResponse.json();
+            if (reviewsData.success) {
+              const totalReviews = reviewsData.reviews.length;
+              const totalRating = reviewsData.reviews.reduce((sum, review) => sum + review.rating, 0);
+              const averageRating = totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : 0;
+              return {
+                ...astrologer,
+                rating: parseFloat(averageRating),
+                reviews: totalReviews
+              };
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching reviews for astrologer ${astrologer.id}:`, error);
+        }
+        return astrologer;
+      }));
 
       // Fetch pricing for all astrologers
       try {
@@ -138,7 +195,7 @@ export default function TalkToAstrologer() {
         });
       }
 
-      setAstrologers(astrologersList)
+      setAstrologers(updatedAstrologersList)
     } catch (error) {
       console.error('Error fetching astrologers:', error)
     } finally {
@@ -533,6 +590,29 @@ export default function TalkToAstrologer() {
     }
   }
 
+  const handleOpenReview = (astrologer) => {
+    const userId = localStorage.getItem('tgs:userId')
+    if (!userId) {
+      alert('Please log in to leave a review.')
+      router.push('/auth/user')
+      return
+    }
+    setSelectedAstrologer(astrologer)
+    setIsReviewModalOpen(true)
+  }
+
+  const handleSubmitReview = async ({ astrologerId, userId, rating, comment }) => {
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ astrologerId, userId, rating, comment })
+    })
+    if (!response.ok) throw new Error('Failed to submit review')
+    const data = await response.json()
+    if (!data.success) throw new Error(data.message)
+    // Success, data will update via snapshot
+  }
+
   return (
       <div className="min-h-screen bg-gray-50 py-8">
       {/* Connection Status Modal */}
@@ -624,11 +704,17 @@ export default function TalkToAstrologer() {
               </div>
 
               <div className="flex items-center space-x-2 mb-3">
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium text-gray-900 ml-1">{astrologer.rating}</span>
-                </div>
-                <span className="text-sm text-gray-500">({astrologer.reviews} reviews)</span>
+                {astrologer.reviews > 0 ? (
+                  <>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium text-gray-900 ml-1">{astrologer.rating}</span>
+                    </div>
+                    <span className="text-sm text-gray-500">({astrologer.reviews} reviews)</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">No reviews yet</span>
+                )}
               </div>
 
               {astrologer.perMinuteCharge && (
@@ -651,6 +737,13 @@ export default function TalkToAstrologer() {
               </div>
 
               <div className="flex space-x-2">
+                <Button
+                  onClick={() => handleOpenReview(astrologer)}
+                  variant="outline"
+                  className="mr-2"
+                >
+                  Review
+                </Button>
                 <Button
                   onClick={() => handleVideoCall(astrologer.id)}
                   disabled={!astrologer.isOnline || loading}
@@ -708,6 +801,20 @@ export default function TalkToAstrologer() {
           </Button>
         </div>
       </Modal>
+
+      {/* Review Modal */}
+      {selectedAstrologer && (
+        <ReviewModal
+          open={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false)
+            setSelectedAstrologer(null)
+          }}
+          astrologerId={selectedAstrologer.id}
+          astrologerName={selectedAstrologer.name}
+          onSubmit={handleSubmitReview}
+        />
+      )}
     </div>
   )
 }

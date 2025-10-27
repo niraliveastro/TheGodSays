@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateProfile } from 'firebase/auth'
 import { db } from '@/lib/firebase'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore'
 
 export default function AccountPage() {
   const { user } = useAuth()
@@ -213,7 +213,7 @@ function SignUpPanel({ onSwitch }) {
 
 function ProfilePanel() {
   const { user, signOut } = useAuth()
-  const [name, setName] = useState(user?.displayName || '')
+  const [name, setName] = useState('')
   const [email] = useState(user?.email || '')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -235,10 +235,14 @@ function ProfilePanel() {
         const snap = await getDoc(ref)
         if (!ignore && snap.exists()) {
           const data = snap.data() || {}
+          setName(data.name || user?.displayName || '')
           setPhone(data.phone || '')
           setDob(data.dob || '')
           setGender(data.gender || '')
           setLocation(data.location || '')
+        } else {
+          // If no document, use Auth displayName
+          setName(user?.displayName || '')
         }
       } catch (err) {
         console.warn('Failed to load user profile doc', err)
@@ -254,16 +258,17 @@ function ProfilePanel() {
     setMessage('')
     setSaving(true)
     try {
-      // Update only displayName in Firebase Auth profile
+      // Update displayName in Firebase Auth profile
       await updateProfile(user, { displayName: name })
-      // Upsert Firestore user document with additional profile fields
+      // Upsert Firestore user document with name and additional profile fields
       const ref = doc(db, 'users', user.uid)
-      const payload = { phone, dob, gender, location }
+      const payload = { name, phone, dob, gender, location }
       const existing = await getDoc(ref)
       if (existing.exists()) {
-        await updateDoc(ref, payload)
+        // Remove displayName if it exists
+        await updateDoc(ref, { ...payload, displayName: deleteField() })
       } else {
-        await setDoc(ref, { email: user.email || '', displayName: name, ...payload })
+        await setDoc(ref, { email: user.email || '', ...payload })
       }
       setMessage('Profile updated successfully.')
     } catch (err) {
