@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, Video, Phone, Search, Filter } from 'lucide-react'
+import { Star, Video, Phone, Search, Filter, AlertCircle} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { collection, getDocs, query } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -590,6 +590,9 @@ export default function TalkToAstrologer() {
     }
   }
 
+return (
+    <>
+      <CallConnectingNotification
   const handleOpenReview = (astrologer) => {
     const userId = localStorage.getItem('tgs:userId')
     if (!userId) {
@@ -618,49 +621,80 @@ export default function TalkToAstrologer() {
       {/* Connection Status Modal */}
       <CallConnectingNotification 
         isOpen={!!connectingCallType}
-        type={connectingCallType}
         status={callStatus}
+        type={connectingCallType}
         onTimeout={() => {
           setConnectingCallType(null)
           setCallStatus('connecting')
-          alert('Connection timed out. The astrologer may be unavailable. Please try again.')
+          alert('Connection timed out.')
         }}
-      />      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Talk to Astrologer</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Connect with experienced astrologers for personalized guidance on love, career, health, and life decisions.
-          </p>
-        </div>
+      />
 
-        {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search
-                className="absolute text-gray-400 w-5 h-5"
-                style={{ left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
+      <div className="container">
+        {/* Header */}
+        <header className="text-center" style={{ marginTop: '3rem' }}>
+          <h1  style={{ fontSize: '2.75rem', fontWeight: 700 }}>Talk to Astrologer</h1>
+          <p style={{ fontSize: '1.125rem', color: 'var(--color-gray-600)', maxWidth: '48rem', margin: '0 auto' }}>
+            Connect instantly with verified astrologers for guidance on love, career, health & life.
+          </p>
+        </header>
+
+        {/* Search + Filter */}
+        <div className="card" style={{marginTop: '1.5rem'}}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '1.25rem', height: '1.25rem', color: 'var(--color-gold)' }} />
               <input
                 type="text"
-                placeholder="Search by name or specialization..."
+                placeholder="Search astrologer or specialization..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem 0.75rem 2.5rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'var(--transition-fast)',
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = 'var(--color-gold)'
+                  e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'var(--color-gray-300)'
+                  e.target.style.boxShadow = 'none'
+                }}
               />
             </div>
-            <div className="relative">
-              <Filter
-                className="absolute text-gray-400 w-5 h-5"
-                style={{ left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
+
+            <div style={{ position: 'relative', width: '100%', maxWidth: '16rem' }}>
+              <Filter style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '1.25rem', height: '1.25rem', color: 'var(--color-gold)' }} />
               <select
                 value={filterSpecialization}
-                onChange={(e) => setFilterSpecialization(e.target.value)}
-                className="py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                onChange={e => setFilterSpecialization(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem 0.75rem 2.5rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.2em',
+                  outline: 'none',
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = 'var(--color-gold)'
+                  e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'var(--color-gray-300)'
+                  e.target.style.boxShadow = 'none'
+                }}
               >
                 <option value="">All Specializations</option>
                 <option value="Vedic Astrology">Vedic Astrology</option>
@@ -672,37 +706,67 @@ export default function TalkToAstrologer() {
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading Skeleton */}
         {fetchingAstrologers && (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center space-x-2 text-blue-600">
-              <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-              <span>Loading astrologers...</span>
-            </div>
+          <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))' , marginTop: '1.5rem' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card" style={{ padding: '1.5rem', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '4rem', height: '4rem', background: 'var(--color-gray-200)', borderRadius: '50%' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: '1.25rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '8rem', marginBottom: '0.5rem' }} />
+                    <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '6rem' }} />
+                  </div>
+                </div>
+                <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', marginBottom: '0.5rem' }} />
+                <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '75%' }} />
+              </div>
+            ))}
           </div>
         )}
 
         {/* Astrologers Grid */}
-        {!fetchingAstrologers && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAstrologers.map((astrologer) => (
-            <div key={astrologer.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start space-x-4 mb-4">
-                <div className="relative">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                    {astrologer.name.split(' ').map(n => n[0]).join('')}
+        {!fetchingAstrologers && filteredAstrologers.length > 0 && (
+          <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))', marginTop: '1.5rem' }}>
+            {filteredAstrologers.map(a => (
+              <div key={a.id} className="card" style={{ padding: '1.5rem', transition: 'var(--transition-smooth)', cursor: 'pointer' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)'
+                }}
+              >
+                {/* Avatar + Online + Verified */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{
+                      width: '4rem', height: '4rem',
+                      background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                      borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', fontWeight: 'bold', fontSize: '1.25rem'
+                    }}>
+                      {a.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div style={{
+                      position: 'absolute', bottom: '-0.25rem', right: '-0.25rem',
+                      width: '1.25rem', height: '1.25rem',
+                      borderRadius: '50%', border: '2px solid white',
+                      background: a.isOnline ? '#10b981' : 'var(--color-gray-400)',
+                      animation: a.isOnline ? 'pulse 2s infinite' : 'none'
+                    }} />
                   </div>
-                  <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
-                    astrologer.isOnline ? 'bg-green-500' : 'bg-gray-400'
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{astrologer.name}</h3>
-                  <p className="text-sm text-blue-600 font-medium">{astrologer.specialization}</p>
-                  <p className="text-xs text-gray-500">{astrologer.experience}</p>
-                </div>
-              </div>
 
+                  {a.verified && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--color-indigo-light)', color: 'var(--color-indigo)', padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 }}>
+                      <CheckCircle style={{ width: '0.75rem', height: '0.75rem' }} />
+                      Verified
+                    </div>
+                  )}
+                </div>
               <div className="flex items-center space-x-2 mb-3">
                 {astrologer.reviews > 0 ? (
                   <>
@@ -717,25 +781,72 @@ export default function TalkToAstrologer() {
                 )}
               </div>
 
-              {astrologer.perMinuteCharge && (
-                <div className="mb-3">
-                  <span className="text-sm font-semibold text-green-600">₹{astrologer.perMinuteCharge}/min</span>
+                {/* Name & Spec */}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>{a.name}</h3>
+                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-indigo)', marginBottom: '0.25rem' }}>{a.specialization}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.75rem' }}>{a.experience}</p>
+
+                {/* Rating */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <Star style={{ width: '1rem', height: '1rem', fill: '#fbbf24', color: '#fbbf24' }} />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>{a.rating}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>({a.reviews} reviews)</span>
                 </div>
-              )}
 
-              <p className="text-sm text-gray-600 mb-4">{astrologer.bio}</p>
+                {/* Price */}
+                {a.perMinuteCharge && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669' }}>₹{a.perMinuteCharge}/min</span>
+                  </div>
+                )}
 
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Languages:</p>
-                <div className="flex flex-wrap gap-2">
-                  {astrologer.languages.map((lang, idx) => (
-                    <span key={lang + idx} className="px-2 py-1 bg-gray-100 text-xs text-gray-700 rounded mr-1 mb-1">
-                      {lang}
-                    </span>
-                  ))}
+                {/* Bio */}
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)', marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {a.bio}
+                </p>
+
+                {/* Languages */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gray-500)', marginBottom: '0.5rem' }}>Speaks:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                    {a.languages.map((l, i) => (
+                      <span key={l + i} style={{ padding: '0.25rem 0.625rem', background: 'var(--color-indigo-light)', color: 'var(--color-indigo)', fontSize: '0.75rem', fontWeight: 500, borderRadius: '9999px' }}>
+                        {l}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
+                {/* Buttons */}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => handleVideoCall(a.id)}
+                    disabled={!a.isOnline || loading}
+                    className="btn btn-primary"
+                    style={{ flex: 1, height: '2.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '1rem' }}
+                  >
+                    {loading && connectingCallType === 'video' ? (
+                      <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <Video style={{ width: '1rem', height: '1rem' }} />
+                    )}
+                    {a.isOnline ? 'Video Call' : 'Offline'}
+                  </button>
+
+                  <button
+                    onClick={() => handleVoiceCall(a.id)}
+                    disabled={!a.isOnline || loading}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, height: '2.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '1rem' }}
+                  >
+                    {loading && connectingCallType === 'voice' ? (
+                      <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <Phone style={{ width: '1rem', height: '1rem' }} />
+                    )}
+                    {a.isOnline ? 'Voice Call' : 'Offline'}
+                  </button>
+                </div>
               <div className="flex space-x-2">
                 <Button
                   onClick={() => handleOpenReview(astrologer)}
@@ -770,38 +881,54 @@ export default function TalkToAstrologer() {
                   {astrologer.isOnline ? 'Voice Call' : 'Offline'}
                 </Button>
               </div>
-            </div>
             ))}
           </div>
         )}
 
+        {/* Empty State */}
         {!fetchingAstrologers && filteredAstrologers.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No astrologers found matching your criteria.</p>
+          <div className="text-center" style={{ padding: '4rem 0' }}>
+            <div style={{ width: '6rem', height: '6rem', background: 'var(--color-gray-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+              <Search style={{ width: '3rem', height: '3rem', color: 'var(--color-gray-400)' }} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-700)', marginBottom: '0.5rem' }}>No Astrologers Found</h3>
+            <p style={{ color: 'var(--color-gray-500)', maxWidth: '36rem', margin: '0 auto' }}>
+              Try adjusting your search or filter to find the right astrologer for you.
+            </p>
           </div>
         )}
       </div>
 
       {/* Balance Modal */}
-      <Modal
-        open={isBalanceModalOpen}
-        onClose={() => setIsBalanceModalOpen(false)}
-        title="Insufficient Balance"
-      >
-        <div className="text-center">
-          <p className="mb-4 text-gray-700">{balanceMessage}</p>
-          <Button
+      <Modal open={isBalanceModalOpen} onClose={() => setIsBalanceModalOpen(false)} title="Insufficient Balance">
+        <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+          <div style={{ width: '4rem', height: '4rem', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+            <AlertCircle style={{ width: '2rem', height: '2rem', color: '#dc2626' }} />
+          </div>
+          <p style={{ color: 'var(--color-gray-700)', marginBottom: '1.5rem' }}>{balanceMessage}</p>
+          <button
             onClick={() => {
               router.push('/wallet')
               setIsBalanceModalOpen(false)
             }}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 2rem' }}
           >
-            Add Money
-          </Button>
+            Recharge Wallet
+          </button>
         </div>
       </Modal>
 
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </>
       {/* Review Modal */}
       {selectedAstrologer && (
         <ReviewModal

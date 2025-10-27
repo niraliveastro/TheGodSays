@@ -12,7 +12,7 @@ const ALLOWED_ENDPOINTS = [
   'tithi-timings', 'nakshatra-timings', 'yoga-durations', 'karana-timings',
   'hora-timings', 'choghadiya-timings', 'rahu-kalam', 'gulika-kalam',
   'planets', 'shadbala/summary', 'vimsottari/maha-dasas', 'vimsottari/dasa-information',
-  'vimsottari/maha-dasas-and-antar-dasas'
+  'vimsottari/maha-dasas-and-antar-dasas', 'western/natal-wheel-chart', 'horoscope-chart-svg-code'
 ]
 
 export async function POST(request, { params }) {

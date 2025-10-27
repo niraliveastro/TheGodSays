@@ -1,97 +1,138 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api"
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts"
+import { useEffect, useRef, useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  LineChart,
+  Line,
+} from "recharts";
 
+import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+
+/* ------------------------------------------------------------------ */
+/*  Tiny UI helpers – pure CSS classes                                 */
+/* ------------------------------------------------------------------ */
+const ProgressBar = ({ value = 0, color }) => {
+  const v = Math.max(0, Math.min(200, Number(value) || 0));
+  const barColor =
+    v >= 120 ? "bg-emerald-500" : v >= 100 ? "bg-blue-500" : "bg-amber-500";
+
+  return (
+    <div className="progress-wrapper">
+      <div
+        className={`progress-fill ${color || barColor}`}
+        style={{ width: `${Math.min(100, v)}%` }}
+      />
+    </div>
+  );
+};
+
+const Badge = ({ children, tone = "neutral" }) => {
+  const tones = {
+    neutral: "badge-neutral",
+    info: "badge-info",
+    success: "badge-success",
+    warn: "badge-warn",
+  };
+  return <span className={`badge ${tones[tone] || tones.neutral}`}>{children}</span>;
+};
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
 export default function MatchingPage() {
-  const [female, setFemale] = useState({ dob: "", tob: "", place: "" })
-  const [male, setMale] = useState({ dob: "", tob: "", place: "" })
+  const [female, setFemale] = useState({ dob: "", tob: "", place: "" });
+  const [male, setMale] = useState({ dob: "", tob: "", place: "" });
 
-  const [fCoords, setFCoords] = useState(null) // { latitude, longitude, label }
-  const [mCoords, setMCoords] = useState(null)
-  const [fSuggest, setFSuggest] = useState([])
-  const [mSuggest, setMSuggest] = useState([])
-  const fTimer = useRef(null)
-  const mTimer = useRef(null)
+  const [fCoords, setFCoords] = useState(null);
+  const [mCoords, setMCoords] = useState(null);
+  const [fSuggest, setFSuggest] = useState([]);
+  const [mSuggest, setMSuggest] = useState([]);
+  const fTimer = useRef(null);
+  const mTimer = useRef(null);
 
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [result, setResult] = useState(null)
-  const [fDetails, setFDetails] = useState(null)
-  const [mDetails, setMDetails] = useState(null)
-  const [mounted, setMounted] = useState(false)
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [fDetails, setFDetails] = useState(null);
+  const [mDetails, setMDetails] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  const [vw, setVw] = useState(1024);
 
-  // Chart: viewport-based sizes for alignment and responsiveness
-  const [vw, setVw] = useState(1024)
+  /* -------------------------------------------------------------- */
+  /*  Lifecycle / resize                                            */
+  /* -------------------------------------------------------------- */
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (typeof window === "undefined") return;
+    const update = () => setVw(window.innerWidth || 1024);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
-  // Track viewport width for responsive chart sizing
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const update = () => setVw(window.innerWidth || 1024)
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
+  /* -------------------------------------------------------------- */
+  /*  Helpers                                                       */
+  /* -------------------------------------------------------------- */
+  const countFilled = (p) =>
+    [p.dob, p.tob, p.place].filter(Boolean).length;
+  const fFilled = countFilled(female);
+  const mFilled = countFilled(male);
 
-  // Simple completion meter for micro-feedback
-  const countFilled = (p) => [p.dob, p.tob, p.place].filter(Boolean).length
-  const fFilled = countFilled(female)
-  const mFilled = countFilled(male)
-
-  function onChangePerson(setter, coordsSetter, suggestSetter, timerRef, key) {
-    return (e) => {
-      const v = e.target.value
-      setter((prev) => ({ ...prev, [key]: v }))
-      if (key === "place") {
-        coordsSetter(null)
-        // Debounced suggestions
-        if (timerRef.current) clearTimeout(timerRef.current)
-        timerRef.current = setTimeout(async () => {
-          if (!v || v.length < 2) {
-            suggestSetter([])
-            return
-          }
-          try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(v)}`
-            const res = await fetch(url, { headers: { "Accept-Language": "en" } })
-            const arr = await res.json()
-            suggestSetter(
-              (arr || []).map((it) => ({ label: it.display_name, latitude: parseFloat(it.lat), longitude: parseFloat(it.lon) }))
-            )
-          } catch {
-            suggestSetter([])
-          }
-        }, 250)
-      }
+  const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key) => (e) => {
+    const v = e.target.value;
+    setter((prev) => ({ ...prev, [key]: v }));
+    if (key === "place") {
+      coordsSetter(null);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(async () => {
+        if (!v || v.length < 2) {
+          suggestSetter([]);
+          return;
+        }
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(v)}`;
+          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+          const arr = await res.json();
+          suggestSetter(
+            (arr || []).map((it) => ({
+              label: it.display_name,
+              latitude: parseFloat(it.lat),
+              longitude: parseFloat(it.lon),
+            }))
+          );
+        } catch {
+          suggestSetter([]);
+        }
+      }, 250);
     }
-  }
+  };
 
-  function parseDateTime(dob, tob) {
-    const [Y, M, D] = String(dob).split("-").map((n) => parseInt(n, 10))
-    const [H, Min, S = 0] = String(tob).split(":").map((n) => parseInt(n, 10))
-    return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S }
-  }
+  const parseDateTime = (dob, tob) => {
+    const [Y, M, D] = dob.split("-").map(Number);
+    const [H, Min, S = 0] = tob.split(":").map(Number);
+    return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
+  };
 
-  async function ensureCoords(person, coords) {
-    if (coords && coords.latitude && coords.longitude) return coords
-    if (!person.place) return null
-    return geocodePlace(person.place)
-  }
+  const ensureCoords = async (person, coords) => {
+    if (coords?.latitude && coords?.longitude) return coords;
+    if (!person.place) return null;
+    return geocodePlace(person.place);
+  };
 
-  async function buildPayload() {
-    const fC = await ensureCoords(female, fCoords)
-    const mC = await ensureCoords(male, mCoords)
-    if (!fC || !mC) throw new Error("Please pick/place valid locations for both.")
+  const buildPayload = async () => {
+    const fC = await ensureCoords(female, fCoords);
+    const mC = await ensureCoords(male, mCoords);
+    if (!fC || !mC) throw new Error("Please pick a valid location for both.");
 
-    const fTz = await getTimezoneOffsetHours(fC.latitude, fC.longitude)
-    const mTz = await getTimezoneOffsetHours(mC.latitude, mC.longitude)
+    const fTz = await getTimezoneOffsetHours(fC.latitude, fC.longitude);
+    const mTz = await getTimezoneOffsetHours(mC.latitude, mC.longitude);
 
     return {
       female: {
@@ -111,27 +152,35 @@ export default function MatchingPage() {
         language: "en",
         ayanamsha: "lahiri",
       },
-    }
-  }
+    };
+  };
 
-  async function onSubmit(e) {
-    e.preventDefault()
-    setError("")
-    setResult(null)
-    setFDetails(null)
-    setMDetails(null)
+  /* -------------------------------------------------------------- */
+  /*  Submit handler                                                */
+  /* -------------------------------------------------------------- */
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setResult(null);
+    setFDetails(null);
+    setMDetails(null);
+
     if (!female.dob || !female.tob || !female.place || !male.dob || !male.tob || !male.place) {
-      setError("Please complete all fields for both.")
-      return
+      setError("Please complete all fields for both.");
+      return;
     }
-    setSubmitting(true)
-    try {
-      const payload = await buildPayload()
-      const res = await astrologyAPI.getSingleCalculation("match-making/ashtakoot-score", payload)
-      const out = typeof res?.output === "string" ? JSON.parse(res.output) : (res?.output || res)
-      setResult(out)
 
-      // Build individual payloads for per-person APIs
+    setSubmitting(true);
+    try {
+      const payload = await buildPayload();
+      const res = await astrologyAPI.getSingleCalculation(
+        "match-making/ashtakoot-score",
+        payload
+      );
+      const out = typeof res?.output === "string" ? JSON.parse(res.output) : res?.output || res;
+      setResult(out);
+
+      /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
         year: p.year,
         month: p.month,
@@ -143,138 +192,184 @@ export default function MatchingPage() {
         longitude: p.longitude,
         timezone: p.timezone,
         config: { observation_point: "geocentric", ayanamsha: "lahiri" },
-      })
+      });
 
-      const fPayload = mkSinglePayload(payload.female)
-      const mPayload = mkSinglePayload(payload.male)
+      const fPayload = mkSinglePayload(payload.female);
+      const mPayload = mkSinglePayload(payload.male);
 
-      // Fetch planets, vimsottari and shadbala for both
       const endpoints = [
-        'shadbala/summary',
-        'vimsottari/dasa-information',
-        'vimsottari/maha-dasas',
-        'planets',
-      ]
+        "shadbala/summary",
+        "vimsottari/dasa-information",
+        "vimsottari/maha-dasas",
+        "planets",
+      ];
 
       const [fCalc, mCalc] = await Promise.all([
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
-      ])
+      ]);
 
-      const safeParse = (v) => { try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return v } }
+      const safeParse = (v) => {
+        try { return typeof v === "string" ? JSON.parse(v) : v; }
+        catch { return v; }
+      };
 
       const parseShadbala = (raw) => {
-        if (!raw) return null
-        let sb = safeParse(safeParse(raw.output ?? raw))
-        if (sb && typeof sb === 'object' && sb.output) sb = safeParse(sb.output)
-        return sb
-      }
-
+        if (!raw) return null;
+        let sb = safeParse(safeParse(raw.output ?? raw));
+        if (sb && typeof sb === "object" && sb.output) sb = safeParse(sb.output);
+        return sb;
+      };
       const parseMaha = (raw) => {
-        if (!raw) return null
-        let v = safeParse(safeParse(raw.output ?? raw))
-        if (v && typeof v === 'object' && v.output) v = safeParse(v.output)
-        return v
-      }
-
-      const parsePlanets = (raw) => safeParse(safeParse(raw?.output ?? raw))
+        if (!raw) return null;
+        let v = safeParse(safeParse(raw.output ?? raw));
+        if (v && typeof v === "object" && v.output) v = safeParse(v.output);
+        return v;
+      };
+      const parsePlanets = (raw) => safeParse(safeParse(raw?.output ?? raw));
 
       const currentDashaChain = (v) => {
-        if (!v) return null
-        const cur = v.current || v.running || v.now || v?.mahadasha?.current
+        if (!v) return null;
+        const cur = v.current || v.running || v.now || v?.mahadasha?.current;
         if (cur && (cur.md || cur.mahadasha)) {
-          const md = cur.md || cur.mahadasha
-          const ad = cur.ad || cur.antardasha
-          const pd = cur.pd || cur.pratyantar
-          return [md, ad, pd].filter(Boolean).map((x) => (x.name || x.planet || x).toString().trim()).join(' > ')
+          const md = cur.md || cur.mahadasha;
+          const ad = cur.ad || cur.antardasha;
+          const pd = cur.pd || cur.pratyantar;
+          return [md, ad, pd]
+            .filter(Boolean)
+            .map((x) => (x.name || x.planet || x).toString().trim())
+            .join(" > ");
         }
-        const md = (v.mahadasha_list || v.mahadasha || v.md || [])[0]
-        const adList = v.antardasha_list || v.antardasha || v.ad || {}
-        const firstMdKey = md?.key || md?.planet || md?.name
-        const ad = Array.isArray(adList[firstMdKey]) ? adList[firstMdKey][0] : Array.isArray(adList) ? adList[0] : null
-        const pdList = v.pratyantar_list || v.pd || {}
-        const firstAdKey = ad?.key || ad?.planet || ad?.name
-        const pd = Array.isArray(pdList[firstAdKey]) ? pdList[firstAdKey][0] : Array.isArray(pdList) ? pdList[0] : null
-        return [md?.name || md?.planet, ad?.name || ad?.planet, pd?.name || pd?.planet].filter(Boolean).join(' > ')
-      }
+        const md = (v.mahadasha_list || v.mahadasha || v.md || [])[0];
+        const adList = v.antardasha_list || v.antardasha || v.ad || {};
+        const firstMdKey = md?.key || md?.planet || md?.name;
+        const ad = Array.isArray(adList[firstMdKey])
+          ? adList[firstMdKey][0]
+          : Array.isArray(adList)
+          ? adList[0]
+          : null;
+        const pdList = v.pratyantar_list || v.pd || {};
+        const firstAdKey = ad?.key || ad?.planet || ad?.name;
+        const pd = Array.isArray(pdList[firstAdKey])
+          ? pdList[firstAdKey][0]
+          : Array.isArray(pdList)
+          ? pdList[0]
+          : null;
+        return [md?.name || md?.planet, ad?.name || ad?.planet, pd?.name || pd?.planet]
+          .filter(Boolean)
+          .join(" > ");
+      };
 
       const toShadbalaRows = (sb) => {
-        if (!sb) return []
-        if (sb && typeof sb === 'object') {
-          const out = sb.output ?? sb.Output ?? sb.data
-          if (out) sb = typeof out === 'string' ? safeParse(out) : out
+        if (!sb) return [];
+        if (sb && typeof sb === "object") {
+          const out = sb.output ?? sb.Output ?? sb.data;
+          if (out) sb = typeof out === "string" ? safeParse(out) : out;
         }
-        if (Array.isArray(sb)) sb = sb.reduce((acc, it) => (typeof it === 'object' ? { ...acc, ...it } : acc), {})
-        const maybePlanets = sb.planets || sb || {}
+        if (Array.isArray(sb)) sb = sb.reduce((acc, it) => (typeof it === "object" ? { ...acc, ...it } : acc), {});
+        const maybePlanets = sb.planets || sb || {};
         return Object.keys(maybePlanets)
-          .filter((k) => typeof maybePlanets[k] === 'object')
+          .filter((k) => typeof maybePlanets[k] === "object")
           .map((k) => {
-            const p = maybePlanets[k]
-            const percent = p.percentage_strength ?? p.percentage ?? p.percent ?? p.shadbala_percent ?? p.strength_percent
-            const ishta = p.ishta_phala ?? p.ishta ?? p.ishta_bala ?? p.ishta_percent
-            const kashta = p.kashta_phala ?? p.kashta ?? p.kashta_bala ?? p.kashta_percent
-            const retro = p.retrograde || p.is_retro
-            return { name: (p.name || k), percent, ishta, kashta, retro }
+            const p = maybePlanets[k];
+            const percent = p.percentage_strength ?? p.percentage ?? p.percent ?? p.shadbala_percent ?? p.strength_percent;
+            const ishta = p.ishta_phala ?? p.ishta ?? p.ishta_bala ?? p.ishta_percent;
+            const kashta = p.kashta_phala ?? p.kashta ?? p.kashta_bala ?? p.kashta_percent;
+            const retro = p.retrograde || p.is_retro;
+            return { name: (p.name || k), percent, ishta, kashta, retro };
           })
-          .sort((a, b) => (Number(b.percent ?? 0) - Number(a.percent ?? 0)))
-      }
+          .sort((a, b) => (Number(b.percent ?? 0) - Number(a.percent ?? 0)));
+      };
 
-      const SIGN_NAMES = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
+      const SIGN_NAMES = [
+        "Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces",
+      ];
       const toPlacements = (pl) => {
-        if (!pl) return []
-        if (Array.isArray(pl) && pl.length >= 2 && typeof pl[1] === 'object' && !Array.isArray(pl[1])) {
-          const map = pl[1]
+        if (!pl) return [];
+        if (Array.isArray(pl) && pl.length >= 2 && typeof pl[1] === "object" && !Array.isArray(pl[1])) {
+          const map = pl[1];
           return Object.keys(map).map((name) => {
-            const v = map[name] || {}
-            const signNum = v.current_sign != null ? Number(v.current_sign) : undefined
-            const currentSign = signNum ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})` : (v.sign_name || v.sign || v.rashi)
+            const v = map[name] || {};
+            const signNum = v.current_sign != null ? Number(v.current_sign) : undefined;
+            const currentSign = signNum
+              ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+              : v.sign_name || v.sign || v.rashi;
             return {
               name,
               currentSign,
               house: v.house_number,
-              retro: (String(v.isRetro).toLowerCase() === 'true') || v.is_retro || v.retrograde || false,
-              fullDegree: typeof v.fullDegree === 'number' ? v.fullDegree : (typeof v.longitude === 'number' ? v.longitude : undefined),
-              normDegree: typeof v.normDegree === 'number' ? v.normDegree : undefined,
-            }
-          })
+              retro: String(v.isRetro).toLowerCase() === "true" || v.is_retro || v.retrograde || false,
+              fullDegree: typeof v.fullDegree === "number" ? v.fullDegree : typeof v.longitude === "number" ? v.longitude : undefined,
+              normDegree: typeof v.normDegree === "number" ? v.normDegree : undefined,
+            };
+          });
         }
-        const arr = Array.isArray(pl) ? pl : (pl.planets || pl.planet_positions || [])
-        const list = Array.isArray(arr) ? arr : Object.values(arr || {})
+        const arr = Array.isArray(pl) ? pl : pl.planets || pl.planet_positions || [];
+        const list = Array.isArray(arr) ? arr : Object.values(arr || {});
         return list.map((p) => {
-          const signNum = p.current_sign != null ? Number(p.current_sign) : undefined
-          const currentSign = signNum ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})` : (p.sign || p.rashi || p.sign_name)
+          const signNum = p.current_sign != null ? Number(p.current_sign) : undefined;
+          const currentSign = signNum
+            ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+            : p.sign || p.rashi || p.sign_name;
           return {
             name: p.name || p.planet,
             currentSign,
             house: p.house || p.house_number,
-            retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === 'true',
-            fullDegree: typeof p.fullDegree === 'number' ? p.fullDegree : (typeof p.longitude === 'number' ? p.longitude : undefined),
-            normDegree: typeof p.normDegree === 'number' ? p.normDegree : undefined,
-          }
-        })
-      }
+            retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === "true",
+            fullDegree: typeof p.fullDegree === "number" ? p.fullDegree : typeof p.longitude === "number" ? p.longitude : undefined,
+            normDegree: typeof p.normDegree === "number" ? p.normDegree : undefined,
+          };
+        });
+      };
 
       const buildUserDetails = (calc) => {
-        const r = calc?.results || {}
-        const shadbala = parseShadbala(r['shadbala/summary'])
-        const vims = r['vimsottari/dasa-information'] ? safeParse(safeParse(r['vimsottari/dasa-information'].output ?? r['vimsottari/dasa-information'])) : null
-        const maha = parseMaha(r['vimsottari/maha-dasas'])
-        const planets = parsePlanets(r['planets'])
+        const r = calc?.results || {};
+        const shadbala = parseShadbala(r["shadbala/summary"]);
+        const vims = r["vimsottari/dasa-information"]
+          ? safeParse(safeParse(r["vimsottari/dasa-information"].output ?? r["vimsottari/dasa-information"]))
+          : null;
+        const maha = parseMaha(r["vimsottari/maha-dasas"]);
+        const planets = parsePlanets(r["planets"]);
         return {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
           placements: toPlacements(planets),
-        }
-      }
+        };
+      };
 
-      setFDetails(buildUserDetails(fCalc))
-      setMDetails(buildUserDetails(mCalc))
+      setFDetails(buildUserDetails(fCalc));
+      setMDetails(buildUserDetails(mCalc));
     } catch (err) {
-      setError(err?.message || "Failed to compute matching score.")
+      setError(err?.message || "Failed to compute matching score.");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
+
+  /* -------------------------------------------------------------- */
+  /*  Formatting helpers                                            */
+  /* -------------------------------------------------------------- */
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    try {
+      const [y, m, d] = iso.split("-");
+      const dt = new Date(Number(y), Number(m) - 1, Number(d));
+      return dt.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    } catch {
+      return iso;
+    }
+  };
+  const fmtTime = (hms) => {
+    if (!hms) return "—";
+    try {
+      const [h, m] = hms.split(":").map(Number);
+      const dt = new Date();
+      dt.setHours(h || 0, m || 0, 0, 0);
+      return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    } catch {
+      return hms;
+    }
+  };
 
   const KOOTS = [
     "varna_kootam",
@@ -285,172 +380,441 @@ export default function MatchingPage() {
     "gana_kootam",
     "rasi_kootam",
     "nadi_kootam",
-  ]
+  ];
 
-  const fmtDate = (iso) => {
-    if (!iso) return "—"
-    try {
-      const [y, m, d] = iso.split("-")
-      const dt = new Date(Number(y), Number(m) - 1, Number(d))
-      return dt.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
-    } catch {
-      return iso
-    }
-  }
+  const kootData = result
+    ? KOOTS.map((k) => {
+        const sec = result?.[k];
+        const score = typeof sec?.score === "number" ? sec.score : 0;
+        const outOf = typeof sec?.out_of === "number" && sec.out_of > 0 ? sec.out_of : 0;
+        const pct = outOf ? Math.round((score / outOf) * 100) : 0;
+        return { name: k.replace(/_/g, " "), score, outOf, pct };
+      })
+    : [];
 
-  const fmtTime = (hms) => {
-    if (!hms) return "—"
-    try {
-      const [h, m, s = 0] = hms.split(":").map((n) => parseInt(n, 10))
-      const dt = new Date()
-      dt.setHours(h || 0, m || 0, s || 0, 0)
-      return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-    } catch {
-      return hms
-    }
-  }
+  const BAR_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
+  const LINE_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
+  const BAR_H = Math.round(BAR_W * 0.44);
+  const LINE_H = Math.round(LINE_W * 0.44);
 
-  const kootData = (result ? KOOTS.map((k) => {
-    const sec = result?.[k]
-    const score = typeof sec?.score === "number" ? sec.score : 0
-    const outOf = typeof sec?.out_of === "number" && sec.out_of > 0 ? sec.out_of : 0
-    const pct = outOf ? Math.round((score / outOf) * 100) : 0
-    return { name: k.replace(/_/g, " "), score, outOf, pct }
-  }) : [])
-
-  // Responsive, smaller sizes
-  const BAR_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380
-  const LINE_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380
-  const BAR_H = Math.round(BAR_W * 0.44)
-  const LINE_H = Math.round(LINE_W * 0.44)
-
-  // Tiny UI helpers
-  const ProgressBar = ({ value = 0, color = 'bg-cyan-500' }) => {
-    const v = Math.max(0, Math.min(200, Number(value) || 0)) // allow >100 for strong planets
-    const barColor = v >= 120 ? 'bg-emerald-500' : v >= 100 ? 'bg-blue-500' : 'bg-amber-500'
-    return (
-      <div className="h-2 w-full bg-blue-950/50 rounded-full overflow-hidden">
-        <div className={`h-2 ${color || barColor}`} style={{ width: `${Math.min(100, v)}%` }} />
-      </div>
-    )
-  }
-
-  const Badge = ({ children, tone = 'neutral' }) => {
-    const tones = {
-      neutral: 'bg-blue-900/40 text-blue-100 border border-blue-800',
-      info: 'bg-blue-900/40 text-blue-200 border border-blue-800',
-      success: 'bg-emerald-900/40 text-emerald-200 border border-emerald-800',
-      warn: 'bg-amber-900/40 text-amber-200 border border-amber-800',
-    }
-    return <span className={`text-[11px] px-2 py-1 rounded-full ${tones[tone] || tones.neutral}`}>{children}</span>
-  }
-
+  /* -------------------------------------------------------------- */
+  /*  Person details component                                      */
+  /* -------------------------------------------------------------- */
   const PersonDetails = ({ title, d }) => (
-    <section className="rounded-xl border border-blue-800 bg-blue-900/30 p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-base text-neutral-200 font-medium">{title}</div>
-        <div className="text-xs text-neutral-400">{(d?.placements?.length || 0)} planets</div>
+    <section className="person-card">
+      <div className="person-header">
+        <div className="person-title">{title}</div>
+        <div className="person-planets">{(d?.placements?.length || 0)} planets</div>
       </div>
-      <div className="text-sm text-neutral-400 mb-1">Current Dasha</div>
-      <div className="text-base mb-4 text-neutral-100">{d?.currentDasha || '—'}</div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Shadbala block */}
+      <div className="person-dasha-label">Current Dasha</div>
+      <div className="person-dasha">{d?.currentDasha || "—"}</div>
+
+      <div className="person-grid">
+        {/* Shadbala */}
         <div>
-          <div className="text-base text-blue-200 mb-2 font-medium">Shadbala & Ishta/Kashta</div>
-          <div className="space-y-2">
+          <div className="section-title">Shadbala & Ishta/Kashta</div>
+          <div className="shadbala-list">
             {(d?.shadbalaRows || []).map((r) => {
-              const pct = r?.percent != null ? Number(r.percent) : null
-              const ishta = r?.ishta != null ? Number(r.ishta) : null
-              const kashta = r?.kashta != null ? Number(r.kashta) : null
-              const tone = pct >= 120 ? 'success' : pct >= 100 ? 'info' : 'warn'
+              const pct = r?.percent != null ? Number(r.percent) : null;
+              const ishta = r?.ishta != null ? Number(r.ishta) : null;
+              const kashta = r?.kashta != null ? Number(r.kashta) : null;
+              const tone = pct >= 120 ? "success" : pct >= 100 ? "info" : "warn";
               return (
-                <div key={`${title}-sb-${r.name}`} className="rounded-lg border border-blue-800 bg-blue-950/40 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{r.retro ? 'ℝ' : '★'}</span>
-                      <span className="text-base text-neutral-100 font-medium">{r.name}</span>
+                <div key={`${title}-sb-${r.name}`} className="shadbala-item">
+                  <div className="shadbala-head">
+                    <div className="shadbala-name">
+                      <span>{r.retro ? "R" : "Star"}</span>
+                      <span>{r.name}</span>
                     </div>
-                    <Badge tone={tone}>{pct != null ? `${pct.toFixed(1)} %` : '—'}</Badge>
+                    <Badge tone={tone}>{pct != null ? `${pct.toFixed(1)} %` : "—"}</Badge>
                   </div>
                   <ProgressBar value={pct ?? 0} />
-                  <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div className="shadbala-sub">
                     <div>
-                      <div className="text-xs text-neutral-400 mb-1">Ishta</div>
+                      <div className="sub-label">Ishta</div>
                       <ProgressBar value={ishta ?? 0} color="bg-emerald-500" />
-                      <div className="text-xs text-neutral-500 mt-1">{ishta != null ? `${ishta.toFixed(1)}%` : '—'}</div>
+                      <div className="sub-value">{ishta != null ? `${ishta.toFixed(1)}%` : "—"}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-neutral-400 mb-1">Kashta</div>
+                      <div className="sub-label">Kashta</div>
                       <ProgressBar value={kashta ?? 0} color="bg-rose-500" />
-                      <div className="text-xs text-neutral-500 mt-1">{kashta != null ? `${kashta.toFixed(1)}%` : '—'}</div>
+                      <div className="sub-value">{kashta != null ? `${kashta.toFixed(1)}%` : "—"}</div>
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
             {(!d?.shadbalaRows || d.shadbalaRows.length === 0) && (
-              <div className="text-neutral-500 text-sm">No shadbala data</div>
+              <div className="empty">No shadbala data</div>
             )}
           </div>
         </div>
-        {/* Planet placements block */}
+
+        {/* Placements */}
         <div>
-          <div className="text-base text-blue-200 mb-2 font-medium">Planet Placements (D1)</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="section-title">Planet Placements (D1)</div>
+          <div className="placement-grid">
             {(d?.placements || []).map((p) => (
-              <div key={`${title}-pl-${p.name}`} className="rounded-lg border border-blue-800 bg-blue-950/40 p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="font-medium text-neutral-100 text-base">{p.name}</div>
-                  {p.retro ? (<Badge tone="warn">Retro</Badge>) : null}
+              <div key={`${title}-pl-${p.name}`} className="placement-item">
+                <div className="placement-head">
+                  <div className="placement-name">{p.name}</div>
+                  {p.retro && <Badge tone="warn">Retro</Badge>}
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge tone="neutral">Sign: {p.currentSign || '—'}</Badge>
-                  <Badge tone="info">House: {p.house ?? '—'}</Badge>
-                  {typeof p.fullDegree === 'number' && (
-                    <Badge tone="neutral">{p.fullDegree.toFixed(2)}°</Badge>
+                <div className="placement-badges">
+                  <Badge tone="neutral">Sign: {p.currentSign || "—"}</Badge>
+                  <Badge tone="info">House: {p.house ?? "—"}</Badge>
+                  {typeof p.fullDegree === "number" && (
+                    <Badge tone="neutral">{p.fullDegree.toFixed(2)} degrees</Badge>
                   )}
                 </div>
               </div>
             ))}
             {(!d?.placements || d.placements.length === 0) && (
-              <div className="text-neutral-500 text-sm">No planet data</div>
+              <div className="empty">No planet data</div>
             )}
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 
+  /* -------------------------------------------------------------- */
+  /*  Render                                                        */
+  /* -------------------------------------------------------------- */
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-3xl font-semibold mb-1 text-center">💞 Match Making</h1>
-      <p className="text-gray-600 mb-6 text-center">Enter birth details for both to get Ashtakoot score. Small cues will guide you as you fill the form.</p>
+    <>
+      {/* ---------------------------------------------------------- */}
+      {/*  INTERNAL CSS (styled-jsx) – completely self-contained    */}
+      {/* ---------------------------------------------------------- */}
+      <style jsx>{`
+        /* ------------------------------------------------------ */
+        /*  Root variables – minimalistic professional palette    */
+        /* ------------------------------------------------------ */
+        :root {
+          --font-body: "Inter", system-ui, sans-serif;
+          --font-heading: "Cormorant Garamond", Georgia, serif;
 
-      {error ? (
-        <div className="mb-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>
-      ) : null}
+          --c-bg: #fafafa;
+          --c-card: #ffffff;
+          --c-border: #e2e8f0;
+          --c-text: #1a1a1a;
+          --c-muted: #64748b;
+          --c-primary: #3b82f6;
+          --c-success: #10b981;
+          --c-warn: #f59e0b;
+          --c-danger: #ef4444;
+          --c-gold: #d4af37;
+          --c-purple: #7c3aed;
+          --c-cyan: #22d3ee;
+          --c-pink: #ec4899;
+        }
 
-      <form onSubmit={onSubmit} className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 md:p-6 max-w-2xl mx-auto mb-8 px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Female */}
-          <div className="relative rounded-xl border border-pink-100 bg-pink-50/40 p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">👩 Female</h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${fFilled === 3 ? "bg-green-100 text-green-700" : "bg-pink-100 text-pink-700"}`}>{fFilled}/3 filled</span>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">🎂 Date of Birth</label>
-                <Input type="date" value={female.dob} onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "dob")} required />
+        /* ------------------------------------------------------ */
+        /*  Base layout                                            */
+        /* ------------------------------------------------------ */
+        .container {
+          max-width: 1240px;
+          margin: 0 auto;
+          padding: 1.5rem;
+          font-family: var(--font-body);
+          background: var(--c-bg);
+          color: var(--c-text);
+        }
+
+        h1, h2, h3, h4 { font-family: var(--font-heading); margin-bottom: .75rem; }
+        h1 { font-size: 2.25rem; text-align:center; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.35rem; }
+
+        /* ------------------------------------------------------ */
+        /*  Form                                                   */
+        /* ------------------------------------------------------ */
+        .form-wrapper {
+          background: var(--c-card);
+          border: 1px solid var(--c-border);
+          border-radius: .75rem;
+          padding: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,.05);
+          max-width: 720px;
+          margin: 2rem auto;
+        }
+
+        .form-grid {
+          display: grid;
+          gap: 1.5rem;
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 768px) {
+          .form-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .person-box {
+          border: 1px solid var(--c-border);
+          border-radius: .75rem;
+          padding: 1rem;
+          background: #fdfdfd;
+        }
+        .person-box.female { border-color: #fbcfe8; background: #fdf2f8; }
+        .person-box.male   { border-color: #bfdbfe; background: #eff6ff; }
+
+        .person-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: .75rem;
+        }
+        .person-title { font-weight: 600; font-size: 1.1rem; }
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: .25rem;
+          margin-bottom: .75rem;
+        }
+        label { font-size: .875rem; font-weight: 500; color: var(--c-muted); }
+        input {
+          padding: .5rem .75rem;
+          border: 1px solid var(--c-border);
+          border-radius: .5rem;
+          font-size: .95rem;
+        }
+        input:focus { outline: none; border-color: var(--c-primary); }
+
+        .suggest-list {
+          position: absolute;
+          z-index: 20;
+          width: 100%;
+          max-height: 12rem;
+          overflow-y: auto;
+          background: var(--c-card);
+          border: 1px solid var(--c-border);
+          border-radius: .5rem;
+          margin-top: .25rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+        .suggest-item {
+          padding: .5rem .75rem;
+          cursor: pointer;
+          font-size: .875rem;
+        }
+        .suggest-item:hover { background: #f1f5f9; }
+
+        .btn-group {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: nowrap;           /* Prevent wrapping */
+  margin-top: 1rem;
+}
+
+.btn {
+
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;         /* Prevent text wrap */
+  min-width: 100px;            /* Optional: consistent width */
+  text-align: center;
+}
+
+        .btn-reset {
+          background: transparent;
+          border: 1px solid var(--color-gold);
+          }
+.btn-reset:hover {
+color: #fff;
+  background: var(--color-gold);
+  border-color: var(--color-gold-dark);
+  opacity: 0.8;
+}
+
+        .submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+        /* ------------------------------------------------------ */
+        /*  Results                                                */
+        /* ------------------------------------------------------ */
+        .result-wrapper {
+          max-width: 960px;
+          margin: 2rem auto;
+          background: var(--c-card);
+          border: 1px solid var(--c-border);
+          border-radius: .75rem;
+          padding: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,.05);
+        }
+
+        .verdict {
+          text-align: center;
+          padding: 1.5rem;
+          background: #eff6ff;
+          border-radius: .75rem;
+          border: 1px solid #bfdbfe;
+        }
+        .verdict-score {
+          font-size: 3rem;
+          font-weight: 800;
+          color: var(--c-primary);
+        }
+        .verdict-max { font-size: 1.5rem; color: var(--c-muted); }
+
+        .koot-list {
+          display: grid;
+          gap: .5rem;
+          margin-top: 1rem;
+        }
+        .koot-item {
+          display: flex;
+          justify-content: space-between;
+          padding: .5rem 0;
+          border-bottom: 1px solid var(--c-border);
+        }
+        .koot-item:last-child { border-bottom: none; }
+
+        .chart-section {
+          margin-top: 2rem;
+          display: grid;
+          gap: 1.5rem;
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 768px) {
+          .chart-section { grid-template-columns: 1fr 1fr; }
+        }
+        .chart-card {
+          background: #f8fafc;
+          border: 1px solid var(--c-border);
+          border-radius: .75rem;
+          padding: 1rem;
+        }
+
+        /* ------------------------------------------------------ */
+        /*  Person details card                                    */
+        /* ------------------------------------------------------ */
+        .person-card {
+          background: var(--c-card);
+          border: 1px solid var(--c-border);
+          border-radius: .75rem;
+          padding: 1.25rem;
+          margin-top: 1.5rem;
+        }
+        .person-header { display: flex; justify-content: space-between; margin-bottom: .5rem; }
+        .person-title { font-weight: 600; }
+        .person-dasha-label { font-size: .8rem; color: var(--c-muted); margin-top: .5rem; }
+        .person-dasha { font-weight: 600; margin-bottom: 1rem; }
+        .person-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+        @media (min-width: 768px) { .person-grid { grid-template-columns: 1fr 1fr; } }
+
+        .section-title { font-weight: 600; margin-bottom: .5rem; color: var(--c-primary); }
+
+        .shadbala-list { display: flex; flex-direction: column; gap: .75rem; }
+        .shadbala-item {
+          border: 1px solid var(--c-border);
+          border-radius: .5rem;
+          padding: .75rem;
+          background: #f8fafc;
+        }
+        .shadbala-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+        .shadbala-name { display: flex; gap: .25rem; align-items: center; font-weight: 600; }
+        .shadbala-sub { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .5rem; }
+        .sub-label { font-size: .75rem; color: var(--c-muted); }
+        .sub-value { font-size: .75rem; margin-top: .25rem; }
+
+        .placement-grid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+        .placement-item {
+          border: 1px solid var(--c-border);
+          border-radius: .5rem;
+          padding: .5rem;
+          background: #f8fafc;
+        }
+        .placement-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .25rem; }
+        .placement-name { font-weight: 600; }
+        .placement-badges { display: flex; flex-wrap: wrap; gap: .25rem; }
+
+        .empty { font-size: .875rem; color: var(--c-muted); text-align: center; padding: .5rem; }
+
+        /* ------------------------------------------------------ */
+        /*  Progress bar & badge                                   */
+        /* ------------------------------------------------------ */
+        .progress-wrapper {
+          height: .5rem;
+          background: #e2e8f0;
+          border-radius: .25rem;
+          overflow: hidden;
+        }
+        .progress-fill {
+          height: 100%;
+          transition: width .3s ease;
+        }
+        .bg-cyan-500 { background: var(--c-cyan); }
+        .bg-emerald-500 { background: var(--c-success); }
+        .bg-blue-500 { background: var(--c-primary); }
+        .bg-amber-500 { background: var(--c-warn); }
+        .bg-rose-500 { background: var(--c-pink); }
+
+        .badge {
+          font-size: .6875rem;
+          padding: .125rem .375rem;
+          border-radius: .25rem;
+          font-weight: 500;
+        }
+        .badge-neutral { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+        .badge-info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .badge-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .badge-warn    { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+
+        /* ------------------------------------------------------ */
+        /*  Misc                                                   */
+        /* ------------------------------------------------------ */
+        .error { background: #fee2e2; color: var(--c-danger); padding: .75rem; border-radius: .5rem; margin-bottom: 1rem; }
+      `}</style>
+
+      {/* ---------------------------------------------------------- */}
+      {/*  PAGE CONTENT                                              */}
+      {/* ---------------------------------------------------------- */}
+      <div className="container">
+        <h1>Match Making</h1>
+        <p style={{ textAlign: "center", color: "var(--c-muted)", marginBottom: "1.5rem" }}>
+          Enter birth details for both to get Ashtakoot score.
+        </p>
+
+        {error && <div className="error">{error}</div>}
+
+        <form onSubmit={onSubmit} className="form-wrapper">
+          <div className="form-grid">
+            {/* ---------- Female ---------- */}
+            <div className="person-box female">
+              <div className="person-header">
+                <h3>Female</h3>
+                <span style={{ fontSize: ".75rem", opacity: .7 }}>
+                  {fFilled}/3 filled
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">⏰ Time of Birth</label>
-                <Input type="time" step="1" value={female.tob} onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "tob")} required />
+
+              <div className="field">
+                <label>Date of Birth</label>
+                <input
+                  type="date"
+                  value={female.dob}
+                  onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "dob")}
+                  required
+                />
               </div>
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">📍 Place</label>
-                <Input
+
+              <div className="field">
+                <label>Time of Birth</label>
+                <input
+                  type="time"
+                  step="1"
+                  value={female.tob}
+                  onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "tob")}
+                  required
+                />
+              </div>
+
+              <div className="field" style={{ position: "relative" }}>
+                <label>Place</label>
+                <input
                   placeholder="City, Country"
                   value={female.place}
                   onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "place")}
@@ -458,45 +822,58 @@ export default function MatchingPage() {
                   required
                 />
                 {fSuggest.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-auto animate-fade-in">
+                  <div className="suggest-list">
                     {fSuggest.map((s, i) => (
-                      <button
-                        type="button"
+                      <div
                         key={`${s.label}-${i}`}
+                        className="suggest-item"
                         onClick={() => {
-                          setFemale((p) => ({ ...p, place: s.label }))
-                          setFCoords(s)
-                          setFSuggest([])
+                          setFemale((p) => ({ ...p, place: s.label }));
+                          setFCoords(s);
+                          setFSuggest([]);
                         }}
-                        className="block w-full text-left px-4 py-2 hover:bg-pink-50 text-sm"
                       >
-                        <span className="mr-2">🗺️</span>{s.label}
-                      </button>
+                        {s.label}
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Male */}
-          <div className="relative rounded-xl border border-blue-100 bg-blue-50/40 p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">👨 Male</h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${mFilled === 3 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>{mFilled}/3 filled</span>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">🎂 Date of Birth</label>
-                <Input type="date" value={male.dob} onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "dob")} required />
+            {/* ---------- Male ---------- */}
+            <div className="person-box male">
+              <div className="person-header">
+                <h3>Male</h3>
+                <span style={{ fontSize: ".75rem", opacity: .7 }}>
+                  {mFilled}/3 filled
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">⏰ Time of Birth</label>
-                <Input type="time" step="1" value={male.tob} onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "tob")} required />
+
+              <div className="field">
+                <label>Date of Birth</label>
+                <input
+                  type="date"
+                  value={male.dob}
+                  onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "dob")}
+                  required
+                />
               </div>
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">📍 Place</label>
-                <Input
+
+              <div className="field">
+                <label>Time of Birth</label>
+                <input
+                  type="time"
+                  step="1"
+                  value={male.tob}
+                  onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "tob")}
+                  required
+                />
+              </div>
+
+              <div className="field" style={{ position: "relative" }}>
+                <label>Place</label>
+                <input
                   placeholder="City, Country"
                   value={male.place}
                   onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "place")}
@@ -504,243 +881,201 @@ export default function MatchingPage() {
                   required
                 />
                 {mSuggest.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-auto animate-fade-in">
+                  <div className="suggest-list">
                     {mSuggest.map((s, i) => (
-                      <button
-                        type="button"
+                      <div
                         key={`${s.label}-${i}`}
+                        className="suggest-item"
                         onClick={() => {
-                          setMale((p) => ({ ...p, place: s.label }))
-                          setMCoords(s)
-                          setMSuggest([])
+                          setMale((p) => ({ ...p, place: s.label }));
+                          setMCoords(s);
+                          setMSuggest([]);
                         }}
-                        className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm"
                       >
-                        <span className="mr-2">🗺️</span>{s.label}
-                      </button>
+                        {s.label}
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-5 flex items-center gap-3 justify-end">
-          <Button
-            type="reset"
-            variant="outline"
-            onClick={() => { setFemale({ dob: "", tob: "", place: "" }); setMale({ dob: "", tob: "", place: "" }); setFCoords(null); setMCoords(null); setFSuggest([]); setMSuggest([]); setError(""); setResult(null) }}
-          >
-            🔁 Reset
-          </Button>
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={submitting || fFilled < 3 || mFilled < 3}
-          >
-            {submitting ? "🔮 Calculating…" : "❤️ Get Match Score"}
-          </Button>
-        </div>
-      </form>
+<div className="btn-group">
+  <button
+    type="reset"
+    className="btn btn-reset"
+    onClick={() => {
+      setFemale({ dob: "", tob: "", place: "" });
+      setMale({ dob: "", tob: "", place: "" });
+      setFCoords(null);
+      setMCoords(null);
+      setFSuggest([]);
+      setMSuggest([]);
+      setError("");
+      setResult(null);
+      setFDetails(null);
+      setMDetails(null);
+    }}
+  >
+    Reset
+  </button>
 
-      {result && (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          {/* Dark Dashboard Wrapper */}
-          <div className="rounded-2xl border border-gray-200 bg-white text-gray-900 p-6 md:p-7 max-w-2xl mx-auto dark:border-blue-900 dark:bg-blue-950 dark:text-neutral-100">
-            <div className="mb-6">
-              <h2 className="text-3xl font-semibold">Pro Kundali Match</h2>
-            </div>
+  <button
+    type="submit"
+    className="btn submit-btn"  
+    disabled={submitting || fFilled < 3 || mFilled < 3}
+  >
+    {submitting ? "Calculating…" : "Get Match Score"}
+  </button>
+</div>
+        </form>
 
-            {/* Inputs snapshot */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* ---------------------------------------------------------- */}
+        {/*  RESULT SECTION                                            */}
+        {/* ---------------------------------------------------------- */}
+        {result && (
+          <div className="result-wrapper">
+            <h2>Pro Kundali Match</h2>
+
+            {/* ----- Birth info snapshot ----- */}
+            <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: "1.5rem" }}>
               <div>
-                <div className="text-xs text-neutral-400 mb-2">Female</div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm">{fmtDate(female.dob)}</span>
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm">{fmtTime(female.tob)}</span>
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm truncate max-w-[240px]" title={female.place}>{female.place || "—"}</span>
+                <div style={{ fontSize: ".75rem", color: "var(--c-muted)" }}>Female</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", marginTop: ".25rem" }}>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtDate(female.dob)}</span>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtTime(female.tob)}</span>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={female.place}>{female.place || "—"}</span>
                 </div>
               </div>
               <div>
-                <div className="text-xs text-neutral-400 mb-2">Male</div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm">{fmtDate(male.dob)}</span>
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm">{fmtTime(male.tob)}</span>
-                  <span className="px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800 text-sm truncate max-w-[240px]" title={male.place}>{male.place || "—"}</span>
+                <div style={{ fontSize: ".75rem", color: "var(--c-muted)" }}>Male</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", marginTop: ".25rem" }}>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtDate(male.dob)}</span>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtTime(male.tob)}</span>
+                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={male.place}>{male.place || "—"}</span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Quick Verdict */}
-              <section className="lg:col-span-1 rounded-xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-900/40">
-                <div className="text-base text-blue-800 mb-2 font-medium dark:text-blue-200">Quick Verdict</div>
-                <div className="text-5xl md:text-6xl font-extrabold tracking-tight mb-1">
-                  {Number(result?.total_score ?? 0)}<span className="text-neutral-500">/{Number(result?.out_of ?? 36)}</span>
-                </div>
-                <div className="text-sm text-blue-700 mb-2 dark:text-blue-200/80">Ashtakoot Score</div>
+            {/* ----- Quick verdict ----- */}
+            <section className="verdict">
+              <div className="verdict-score">
+                {Number(result?.total_score ?? 0)}
+                <span className="verdict-max">/{Number(result?.out_of ?? 36)}</span>
+              </div>
+              <div style={{ fontSize: ".875rem", marginTop: ".25rem" }}>Ashtakoot Score</div>
 
-                {/* Compact list of Koot names with numbers */}
-                <ul className="mt-4 space-y-2 text-base">
-                  {KOOTS.map((k) => {
-                    const sec = result?.[k]
-                    const title = k.replace(/_/g, " ")
-                    const val = (sec && typeof sec.score === "number") ? sec.score : "—"
-                    return (
-                      <li key={k} className="flex items-center justify-between py-1 border-b border-blue-100 last:border-0 dark:border-neutral-800">
-                        <span className="text-blue-900 capitalize font-medium dark:text-blue-100">{title}</span>
-                        <span className="text-blue-900 font-semibold dark:text-blue-50">{val}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </section>
+              <ul className="koot-list" style={{ marginTop: "1rem" }}>
+                {KOOTS.map((k) => {
+                  const sec = result?.[k];
+                  const title = k.replace(/_/g, " ");
+                  const val = typeof sec?.score === "number" ? sec.score : "—";
+                  return (
+                    <li key={k} className="koot-item">
+                      <span style={{ textTransform: "capitalize", fontWeight: "500" }}>{title}</span>
+                      <span style={{ fontWeight: "600" }}>{val}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
 
-              {/* Koot bars / details */}
-              <section className="lg:col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-900/40">
-                <div className="text-base text-blue-800 mb-4 font-medium dark:text-blue-200">Koot Breakdown</div>
-                <div className="space-y-4">
-                  {KOOTS.map((k) => {
-                    const sec = result?.[k]
-                    const label = k.replace(/_/g, " ")
-                    if (!sec || typeof sec.score !== "number" || typeof sec.out_of !== "number" || sec.out_of === 0) {
-                      return (
-                        <div key={k} className="opacity-90">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="capitalize text-base text-blue-900 dark:text-blue-100">{label}</span>
-                            <span className="text-sm text-blue-700 dark:text-blue-200/80">No data</span>
-                          </div>
-                          <div className="h-2 rounded bg-blue-100 dark:bg-blue-950/50" />
-                        </div>
-                      )
-                    }
-                    const pct = Math.max(0, Math.min(100, Math.round((sec.score / sec.out_of) * 100)))
+            {/* ----- Koot breakdown (bars) ----- */}
+            <section style={{ marginTop: "2rem" }}>
+              <h3>Koot Breakdown</h3>
+              <div style={{ display: "grid", gap: ".75rem" }}>
+                {KOOTS.map((k) => {
+                  const sec = result?.[k];
+                  const label = k.replace(/_/g, " ");
+                  if (!sec || typeof sec.score !== "number" || typeof sec.out_of !== "number" || sec.out_of === 0) {
                     return (
-                      <div key={k}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="capitalize text-base text-blue-900 dark:text-blue-100">{label}</span>
-                          <span className="text-sm text-blue-700 dark:text-blue-200/80 font-medium">{sec.score} / {sec.out_of}</span>
+                      <div key={k} style={{ opacity: .7 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ".25rem" }}>
+                          <span style={{ textTransform: "capitalize" }}>{label}</span>
+                          <span style={{ fontSize: ".875rem" }}>No data</span>
                         </div>
-                        <div className="h-2 rounded bg-blue-100 dark:bg-blue-950/50 overflow-hidden">
-                          <div className="h-full bg-cyan-500" style={{ width: pct + "%" }} />
-                        </div>
+                        <div style={{ height: ".5rem", background: "#e2e8f0", borderRadius: ".25rem" }} />
                       </div>
-                    )
-                  })}
-                </div>
-              </section>
-            </div>
+                    );
+                  }
+                  const pct = Math.round((sec.score / sec.out_of) * 100);
+                  return (
+                    <div key={k}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ".25rem" }}>
+                        <span style={{ textTransform: "capitalize" }}>{label}</span>
+                        <span style={{ fontSize: ".875rem", fontWeight: "500" }}>{sec.score} / {sec.out_of}</span>
+                      </div>
+                      <div style={{ height: ".5rem", background: "#e2e8f0", borderRadius: ".25rem", overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: "var(--c-cyan)", transition: "width .3s ease" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
 
-            {/* Charts */}
+            {/* ----- Charts ----- */}
             {mounted && (
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5 min-w-0">
-              {/* Bar chart of raw scores */}
-              <section className="rounded-xl border border-blue-200 bg-blue-50 p-4 min-w-0 dark:border-blue-800 dark:bg-blue-900/40">
-                <div className="text-sm text-neutral-400 mb-3">Koot Scores (Bar)</div>
-                {kootData.length > 0 ? (
-                  <div className="w-full flex justify-center">
-                    <div className="max-w-[400px]" style={{ width: BAR_W }}>
-                      <BarChart width={BAR_W} height={BAR_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                        <CartesianGrid stroke="#262626" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={36} />
-                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                        <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1F2937', color: '#E5E7EB' }} />
-                        <Bar dataKey="score" fill="#22D3EE" radius={[4, 4, 0, 0]} />
-                      </BarChart>
+              <div className="chart-section">
+                {/* Bar chart */}
+                <section className="chart-card">
+                  <div style={{ marginBottom: ".5rem", fontSize: ".875rem", color: "var(--c-muted)" }}>Koot Scores (Bar)</div>
+                  {kootData.length > 0 ? (
+                    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                      <div style={{ maxWidth: "400px", width: BAR_W }}>
+                        <BarChart width={BAR_W} height={BAR_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                          <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                          <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                          <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                          <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #475569", color: "#e2e8f0" }} />
+                          <Bar dataKey="score" fill="var(--c-cyan)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
                       </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-neutral-500">No chart data</div>
-                )}
-              </section>
+                    </div>
+                  ) : (
+                    <div style={{ color: "var(--c-muted)" }}>No chart data</div>
+                  )}
+                </section>
 
-              {/* Line chart of percentage contribution */}
-              <section className="rounded-xl border border-blue-200 bg-blue-50 p-4 min-w-0 dark:border-blue-800 dark:bg-blue-900/40">
-                <div className="text-sm text-neutral-400 mb-3">Koot Percentage (Line)</div>
-                {kootData.length > 0 ? (
-                  <div className="w-full flex justify-center">
-                    <div className="max-w-[400px]" style={{ width: LINE_W }}>
-                      <LineChart width={LINE_W} height={LINE_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                        <CartesianGrid stroke="#262626" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={36} />
-                        <YAxis tick={{ fill: '#9CA3AF', fontSize: 10 }} domain={[0, 100]} />
-                        <Tooltip contentStyle={{ background: '#111827', border: '1px solid #1F2937', color: '#E5E7EB' }} />
-                        <Line type="monotone" dataKey="pct" stroke="#A78BFA" strokeWidth={2} dot={false} />
-                      </LineChart>
+                {/* Line chart */}
+                <section className="chart-card">
+                  <div style={{ marginBottom: ".5rem", fontSize: ".875rem", color: "var(--c-muted)" }}>Koot Percentage (Line)</div>
+                  {kootData.length > 0 ? (
+                    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                      <div style={{ maxWidth: "400px", width: LINE_W }}>
+                        <LineChart width={LINE_W} height={LINE_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                          <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                          <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                          <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} />
+                          <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #475569", color: "#e2e8f0" }} />
+                          <Line type="monotone" dataKey="pct" stroke="#a78bfa" strokeWidth={2} dot={false} />
+                        </LineChart>
                       </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-neutral-500">No chart data</div>
-                )}
-              </section>
-            </div>
-            )}
-
-            {/* Individual Details */}
-            {(fDetails || mDetails) && (
-              <div className="mt-6 max-w-3xl mx-auto w-full flex items-center justify-center px-3 sm:px-5">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 w-full">
-                  <PersonDetails title="Female Details" d={fDetails} />
-                  <PersonDetails title="Male Details" d={mDetails} />
-                </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: "var(--c-muted)" }}>No chart data</div>
+                  )}
+                </section>
               </div>
             )}
 
-            {/* Footer actions */}
-            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-end">
-              <Button type="button" variant="outline" className="border-neutral-800 bg-neutral-900 text-neutral-200 hover:bg-neutral-800">
-                📄 Download PDF
-              </Button>
-              <Button type="button" className="bg-neutral-100 text-neutral-900 hover:bg-white">
-                🔗 Share
-              </Button>
+            {/* ----- Individual details ----- */}
+            {(fDetails || mDetails) && (
+              <div style={{ marginTop: "2rem", display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+                <PersonDetails title="Female Details" d={fDetails} />
+                <PersonDetails title="Male Details" d={mDetails} />
+              </div>
+            )}
+
+            {/* ----- Footer actions ----- */}
+            <div style={{ marginTop: "2rem", display: "flex", gap: ".75rem", justifyContent: "flex-end" }}>
+              <button className="btn btn-reset">Download PDF</button>
+              <button className="btn btn-submit">Share</button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
+        )}
+      </div>
+    </>
+  );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export default function MatchingPage() {
-//   return (
-//     <div className="max-w-4xl mx-auto p-6">
-//       <h1 className="text-2xl font-bold mb-2">Matching</h1>
-//       <p className="text-gray-600">This is a placeholder page for Matching.</p>
-//     </div>
-//   );
-// }

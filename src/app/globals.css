@@ -129,7 +129,130 @@ body {
   text-align: center;
 }
 
-.grid {
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  gap: 0.75rem;
+}
+
+/* globals.css – add this once */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 2147483646;
+  cursor: pointer;
+}
+
+.modal-container {
+  position: fixed;
+  z-index: 2147483647;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  outline: 1px solid rgba(59, 130, 246, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.modal-close-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: #f3f4f6;
+}
+
+.modal-close-btn:active {
+  transform: scale(0.95);
+}
+
+.modal-close-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.modal-close-icon {
+  width: 20px;
+  height: 20px;
+  stroke: #4b5563;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s ease;
+}
+
+.modal-close-btn:hover .modal-close-icon {
+  stroke: #111827;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-footer {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Ripple effect */
+.modal-close-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #e5e7eb;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-close-btn:active .modal-close-ripple {
+  opacity: 0.3;
+} 
+/* -------------------------------------------------
+   GRID LAYOUT (same as Tailwind grid-cols-1 md:grid-cols-12 gap-6)
+   ------------------------------------------------- */
+.form-grid {
   display: grid;
 }
 
@@ -717,3 +840,19 @@ select {
     }
   }
 }
+
+@media (max-width: 640px) {
+  .astrologer-auth-page {
+    padding: 1rem;
+  }
+
+  .astrologer-form-panel {
+    padding: 1.5rem;
+  }
+
+  .form-panel-title {
+    font-size: 1.25rem;
+  }
+}
+
+

@@ -265,6 +265,253 @@ const Navigation = () => {
             </div>
           </div>
         )}
+
+{/* Profile / Auth Modal – Using ONLY globals.css */}
+<Modal
+  open={showProfileModal}
+  onClose={() => setShowProfileModal(false)}
+  title={user ? 'My Profile' : (authTab === 'signin' ? 'Sign In' : 'Create Account')}
+  position={modalPosition}
+  topOffset={modalPosition === 'top-right' ? 80 : undefined}
+  className = "wider-modal"
+>
+  {user ? (
+    <form onSubmit={onSaveProfile} className="form">
+      <div className="form-group">
+        <label className="label">Full Name</label>
+        <input
+          className="input"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder="Your Name"
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="label">Email</label>
+        <input
+          className="input input-disabled"
+          value={user.email || ''}
+          disabled
+        />
+      </div>
+
+      {userProfile?.collection && (
+        <div className="form-group">
+          <label className="label">Role</label>
+          <input
+            className="input input-disabled capitalize"
+            value={userProfile.collection === 'astrologers' ? 'Astrologer' : 'User'}
+            disabled
+          />
+        </div>
+      )}
+
+      <div className="form-group">
+        <label className="label">Phone</label>
+        <input
+          className="input"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="+91 90000 00000"
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="label">Date of Birth</label>
+        <input
+          type="date"
+          className="input"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="label">Gender</label>
+        <select
+          className="input"
+          value={gender}
+          onChange={(e) => setGender(e.target.value)}
+        >
+          <option value="">Select</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label className="label">Location</label>
+        <input
+          className="input"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="City, Country"
+        />
+      </div>
+
+      <div className="form-actions">
+        <button type="submit" disabled={saving} className='btn submit-btn'>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" variant="outline" onClick={onSignOutClick} className='btn submit-btn'>
+          Sign Out
+        </button>
+      </div>
+    </form>
+  ) : (
+    <div className="auth-container">
+      {/* Tab Switcher */}
+      <div className="tab-switcher">
+        <button
+          type="button"
+          onClick={() => setAuthTab('signin')}
+          className={`tab ${authTab === 'signin' ? 'tab-active' : ''}`}
+        >
+          Sign In
+        </button>
+        <button
+          type="button"
+          onClick={() => setAuthTab('signup')}
+          className={`tab ${authTab === 'signup' ? 'tab-active' : ''}`}
+        >
+          Sign Up
+        </button>
+      </div>
+
+      {/* Error Message */}
+      {authError && (
+        <div className="alert alert-error">
+          {authError}
+        </div>
+      )}
+
+      {/* Google Sign-In */}
+      <button
+        type="button"
+        onClick={async () => {
+          setAuthError('');
+          try { await signInWithGoogle(); } 
+          catch (e) { setAuthError('Google sign-in failed'); console.error(e); }
+        }}
+        className="btn btn-google"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="icon-google">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36 16.8 36 11 30.2 11 23s5.8-13 13-13c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 12.3 2 3 11.3 3 23s9.3 21 21 21c10.5 0 20-7.6 20-21 0-1.7-.2-3.3-.4-4.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 15.5 2 8.2 6.7 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.1 0 9.8-1.9 13.4-5.1l-6.2-5.1C29 35.5 26.7 36 24 36c-5.2 0-9.6-3.6-11.3-8.5l-6.5 5C8.1 38.9 15.4 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3.1 5.3-5.9 6.8l6.2 5.1C38.6 37.8 42 31.6 42 23c0-1.7-.2-3.3-.4-4.5z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <div className="divider">
+        <span>or</span>
+      </div>
+
+      {/* Sign In / Sign Up Forms */}
+      {authTab === 'signin' ? (
+        <form onSubmit={handleSignIn} className="form">
+          <div className="form-group">
+            <label className="label">Email</label>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              className="input"
+            />
+          </div>
+
+          <div className="form-group password-group">
+            <label className="label">Password</label>
+            <input
+              name="password"
+              type={showPwSignin ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              required
+              className="input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPwSignin(v => !v)}
+              className="btn-icon"
+              aria-label={showPwSignin ? 'Hide password' : 'Show password'}
+            >
+              {showPwSignin ? <EyeOff className="icon" /> : <Eye className="icon" />}
+            </button>
+          </div>
+
+          <Button className="btn-full" type="submit" disabled={authSubmitting}>
+            {authSubmitting ? 'Signing In…' : 'Sign In'}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleSignUp} className="form">
+          <div className="form-group">
+            <label className="label">Full Name</label>
+            <input
+              name="name"
+              placeholder="Your name"
+              required
+              className="input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="label">Email</label>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+              className="input"
+            />
+          </div>
+
+          <div className="grid-2">
+            <div className="form-group password-group">
+              <label className="label">Password</label>
+              <input
+                name="password"
+                type={showPwSignup ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                required
+                className="input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwSignup(v => !v)}
+                className="btn-icon"
+                aria-label={showPwSignup ? 'Hide password' : 'Show password'}
+              >
+                {showPwSignup ? <EyeOff className="icon" /> : <Eye className="icon" />}
+              </button>
+            </div>
+
+            <div className="form-group password-group">
+              <label className="label">Confirm</label>
+              <input
+                name="confirm"
+                type={showPwConfirm ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                required
+                className="input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwConfirm(v => !v)}
+                className="btn-icon"
+                aria-label={showPwConfirm ? 'Hide password' : 'Show password'}
+              >
+                {showPwConfirm ? <EyeOff className="icon" /> : <Eye className="icon" />}
+              </button>
         {/* Profile Modal top-right */}
         <Modal
           open={showProfileModal}
@@ -455,8 +702,16 @@ const Navigation = () => {
                 </form>
               )}
             </div>
-          )}
-        </Modal>
+          </div>
+
+          <Button className="btn-full" type="submit" disabled={authSubmitting}>
+            {authSubmitting ? 'Creating…' : 'Create Account'}
+          </Button>
+        </form>
+      )}
+    </div>
+  )}
+</Modal>
       </div>
     </nav>
   )
