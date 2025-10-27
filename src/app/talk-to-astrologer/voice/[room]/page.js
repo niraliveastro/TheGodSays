@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { LiveKitRoom, AudioConference } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, PhoneOff, Mic, MicOff, Volume2 } from 'lucide-react'
+import { ArrowLeft, PhoneOff, Mic, MicOff, Volume2, Loader2 } from 'lucide-react'
 
 export default function VoiceCallRoom() {
   const params = useParams()
@@ -19,29 +18,15 @@ export default function VoiceCallRoom() {
 
   useEffect(() => {
     const initializeRoom = async () => {
-      // Get user info from localStorage (outside try block for error handling)
       const userRole = localStorage.getItem('tgs:role') || 'user'
       const userId = localStorage.getItem('tgs:userId')
       const astrologerId = localStorage.getItem('tgs:astrologerId')
       const isAstrologer = userRole === 'astrologer'
-      
+
       try {
         const roomName = params.room
-        console.log('Initializing voice room:', roomName)
-        
-        console.log('Voice room initialization:', {
-          roomName,
-          userRole,
-          userId,
-          astrologerId,
-          isAstrologer
-        })
+        if (!userId) throw new Error('User not authenticated')
 
-        if (!userId) {
-          throw new Error('User not authenticated - please log in again')
-        }
-
-        // Create participant identity based on role
         const participantId = isAstrologer ? `astrologer-${userId}` : `user-${userId}`
         const sessionAstrologerId = isAstrologer ? astrologerId : (astrologerId || 'user-session')
 
@@ -59,156 +44,115 @@ export default function VoiceCallRoom() {
         })
 
         if (!response.ok) {
-          const errorText = await response.text()
-          let errorData = { error: 'Unknown error' }
-          try {
-            errorData = JSON.parse(errorText)
-          } catch (e) {
-            errorData = { error: errorText }
-          }
-          console.error('LiveKit session creation failed:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorData,
-            roomName,
-            userRole,
-            userId,
-            isAstrologer,
-            participantId
-          })
-          throw new Error(`Session creation failed: ${errorData.error || 'Unknown error'}`)
+          const err = await response.text()
+          let data = { error: 'Unknown error' }
+          try { data = JSON.parse(err) } catch {}
+          throw new Error(data.error || 'Session failed')
         }
 
         const data = await response.json()
-        console.log('LiveKit session created successfully:', {
-          hasToken: !!data.token,
-          hasWsUrl: !!data.wsUrl,
-          roomName: data.roomName,
-          wsUrl: data.wsUrl,
-          isAstrologer,
-          userRole,
-          participantId
-        })
-
-        if (!data.token || !data.wsUrl) {
-          console.error('Invalid session data received:', {
-            hasToken: !!data.token,
-            hasWsUrl: !!data.wsUrl,
-            dataKeys: Object.keys(data),
-            roomName,
-            isAstrologer,
-            userRole,
-            participantId
-          })
-          throw new Error('Invalid session data received from server')
-        }
-
-        console.log('Session data validated successfully')
+        if (!data.token || !data.wsUrl) throw new Error('Invalid session data')
 
         setToken(data.token)
         setWsUrl(data.wsUrl)
       } catch (err) {
-        console.error('Error initializing voice room:', {
-          error: err.message,
-          roomName: params.room,
-          userRole,
-          userId,
-          isAstrologer
-        })
         setError(`Failed to join voice call: ${err.message}`)
       } finally {
         setLoading(false)
       }
     }
 
-    if (params.room) {
-      initializeRoom()
-    }
+    if (params.room) initializeRoom()
   }, [params.room])
 
   // Call duration timer
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1)
-    }, 1000)
-
+    const timer = setInterval(() => setCallDuration(p => p + 1), 1000)
     return () => clearInterval(timer)
   }, [])
 
   const handleDisconnect = () => {
-    console.log('Disconnecting from voice call:', {
-      hasToken: !!token,
-      hasWsUrl: !!wsUrl,
-      roomName: params.room
-    })
-    // Only redirect if we're actually disconnecting from an active call
-    // Don't redirect on initial load errors
     if (token && wsUrl) {
-      const userRole = localStorage.getItem('tgs:role')
-      const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-      console.log('Redirecting after disconnect to:', redirectPath)
-      router.push(redirectPath)
-    } else {
-      console.log('Not redirecting - no active session')
+      const role = localStorage.getItem('tgs:role')
+      const path = role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+      router.push(path)
     }
   }
 
-  const formatDuration = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  const formatDuration = (s) => {
+    const m = Math.floor(s / 60).toString().padStart(2, '0')
+    const sec = (s % 60).toString().padStart(2, '0')
+    return `${m}:${sec}`
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Connecting to voice call...</p>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Loader2 style={{
+            width: '3rem',
+            height: '3rem',
+            color: '#fbbf24',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
+          <p style={{ color: 'white', fontSize: '1.125rem' }}>
+            Connecting to voice call...
+          </p>
         </div>
       </div>
     )
   }
 
   if (error) {
-    console.error('Voice room error state:', {
-      error,
-      roomName: params.room,
-      hasToken: !!token,
-      hasWsUrl: !!wsUrl
-    })
-
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-400 text-6xl mb-4">🔇</div>
-          <h2 className="text-white text-xl font-semibold mb-2">Connection Failed</h2>
-          <p className="text-gray-300 mb-4">{error}</p>
-          <div className="space-y-2">
-            <Button
-              onClick={() => {
-                console.log('Retrying voice room connection...')
-                setError('')
-                setLoading(true)
-                setToken('')
-                setWsUrl('')
-                // Retry initialization
-                if (params.room) {
-                  window.location.reload()
-                }
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem'
+      }}>
+        <div style={{
+          maxWidth: '28rem',
+          background: 'rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '1rem',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>Muted</div>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            Connection Failed
+          </h2>
+          <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>{error}</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
             >
               Retry Connection
-            </Button>
-            <Button onClick={() => {
-              const userRole = localStorage.getItem('tgs:role')
-              const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-              router.push(redirectPath)
-            }} variant="outline" className="w-full">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            </button>
+            <button
+              onClick={() => {
+                const role = localStorage.getItem('tgs:role')
+                router.push(role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer')
+              }}
+              className="btn btn-outline"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              <ArrowLeft style={{ width: '1rem', height: '1rem' }} />
               Back
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -216,127 +160,138 @@ export default function VoiceCallRoom() {
   }
 
   if (!token || !wsUrl) {
-    console.log('Voice room waiting for token/wsUrl:', {
-      hasToken: !!token,
-      hasWsUrl: !!wsUrl,
-      roomName: params.room
-    })
-
-    // If we've been waiting too long, show an error
-    setTimeout(() => {
-      if (!token || !wsUrl) {
-        console.error('Timeout waiting for LiveKit session data')
-        setError('Connection timeout - please try again')
-      }
-    }, 10000)
-
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-yellow-400 text-6xl mb-4">⏳</div>
-          <h2 className="text-white text-xl font-semibold mb-2">Setting up Voice Call</h2>
-          <p className="text-gray-300 mb-4">Please wait while we connect you to the voice call...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>Hourglass</div>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            Setting up Voice Call
+          </h2>
+          <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+            Please wait while we connect you...
+          </p>
+          <Loader2 style={{
+            width: '2rem',
+            height: '2rem',
+            color: '#fbbf24',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }} />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)'
+    }}>
       {/* Header */}
-      <div className="bg-black bg-opacity-30 backdrop-blur-sm border-b border-white border-opacity-20 p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
+      <header style={{
+        background: 'rgba(0,0,0,0.3)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid rgba(255,255,255,0.2)',
+        padding: '1rem'
+      }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
               onClick={() => {
-                const userRole = localStorage.getItem('tgs:role')
-                const redirectPath = userRole === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-                router.push(redirectPath)
+                const role = localStorage.getItem('tgs:role')
+                router.push(role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer')
               }}
-              className="text-gray-300 hover:text-white"
+              className="btn btn-ghost"
+              style={{ color: '#d1d5db' }}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
               Back
-            </Button>
+            </button>
             <div>
-              <h1 className="text-white font-semibold">Voice Consultation</h1>
-              <p className="text-gray-300 text-sm">Duration: {formatDuration(callDuration)}</p>
+              <h1 style={{ color: 'white', fontWeight: 600 }}>Voice Consultation</h1>
+              <p style={{ color: '#d1d5db', fontSize: '0.875rem' }}>
+                Duration: {formatDuration(callDuration)}
+              </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
               onClick={() => setIsMuted(!isMuted)}
-              className={`text-gray-300 hover:text-white ${isMuted ? 'text-red-400' : ''}`}
+              className={`btn btn-ghost ${isMuted ? 'text-red-400' : 'text-gray-300'}`}
             >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </Button>
-            <Button
+              {isMuted ? <MicOff style={{ width: '1.25rem', height: '1.25rem' }} /> : <Mic style={{ width: '1.25rem', height: '1.25rem' }} />}
+            </button>
+            <button
               onClick={handleDisconnect}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="btn btn-danger"
             >
-              <PhoneOff className="w-4 h-4 mr-2" />
+              <PhoneOff style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
               End Call
-            </Button>
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Voice Conference */}
-      <div className="h-[calc(100vh-80px)] max-w-4xl mx-auto p-4">
-        <div className="bg-black bg-opacity-20 backdrop-blur-sm rounded-lg h-full flex flex-col">
-          {/* Audio Conference Component */}
-          <div className="flex-1 p-6">
+      <div style={{
+        height: 'calc(100vh - 80px)',
+        padding: '1rem',
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        <div className="card" style={{
+          width: '100%',
+          maxWidth: '64rem',
+          background: 'rgba(0,0,0,0.2)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: '1rem',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Audio Conference */}
+          <div style={{ flex: 1, padding: '1.5rem' }}>
             <LiveKitRoom
               serverUrl={wsUrl}
               token={token}
-              onDisconnected={(reason) => {
-                console.log('LiveKit room disconnected:', {
-                  reason,
-                  roomName: params.room
-                })
-                handleDisconnect()
-              }}
-              onError={(error) => {
-                console.error('LiveKit room error:', {
-                  code: error.code,
-                  message: error.message,
-                  roomName: params.room,
-                  hasToken: !!token,
-                  hasWsUrl: !!wsUrl
-                })
-                setError(`Voice call error: ${error.message}`)
-                // Don't auto-redirect on connection errors, let user manually disconnect
-              }}
-              onConnected={() => {
-                console.log('Successfully connected to LiveKit room:', {
-                  roomName: params.room
-                })
-                // Clear any previous errors when successfully connected
-                setError('')
-              }}
+              onDisconnected={handleDisconnect}
+              onError={(err) => setError(`Voice call error: ${err.message}`)}
+              onConnected={() => setError('')}
               style={{ height: '100%' }}
             >
               <AudioConference />
             </LiveKitRoom>
           </div>
 
-          {/* Voice Call Controls */}
-          <div className="border-t border-white border-opacity-20 p-4">
-            <div className="flex items-center justify-center space-x-6">
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Volume2 className="w-5 h-5" />
-                <span className="text-sm">Voice Call Active</span>
-              </div>
-              <div className="w-px h-6 bg-white bg-opacity-20"></div>
-              <div className="flex items-center space-x-2 text-gray-300">
-                <div className={`w-3 h-3 rounded-full ${isMuted ? 'bg-red-400' : 'bg-green-400'}`}></div>
-                <span className="text-sm">{isMuted ? 'Muted' : 'Unmuted'}</span>
-              </div>
+          {/* Controls */}
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.2)',
+            padding: '1rem',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '1.5rem',
+            color: '#d1d5db'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Volume2 style={{ width: '1.25rem', height: '1.25rem' }} />
+              <span style={{ fontSize: '0.875rem' }}>Voice Call Active</span>
+            </div>
+            <div style={{ width: '1px', height: '1.5rem', background: 'rgba(255,255,255,0.2)' }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{
+                width: '0.75rem',
+                height: '0.75rem',
+                borderRadius: '50%',
+                background: isMuted ? '#ef4444' : '#22c55e'
+              }}></div>
+              <span style={{ fontSize: '0.875rem' }}>{isMuted ? 'Muted' : 'Unmuted'}</span>
             </div>
           </div>
         </div>
