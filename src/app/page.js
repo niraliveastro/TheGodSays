@@ -829,56 +829,56 @@ export default function Home() {
 <div className="content-sections-wrapper">
   {/* DATE & LOCATION CARD */}
   <div className="date-location-card">
-    <DateSelector
-      selectedDate={selectedDate}
-      onDateChange={setSelectedDate}
-      userLocation={userLocation}
-      onLocationChange={setUserLocation}
-      pendingLocation={pendingLocation}
+          <DateSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            userLocation={userLocation}
+            onLocationChange={setUserLocation}
+            pendingLocation={pendingLocation}
       onPendingLocationChange={setPendingLocation}
-    />
-    {pendingLocation && (
+          />
+        {pendingLocation && (
       <button
-        onClick={() => {
+              onClick={() => {
           setUserLocation({ latitude: pendingLocation.latitude, longitude: pendingLocation.longitude })
-          setPendingLocation(null)
-        }}
+                setPendingLocation(null)
+              }}
         className="apply-location-btn"
       >
         <MapPin />
         Apply Selected Location
       </button>
-    )}
-  </div>
+        )}
+        </div>
 
   {/* LOADING STATE */}
-  {isLoadingPanchang && (
+        {isLoadingPanchang && (
     <div className="loading-container">
       <div className="loading-content">
         <div className="loading-spinner"></div>
         <span>Loading real-time cosmic data...</span>
-      </div>
+            </div>
       <p className="loading-text">Tithi • Nakshatra • Sunrise • Muhurta</p>
-    </div>
-  )}
+          </div>
+        )}
 
   {/* STATUS BANNERS */}
-  {panchangError && (
+        {panchangError && (
     <div className="status-banner status-banner-error">
       <p className="status-banner-text">{panchangError}</p>
-    </div>
-  )}
+          </div>
+        )}
 
-  {!isLoadingPanchang && !panchangError && userLocation && (
+        {!isLoadingPanchang && !panchangError && userLocation && (
     <div className="status-banner status-banner-success">
       <p className="status-banner-text">
         Real-time Panchang loaded for your location
-      </p>
+            </p>
       <p className="status-banner-subtext">
         Powered by Vedic API • Sun/Moon via IPGeolocation
-      </p>
-    </div>
-  )}
+            </p>
+          </div>
+        )}
 
 {/* PANCHANG GRID */}
 <section className="panchang-section" id="panchang-section">
@@ -889,16 +889,16 @@ export default function Home() {
     </div>
     <h2 className="section-header">
       <Calendar className="section-icon section-icon-blue" />
-      {selectedDate === new Date().toISOString().split('T')[0]
-        ? "Today's Panchang"
+            {selectedDate === new Date().toISOString().split('T')[0] 
+              ? "Today's Panchang" 
         : `Panchang • ${new Date(selectedDate).toLocaleDateString('en-US', {
             weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          })}`
-      }
-    </h2>
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}`
+            }
+          </h2>
     <p className="panchang-description">
       Essential celestial elements for auspicious planning
     </p>
@@ -908,10 +908,10 @@ export default function Home() {
     <div className="panchang-grid">
       {panchangItems.map((item, i) => (
         <PanchangCard key={i} label={item.label} value={item.value} />
-      ))}
-    </div>
+            ))}
+          </div>
   </div>
-</section>
+        </section>
 
 {/* AUSPICIOUS / INAUSPICIOUS TIMINGS */}
 <section className="timings-section">
@@ -925,7 +925,7 @@ export default function Home() {
         <h2 className="section-header">
           <Clock className="section-icon section-icon-red" />
           Auspicious & Inauspicious Periods
-        </h2>
+          </h2>
         <p className="timings-description">
           Plan your day with precise Vedic time calculations
         </p>
@@ -944,13 +944,13 @@ export default function Home() {
     </div>
     
     <div className="timings-content">
-      <TimingsSection timings={inauspiciousTimings} />
+          <TimingsSection timings={inauspiciousTimings} />
     </div>
   </div>
-</section>
+        </section>
 
 {/* FESTIVAL HIGHLIGHT */}
-{panchangData.festivals.length > 0 && (
+        {panchangData.festivals.length > 0 && (
   <section className="festival-section-enhanced">
     <div className="festival-content-grid">
       <div className="festival-left">
@@ -965,12 +965,12 @@ export default function Home() {
       </div>
       <div className="festival-right">
         <div className="festival-card-wrapper">
-          <FestivalCard festival={panchangData.festivals[0]} />
+            <FestivalCard festival={panchangData.festivals[0]} />
         </div>
       </div>
     </div>
-  </section>
-)}
+          </section>
+        )}
 
   {/* ASTROLOGY OPTIONS GRID */}
   <section className="astrology-section" id="astrology-options">
@@ -978,21 +978,21 @@ export default function Home() {
       <h2 className="astrology-title">
         <Star />
         Explore Vedic Calculations
-      </h2>
+            </h2>
       <p className="astrology-subtitle">
         Tap any tool to compute detailed astrological insights
       </p>
-    </div>
+          </div>
     <div className="astrology-grid">
-      {astrologyOptions.map((option) => (
-        <AstrologyOptionCard
-          key={option.id}
-          option={option}
-          onClick={handleOptionClick}
-        />
-      ))}
-    </div>
-  </section>
+            {astrologyOptions.map((option) => (
+              <AstrologyOptionCard
+                key={option.id}
+                option={option}
+                onClick={handleOptionClick}
+              />
+            ))}
+          </div>
+        </section>
 </div>
 
           {/* FOOTER */}
@@ -1004,9 +1004,9 @@ export default function Home() {
             <p className="text-xs text-gray-400 mt-1">
               Vedic wisdom meets modern precision
             </p>
-          </footer>
-        </main>
-      </div>
+        </footer>
+      </main>
+    </div>
 
       {/* FORM VIEW */}
       {selectedOption && !astrologyResult && (

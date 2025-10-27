@@ -51,7 +51,7 @@ export default function AstrologerAuth() {
           languages: formData.languages.split(',').map(l => l.trim()),
           role: 'astrologer',
           status: 'offline',
-          rating: 4.5,
+          rating: 0,
           reviews: 0,
           verified: false,
           isOnline: false,
@@ -62,11 +62,14 @@ export default function AstrologerAuth() {
         await fetch('/api/astrologer/status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ astrologerId: user.uid, action: 'set-offline' })
+          body: JSON.stringify({
+            astrologerId: user.uid,
+            action: 'set-offline'
+          })
         })
-
-        if (typeof window !== 'undefined')
-          localStorage.setItem('tgs:role', 'astrologer')
+        
+        // Persist role in localStorage so returning to the site redirects to dashboard
+        try { if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') } catch (e) {}
         router.push('/astrologer-dashboard')
       }
     } catch (err) {
@@ -77,14 +80,14 @@ export default function AstrologerAuth() {
   const handleGoogleAuth = async () => {
     try {
       const result = await signInWithGoogle()
-
+      
       if (!result.profile) {
         await setDoc(doc(db, 'astrologers', result.user.uid), {
           name: result.user.displayName,
           email: result.user.email,
           role: 'astrologer',
           status: 'offline',
-          rating: 4.5,
+          rating: 0,
           reviews: 0,
           verified: false,
           isOnline: false,
@@ -94,8 +97,7 @@ export default function AstrologerAuth() {
           bio: 'Experienced astrologer providing guidance and insights.',
           createdAt: new Date().toISOString()
         })
-        if (typeof window !== 'undefined')
-          localStorage.setItem('tgs:role', 'astrologer')
+        try { if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') } catch (e) {}
         router.push('/astrologer-dashboard')
       } else {
         if (result.profile.collection === 'astrologers') {
