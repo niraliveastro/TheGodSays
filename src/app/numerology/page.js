@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Calculator, User, Calendar, Save, Trash2 } from 'lucide-react'
+import { 
+  Calculator,
+  User,
+  Calendar,
+  Save,
+  Trash2
+} from 'lucide-react'
 import './numerology.css'
 
 export default function NumerologyPage() {
