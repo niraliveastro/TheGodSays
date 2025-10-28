@@ -15,6 +15,8 @@ import {
   EyeOff,
   Phone,
   Wallet,
+  ChevronDown,
+  MoreHorizontal,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,12 +47,38 @@ const Navigation = () => {
   const [showPwSignin, setShowPwSignin] = useState(false);
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
 
+  // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
     if (user && showProfileModal) {
       setModalPosition("top-right");
     }
   }, [user, showProfileModal]);
+
+  // Close more dropdown when mobile menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowMoreDropdown(false);
+    }
+  }, [isOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMoreDropdown && !event.target.closest("[data-dropdown-container]")) {
+        setShowMoreDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [showMoreDropdown]);
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -59,16 +87,26 @@ const Navigation = () => {
     { href: "/predictions", label: "Predictions", icon: Star },
     { href: "/talk-to-astrologer", label: "Talk to Astrologer", icon: Phone },
     { href: "/wallet", label: "Wallet", icon: Wallet },
+    {
+      href: null,
+      label: "More",
+      icon: MoreHorizontal,
+      children: [
+        { href: "/numerology", label: "Numerology" },
+        { href: "/transit", label: "Transit" },
+      ],
+    },
     { href: "/account", label: "My Account", icon: User },
   ];
-
-  console.log("User profile:", userProfile);
-  console.log("User role:", userProfile?.role);
 
   const filteredNavItems =
     userProfile?.collection === "astrologers"
       ? [{ href: "/account", label: "My Account", icon: User }]
       : navItems;
+
+  console.log("User profile:", userProfile);
+  console.log("User role:", userProfile?.role);
+  console.log("Filtered nav items:", filteredNavItems);
 
   async function handleAccountClick() {
     if (user) {
@@ -197,13 +235,10 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="nav-desktop">
-            {(userProfile?.collection === "astrologers" ||
-            pathname === "/astrologer-dashboard"
-              ? [{ href: "/account", label: "My Account", icon: User }]
-              : navItems
-            ).map((item) => {
-              const Icon = item.icon;
-              if (item.href === "/account") {
+            {filteredNavItems.map((item) => {
+              const Icon = item.icon
+              
+              if (item.href === '/account') {
                 return (
                   <button
                     type="button"
@@ -218,6 +253,50 @@ const Navigation = () => {
                   </button>
                 );
               }
+
+              // Handle dropdown menu (More) 
+              if (item.children) {
+                const isActive = item.children.some(child => pathname === child.href)
+                return (
+                  <div 
+                    key={item.label} 
+                    className="nav-dropdown"
+                    data-dropdown-container
+                    onMouseEnter={() => setShowMoreDropdown(true)}
+                    onMouseLeave={() => setShowMoreDropdown(false)}
+                  >
+                    <button
+                      className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
+                      onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                    >
+                      <Icon />
+                      <span>{item.label}</span>
+                    </button>
+                    
+                    {showMoreDropdown && (
+                      <>
+                        <div className="nav-dropdown-bridge"></div>
+                        <div className="nav-dropdown-menu">
+                          <div className="nav-dropdown-content">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`nav-dropdown-item ${
+                                  pathname === child.href ? 'active' : ''
+                                }`}
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -243,13 +322,10 @@ const Navigation = () => {
         {isOpen && (
           <div className="nav-mobile-menu">
             <div className="nav-mobile-menu-content">
-              {(userProfile?.collection === "astrologers" ||
-              pathname === "/astrologer-dashboard"
-                ? [{ href: "/account", label: "My Account", icon: User }]
-                : navItems
-              ).map((item) => {
-                const Icon = item.icon;
-                if (item.href === "/account") {
+              {filteredNavItems.map((item) => {
+                const Icon = item.icon
+                
+                if (item.href === '/account') {
                   return (
                     <button
                       type="button"
@@ -267,6 +343,49 @@ const Navigation = () => {
                     </button>
                   );
                 }
+
+                // Handle dropdown menu (More) in mobile
+                if (item.children) {
+                  const isActive = item.children.some(child => pathname === child.href)
+                  return (
+                    <div key={item.label} data-dropdown-container>
+                      {/* More button */}
+                      <button
+                        type="button"
+                        className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
+                        onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                      >
+                        <div className="flex items-center">
+                          <Icon />
+                          <span style={{ marginLeft: '0.5rem' }}>{item.label}</span>
+                        </div>
+                        <ChevronDown className={`chevron-icon ${showMoreDropdown ? 'rotated' : ''}`} />
+                      </button>
+                      
+                      {/* Expandable children */}
+                      {showMoreDropdown && (
+                        <div className="nav-mobile-dropdown-content">
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={`nav-mobile-dropdown-item ${
+                                pathname === child.href ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                setIsOpen(false)
+                                setShowMoreDropdown(false)
+                              }}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
                 return (
                   <Link
                     key={item.href}
