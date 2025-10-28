@@ -94,6 +94,7 @@ const Navigation = () => {
       children: [
         { href: "/numerology", label: "Numerology" },
         { href: "/transit", label: "Transit" },
+        { href: "/cosmic-event-tracker", label: "Cosmic Event Tracker" },
       ],
     },
     { href: "/account", label: "My Account", icon: User },

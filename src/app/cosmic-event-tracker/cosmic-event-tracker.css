@@ -1,0 +1,958 @@
+﻿/* =================================
+   Page Container & Layout
+   ================================= */
+
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 3rem;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Card Base Style */
+.card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 0 0 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.card:hover {
+  transform: none;
+}
+
+/* =================================
+   Header
+   ================================= */
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  padding: 2rem 0 2rem 0;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+}
+
+.header-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+}
+
+.header-icon {
+  width: 36px;
+  height: 36px;
+  color: white;
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+.page-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* =================================
+   Controls & Forms
+   ================================= */
+
+.controls-card {
+  margin-bottom: 2.5rem;
+}
+
+.controls-card:hover {
+  transform: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.control-group:hover {
+  transform: none;
+}
+
+.control-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.control-label svg {
+  color: #d4af37;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: none;
+}
+
+.checkbox-label:hover {
+  transform: none;
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.checkbox-input:hover {
+  transform: none;
+  outline: none;
+}
+
+.checkbox-text {
+  font-size: 0.9375rem;
+  color: #374151;
+  transition: none;
+}
+
+.checkbox-text:hover {
+  transform: none;
+}
+
+.select-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.9375rem;
+  color: #374151;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.select-input:hover {
+  border-color: #d4af37;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.selection-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+  border: 2px solid #4f46e5;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4f46e5;
+  white-space: nowrap;
+}
+
+.selection-badge svg {
+  color: #d4af37;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* =================================
+   Period Cards
+   ================================= */
+
+.period-card {
+  margin-bottom: 2.5rem;
+}
+
+.period-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.period-icon {
+  color: #d4af37;
+  width: 28px;
+  height: 28px;
+}
+
+.section-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.period-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.period-date-range {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #4f46e5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  flex: 0 0 auto;
+}
+
+.period-stats {
+  display: flex;
+  gap: 3rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-item svg {
+  color: #d4af37;
+  width: 20px;
+  height: 20px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #4f46e5;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* =================================
+   Alerts
+   ================================= */
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  font-size: 0.9375rem;
+}
+
+.alert svg {
+  flex-shrink: 0;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  color: #991b1b;
+}
+
+.alert-error svg {
+  color: #dc2626;
+}
+
+.alert-warning {
+  background: #fffbeb;
+  border: 2px solid #fde68a;
+  color: #92400e;
+}
+
+.alert-warning svg {
+  color: #f59e0b;
+}
+
+/* =================================
+   NEO Grid & Cards
+   ================================= */
+
+.neo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 2rem;
+  margin: 2.5rem 0;
+  padding: 0;
+}
+
+.neo-card {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  padding: 2rem;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.neo-card.selected {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(124, 58, 237, 0.05));
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2), 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.neo-card.hazardous {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.neo-card.hazardous.selected {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2), 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.hazard-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.neo-name {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  padding-right: 120px;
+}
+
+.neo-id {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  font-family: monospace;
+}
+
+.neo-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: rgba(249, 250, 251, 0.6);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.detail-row:hover {
+  background: rgba(239, 246, 255, 0.8);
+}
+
+.detail-icon-wrapper {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.detail-icon-wrapper svg {
+  color: #d4af37;
+  width: 16px;
+  height: 16px;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 0.9375rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.neo-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* =================================
+   Buttons
+   ================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 6px 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary {
+  background: white;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #b8960f, #d4af37);
+  color: white;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+.btn-gold:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4);
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* =================================
+   Empty State
+   ================================= */
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin: 2.5rem 0;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin: 0 auto 1.5rem;
+}
+
+.empty-state h3 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.5rem;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* =================================
+   Load More
+   ================================= */
+
+.load-more-section {
+  display: flex;
+  justify-content: center;
+  margin: 3rem 0;
+  padding: 2rem 0;
+}
+
+/* =================================
+   Modal
+   ================================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-dialog {
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  padding: 2.5rem;
+  margin: 1rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+  margin-bottom: 2rem;
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.modal-icon {
+  width: 32px;
+  height: 32px;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.modal-close-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modal-section .section-title {
+  font-size: 1.25rem;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-section .section-title::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 9999px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(249, 250, 251, 0.8);
+  border-radius: 8px;
+  border-left: 3px solid #d4af37;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 1.125rem;
+  color: #111827;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.comparison-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.comparison-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+  border: 2px solid rgba(79, 70, 229, 0.2);
+  border-radius: 12px;
+}
+
+.comparison-icon {
+  width: 32px;
+  height: 32px;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.comparison-label {
+  font-size: 0.8125rem;
+  color: #4f46e5;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.comparison-text {
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-actions {
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+/* =================================
+   Loading State
+   ================================= */
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 2rem;
+}
+
+.loading-spinner {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 9999px;
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.loading-icon {
+  width: 48px;
+  height: 48px;
+  color: white;
+  animation: float 3s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: 1.125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* =================================
+   Animations
+   ================================= */
+
+@keyframes sparkle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(10deg); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =================================
+   Responsive Design
+   ================================= */
+
+/* Large screens - ensure proper centering */
+@media (min-width: 1400px) {
+  .page-container {
+    padding: 4rem 6rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 2rem 1.25rem;
+    margin: 0;
+  }
+
+  .page-header {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 0 2rem 0;
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .controls-card {
+    margin-bottom: 2rem;
+  }
+
+  .period-card {
+    margin-bottom: 2rem;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .period-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .period-stats {
+    gap: 2rem;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .neo-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .neo-card {
+    padding: 1.5rem;
+  }
+
+  .neo-name {
+    padding-right: 0;
+    margin-top: 48px;
+  }
+
+  .hazard-badge {
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+  }
+
+  .neo-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-overlay {
+    padding: 1rem;
+  }
+
+  .modal-dialog {
+    padding: 1.5rem;
+    margin: 0.5rem;
+  }
+
+  .load-more-section {
+    margin: 2rem 0;
+    padding: 1.5rem 0;
+  }
+}
