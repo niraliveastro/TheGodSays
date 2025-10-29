@@ -395,7 +395,7 @@ export default function TransitPage() {
                           </div>
                         </div>
                       </div>
-                      <div style={{padding: '0 1.75rem 1.5rem'}}>
+                      <div className="cardBody info-section">
                         <div className="infoRow">
                           <span className="infoLabel">Current Sign</span>
                           <span className="infoValue">{venusTransit?.currentSign || 'Moving'}</span>
@@ -442,7 +442,7 @@ export default function TransitPage() {
                           </div>
                         </div>
                       </div>
-                      <div style={{padding: '0 1.75rem 1.5rem'}}>
+                      <div className="cardBody info-section">
                         <div className="infoRow">
                           <span className="infoLabel">Current Sign</span>
                           <span className="infoValue">{moonTransit?.currentSign || 'Moving'}</span>
@@ -508,7 +508,7 @@ export default function TransitPage() {
                           )}
                         </div>
                       </div>
-                      <div style={{padding: '0 1.75rem 1.5rem'}}>
+                      <div className="cardBody info-section">
                         <div className="infoRow">
                           <span className="infoLabel">Duration</span>
                           <span className="infoValue">{transit.duration}</span>
@@ -624,7 +624,7 @@ export default function TransitPage() {
                               <p className="desc">{selectedPlanet} enters {transit.sign}</p>
                             </div>
                           </div>
-                          <div style={{padding: '0 1.75rem 1.5rem'}}>
+                          <div className="cardBody info-section">
                             <div className="infoRow">
                               <span className="infoLabel">Date</span>
                               <span className="infoValue">
