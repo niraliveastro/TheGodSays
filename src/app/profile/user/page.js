@@ -15,9 +15,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { user: authUser, signOut } = useAuth()
 
   /* --------------------------------------------------------------- */
   /*  State                                                          */
@@ -102,6 +104,15 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/auth/user')
+    } catch (e) {
+      console.error('Sign out error:', e)
+    }
+  }
+
   /* --------------------------------------------------------------- */
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
@@ -134,7 +145,7 @@ export default function ProfilePage() {
             </p>
           </header>
 
-          <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: '1fr', '@media (min-width: 768px)': { gridTemplateColumns: '1fr 1fr' } }}>
+          <div className="profile-grid">
             {/* Left: Profile Card */}
             <div className="card" style={{ padding: '2rem', position: 'relative' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
@@ -199,14 +210,23 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <Button
-                onClick={() => setIsEditModalOpen(true)}
-                className="btn btn-outline"
-                style={{ marginTop: '1.5rem', width: '100%', height: '3rem', fontSize: '1rem' }}
-              >
-                <Edit2 style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
-                Edit Profile
-              </Button>
+              <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <Button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="btn btn-outline"
+                  style={{ width: '100%', height: '3rem', fontSize: '1rem' }}
+                >
+                  <Edit2 style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
+                  Edit Profile
+                </Button>
+                <Button
+                  onClick={handleSignOut}
+                  variant="outline"
+                  style={{ width: '100%', height: '3rem', fontSize: '1rem', color: '#dc2626', borderColor: '#dc2626' }}
+                >
+                  Sign Out
+                </Button>
+              </div>
             </div>
 
             {/* Right: Wallet + Stats */}
@@ -423,6 +443,18 @@ export default function ProfilePage() {
 
       {/* Local Animations */}
       <style jsx>{`
+        .profile-grid {
+          display: grid;
+          gap: 2rem;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 768px) {
+          .profile-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        
         @keyframes spin {
           to { transform: rotate(360deg); }
         }

@@ -15,11 +15,13 @@ export default function AstrologerRedirect() {
     const persistedRole = typeof window !== 'undefined' ? localStorage.getItem('tgs:role') : null
     const isAstrologer = userProfile?.collection === 'astrologers' || persistedRole === 'astrologer'
 
-    // Allow astrologers to access video and voice call rooms, their dashboard, and auth pages
+    // Allow astrologers to access video and voice call rooms, their dashboard, profile, and auth pages
     const allowedPaths = [
       '/astrologer-dashboard',
       '/talk-to-astrologer/room/',
       '/talk-to-astrologer/voice/',
+      '/profile/astrology',
+      '/account',
       '/auth'
     ]
     const isAllowedPath = allowedPaths.some(path => pathname === path || pathname.startsWith(path))
