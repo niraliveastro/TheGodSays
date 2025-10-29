@@ -104,4 +104,3 @@ export const mockCalendarData = {
     { date: 30, tithi: "Tritiya", festival: null, isToday: false }
   ]
 };
-

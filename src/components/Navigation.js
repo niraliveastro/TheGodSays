@@ -94,7 +94,6 @@ const Navigation = () => {
       children: [
         { href: "/numerology", label: "Numerology" },
         { href: "/transit", label: "Transit" },
-        { href: "/cosmic-event-tracker", label: "Cosmic Event Tracker" },
       ],
     },
     { href: "/account", label: "My Account", icon: User },
@@ -111,23 +110,15 @@ const Navigation = () => {
 
   async function handleAccountClick() {
     if (user) {
-      setDisplayName(user.displayName || "");
-      setModalPosition("top-right");
-      setShowProfileModal(true);
+      // Redirect based on user type
       try {
-        const collection =
-          userProfile?.collection === "astrologers" ? "astrologers" : "users";
-        const ref = doc(db, collection, user.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          const data = snap.data() || {};
-          setPhone(data.phone || "");
-          setDob(data.dob || "");
-          setGender(data.gender || "");
-          setLocation(data.location || "");
+        if (userProfile?.collection === "astrologers") {
+          router.push("/profile/astrology");
+        } else {
+          router.push("/profile/user");
         }
       } catch (e) {
-        console.warn("Failed to load user profile", e);
+        console.error("Failed to navigate to profile page:", e);
       }
     } else {
       router.push("/auth");
