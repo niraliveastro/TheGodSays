@@ -77,11 +77,50 @@
   }
 }
 
+/* ---------- Two Column Layout ---------- */
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .two-column-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .outer-vehicle-section {
+    position: static;
+  }
+}
+
+.left-column-form {
+  width: 100%;
+}
+
+.right-column-outer-vehicle {
+  width: 100%;
+}
+
+.outer-vehicle-section {
+  position: sticky;
+  top: 2rem;
+}
+
+.grid-2-vertical {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
 /* ---------- Form Section ---------- */
 .form-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 3rem;
+  margin-bottom: 0;
 }
 
 .form-wrapper {
@@ -118,7 +157,7 @@
 .form-header {
   text-align: center;
   margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  padding-bottom: .5rem;
   border-bottom: 1px solid var(--color-gray-200);
 }
 
@@ -140,13 +179,6 @@
   font-weight: 600;
   color: var(--color-gray-900);
   margin-bottom: 0.25rem;
-}
-
-.form-header-subtitle {
-  font-size: 0.875rem;
-  color: var(--color-gray-600);
-  font-weight: 400;
-  font-style: normal;
 }
 
 /* ---------- Input Styles ---------- */
@@ -256,7 +288,7 @@
 
 .info-box {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding-top: 1rem;
   background: var(--color-indigo-light);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-gray-200);
@@ -1008,3 +1040,79 @@
 .font-bold { font-weight: 700; font-style: normal !important; }
 .font-semibold { font-weight: 600; font-style: normal !important; }
 .font-medium { font-weight: 500; font-style: normal !important; }
+
+/* ---------- Responsive Design ---------- */
+@media (max-width: 768px) {
+  .numerology-container {
+    padding: 2rem 1rem;
+  }
+  
+  .numerology-title {
+    font-size: 2rem;
+  }
+  
+  .numerology-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  .two-column-layout {
+    gap: 1.5rem;
+  }
+  
+  .form-card {
+    padding: 1.5rem;
+  }
+  
+  .result-card {
+    padding: 1.5rem;
+  }
+  
+  .grid-2,
+  .grid-2-vertical {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .card-value {
+    font-size: 2rem;
+  }
+  
+  .composite-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .history-table {
+    font-size: 0.75rem;
+  }
+  
+  .history-name {
+    max-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .numerology-container {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .numerology-title {
+    font-size: 1.5rem;
+  }
+  
+  .form-header-title {
+    font-size: 1.25rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+  }
+  
+  .input-field {
+    font-size: 0.875rem;
+  }
+  
+  .save-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}

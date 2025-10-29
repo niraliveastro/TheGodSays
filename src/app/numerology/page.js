@@ -269,24 +269,27 @@ export default function NumerologyPage() {
           </p>
         </header>
 
-        {/* Form Section - Centered */}
-        <div className="form-container">
-          <div className="form-wrapper">
-            <div className="form-card">
-              {/* Form Header */}
-              <div className="form-header">
-                <div className="form-icon-circle">
-                  <Calculator className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="form-header-title">Your Details</h3>
-                <p className="form-header-subtitle">Enter your information below</p>
-              </div>
+        {/* Two Column Layout: Form (65%) + Outer Vehicle (35%) */}
+        <div className="two-column-layout">
+          {/* LEFT COLUMN - Form Section (65%) */}
+          <div className="left-column-form">
+            <div className="form-container">
+              <div className="form-wrapper">
+                <div className="form-card">
+                  {/* Form Header */}
+                  <div className="form-header">
+                    <div className="form-icon-circle">
+                      <Calculator className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="form-header-title">Enter Your Details</h3>
+                  </div>
 
               {/* Full Name Input */}
               <div className="input-group">
                 <label htmlFor="fullName" className="input-label">
                   <User className="w-4 h-4 input-label-icon" style={{color: '#d97706'}} />
                   Full Birth Name
+                  <span className="required-badge">*Required</span>
                 </label>
                 <input
                   id="fullName"
@@ -328,48 +331,55 @@ export default function NumerologyPage() {
               {/* Info Text */}
               <div className="info-box">
                 <p className="info-text">
-                  💡 Your calculation will be saved for comparison in the history table below
+                  💡 Your calculation will be saved in the history table below
                 </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      {/* End LEFT COLUMN */}
 
-        {/* Results Section */}
+      {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
+      <div className="right-column-outer-vehicle">
+        <section className="results-section outer-vehicle-section">
+          <h2 className="section-title outer-vehicle">
+            Outer Vehicle: Chaldean Vibration & Manifestation
+          </h2>
+          <div className="grid-2-vertical">
+            <div className="result-card blue center">
+              <p className="card-label text-blue-600">
+                Pythagorean Total (Raw = Reduced)
+              </p>
+              <p className="card-value text-blue-700">
+                {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+              </p>
+              <p className="card-description">
+                Raw sum and its reduced digit used for Destiny.
+              </p>
+            </div>
+            <div className="result-card yellow center">
+              <p className="card-label text-yellow-600">
+                Chaldean Total (Raw = Reduced)
+              </p>
+              <p className="card-value text-yellow-700">
+                {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+              </p>
+              <p className="card-description">
+                Esoteric vibration used in composite scoring.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+      {/* End RIGHT COLUMN */}
+    </div>
+    {/* End Two Column Layout */}
+
+        {/* Results Section - Full Width Below */}
         <div className="space-y-12">
-          {/* 1) Outer Vehicle FIRST */}
+          {/* Inner Engine */}
           <section className="results-section">
-              <h2 className="section-title outer-vehicle">
-                Outer Vehicle: Chaldean Vibration & Manifestation
-              </h2>
-              <div className="grid-2">
-                <div className="result-card blue center">
-                  <p className="card-label text-blue-600">
-                    Pythagorean Total (Raw = Reduced)
-                  </p>
-                  <p className="card-value text-blue-700">
-                    {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
-                  </p>
-                  <p className="card-description">
-                    Raw sum and its reduced digit used for Destiny.
-                  </p>
-                </div>
-                <div className="result-card yellow center">
-                  <p className="card-label text-yellow-600">
-                    Chaldean Total (Raw = Reduced)
-                  </p>
-                  <p className="card-value text-yellow-700">
-                    {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
-                  </p>
-                  <p className="card-description">
-                    Esoteric vibration used in composite scoring.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* 2) Inner Engine */}
-            <section className="results-section">
               <h2 className="section-title inner-engine">
                 Inner Engine (Pythagorean): Purpose & Psychology
               </h2>
@@ -672,9 +682,12 @@ export default function NumerologyPage() {
                 6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
               </p>
             </footer>
+          </div>
+          {/* End space-y-12 */}
         </div>
+        {/* End numerology-content */}
       </div>
-    </div>
-  )
-}
+      )
+{/* End numerology-container */}
+  }
     
