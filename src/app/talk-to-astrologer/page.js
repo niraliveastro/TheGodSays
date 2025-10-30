@@ -18,6 +18,7 @@ import { db } from '@/lib/firebase'
 import CallConnectingNotification from '@/components/CallConnectingNotification'
 import Modal from '@/components/Modal'
 import ReviewModal from '@/components/ReviewModal'
+import Link from 'next/link'
 
 export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
@@ -467,7 +468,6 @@ export default function TalkToAstrologer() {
             </div>
           )}
 
-{/* Astrologer cards – 2 per row */}
 {!fetchingAstrologers && filteredAstrologers.length > 0 && (
   <div
     style={{
@@ -478,9 +478,10 @@ export default function TalkToAstrologer() {
     }}
   >
     {filteredAstrologers.map((a) => (
-      <div
+      <Link
+        href={`/account/astrologer/${a.id}`}
         key={a.id}
-        className="card"
+        className="card group"
         style={{
           padding: '1.5rem',
           transition: 'var(--transition-smooth)',
@@ -488,6 +489,9 @@ export default function TalkToAstrologer() {
           minWidth: '22rem',
           display: 'flex',
           flexDirection: 'column',
+          position: 'relative',
+          textDecoration: 'none',
+          color: 'inherit',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-4px)'
@@ -499,7 +503,7 @@ export default function TalkToAstrologer() {
         }}
       >
         {/* Top Row: Avatar + Name + Spec + Rating */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
           {/* Avatar + Online */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div
@@ -533,7 +537,7 @@ export default function TalkToAstrologer() {
             />
           </div>
 
-          {/* Name, Spec, Rating – All in one line */}
+          {/* Name, Spec, Rating */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -567,7 +571,6 @@ export default function TalkToAstrologer() {
                 </p>
               </div>
 
-              {/* Rating + Reviews Count */}
               <div
                 style={{
                   display: 'flex',
@@ -588,7 +591,6 @@ export default function TalkToAstrologer() {
               </div>
             </div>
 
-            {/* Verified Badge */}
             {a.verified && (
               <div
                 style={{
@@ -611,21 +613,19 @@ export default function TalkToAstrologer() {
           </div>
         </div>
 
-        {/* Experience */}
-        <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.75rem' }}>
+        {/* Rest of content */}
+        <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
           {a.experience}
         </p>
 
-        {/* Price */}
         {a.perMinuteCharge && (
-          <div style={{ marginBottom: '0.75rem' }}>
+          <div style={{ marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
             <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669' }}>
               ₹{a.perMinuteCharge}/min
             </span>
           </div>
         )}
 
-        {/* Bio */}
         <p
           style={{
             fontSize: '0.875rem',
@@ -635,13 +635,14 @@ export default function TalkToAstrologer() {
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            position: 'relative',
+            zIndex: 20,
           }}
         >
           {a.bio}
         </p>
 
-        {/* Languages */}
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gray-500)', marginBottom: '0.5rem' }}>
             Speaks:
           </p>
@@ -664,10 +665,14 @@ export default function TalkToAstrologer() {
           </div>
         </div>
 
-        {/* Action buttons – Review stays here */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
+        {/* Action buttons – Prevent click bubbling */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto', position: 'relative', zIndex: 30 }}>
           <Button
-            onClick={() => handleVideoCall(a.id)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleVideoCall(a.id)
+            }}
             disabled={!a.isOnline || loading}
             className="btn btn-primary"
             style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
@@ -681,7 +686,11 @@ export default function TalkToAstrologer() {
           </Button>
 
           <Button
-            onClick={() => handleVoiceCall(a.id)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleVoiceCall(a.id)
+            }}
             disabled={!a.isOnline || loading}
             variant="outline"
             className="btn btn-outline"
@@ -696,7 +705,11 @@ export default function TalkToAstrologer() {
           </Button>
 
           <Button
-            onClick={() => handleOpenReview(a)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleOpenReview(a)
+            }}
             variant="outline"
             className="btn btn-outline"
             style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
@@ -704,7 +717,7 @@ export default function TalkToAstrologer() {
             Review
           </Button>
         </div>
-      </div>
+      </Link>
     ))}
   </div>
 )}
