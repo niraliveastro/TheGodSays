@@ -18,6 +18,8 @@ import {
   Flame as KetuIcon,
   Heart as VenusIcon,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function MahaDasasPage() {
   const [mahaDasasData, setMahaDasasData] = useState(null);
@@ -167,6 +169,77 @@ export default function MahaDasasPage() {
 
   const parsed = mahaDasasData ? parse(mahaDasasData) : null;
 
+  const handleDownload = () => {
+  if (!parsed) return;
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Maha Dasas Report', pageWidth / 2, y, { align: 'center' });
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
+  y += 15;
+
+  const tableData = Object.entries(parsed).map(([k, d]) => [
+    d.Lord,
+    fmt(d.start_time).split(',')[0],
+    fmt(d.end_time).split(',')[0],
+    `${years(d.start_time, d.end_time)} yrs`,
+    isCurrent(d) ? 'CURRENT' : ''
+  ]);
+
+  doc.autoTable({
+    head: [['Planet', 'Start Date', 'End Date', 'Duration', 'Status']],
+    body: tableData,
+    startY: y,
+    theme: 'striped',
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [212, 175, 55], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [253, 251, 247] },
+  });
+
+  doc.save('maha-dasas-report.pdf');
+};
+
+// Share (Web Share API + fallback)
+const handleShare = async () => {
+  if (!parsed) return;
+
+  const shareData = {
+    title: 'My Maha Dasas Report',
+    text: `Check out my current planetary periods! Currently in ${Object.values(parsed).find(isCurrent)?.Lord || 'Unknown'} Dasa.`,
+    url: window.location.href,
+  };
+
+  if (navigator.share && navigator.canShare(shareData)) {
+    try {
+      await navigator.share(shareData);
+    } catch (err) {
+      fallbackCopy();
+    }
+  } else {
+    fallbackCopy();
+  }
+};
+
+const fallbackCopy = () => {
+  const text = `Maha Dasas Report\n${window.location.href}\n\nCurrent: ${
+    Object.values(parsed).find(isCurrent)?.Lord || '—'
+  } Dasa\n\n${Object.entries(parsed)
+    .map(([k, d]) => `${d.Lord}: ${fmt(d.start_time)} → ${fmt(d.end_time)}`)
+    .join('\n')}`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Report copied to clipboard!');
+  });
+};
+
   return (
     <>
       <style jsx>{`
@@ -244,14 +317,28 @@ export default function MahaDasasPage() {
           <div className="infoItem"><MapPin /><span className="infoLabel">Location:</span><span className="infoValue">{userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 'Detecting...'}</span></div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="actionBar">
-          <button onClick={fetchMahaDasasData} disabled={isLoading} className="btn"><RefreshCw className={isLoading ? 'spin' : ''} />Refresh</button>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={() => { /* download */ }} disabled={!mahaDasasData} className="btn"><Download />Download</button>
-            <button onClick={() => { /* share */ }} disabled={!mahaDasasData} className="btn"><Share />Share</button>
-          </div>
-        </div>
+{/* Action Buttons */}
+<div className="actionBar">
+  <button onClick={fetchMahaDasasData} disabled={isLoading} className="btn">
+    <RefreshCw className={isLoading ? 'spin' : ''} />Refresh
+  </button>
+  <div style={{ display: 'flex', gap: '0.75rem' }}>
+    <button
+      onClick={handleDownload}
+      disabled={!mahaDasasData}
+      className="btn"
+    >
+      <Download />Download PDF
+    </button>
+    <button
+      onClick={handleShare}
+      disabled={!mahaDasasData}
+      className="btn"
+    >
+      <Share />Share
+    </button>
+  </div>
+</div>
 
         {/* Loading */}
         {isLoading && (
@@ -323,34 +410,40 @@ export default function MahaDasasPage() {
   </div>
 </div>
 
-<div className="cardBody" style={{ paddingTop: 0 }}>
-  {/* Duration */}
-  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-    <span className="infoLabel">Duration</span>
-    <span className="infoValue">{years(d.start_time, d.end_time)} yrs</span>
-  </div>
-
-  {/* Starts & Ends - Compact & Centered */}
-  <div style={{ textAlign: 'center', fontSize: '0.925rem', lineHeight: '1.5' }}>
-    <div>
-      <span style={{ fontWeight: 600, color: '#666' }}>Starts </span>
-      <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
-        {new Date(d.start_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-        <span style={{ marginLeft: '0.25rem', color: '#666' }}>at</span>
-        <span style={{ marginLeft: '0.25rem' }}>
-          {new Date(d.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-        </span>
-      </span>
+<div style={{ padding: '0 1.75rem 1.5rem' }}>
+  <div style={{
+    display: 'grid',
+    gap: '0.75rem',
+    gridTemplateColumns: '1fr',
+    fontSize: '0.925rem',
+    lineHeight: '1.5'
+  }}>
+    {/* Duration */}
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span className="infoLabel">Duration</span>
+      <span className="infoValue">{years(d.start_time, d.end_time)} yrs</span>
     </div>
-    <div style={{ marginTop: '0.25rem' }}>
-      <span style={{ fontWeight: 600, color: '#666' }}>Ends </span>
-      <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
-        {new Date(d.end_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-        <span style={{ marginLeft: '0.25rem', color: '#666' }}>at</span>
-        <span style={{ marginLeft: '0.25rem' }}>
+
+    {/* Start */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <span className="infoLabel">Starts</span>
+      <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
+        <div>{new Date(d.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
+          {new Date(d.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+        </div>
+      </div>
+    </div>
+
+    {/* End */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <span className="infoLabel">Ends</span>
+      <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
+        <div>{new Date(d.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
           {new Date(d.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-        </span>
-      </span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

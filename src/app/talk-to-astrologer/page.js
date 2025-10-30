@@ -18,6 +18,7 @@ import { db } from '@/lib/firebase'
 import CallConnectingNotification from '@/components/CallConnectingNotification'
 import Modal from '@/components/Modal'
 import ReviewModal from '@/components/ReviewModal'
+import Link from 'next/link'
 
 export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
@@ -467,203 +468,259 @@ export default function TalkToAstrologer() {
             </div>
           )}
 
-          {/* Astrologer cards – 2 per row */}
-          {!fetchingAstrologers && filteredAstrologers.length > 0 && (
+{!fetchingAstrologers && filteredAstrologers.length > 0 && (
+  <div
+    style={{
+      display: 'grid',
+      gap: '1.5rem',
+      gridTemplateColumns: 'repeat(2, minmax(22rem, 1fr))',
+      marginTop: '1.5rem',
+    }}
+  >
+    {filteredAstrologers.map((a) => (
+      <Link
+        href={`/account/astrologer/${a.id}`}
+        key={a.id}
+        className="card group"
+        style={{
+          padding: '1.5rem',
+          transition: 'var(--transition-smooth)',
+          cursor: 'pointer',
+          minWidth: '22rem',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          textDecoration: 'none',
+          color: 'inherit',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)'
+        }}
+      >
+        {/* Top Row: Avatar + Name + Spec + Rating */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
+          {/* Avatar + Online */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
             <div
               style={{
-                display: 'grid',
-                gap: '1.5rem',
-                gridTemplateColumns: 'repeat(2, minmax(22rem, 1fr))',
-                marginTop: '1.5rem',
+                width: '4rem',
+                height: '4rem',
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '1.25rem',
               }}
             >
-              {filteredAstrologers.map((a) => (
-                <div
-                  key={a.id}
-                  className="card"
-                  style={{
-                    padding: '1.5rem',
-                    transition: 'var(--transition-smooth)',
-                    cursor: 'pointer',
-                    minWidth: '22rem',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)'
-                  }}
-                >
-                  {/* Avatar + Online */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <div style={{ position: 'relative' }}>
-                      <div
-                        style={{
-                          width: '4rem',
-                          height: '4rem',
-                          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          fontSize: '1.25rem',
-                        }}
-                      >
-                        {a.name.split(' ').map((n) => n[0]).join('')}
-                      </div>
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '-0.25rem',
-                          right: '-0.25rem',
-                          width: '1.25rem',
-                          height: '1.25rem',
-                          borderRadius: '50%',
-                          border: '2px solid white',
-                          background: a.isOnline ? '#10b981' : 'var(--color-gray-400)',
-                          animation: a.isOnline ? 'pulse 2s infinite' : 'none',
-                        }}
-                      />
-                    </div>
-
-                    {a.verified && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          background: 'var(--color-indigo-light)',
-                          color: 'var(--color-indigo)',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '9999px',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                        }}
-                      >
-                        <CheckCircle style={{ width: '0.75rem', height: '0.75rem' }} />
-                        Verified
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Rating */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <Star style={{ width: '1rem', height: '1rem', fill: '#fbbf24', color: '#fbbf24' }} />
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>
-                      {a.rating}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
-                      ({a.reviews} reviews)
-                    </span>
-                  </div>
-
-                  {/* Name & Spec */}
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
-                    {a.name}
-                  </h3>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-indigo)', marginBottom: '0.25rem' }}>
-                    {a.specialization}
-                  </p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.75rem' }}>
-                    {a.experience}
-                  </p>
-
-                  {/* Price */}
-                  {a.perMinuteCharge && (
-                    <div style={{ marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669' }}>
-                        ₹{a.perMinuteCharge}/min
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Bio */}
-                  <p
-                    style={{
-                      fontSize: '0.875rem',
-                      color: 'var(--color-gray-600)',
-                      marginBottom: '1rem',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {a.bio}
-                  </p>
-
-                  {/* Languages */}
-                  <div style={{ marginBottom: '1rem' }}>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gray-500)', marginBottom: '0.5rem' }}>
-                      Speaks:
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
-                      {a.languages.map((l, i) => (
-                        <span
-                          key={l + i}
-                          style={{
-                            padding: '0.25rem 0.625rem',
-                            background: 'var(--color-indigo-light)',
-                            color: 'var(--color-indigo)',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            borderRadius: '9999px',
-                          }}
-                        >
-                          {l}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Action buttons – SAME SIZE, ALL VISIBLE */}
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <Button
-                      onClick={() => handleVideoCall(a.id)}
-                      disabled={!a.isOnline || loading}
-                      className="btn btn-primary"
-                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
-                    >
-                      {loading && connectingCallType === 'video' ? (
-                        <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-                      ) : (
-                        <Video style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
-                      )}
-                      {a.isOnline ? 'Video Call' : 'Offline'}
-                    </Button>
-
-                    <Button
-                      onClick={() => handleVoiceCall(a.id)}
-                      disabled={!a.isOnline || loading}
-                      variant="outline"
-                      className="btn btn-outline"
-                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
-                    >
-                      {loading && connectingCallType === 'voice' ? (
-                        <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-                      ) : (
-                        <Phone style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
-                      )}
-                      {a.isOnline ? 'Voice Call' : 'Offline'}
-                    </Button>
-
-                    <Button
-                      onClick={() => handleOpenReview(a)}
-                      variant="outline"
-                      className="btn btn-outline"
-                      style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
-                    >
-                      Review
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              {a.name.split(' ').map((n) => n[0]).join('')}
             </div>
-          )}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '-0.25rem',
+                right: '-0.25rem',
+                width: '1.25rem',
+                height: '1.25rem',
+                borderRadius: '50%',
+                border: '2px solid white',
+                background: a.isOnline ? '#10b981' : 'var(--color-gray-400)',
+                animation: a.isOnline ? 'pulse 2s infinite' : 'none',
+              }}
+            />
+          </div>
+
+          {/* Name, Spec, Rating */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    color: 'var(--color-gray-900)',
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={a.name}
+                >
+                  {a.name}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: 'var(--color-indigo)',
+                    margin: '0.125rem 0 0',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={a.specialization}
+                >
+                  {a.specialization}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  background: 'var(--color-amber-50)',
+                  color: 'var(--color-amber-700)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                <Star style={{ width: '0.875rem', height: '0.875rem', fill: '#f59e0b', color: '#f59e0b' }} />
+                {a.rating} <span style={{ color: 'var(--color-gray-500)', marginLeft: '0.125rem' }}>({a.reviews})</span>
+              </div>
+            </div>
+
+            {a.verified && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  background: 'var(--color-indigo-light)',
+                  color: 'var(--color-indigo)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  marginTop: '0.5rem',
+                }}
+              >
+                <CheckCircle style={{ width: '0.75rem', height: '0.75rem' }} />
+                Verified
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Rest of content */}
+        <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
+          {a.experience}
+        </p>
+
+        {a.perMinuteCharge && (
+          <div style={{ marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
+            <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669' }}>
+              ₹{a.perMinuteCharge}/min
+            </span>
+          </div>
+        )}
+
+        <p
+          style={{
+            fontSize: '0.875rem',
+            color: 'var(--color-gray-600)',
+            marginBottom: '1rem',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            position: 'relative',
+            zIndex: 20,
+          }}
+        >
+          {a.bio}
+        </p>
+
+        <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gray-500)', marginBottom: '0.5rem' }}>
+            Speaks:
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+            {a.languages.map((l, i) => (
+              <span
+                key={l + i}
+                style={{
+                  padding: '0.25rem 0.625rem',
+                  background: 'var(--color-indigo-light)',
+                  color: 'var(--color-indigo)',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  borderRadius: '9999px',
+                }}
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Action buttons – Prevent click bubbling */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto', position: 'relative', zIndex: 30 }}>
+          <Button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleVideoCall(a.id)
+            }}
+            disabled={!a.isOnline || loading}
+            className="btn btn-primary"
+            style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
+          >
+            {loading && connectingCallType === 'video' ? (
+              <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+            ) : (
+              <Video style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
+            )}
+            {a.isOnline ? 'Video Call' : 'Offline'}
+          </Button>
+
+          <Button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleVoiceCall(a.id)
+            }}
+            disabled={!a.isOnline || loading}
+            variant="outline"
+            className="btn btn-outline"
+            style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
+          >
+            {loading && connectingCallType === 'voice' ? (
+              <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+            ) : (
+              <Phone style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
+            )}
+            {a.isOnline ? 'Voice Call' : 'Offline'}
+          </Button>
+
+          <Button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleOpenReview(a)
+            }}
+            variant="outline"
+            className="btn btn-outline"
+            style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
+          >
+            Review
+          </Button>
+        </div>
+      </Link>
+    ))}
+  </div>
+)}
 
           {/* Empty state */}
           {!fetchingAstrologers && filteredAstrologers.length === 0 && (

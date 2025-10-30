@@ -11,8 +11,6 @@ export default function PanchangLayout({ children }) {
     { href: '/panchang/choghadiya-timings', label: 'Choghadiya', icon: Clock },
     { href: '/panchang/hora-timings', label: 'Hora Timings', icon: Clock },
     { href: '/panchang/maha-dasas', label: 'Maha Dasas', icon: Star },
-    { href: '/panchang/kundali', label: 'Kundali', icon: BookOpen },
-    { href: '/panchang/personalized', label: 'Personalized', icon: User },
     { href: '/panchang/calender', label: 'Calendar', icon: Calendar },
   ]
 

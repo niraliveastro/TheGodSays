@@ -81,7 +81,6 @@ const Navigation = () => {
   }, [showMoreDropdown]);
 
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
     { href: "/panchang/calender", label: "Panchang", icon: Calendar },
     { href: "/matching", label: "Matching", icon: BookOpen },
     { href: "/predictions", label: "Predictions", icon: Star },
