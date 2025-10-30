@@ -587,7 +587,7 @@ export default function MatchingPage() {
           width: 100%;
           max-height: 12rem;
           overflow-y: auto;
-          background: var(--c-card);
+          background: var(--color-cream);
           border: 1px solid var(--c-border);
           border-radius: .5rem;
           margin-top: .25rem;
@@ -812,33 +812,46 @@ color: #fff;
                 />
               </div>
 
-              <div className="field" style={{ position: "relative" }}>
-                <label>Place</label>
-                <input
-                  placeholder="City, Country"
-                  value={female.place}
-                  onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "place")}
-                  autoComplete="off"
-                  required
-                />
-                {fSuggest.length > 0 && (
-                  <div className="suggest-list">
-                    {fSuggest.map((s, i) => (
-                      <div
-                        key={`${s.label}-${i}`}
-                        className="suggest-item"
-                        onClick={() => {
-                          setFemale((p) => ({ ...p, place: s.label }));
-                          setFCoords(s);
-                          setFSuggest([]);
-                        }}
-                      >
-                        {s.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+  {/* ---------- Female Place ---------- */}
+<div className="field" style={{ position: "relative" }}>
+  <label>Place</label>
+  <input
+    placeholder="City, Country"
+    value={female.place}
+    onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "place")}
+    autoComplete="off"
+    required
+    style={{ position: "relative", zIndex: 1 }}
+  />
+  {fSuggest.length > 0 && (
+    <div
+      className="suggest-list"
+      style={{
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        right: 0,
+        zIndex: 30,
+        maxHeight: "12rem",
+        overflowY: "auto",
+      }}
+    >
+      {fSuggest.map((s, i) => (
+        <div
+          key={`${s.label}-${i}`}
+          className="suggest-item"
+          onClick={() => {
+            setFemale((p) => ({ ...p, place: s.label }));
+            setFCoords(s);
+            setFSuggest([]);
+          }}
+        >
+          {s.label}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
             </div>
 
             {/* ---------- Male ---------- */}
@@ -871,33 +884,45 @@ color: #fff;
                 />
               </div>
 
-              <div className="field" style={{ position: "relative" }}>
-                <label>Place</label>
-                <input
-                  placeholder="City, Country"
-                  value={male.place}
-                  onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "place")}
-                  autoComplete="off"
-                  required
-                />
-                {mSuggest.length > 0 && (
-                  <div className="suggest-list">
-                    {mSuggest.map((s, i) => (
-                      <div
-                        key={`${s.label}-${i}`}
-                        className="suggest-item"
-                        onClick={() => {
-                          setMale((p) => ({ ...p, place: s.label }));
-                          setMCoords(s);
-                          setMSuggest([]);
-                        }}
-                      >
-                        {s.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+<div className="field" style={{ position: "relative" }}>
+  <label>Place</label>
+  <input
+    placeholder="City, Country"
+    value={male.place}
+    onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "place")}
+    autoComplete="off"
+    required
+    style={{ position: "relative", zIndex: 1 }}
+  />
+  {mSuggest.length > 0 && (
+    <div
+      className="suggest-list"
+      style={{
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        right: 0,
+        zIndex: 30,
+        maxHeight: "12rem",
+        overflowY: "auto",
+      }}
+    >
+      {mSuggest.map((s, i) => (
+        <div
+          key={`${s.label}-${i}`}
+          className="suggest-item"
+          onClick={() => {
+            setMale((p) => ({ ...p, place: s.label }));
+            setMCoords(s);
+            setMSuggest([]);
+          }}
+        >
+          {s.label}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
             </div>
           </div>
 
