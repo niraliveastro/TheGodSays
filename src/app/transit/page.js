@@ -58,50 +58,42 @@ export default function TransitPage() {
 
   // Real-time countdown timer
   useEffect(() => {
-    if (!result) return
-    
     const updateCountdown = () => {
       const now = new Date().getTime()
       
-      // Venus countdown - use upcoming transit data
-      const venusUpcoming = result.upcomingTransits.Venus?.[0]
-      if (venusUpcoming) {
-        const venusDate = new Date(venusUpcoming.date).getTime()
-        const venusDistance = venusDate - now
-        
-        if (venusDistance > 0) {
-          const days = Math.floor(venusDistance / (1000 * 60 * 60 * 24))
-          const hours = Math.floor((venusDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-          const minutes = Math.floor((venusDistance % (1000 * 60 * 60)) / (1000 * 60))
-          const seconds = Math.floor((venusDistance % (1000 * 60)) / 1000)
-          setVenusCountdown(`${days} day(s) ${hours}h ${minutes}m ${seconds}s`)
-        } else {
-          setVenusCountdown("IN-EFFECT")
-        }
+      // Venus countdown
+      const venusDate = new Date("November 2, 2025 13:15:33").getTime()
+      const venusDistance = venusDate - now
+      
+      if (venusDistance > 0) {
+        const days = Math.floor(venusDistance / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((venusDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((venusDistance % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((venusDistance % (1000 * 60)) / 1000)
+        setVenusCountdown(`${days} day(s) ${hours}h ${minutes}m ${seconds}s`)
+      } else {
+        setVenusCountdown("IN-EFFECT")
       }
 
-      // Moon countdown - use upcoming transit data
-      const moonUpcoming = result.upcomingTransits.Moon?.[0]
-      if (moonUpcoming) {
-        const moonDate = new Date(moonUpcoming.date).getTime()
-        const moonDistance = moonDate - now
-        
-        if (moonDistance > 0) {
-          const days = Math.floor(moonDistance / (1000 * 60 * 60 * 24))
-          const hours = Math.floor((moonDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-          const minutes = Math.floor((moonDistance % (1000 * 60 * 60)) / (1000 * 60))
-          const seconds = Math.floor((moonDistance % (1000 * 60)) / 1000)
-          setMoonCountdown(`${days} day(s) ${hours}h ${minutes}m ${seconds}s`)
-        } else {
-          setMoonCountdown("IN-EFFECT")
-        }
+      // Moon countdown
+      const moonDate = new Date("October 28, 2025 22:14:42").getTime()
+      const moonDistance = moonDate - now
+      
+      if (moonDistance > 0) {
+        const days = Math.floor(moonDistance / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((moonDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((moonDistance % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((moonDistance % (1000 * 60)) / 1000)
+        setMoonCountdown(`${days} day(s) ${hours}h ${minutes}m ${seconds}s`)
+      } else {
+        setMoonCountdown("IN-EFFECT")
       }
     }
 
     updateCountdown()
     const interval = setInterval(updateCountdown, 1000)
     return () => clearInterval(interval)
-  }, [result])
+  }, [])
 
   // Real planetary transit data extracted from AAPS website
   const getCurrentTransits = () => {
@@ -465,47 +457,42 @@ export default function TransitPage() {
               </div>
             </section>
 
-            {/* Current Planetary Transits Grid */}
+            {/* Current Planetary Transits Cards */}
             <section className="transit-section">
               <h2 className="section-title">
                 Current Planetary Transits
               </h2>
-              <div className="transit-grid">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '2rem'
+              }}>
                 {result.currentTransits.map((transit, index) => {
-                  // Define colors for each planet
+                  // Planet color mapping
                   const planetColors = {
-                    'Sun': '#f59e0b',
+                    'Sun': '#fbbf24',
                     'Moon': '#a78bfa',
                     'Mercury': '#10b981',
                     'Venus': '#ec4899',
                     'Mars': '#ef4444',
                     'Jupiter': '#3b82f6',
                     'Saturn': '#6366f1',
-                    'Uranus': '#14b8a6',
-                    'Neptune': '#8b5cf6',
-                    'Pluto': '#dc2626'
+                    'Rahu': '#8b5cf6'
                   }
+                  
                   const planetColor = planetColors[transit.planet] || '#d4af37'
                   
-                  // Check if this is a current/active transit (e.g., Moon or Mars just started)
-                  const isCurrent = transit.planet === 'Moon' || transit.planet === 'Mars'
-                  
                   return (
-                    <div key={index} className={`transit-card ${isCurrent ? 'current' : ''}`}>
+                    <div key={index} className="transit-card current-transit-card">
                       <div className="accent" style={{background: `linear-gradient(90deg, ${planetColor}, ${planetColor}dd)`}}></div>
                       <div className="cardBody">
                         <div className="iconBox" style={{background: `linear-gradient(135deg, ${planetColor}, ${planetColor}cc)`}}>
                           <span style={{fontSize: '2rem'}}>{transit.symbol}</span>
                         </div>
                         <div className="titleGroup" style={{flex: 1}}>
-                          <h3>{transit.planet}</h3>
-                          <p className="desc">Currently in {transit.currentSign}</p>
-                          {isCurrent && (
-                            <div className="liveBadge">
-                              <div className="pulseDot"></div>
-                              ACTIVE NOW
-                            </div>
-                          )}
+                          <h3>{transit.planet} in {transit.currentSign}</h3>
+                          <p className="desc">Current planetary position</p>
                         </div>
                       </div>
                       <div className="cardBody info-section">
@@ -531,39 +518,26 @@ export default function TransitPage() {
               </div>
             </section>
 
-            {/* Upcoming Transits by Planet - Card Interface */}
+            {/* Upcoming Transits by Planet - Tabbed Interface */}
             <section className="transit-section">
               <h2 className="section-title">
                 Upcoming Planetary Transits (Next 6 Months)
               </h2>
-              
-              {/* Planet Selector Buttons */}
-              <div className="planet-selector-wrapper">
-                <div className="planet-selector">
-                  {Object.keys(result.upcomingTransits).map((planet) => {
-                    const planetSymbols = {
-                      'Mercury': '☿',
-                      'Venus': '♀',
-                      'Moon': '☽',
-                      'Sun': '☉',
-                      'Mars': '♂',
-                      'Jupiter': '♃',
-                      'Saturn': '♄',
-                      'Rahu': '☊'
-                    }
-                    return (
+              <div className="transit-table-card">
+                {/* Planet Tabs */}
+                <div className="planet-tabs-container">
+                  <div className="planet-tabs">
+                    {Object.keys(result.upcomingTransits).map((planet) => (
                       <button
                         key={planet}
                         onClick={() => setSelectedPlanet(planet)}
-                        className={`planet-selector-btn ${selectedPlanet === planet ? 'active' : ''}`}
+                        className={`planet-tab ${selectedPlanet === planet ? 'active' : ''}`}
                       >
-                        <span className="planet-symbol-small">{planetSymbols[planet]}</span>
                         {planet}
                       </button>
-                    )
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
               {/* Selected Planet's Transits as Cards */}
               <div className="upcoming-transits-section">
@@ -638,27 +612,27 @@ export default function TransitPage() {
                             <div className="infoRow">
                               <span className="infoLabel">Time</span>
                               <span className="infoValue">
-                                {transitDate.toLocaleTimeString('en-US', {
+                                {new Date(transit.date).toLocaleTimeString('en-US', {
                                   hour: '2-digit',
-                                  minute: '2-digit',
-                                  second: '2-digit'
+                                  minute: '2-digit'
                                 })}
                               </span>
                             </div>
-                          </div>
-                          <div className="footer">
-                            Transit #{index + 1}
                           </div>
                         </div>
                       )
                     })}
                   </div>
-                ) : (
-                  <div className="empty-state-card-new">
-                    <div className="empty-icon">🌙</div>
-                    <p className="empty-text">No transits scheduled for {selectedPlanet} in the next 6 months</p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-state-card">
+                        <span className="empty-state-text">
+                          No transits scheduled for {selectedPlanet} in the next 6 months
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
           </main>

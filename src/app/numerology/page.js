@@ -269,27 +269,26 @@ export default function NumerologyPage() {
           </p>
         </header>
 
-        {/* Two Column Layout: Form (65%) + Outer Vehicle (35%) */}
+        {/* Two Column Layout */}
         <div className="two-column-layout">
-          {/* LEFT COLUMN - Form Section (65%) */}
-          <div className="left-column-form">
-            <div className="form-container">
-              <div className="form-wrapper">
-                <div className="form-card">
-                  {/* Form Header */}
-                  <div className="form-header">
-                    <div className="form-icon-circle">
-                      <Calculator className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="form-header-title">Enter Your Details</h3>
-                  </div>
+        {/* Form Section - Centered */}
+        <div className="form-container">
+          <div className="form-wrapper">
+            <div className="form-card">
+              {/* Form Header */}
+              <div className="form-header">
+                <div className="form-icon-circle">
+                  <Calculator className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="form-header-title">Your Details</h3>
+                <p className="form-header-subtitle">Enter your information below</p>
+              </div>
 
               {/* Full Name Input */}
               <div className="input-group">
                 <label htmlFor="fullName" className="input-label">
                   <User className="w-4 h-4 input-label-icon" style={{color: '#d97706'}} />
                   Full Birth Name
-                  <span className="required-badge">*Required</span>
                 </label>
                 <input
                   id="fullName"
@@ -331,7 +330,7 @@ export default function NumerologyPage() {
               {/* Info Text */}
               <div className="info-box">
                 <p className="info-text">
-                  💡 Your calculation will be saved for comparison<br />
+                  💡 Your calculation will be saved for comparison for comparison<br />
                   in the history table below
                 </p>
               </div>
@@ -397,10 +396,8 @@ export default function NumerologyPage() {
     </div>
     {/* End Two Column Layout */}
 
-        {/* Results Section - Full Width Below */}
-        <div className="space-y-12">
-          {/* Inner Engine */}
-          <section className="results-section">
+    {/* 2) Inner Engine */}
+    <section className="results-section">
               <h2 className="section-title inner-engine">
                 Inner Engine (Pythagorean): Purpose & Psychology
               </h2>
@@ -592,6 +589,7 @@ export default function NumerologyPage() {
                 </div>
 
                 {/* Timing Analysis */}
+                
                 {results.lifePath !== null && results.powerNumber !== null && (
                   <div className="timing-card" style={{marginTop: '2rem'}}>
                     <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
@@ -781,12 +779,7 @@ export default function NumerologyPage() {
                 6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
               </p>
             </footer>
-          </div>
-          {/* End space-y-12 */}
-        </div>
-        {/* End numerology-content */}
       </div>
-      )
-{/* End numerology-container */}
-  }
+  )
+}
     
