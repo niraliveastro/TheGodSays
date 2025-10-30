@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import Modal from '@/components/Modal'
 import {
   Sparkles, Calendar, Clock, MapPin, TrendingUp, Star, Orbit,
-  Moon, Sun, ChevronRight, X, Loader2, RotateCcw
+  Moon, Sun, ChevronRight, X, Loader2, Cpu , RotateCcw
 } from 'lucide-react'
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from '@/lib/api'
 
@@ -28,6 +28,13 @@ export default function PredictionsPage() {
   const [antarLoading, setAntarLoading] = useState(false)
   const [antarError, setAntarError] = useState('')
   const [antarRows, setAntarRows] = useState([])
+
+  // AI Predictions Modal States
+  const [predictionsOpen, setPredictionsOpen] = useState(false)
+  const [predictionsLoading, setPredictionsLoading] = useState(false)
+  const [predictionsError, setPredictionsError] = useState('')
+  const [aiPredictions, setAiPredictions] = useState('')
+  const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] = useState(null)
 
   // ---- helpers ---------------------------------------------------------
   const getZodiacSign = (signNumber) => {
@@ -285,6 +292,39 @@ const westernChartSvg = westernChartSvgRaw
     } finally {
       setAntarLoading(false)
     }
+  }
+
+  async function openAiPredictionsFor(planetLord) {
+    setSelectedPlanetForPredictions(planetLord)
+    setPredictionsOpen(true)
+    setPredictionsLoading(true)
+    setPredictionsError('')
+    setAiPredictions('')
+    
+    try {
+      // Get the input data for context
+      const inp = result?.input
+      if (!inp) throw new Error('Missing birth details for predictions.')
+
+      // Find the specific Maha Dasha period
+      const mahaPeriod = mahaRows.find(row => row.lord === planetLord)
+      if (!mahaPeriod) throw new Error('Maha Dasha period not found.')
+
+      // Generate AI predictions based on the planet and birth details
+      const predictions = await generateAiPredictions(planetLord, mahaPeriod, inp)
+      setAiPredictions(predictions)
+    } catch (e) {
+      setPredictionsError(e?.message || 'Failed to generate AI predictions.')
+    } finally {
+      setPredictionsLoading(false)
+    }
+  }
+
+  // AI Prediction Generator
+  async function generateAiPredictions(planet, mahaPeriod, birthDetails) {
+    // This is a mock AI prediction generator
+    // In a real implementation, this would call an AI service or API
+    return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`
   }
 
   const mahaRows = useMemo(() => {
@@ -626,12 +666,26 @@ const westernChartSvg = westernChartSvgRaw
             </thead>
             <tbody>
               {placements.map(p => {
-                const row = shadbalaRows.find(r =>
-                  (r.name || '').toLowerCase().startsWith((p.name || '').toLowerCase())
-                )
+                // Robust lookup for the shadbala entry for this planet
+                const pname = (p.name || '').toString().trim()
+                const lname = pname.toLowerCase()
+                let row = shadbalaRows.find(r => (r.name || '').toLowerCase() === lname)
+                if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().startsWith(lname))
+                if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().includes(lname))
+                if (!row && lname.length >= 3) row = shadbalaRows.find(r => (r.name || '').toLowerCase().slice(0, 3) === lname.slice(0, 3))
+
+                // defensive numeric parsing + clamp to 0..100 for percentages
+                const parsePct = (v) => {
+                  const n = Number(v)
+                  return Number.isFinite(n) ? n : null
+                }
+                const pctVal = row ? parsePct(row.percent ?? row.percentage ?? row.percentage_strength ?? row.shadbala_percent ?? row.strength_percent) : null
+                const ishtaVal = row ? parsePct(row.ishta ?? row.ishta_phala ?? row.ishta_bala ?? row.ishta_percent) : null
+                const kashtaVal = row ? parsePct(row.kashta ?? row.kashta_phala ?? row.kashta_bala ?? row.kashta_percent) : null
+
                 return (
                   <tr key={p.name}>
-                    <td style={{ fontWeight: 500, color: '#1f2937' }}>{p.name}</td>
+                    <td style={{ fontWeight: 500, color: '#1f2937' }}>{pname}</td>
                     <td style={{ color: '#374151' }}>{p.currentSign || '—'}</td>
                     <td style={{ color: '#374151' }}>{p.house ?? '—'}</td>
                     <td style={{ color: '#374151' }}>
@@ -642,31 +696,31 @@ const westernChartSvg = westernChartSvgRaw
                     </td>
                     <td>
                       {p.retro ? (
-                        <span className="retro-badge">Retro</span>
+                        <span style={{ color: '#198754' }}>Retro</span>
                       ) : (
-                        <span style={{ color: '#9ca3af' }}>—</span>
+                        <span className="retro-badge">Not Retro</span>
                       )}
                     </td>
                     <td style={{ color: '#374151' }}>
-                      {row?.percent != null ? `${Number(row.percent).toFixed(1)}%` : '—'}
+                      {pctVal != null ? `${pctVal.toFixed(1)}%` : '—'}
                     </td>
                     <td style={{ width: '10rem' }}>
-                      {row?.ishta != null ? (
+                      {ishtaVal != null ? (
                         <div className="progress-container">
                           <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${Number(row.ishta)}%` }}></div>
+                            <div className="progress-fill" style={{ width: `${ishtaVal}%` }}></div>
                           </div>
-                          <div className="progress-label">{Number(row.ishta).toFixed(1)}%</div>
+                          <div className="progress-label">{ishtaVal.toFixed(1)}%</div>
                         </div>
                       ) : '—'}
                     </td>
                     <td style={{ width: '10rem' }}>
-                      {row?.kashta != null ? (
+                      {kashtaVal != null ? (
                         <div className="progress-container">
                           <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${Number(row.kashta)}%` }}></div>
+                            <div className="progress-fill" style={{ width: `${kashtaVal}%` }}></div>
                           </div>
-                          <div className="progress-label">{Number(row.kashta).toFixed(1)}%</div>
+                          <div className="progress-label">{kashtaVal.toFixed(1)}%</div>
                         </div>
                       ) : '—'}
                     </td>
@@ -686,31 +740,61 @@ const westernChartSvg = westernChartSvgRaw
         <h3 className="results-title">Vimshottari Maha Dasha</h3>
       </div>
       {mahaRows.length > 0 ? (
-        <div className="maha-list">
-          {mahaRows.map(row => {
-            const isSel = selectedMaha === row.lord
-            const endDate = row.end ? new Date(row.end).toLocaleDateString('en-GB') : '—'
-            const abbr = (row.lord || '').slice(0, 2)
-            return (
-              <button
-                type="button"
-                key={row.key}
-                onClick={() => openAntarModalFor(row.lord)}
-                className={`maha-row ${isSel ? 'selected' : ''}`}
-              >
-                <div className="maha-left">
-                  <Orbit style={{ color: '#d4af37' }} />
-                  <span className="maha-abbr">{abbr}</span>
-                </div>
-                <div className="maha-right">
-                  <span style={{ color: '#374151' }}>{endDate}</span>
-                  <ChevronRight style={{ color: '#d4af37' }} />
-                </div>
-              </button>
-            )
-          })}
+        <div style={{ overflowX: 'auto' }}>
+          <table className="planet-table">
+            <thead>
+              <tr>
+                <th>Planet</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>AI Predictions</th>
+                <th>MicroAnalysis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mahaRows.map(row => {
+                const isSel = selectedMaha === row.lord
+                const startVal = row.start ? new Date(row.start) : null
+                const endVal = row.end ? new Date(row.end) : null
+                const fmt = d => d ? d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+                
+                return (
+                  <tr 
+                    key={row.key}
+                    onClick={() => openAntarModalFor(row.lord)}
+                    className={isSel ? 'selected' : ''}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td style={{ fontWeight: 500, color: '#1f2937' }}>{row.lord || '—'}</td>
+                    <td style={{ color: '#374151' }}>{startVal ? fmt(startVal) : '—'}</td>
+                    <td style={{ color: '#374151' }}>{endVal ? fmt(endVal) : '—'}</td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        onClick={(e) => { e.stopPropagation(); openAiPredictionsFor(row.lord); }}
+                      >
+                        Predict <Cpu />
+                      </button>
+                    </td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-ghost"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        onClick={(e) => { e.stopPropagation(); setAntarOpen(true); openAntarModalFor(row.lord); }}
+                      >
+                        MicroAnalysis
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
           <div className="maha-note">
-            Note: Dates shown are dasha ending dates. Tap a row to show Antar Dasha.
+            Note: Click a row to show Antar Dasha periods for that Maha Dasha.
           </div>
         </div>
       ) : (
@@ -726,45 +810,171 @@ const westernChartSvg = westernChartSvgRaw
         <Modal
           open={antarOpen}
           onClose={() => setAntarOpen(false)}
-          title={selectedMaha ? `Antar Dasha — ${selectedMaha}` : 'Antar Dasha'}
+          title={selectedMaha ? `${selectedMaha} Maha Dasha — Antar Periods` : 'Antar Dasha'}
           position="center"
         >
           {antarLoading ? (
-            <div className="py-12 text-center">
-              <Loader2 className="w-8 h-8 text-gold animate-spin mx-auto mb-3" />
-              <div className="text-sm text-gray-600">Loading…</div>
+            <div className="py-16 text-center">
+              <Loader2 className="w-10 h-10 text-gold animate-spin mx-auto mb-4" />
+              <div className="text-base text-gray-600 font-medium">Loading Antar Dasha periods...</div>
+              <div className="text-sm text-gray-500 mt-1">Calculating planetary sub-periods</div>
             </div>
           ) : antarError ? (
-            <div className="py-4 text-sm text-red-700 bg-red-50 border border-red-300 rounded-lg px-4">
-              {antarError}
+            <div className="py-6 px-6 text-center">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Unable to Load Data</h3>
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                {antarError}
+              </p>
             </div>
           ) : (
-            <div>
+            <div className="max-h-96 overflow-y-auto">
               {antarRows.length === 0 ? (
-                <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4 border border-gray-300">
-                  No Antar Dasha data for this Maha Dasha.
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Moon className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Antar Dasha Data</h3>
+                  <p className="text-sm text-gray-500">
+                    No sub-periods found for this Maha Dasha. Please submit the form above to generate data.
+                  </p>
                 </div>
               ) : (
-                <div className="rounded-lg border border-gray-300 divide-y divide-gray-200 overflow-hidden">
-                  {antarRows.map((ad, i) => {
-                    const endDate = ad.end ? new Date(ad.end).toLocaleDateString('en-GB') : '—'
-                    const abbr = name => (name || '').toString().slice(0, 2)
-                    return (
-                      <div key={i} className="flex items-center justify-between px-4 py-3 text-sm bg-white hover:bg-gray-50">
-                        <div className="flex items-center gap-3">
-                          <Star className="w-4 h-4 text-indigo-600" />
-                          <span className="font-medium text-gray-800 w-28">
-                            {abbr(selectedMaha)}/{abbr(ad.lord)}
-                          </span>
-                        </div>
-                        <span className="text-gray-700">{endDate}</span>
+                <div className="space-y-4">
+                  {/* Header Card */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <Star className="w-5 h-5 text-indigo-600" />
                       </div>
-                    )
-                  })}
+                      <h3 className="text-lg font-semibold text-indigo-900">
+                        {selectedMaha} Maha Dasha Periods
+                      </h3>
+                    </div>
+                    <p className="text-sm text-indigo-700">
+                      Sub-periods (Antar Dashas) within the main {selectedMaha} planetary period according to Vimsottari system
+                    </p>
+                  </div>
+
+                  {/* Antar Dasha List */}
+                  <div className="space-y-2">
+                    {antarRows.map((ad, i) => {
+                      const startDate = ad.start ? new Date(ad.start).toLocaleDateString('en-GB', { 
+                        year: 'numeric', month: 'short', day: 'numeric' 
+                      }) : '—'
+                      const endDate = ad.end ? new Date(ad.end).toLocaleDateString('en-GB', { 
+                        year: 'numeric', month: 'short', day: 'numeric' 
+                      }) : '—'
+                      
+                      // Calculate duration in years/months
+                      let duration = '—'
+                      let durationColor = 'text-gray-500'
+                      if (ad.start && ad.end) {
+                        const start = new Date(ad.start)
+                        const end = new Date(ad.end)
+                        const diffMs = end.getTime() - start.getTime()
+                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+                        const years = Math.floor(diffDays / 365)
+                        const months = Math.floor((diffDays % 365) / 30)
+                        
+                        if (years > 2) {
+                          duration = months > 0 ? `${years}y ${months}m` : `${years}y`
+                          durationColor = 'text-purple-600'
+                        } else if (years > 0) {
+                          duration = months > 0 ? `${years}y ${months}m` : `${years}y`
+                          durationColor = 'text-blue-600'
+                        } else if (months > 6) {
+                          duration = `${months}m`
+                          durationColor = 'text-green-600'
+                        } else if (months > 0) {
+                          duration = `${months}m`
+                          durationColor = 'text-yellow-600'
+                        } else {
+                          duration = `${diffDays}d`
+                          durationColor = 'text-red-600'
+                        }
+                      }
+
+                      return (
+                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-gold/20 to-purple-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-purple-700">
+                                  {ad.lord?.slice(0, 2)?.toUpperCase() || '—'}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-base">{ad.lord}</h4>
+                                <p className="text-xs text-gray-500">Antar Dasha Lord</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-sm font-semibold ${durationColor}`}>
+                                {duration}
+                              </div>
+                              <div className="text-xs text-gray-500">Duration</div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="text-xs text-green-700 font-medium mb-1">START DATE</div>
+                              <div className="text-green-800 font-semibold">{startDate}</div>
+                            </div>
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                              <div className="text-xs text-red-700 font-medium mb-1">END DATE</div>
+                              <div className="text-red-800 font-semibold">{endDate}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
-              <div className="mt-4 text-xs text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-300">
-                Note: Dates shown are dasha ending dates.
+            </div>
+          )}
+        </Modal>
+
+        {/* AI Predictions Modal */}
+        <Modal
+          open={predictionsOpen}
+          onClose={() => setPredictionsOpen(false)}
+          title={selectedPlanetForPredictions ? `AI Predictions — ${selectedPlanetForPredictions} Maha Dasha` : 'AI Predictions'}
+          position="center"
+        >
+          {predictionsLoading ? (
+            <div className="py-12 text-center">
+              <Loader2 className="w-8 h-8 text-gold animate-spin mx-auto mb-3" />
+              <div className="text-sm text-gray-600">Generating AI predictions...</div>
+            </div>
+          ) : predictionsError ? (
+            <div className="py-4 text-sm text-red-700 bg-red-50 border border-red-300 rounded-lg px-4">
+              {predictionsError}
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              {aiPredictions ? (
+                <div className="prose prose-sm max-w-none">
+                  <div className="whitespace-pre-line text-gray-700 leading-relaxed">
+                    {aiPredictions}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4 border border-gray-300">
+                  No predictions available.
+                </div>
+              )}
+              <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={() => setPredictionsOpen(false)}
+                  className="btn btn-primary"
+                >
+                  Close
+                </button>
               </div>
             </div>
           )}

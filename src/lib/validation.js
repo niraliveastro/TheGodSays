@@ -1,6 +1,7 @@
 // Input validation utilities
 export function validateRequired(obj, fields) {
-  const missing = fields.filter(field => !obj[field])
+  // Consider only undefined or null as missing. Allow 0/false values.
+  const missing = fields.filter(field => obj[field] === undefined || obj[field] === null)
   if (missing.length > 0) {
     throw new Error(`Missing required fields: ${missing.join(', ')}`)
   }
