@@ -81,21 +81,22 @@ const Navigation = () => {
   }, [showMoreDropdown]);
 
   const navItems = [
-    { href: "/panchang/calender", label: "Panchang", icon: Calendar },
-    { href: "/matching", label: "Matching", icon: BookOpen },
-    { href: "/predictions", label: "Predictions", icon: Star },
     { href: "/talk-to-astrologer", label: "Talk to Astrologer", icon: Phone },
-    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/predictions", label: "AI Predictions", icon: Star },
+    { href: "/matching", label: "Matching", icon: BookOpen },
     {
       href: null,
       label: "More",
       icon: MoreHorizontal,
       children: [
         { href: "/numerology", label: "Numerology" },
-        { href: "/transit", label: "Transit" },
+        { href: "/transit", label: "Planetary Transit" },
+        { href: "/cosmic-event-tracker", label: "Cosmic Events" },
       ],
     },
-    { href: "/account", label: "My Account", icon: User },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/profile/user", label: "My Account"
+      , icon: User },
   ];
 
   const filteredNavItems =

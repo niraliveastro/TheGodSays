@@ -42,7 +42,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       const userId = localStorage.getItem('tgs:userId')
       if (!userId) {
-        router.push('/auth/user')
+        router.push('/auth')
         return
       }
 

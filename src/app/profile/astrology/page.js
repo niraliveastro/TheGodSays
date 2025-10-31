@@ -52,7 +52,7 @@ export default function AstrologerProfilePage() {
   /* --------------------------------------------------------------- */
   useEffect(() => {
     if (!authUser || userProfile?.collection !== 'astrologers') {
-      router.push('/account')
+      router.push('/auth/astrologer')
       return
     }
 

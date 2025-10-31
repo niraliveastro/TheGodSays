@@ -21,7 +21,7 @@ export default function AstrologerRedirect() {
       '/talk-to-astrologer/room/',
       '/talk-to-astrologer/voice/',
       '/profile/astrology',
-      '/account',
+      '/account/astrologer',
       '/auth'
     ]
     const isAllowedPath = allowedPaths.some(path => pathname === path || pathname.startsWith(path))
