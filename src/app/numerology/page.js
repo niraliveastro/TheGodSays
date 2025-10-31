@@ -269,6 +269,8 @@ export default function NumerologyPage() {
           </p>
         </header>
 
+        {/* Two Column Layout */}
+        <div className="two-column-layout">
         {/* Form Section - Centered */}
         <div className="form-container">
           <div className="form-wrapper">
@@ -328,86 +330,151 @@ export default function NumerologyPage() {
               {/* Info Text */}
               <div className="info-box">
                 <p className="info-text">
-                  💡 Your calculation will be saved for comparison in the history table below
+                  💡 Your calculation will be saved for comparison for comparison<br />
+                  in the history table below
                 </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      {/* End LEFT COLUMN */}
 
-        {/* Results Section */}
-        <div className="space-y-12">
-          {/* 1) Outer Vehicle FIRST */}
-          <section className="results-section">
-              <h2 className="section-title outer-vehicle">
-                Outer Vehicle: Chaldean Vibration & Manifestation
-              </h2>
-              <div className="grid-2">
-                <div className="result-card blue center">
-                  <p className="card-label text-blue-600">
-                    Pythagorean Total (Raw = Reduced)
-                  </p>
-                  <p className="card-value text-blue-700">
-                    {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
-                  </p>
-                  <p className="card-description">
-                    Raw sum and its reduced digit used for Destiny.
-                  </p>
-                </div>
-                <div className="result-card yellow center">
-                  <p className="card-label text-yellow-600">
-                    Chaldean Total (Raw = Reduced)
-                  </p>
-                  <p className="card-value text-yellow-700">
-                    {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
-                  </p>
-                  <p className="card-description">
-                    Esoteric vibration used in composite scoring.
-                  </p>
+      {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
+      <div className="right-column-outer-vehicle">
+        <section className="results-section outer-vehicle-section">
+          <h2 className="section-title outer-vehicle">
+            Outer Vehicle: Chaldean Vibration & Manifestation
+          </h2>
+          <div className="grid-2-vertical">
+            <div className="result-card blue">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">Σ</span>
+                  </div>
+                  <div className="title-group">
+                    <h3 className="card-title">Pythagorean Total</h3>
+                    <p className="card-desc">Raw sum and its reduced digit used for Destiny</p>
+                  </div>
                 </div>
               </div>
-            </section>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Value</span>
+                  <span className="time-value">
+                    {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="result-card yellow">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">☥</span>
+                  </div>
+                  <div className="title-group">
+                    <h3 className="card-title">Chaldean Total</h3>
+                    <p className="card-desc">Esoteric vibration used in composite scoring</p>
+                  </div>
+                </div>
+              </div>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Value</span>
+                  <span className="time-value">
+                    {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      {/* End RIGHT COLUMN */}
+    </div>
+    {/* End Two Column Layout */}
 
-            {/* 2) Inner Engine */}
-            <section className="results-section">
+    {/* 2) Inner Engine */}
+    <section className="results-section">
               <h2 className="section-title inner-engine">
                 Inner Engine (Pythagorean): Purpose & Psychology
               </h2>
               <div className="grid-3">
-                <div className="result-card blue center">
-                  <p className="card-label text-blue-600">
-                    Destiny / Expression (#1)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : 'text-blue-700'}`}>
-                    {results.destiny || '-'}
+                <div className="result-card blue">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">1</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Destiny / Expression</h3>
+                        <p className="card-desc">Life purpose, public path (Pythagorean total reduced)</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Life purpose, public path (Pythagorean total reduced).
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : ''}`}>
+                        {results.destiny || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #1</span>
+                  </div>
                 </div>
                 
-                <div className="result-card green center">
-                  <p className="card-label text-green-600">
-                    Soul Urge / Heart's Desire (#2)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : 'text-green-700'}`}>
-                    {results.soulUrge || '-'}
+                <div className="result-card green">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">2</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Soul Urge / Heart's Desire</h3>
+                        <p className="card-desc">Innermost desires (Vowels only)</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Innermost desires (Vowels only).
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : ''}`}>
+                        {results.soulUrge || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #2</span>
+                  </div>
                 </div>
                 
-                <div className="result-card teal center">
-                  <p className="card-label text-teal-600">
-                    Personality / Dream (#3)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : 'text-teal-700'}`}>
-                    {results.dream || '-'}
+                <div className="result-card teal">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">3</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Personality / Dream</h3>
+                        <p className="card-desc">Outer impression (Consonants only)</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Outer impression (Consonants only).
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : ''}`}>
+                        {results.dream || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #3</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -418,40 +485,79 @@ export default function NumerologyPage() {
                 Timing & Karmic Script (DOB & Composite)
               </h2>
               <div className="grid-3">
-                <div className="result-card red center">
-                  <p className="card-label text-red-600">
-                    Power Number (#4)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : 'text-red-700'}`}>
-                    {results.powerNumber || '-'}
+                <div className="result-card red">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">4</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Power Number</h3>
+                        <p className="card-desc">Activation Frequency (Life Path + Destiny)</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Activation Frequency (Life Path + Destiny).
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : ''}`}>
+                        {results.powerNumber || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #4</span>
+                  </div>
                 </div>
                 
-                <div className="result-card orange center">
-                  <p className="card-label text-orange-600">
-                    Life Path (#5)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : 'text-orange-700'}`}>
-                    {results.lifePath || '-'}
+                <div className="result-card orange">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">5</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Life Path</h3>
+                        <p className="card-desc">Unchangeable karmic script and timing modifier</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Unchangeable karmic script and timing modifier.
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : ''}`}>
+                        {results.lifePath || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #5</span>
+                  </div>
                 </div>
                 
-                <div className="result-card purple center">
-                  <p className="card-label text-purple-600">
-                    Day Number (Mulank - #6)
-                  </p>
-                  <div className={`card-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : 'text-purple-700'}`}>
-                    {results.mulank || '-'}
+                <div className="result-card purple">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">6</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Day Number (Mulank)</h3>
+                        <p className="card-desc">Innate, core daily characteristics</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="card-description">
-                    Innate, core daily characteristics.
-                  </p>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Number</span>
+                      <span className={`time-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : ''}`}>
+                        {results.mulank || '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <span className="period-number">Core Number #6</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -483,6 +589,7 @@ export default function NumerologyPage() {
                 </div>
 
                 {/* Timing Analysis */}
+                
                 {results.lifePath !== null && results.powerNumber !== null && (
                   <div className="timing-card" style={{marginTop: '2rem'}}>
                     <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
@@ -672,9 +779,7 @@ export default function NumerologyPage() {
                 6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
               </p>
             </footer>
-        </div>
       </div>
-    </div>
   )
 }
     

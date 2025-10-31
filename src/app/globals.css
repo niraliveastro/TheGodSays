@@ -818,16 +818,11 @@ select {
 .planet-table th { padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: #374151; text-transform: uppercase; letter-spacing: 0.05em; }
 .planet-table td { padding: 0.75rem 1rem; font-size: 0.875rem; color: #374151; border-bottom: 1px solid #e5e7eb; }
 .planet-table tbody tr:hover { background: #f9fafb; }
+.planet-table tbody tr.selected { background: #f3f4f6; }
+.planet-table tbody tr { transition: background 0.2s; }
 
 .retro-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  background: #fef2f2;
   color: #dc2626;
-  border: 1px solid #fecaca;
 }
 
 .progress-container { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -838,26 +833,15 @@ select {
 /* -------------------------------------------------
    MAHA DASHA LIST
    ------------------------------------------------- */
-.maha-list { border-radius: 0.5rem; border: 1px solid #d1d5db; overflow: hidden; }
-.maha-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: background 0.2s;
+.maha-note { 
+  padding: 0.75rem 1rem; 
+  font-size: 0.75rem; 
+  color: #6b7280; 
+  background: #f9fafb; 
+  border-top: 1px solid #e5e7eb;
+  margin-top: 0.5rem;
+  border-radius: 0.5rem;
 }
-.maha-row:hover { background: #f9fafb; }
-.maha-row.selected { background: #f3f4f6; }
-.maha-left { display: flex; align-items: center; gap: 0.75rem; }
-.maha-left svg { width: 1rem; height: 1rem; color: #d4af37; }
-.maha-abbr { font-weight: 500; color: #1f2937; width: 6rem; text-align: left; }
-.maha-right { display: flex; align-items: center; gap: 0.5rem; }
-.maha-right svg { width: 1rem; height: 1rem; color: #d4af37; }
-.maha-note { padding: 0.75rem 1rem; font-size: 0.75rem; color: #6b7280; background: #f9fafb; }
 
 .empty-state {
   padding: 1rem;
