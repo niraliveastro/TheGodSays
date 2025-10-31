@@ -280,15 +280,18 @@ export default function NumerologyPage() {
                 <div className="form-icon-circle">
                   <Calculator className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="form-header-title">Your Details</h3>
-                <p className="form-header-subtitle">Enter your information below</p>
+                <div className="form-header-text">
+                  <h3 className="form-header-title">Your Details</h3>
+                  <p className="form-header-subtitle">Enter your information below</p>
+                </div>
               </div>
 
               {/* Full Name Input */}
               <div className="input-group">
                 <label htmlFor="fullName" className="input-label">
-                  <User className="w-4 h-4 input-label-icon" style={{color: '#d97706'}} />
+                  <User className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
                   Full Birth Name
+                  <span className="required-badge">*Required</span>
                 </label>
                 <input
                   id="fullName"
@@ -303,7 +306,7 @@ export default function NumerologyPage() {
               {/* Date of Birth Input */}
               <div className="input-group">
                 <label htmlFor="birthDate" className="input-label">
-                  <Calendar className="w-4 h-4 input-label-icon" style={{color: '#9333ea'}} />
+                  <Calendar className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
                   Date of Birth
                   <span className="required-badge">*Required</span>
                 </label>
@@ -337,17 +340,16 @@ export default function NumerologyPage() {
             </div>
           </div>
         </div>
-      </div>
-      {/* End LEFT COLUMN */}
+        {/* End LEFT COLUMN */}
 
-      {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
-      <div className="right-column-outer-vehicle">
+        {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
+        <div className="right-column-outer-vehicle">
         <section className="results-section outer-vehicle-section">
           <h2 className="section-title outer-vehicle">
             Outer Vehicle: Chaldean Vibration & Manifestation
           </h2>
           <div className="grid-2-vertical">
-            <div className="result-card blue">
+            <div className="result-card yellow">
               <div className="card-header">
                 <div className="header-content">
                   <div className="icon-wrapper">
@@ -402,7 +404,7 @@ export default function NumerologyPage() {
                 Inner Engine (Pythagorean): Purpose & Psychology
               </h2>
               <div className="grid-3">
-                <div className="result-card blue">
+                <div className="result-card orange">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -427,7 +429,7 @@ export default function NumerologyPage() {
                   </div>
                 </div>
                 
-                <div className="result-card green">
+                <div className="result-card purple">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -452,7 +454,7 @@ export default function NumerologyPage() {
                   </div>
                 </div>
                 
-                <div className="result-card teal">
+                <div className="result-card green">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -485,7 +487,7 @@ export default function NumerologyPage() {
                 Timing & Karmic Script (DOB & Composite)
               </h2>
               <div className="grid-3">
-                <div className="result-card red">
+                <div className="result-card gray">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -510,7 +512,7 @@ export default function NumerologyPage() {
                   </div>
                 </div>
                 
-                <div className="result-card orange">
+                <div className="result-card blue">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -535,7 +537,7 @@ export default function NumerologyPage() {
                   </div>
                 </div>
                 
-                <div className="result-card purple">
+                <div className="result-card red">
                   <div className="card-header">
                     <div className="header-content">
                       <div className="icon-wrapper">
@@ -779,6 +781,7 @@ export default function NumerologyPage() {
                 6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
               </p>
             </footer>
+        </div>
       </div>
   )
 }
