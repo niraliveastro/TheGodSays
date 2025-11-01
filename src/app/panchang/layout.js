@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Clock, Star, BookOpen, User, Calendar } from 'lucide-react'
+import { Clock, Star, BookOpen, User, Calendar, Zap } from 'lucide-react'
 import '../../components/styles/panchangLayout.css'
 
 export default function PanchangLayout({ children }) {
   const pathname = usePathname()
   const items = [
-    { href: '/panchang/choghadiya-timings', label: 'Choghadiya', icon: Clock },
+    { href: '/panchang/choghadiya-timings', label: 'Choghadiya', icon: Zap },
     { href: '/panchang/hora-timings', label: 'Hora Timings', icon: Clock },
     { href: '/panchang/maha-dasas', label: 'Maha Dasas', icon: Star },
     { href: '/panchang/calender', label: 'Calendar', icon: Calendar },

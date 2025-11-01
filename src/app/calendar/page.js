@@ -575,8 +575,7 @@ export default function CalendarPage() {
               onNext={handleNext}
               nakshatraMap={nakshatraMap}
               sunMap={sunMap}
-              tithiMap={tithiMap}
-              
+              tithiMap={tithiMap}             
             />
           </div>
         </div>

@@ -128,14 +128,21 @@ export default function ChoghadiyaTimingsPage() {
     a.href = url; a.download = 'choghadiya-timings.json'; a.click();
     URL.revokeObjectURL(url);
   };
-  const handleShare = async () => {
-    if (navigator.share) {
-      try { await navigator.share({ title: 'Choghadiya', url: location.href }); } catch {}
-    } else {
-      navigator.clipboard.writeText(location.href);
-      alert('Link copied!');
-    }
-  };
+const handleShare = async () => {
+  const fullUrl = window.location.href; // Gets complete URL including path
+  
+  if (navigator.share) {
+    try { 
+      await navigator.share({ 
+        title: 'Choghadiya Timings', 
+        url: fullUrl 
+      }); 
+    } catch {}
+  } else {
+    navigator.clipboard.writeText(fullUrl);
+    alert('Link copied to clipboard!');
+  }
+};
 
   const parsed = choghadiyaData ? parse(choghadiyaData) : null;
 
@@ -235,9 +242,8 @@ export default function ChoghadiyaTimingsPage() {
 
         {/* Action Buttons */}
         <div className="actionBar">
+          <div style={{ display: 'flex', gap: '0.75rem', margin: '0 auto'}}>
           <button onClick={handleRefresh} disabled={isLoading} className="btn"><RefreshCw className={isLoading ? 'spin' : ''} />Refresh</button>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={handleDownload} disabled={!choghadiyaData} className="btn"><Download />Download</button>
             <button onClick={handleShare} disabled={!choghadiyaData} className="btn"><Share />Share</button>
           </div>
         </div>
@@ -261,7 +267,7 @@ export default function ChoghadiyaTimingsPage() {
         {/* Results */}
         {parsed && !isLoading && (
           <>
-            <div className="resultsHeader"><Star /><h2>Today's Choghadiya Periods</h2></div>
+            <div className="resultsHeader"><Star /> <h2> Today's Choghadiya Periods</h2></div>
 
             <div className="grid">
               {Object.entries(parsed).map(([key, p]) => {
