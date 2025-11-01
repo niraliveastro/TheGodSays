@@ -1,17 +1,21 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import Modal from '@/components/Modal'
 import {
-  Sparkles, Calendar, Clock, MapPin, TrendingUp, Star, Orbit,
-  Moon, Sun, ChevronRight, X, Loader2, Cpu , RotateCcw
+  Sparkles, Calendar, Clock, MapPin, Orbit,
+  Moon, Sun, X, Loader2, Cpu , RotateCcw
 } from 'lucide-react'
-import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from '@/lib/api'
+import { astrologyAPI, geocodePlace } from '@/lib/api'
 
 export default function PredictionsPage() {
   const [dob, setDob] = useState('')
   const [tob, setTob] = useState('')
   const [place, setPlace] = useState('')
+
+  // Timezone (UTC offset hours) — default IST 5.5
+  const [tzHours, setTzHours] = useState(5.5)
+
   const [suggestions, setSuggestions] = useState([])
   const [suggesting, setSuggesting] = useState(false)
   const [selectedCoords, setSelectedCoords] = useState(null)
@@ -29,14 +33,24 @@ export default function PredictionsPage() {
   const [antarError, setAntarError] = useState('')
   const [antarRows, setAntarRows] = useState([])
 
-  // AI Predictions Modal States
   const [predictionsOpen, setPredictionsOpen] = useState(false)
   const [predictionsLoading, setPredictionsLoading] = useState(false)
   const [predictionsError, setPredictionsError] = useState('')
   const [aiPredictions, setAiPredictions] = useState('')
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] = useState(null)
 
-  // ---- helpers ---------------------------------------------------------
+  // ref to Planet Placements section & auto-scroll when results arrive =====
+  const placementsSectionRef = useRef(null)
+  const setPlacementsRef = (el) => { placementsSectionRef.current = el; };
+  useEffect(() => {
+    if (result && placements.length > 0 && placementsSectionRef.current) {
+      const t = setTimeout(() => {
+        placementsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+      return () => clearTimeout(t)
+    }
+  }, [result]) // placements depends on result; recompute happens right after
+
   const getZodiacSign = (signNumber) => {
     const signs = [
       'Aries', 'Taurus', 'Gemini', 'Cancer',
@@ -46,7 +60,6 @@ export default function PredictionsPage() {
     return signs[(signNumber - 1) % 12]
   }
 
-  // ---- geolocation ------------------------------------------------------
   async function reverseGeocodeCoords(lat, lon) {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`
@@ -81,11 +94,11 @@ export default function PredictionsPage() {
     }
   }
 
-  // ---- validation -------------------------------------------------------
   function validate() {
     if (!dob) return 'Please enter your Date of Birth.'
     if (!tob) return 'Please enter your Time of Birth.'
     if (!place.trim()) return 'Please enter your Place of Birth.'
+    if (!Number.isFinite(Number(tzHours))) return 'Please select a valid timezone.'
     return ''
   }
 
@@ -96,7 +109,6 @@ export default function PredictionsPage() {
     try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return v }
   }
 
-  // ---- autocomplete ------------------------------------------------------
   const fetchSuggestions = (q) => {
     if (!q || q.length < 2) { setSuggestions([]); return }
     if (suggestTimer.current) clearTimeout(suggestTimer.current)
@@ -122,7 +134,6 @@ export default function PredictionsPage() {
     }, 250)
   }
 
-  // ---- submit -----------------------------------------------------------
   async function onSubmit(e) {
     e.preventDefault()
     setError('')
@@ -138,47 +149,49 @@ export default function PredictionsPage() {
       const tparts = tob.split(':').map(n => parseInt(n, 10))
       const [H, Min, S = 0] = tparts
 
-      const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude)
+      const tz = Number.isFinite(Number(tzHours)) ? Number(tzHours) : 5.5
 
-const payload = {
-  year: Y,
-  month: M,
-  date: D,
-  hours: H,
-  minutes: Min,
-  seconds: S,
-  latitude: geo.latitude,
-  longitude: geo.longitude,
-  timezone: tz,
-  config: {
-    observation_point: 'topocentric',
-    ayanamsha: 'tropical',
-    house_system: 'Placidus',
-    language: 'en'
-  }
-}
+      const payload = {
+        year: Y,
+        month: M,
+        date: D,
+        hours: H,
+        minutes: Min,
+        seconds: S,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        timezone: tz,
+        config: {
+          observation_point: 'topocentric',
+          ayanamsha: 'lahiri',
+          house_system: 'Placidus',
+          language: 'en'
+        }
+      }
 
       const { results, errors } = await astrologyAPI.getMultipleCalculations([
         'shadbala/summary',
         'vimsottari/dasa-information',
         'vimsottari/maha-dasas',
         'planets',
-        'western/natal-wheel-chart'
+        'western/natal-wheel-chart',
+        'planets/extended'
       ], payload)
 
       const vimsRaw = results?.['vimsottari/dasa-information']
       const shadbalaRaw = results?.['shadbala/summary']
       const mahaRaw = results?.['vimsottari/maha-dasas']
+      const planetsRaw = results?.['planets/extended']
 
-      // Parse Western Chart SVG
-const westernChartSvgRaw = results?.['western/natal-wheel-chart']
-const westernChartSvg = westernChartSvgRaw
-  ? (typeof westernChartSvgRaw.output === 'string'
-      ? westernChartSvgRaw.output
-      : typeof westernChartSvgRaw === 'string'
-      ? westernChartSvgRaw
-      : null)
-  : null
+      const westernChartSvgRaw = results?.['western/natal-wheel-chart']
+      const westernChartSvg = westernChartSvgRaw
+        ? (typeof westernChartSvgRaw.output === 'string'
+            ? westernChartSvgRaw.output
+            : typeof westernChartSvgRaw === 'string'
+            ? westernChartSvgRaw
+            : null)
+        : null
+
       const vimsParsed = vimsRaw ? safeParse(safeParse(vimsRaw.output ?? vimsRaw)) : null
       let mahaParsed = mahaRaw ? safeParse(safeParse(mahaRaw.output ?? mahaRaw)) : null
       if (mahaParsed && typeof mahaParsed === 'object' && mahaParsed.output) {
@@ -201,12 +214,29 @@ const westernChartSvg = westernChartSvgRaw
         } catch {}
       }
 
+      let planetsParsed = planetsRaw ? safeParse(safeParse(planetsRaw.output ?? planetsRaw)) : null
+      if (planetsParsed && typeof planetsParsed === 'object' && planetsParsed.output) {
+        planetsParsed = safeParse(planetsParsed.output)
+      }
+
+      let finalPlanetParsed = planetsParsed
+      const looksEmptyPlanets = !planetsParsed || (typeof planetsParsed === 'object' && Object.keys(planetsParsed).length === 0)
+      if (looksEmptyPlanets) {
+        const altPayload = { ...payload, config: { ...payload.config, observation_point: 'topocentric' } }
+        try {
+          const alt = await astrologyAPI.getSingleCalculation('planets/extended', altPayload)
+          let altParsed = safeParse(safeParse(alt.output ?? alt))
+          if (altParsed && typeof altParsed === 'object' && altParsed.output) altParsed = safeParse(altParsed.output)
+          if (altParsed && Object.keys(altParsed).length) finalPlanetParsed = altParsed
+        } catch {}
+      }
+
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
         vimsottari: vimsParsed,
-        planets: results?.['planets'] ? safeParse(safeParse(results['planets'].output ?? results['planets'])) : [],
+        planets: finalPlanetParsed,
         maha: mahaParsed,
         shadbala: finalShadbala,
         westernChartSvg,
@@ -219,7 +249,6 @@ const westernChartSvg = westernChartSvgRaw
     }
   }
 
-  // ---- UI helpers -------------------------------------------------------
   const currentDashaChain = useMemo(() => {
     const v = result?.vimsottari
     if (!v) return null
@@ -300,17 +329,11 @@ const westernChartSvg = westernChartSvgRaw
     setPredictionsLoading(true)
     setPredictionsError('')
     setAiPredictions('')
-    
     try {
-      // Get the input data for context
       const inp = result?.input
       if (!inp) throw new Error('Missing birth details for predictions.')
-
-      // Find the specific Maha Dasha period
       const mahaPeriod = mahaRows.find(row => row.lord === planetLord)
       if (!mahaPeriod) throw new Error('Maha Dasha period not found.')
-
-      // Generate AI predictions based on the planet and birth details
       const predictions = await generateAiPredictions(planetLord, mahaPeriod, inp)
       setAiPredictions(predictions)
     } catch (e) {
@@ -320,10 +343,7 @@ const westernChartSvg = westernChartSvgRaw
     }
   }
 
-  // AI Prediction Generator
-  async function generateAiPredictions(planet, mahaPeriod, birthDetails) {
-    // This is a mock AI prediction generator
-    // In a real implementation, this would call an AI service or API
+  async function generateAiPredictions(planet, mahaPeriod) {
     return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`
   }
 
@@ -378,52 +398,61 @@ const westernChartSvg = westernChartSvgRaw
       'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
     ]
 
-    if (Array.isArray(pl) && pl.length >= 2 && typeof pl[1] === 'object' && !Array.isArray(pl[1])) {
-      const map = pl[1]
-      return Object.keys(map).map(name => {
-        const v = map[name] || {}
-        const signNum = v.current_sign != null ? Number(v.current_sign) : undefined
-        const currentSign = signNum ? `${getZodiacSign(signNum)} (${signNum})` : (v.sign_name || v.sign || v.rashi)
-        return {
-          name,
-          currentSign,
-          house: v.house_number,
-          retro: (String(v.isRetro).toLowerCase() === 'true') || v.is_retro || v.retrograde || false,
-          fullDegree: typeof v.fullDegree === 'number' ? v.fullDegree : (typeof v.longitude === 'number' ? v.longitude : undefined),
-          normDegree: typeof v.normDegree === 'number' ? v.normDegree : undefined
-        }
-      })
+    if (typeof pl === 'object' && !Array.isArray(pl)) {
+      return Object.entries(pl)
+        .filter(([name]) => name.toLowerCase() !== 'ascendant') 
+        .map(([name, v]) => {
+          const signNum = v.current_sign != null ? Number(v.current_sign) : undefined
+          const currentSign = signNum
+            ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
+            : (v.zodiac_sign_name || v.sign_name || v.sign)
+
+          return {
+            name,
+            currentSign,
+            house: v.house_number,
+            nakshatra: v.nakshatra_name,
+            pada: v.nakshatra_pada,
+            retro:
+              v.isRetro === "true" ||
+              v.retrograde === true ||
+              v.is_retro === true,
+            fullDegree: v.fullDegree ?? v.longitude,
+            normDegree: v.normDegree,
+          }
+        })
     }
 
-    const arr = Array.isArray(pl) ? pl : (pl.planets || pl.planet_positions || [])
-    const list = Array.isArray(arr) ? arr : Object.values(arr || {})
-    return list.map(p => {
-      const signNum = p.current_sign != null ? Number(p.current_sign) : undefined
-      const currentSign = signNum ? `${getZodiacSign(signNum)} (${signNum})` : (p.sign || p.rashi || p.sign_name)
-      return {
-        name: p.name || p.planet,
-        currentSign,
-        house: p.house || p.house_number,
-        retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === 'true',
-        fullDegree: typeof p.fullDegree === 'number' ? p.fullDegree : (typeof p.longitude === 'number' ? p.longitude : undefined),
-        normDegree: typeof p.normDegree === 'number' ? p.normDegree : undefined
-      }
-    })
+    const arr = Array.isArray(pl)
+      ? pl
+      : pl.planets || pl.planet_positions || Object.values(pl || {})
+
+    return arr
+      .filter(p => (p.name || p.planet)?.toLowerCase() !== 'ascendant')
+      .map(p => {
+        const signNum = p.current_sign != null ? Number(p.current_sign) : undefined
+        const currentSign = signNum
+          ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
+          : (p.sign || p.rashi || p.sign_name)
+
+        return {
+          name: p.name || p.planet,
+          currentSign,
+          house: p.house || p.house_number,
+          nakshatra: p.nakshatra_name,
+          pada: p.nakshatra_pada,
+          retro:
+            p.retrograde || p.is_retro || p.isRetro === "true",
+          fullDegree: p.fullDegree ?? p.longitude,
+          normDegree: p.normDegree,
+        }
+      })
   }, [result])
 
-  const ProgressBar = ({ value = 0 }) => (
-    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div className="h-2 bg-blue-600" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
-    </div>
-  )
-
-  // ------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      {/* Header */}
       <header className="border-b border-purple-200 bg-white/70 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 flex items-center justify-center gap-3">
-          {/* <Sparkles className="w-8 h-8 text-gold" /> */}
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gold via-purple-600 to-indigo-600 bg-clip-text text-transparent">
             Cosmic Insights
           </h1>
@@ -437,374 +466,383 @@ const westernChartSvg = westernChartSvgRaw
           </div>
         )}
 
-        {/* Form */}
-{/* ==== FORM ==== */}
-<form onSubmit={onSubmit}
-      className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto">
-
-  {/* Header */}
-{/* ==== FORM HEADER ==== */}
-<div className="form-header">
-  <div className="form-header-icon">
-    <Moon className="w-6 h-6 text-gold" />
-  </div>
-
-  <div className="form-header-text">
-    <h3 className="form-title">Birth Details</h3>
-    <p className="form-subtitle">Enter your cosmic coordinates</p>
-  </div>
-</div>
-
-<div className="form-grid">
-
-  {/* ---------- Date of Birth ---------- */}
-  <div className="col-span-5">
-    <div className="form-field">
-      <label className="form-field-label">
-        <Calendar className="w-5 h-5 text-gold" />
-        Date of Birth
-      </label>
-      <input
-        type="date"
-        value={dob}
-        onChange={e => setDob(e.target.value)}
-        required
-        className="form-field-input"
-      />
-      <p className="form-field-helper">Format: YYYY-MM-DD</p>
-    </div>
-  </div>
-
-  {/* ---------- Time of Birth ---------- */}
-  <div className="col-span-3">
-    <div className="form-field">
-      <label className="form-field-label">
-        <Clock className="w-5 h-5 text-gold" />
-        Time
-      </label>
-      <input
-        type="time"
-        value={tob}
-        onChange={e => setTob(e.target.value)}
-        step="1"
-        required
-        className="form-field-input"
-      />
-      <p className="form-field-helper">24-hour format</p>
-    </div>
-  </div>
-
-  {/* ---------- Place of Birth ---------- */}
-  <div className="col-span-4" style={{ position: 'relative' }}>
-    <div className="form-field">
-      <label className="form-field-label">
-        <MapPin className="w-5 h-5 text-gold" />
-        Place of Birth
-      </label>
-
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <input
-          placeholder="City, Country"
-          value={place}
-          onChange={e => {
-            const q = e.target.value
-            setPlace(q)
-            setSelectedCoords(null)
-            fetchSuggestions(q)
-          }}
-          autoComplete="off"
-          required
-          className="form-field-input"
-          style={{ flex: 1 }}
-        />
-        <button
-          type="button"
-          onClick={useMyLocation}
-          disabled={locating}
-          className="place-btn"
-        >
-          {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-          <span className="hidden md:inline">Use Location</span>
-        </button>
-      </div>
-
-      <p className="form-field-helper">e.g., Mumbai, India</p>
-    </div>
-
-    {/* Suggestions */}
-    {suggestions.length > 0 && (
-      <div className="suggestions">
-        {suggestions.map((s, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => {
-              setPlace(s.label)
-              setSelectedCoords(s)
-              setSuggestions([])
-            }}
-            className="suggestion-item"
-          >
-            <MapPin className="w-3.5 h-3.5 text-gold" />
-            <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {s.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-</div>
-
-  {/* Action Buttons */}
-  <div className="mt-8 flex gap-3">
-    <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
-      {submitting ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          Calculating…
-        </>
-      ) : (
-        <>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Get Predictions
-        </>
-      )}
-    </button>
-    <button
-      type="reset"
-      onClick={() => {
-        setDob('')
-        setTob('')
-        setPlace('')
-        setResult(null)
-        setError('')
-        setSelectedMaha(null)
-      }}
-      className="btn btn-ghost"
-    >
-      <RotateCcw className="w-4 h-4" />
-    </button>
-  </div>
-</form>
-
-{/* Results */}
-{result && (
-  <div style={{ marginTop: '3rem', maxWidth: '90rem', marginLeft: 'auto', marginRight: 'auto' }}>
-
-    {/* Birth Info */}
-    <div className="card">
-      <div className="results-header">
-        <Sun style={{ color: '#ca8a04' }} />
-        <h3 className="results-title">Birth Information</h3>
-      </div>
-      <div className="birth-info-grid">
-        {[
-          { icon: Calendar, label: 'Date', value: result.input.dob },
-          { icon: Clock, label: 'Time', value: result.input.tob },
-          { icon: MapPin, label: 'Place', value: result.input.place },
-          { icon: Orbit, label: 'Running Dasa', value: currentDashaChain || '—' }
-        ].map((item, i) => {
-          const Icon = item.icon
-          return (
-            <div key={i} className="info-card">
-              <div className="info-label">
-                <Icon />
-                {item.label}
-              </div>
-              <div className="info-value">{item.value}</div>
+        {/* ==== FORM ==== */}
+        <form onSubmit={onSubmit}
+              className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto">
+          <div className="form-header">
+            <div className="form-header-icon">
+              <Moon className="w-6 h-6 text-gold" />
             </div>
-          )
-        })}
-      </div>
-    </div>
-
-{/* Western Natal Wheel Chart */}
-{result?.westernChartSvg && result.westernChartSvg.trim().startsWith('<svg') ? (
-  <div
-    className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
-    style={{ maxWidth: '640px', margin: '0 auto' }}
-  >
-    <div
-      dangerouslySetInnerHTML={{ __html: result.westernChartSvg }}
-      className="w-full"
-      style={{ aspectRatio: '1 / 1' }}
-    />
-  </div>
-) : result && !result.westernChartSvg ? (
-  <div className="card mt-8 p-6 bg-yellow-50 border border-yellow-300 rounded-lg">
-    <p className="text-sm font-medium text-yellow-800">
-      Western chart not available.
-    </p>
-    <p className="text-xs text-yellow-600 mt-1">
-      Check: API key, internet, or try different birth details.
-    </p>
-  </div>
-) : null}
-
-    {/* Planet Placements */}
-    {placements.length > 0 && (
-      <div className="card">
-        <div className="results-header">
-          <Orbit style={{ color: '#7c3aed' }} />
-          <h3 className="results-title">Planet Placements (D1)</h3>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="planet-table">
-            <thead>
-              <tr>
-                <th>Planet</th>
-                <th>Sign</th>
-                <th>House</th>
-                <th>Full Degree</th>
-                <th>Norm Degree</th>
-                <th>Retro</th>
-                <th>Strength</th>
-                <th style={{ width: '10rem' }}>Ishta</th>
-                <th style={{ width: '10rem' }}>Kashta</th>
-              </tr>
-            </thead>
-            <tbody>
-              {placements.map(p => {
-                // Robust lookup for the shadbala entry for this planet
-                const pname = (p.name || '').toString().trim()
-                const lname = pname.toLowerCase()
-                let row = shadbalaRows.find(r => (r.name || '').toLowerCase() === lname)
-                if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().startsWith(lname))
-                if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().includes(lname))
-                if (!row && lname.length >= 3) row = shadbalaRows.find(r => (r.name || '').toLowerCase().slice(0, 3) === lname.slice(0, 3))
-
-                // defensive numeric parsing + clamp to 0..100 for percentages
-                const parsePct = (v) => {
-                  const n = Number(v)
-                  return Number.isFinite(n) ? n : null
-                }
-                const pctVal = row ? parsePct(row.percent ?? row.percentage ?? row.percentage_strength ?? row.shadbala_percent ?? row.strength_percent) : null
-                const ishtaVal = row ? parsePct(row.ishta ?? row.ishta_phala ?? row.ishta_bala ?? row.ishta_percent) : null
-                const kashtaVal = row ? parsePct(row.kashta ?? row.kashta_phala ?? row.kashta_bala ?? row.kashta_percent) : null
-
-                return (
-                  <tr key={p.name}>
-                    <td style={{ fontWeight: 500, color: '#1f2937' }}>{pname}</td>
-                    <td style={{ color: '#374151' }}>{p.currentSign || '—'}</td>
-                    <td style={{ color: '#374151' }}>{p.house ?? '—'}</td>
-                    <td style={{ color: '#374151' }}>
-                      {typeof p.fullDegree === 'number' ? p.fullDegree.toFixed(2) + '°' : '—'}
-                    </td>
-                    <td style={{ color: '#374151' }}>
-                      {typeof p.normDegree === 'number' ? p.normDegree.toFixed(2) + '°' : '—'}
-                    </td>
-                    <td>
-                      {p.retro ? (
-                        <span style={{ color: '#198754' }}>Retro</span>
-                      ) : (
-                        <span className="retro-badge">Not Retro</span>
-                      )}
-                    </td>
-                    <td style={{ color: '#374151' }}>
-                      {pctVal != null ? `${pctVal.toFixed(1)}%` : '—'}
-                    </td>
-                    <td style={{ width: '10rem' }}>
-                      {ishtaVal != null ? (
-                        <div className="progress-container">
-                          <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${ishtaVal}%` }}></div>
-                          </div>
-                          <div className="progress-label">{ishtaVal.toFixed(1)}%</div>
-                        </div>
-                      ) : '—'}
-                    </td>
-                    <td style={{ width: '10rem' }}>
-                      {kashtaVal != null ? (
-                        <div className="progress-container">
-                          <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${kashtaVal}%` }}></div>
-                          </div>
-                          <div className="progress-label">{kashtaVal.toFixed(1)}%</div>
-                        </div>
-                      ) : '—'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )}
-
-    {/* Vimshottari Maha Dasha */}
-    <div className="card">
-      <div className="results-header">
-        <Moon style={{ color: '#4f46e5' }} />
-        <h3 className="results-title">Vimshottari Maha Dasha</h3>
-      </div>
-      {mahaRows.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="planet-table">
-            <thead>
-              <tr>
-                <th>Planet</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>AI Predictions</th>
-                <th>MicroAnalysis</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mahaRows.map(row => {
-                const isSel = selectedMaha === row.lord
-                const startVal = row.start ? new Date(row.start) : null
-                const endVal = row.end ? new Date(row.end) : null
-                const fmt = d => d ? d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
-                
-                return (
-                  <tr 
-                    key={row.key}
-                    onClick={() => openAntarModalFor(row.lord)}
-                    className={isSel ? 'selected' : ''}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td style={{ fontWeight: 500, color: '#1f2937' }}>{row.lord || '—'}</td>
-                    <td style={{ color: '#374151' }}>{startVal ? fmt(startVal) : '—'}</td>
-                    <td style={{ color: '#374151' }}>{endVal ? fmt(endVal) : '—'}</td>
-                    <td>
-                      <button 
-                        type="button" 
-                        className="btn btn-primary"
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                        onClick={(e) => { e.stopPropagation(); openAiPredictionsFor(row.lord); }}
-                      >
-                        Predict <Cpu />
-                      </button>
-                    </td>
-                    <td>
-                      <button 
-                        type="button" 
-                        className="btn btn-ghost"
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                        onClick={(e) => { e.stopPropagation(); setAntarOpen(true); openAntarModalFor(row.lord); }}
-                      >
-                        MicroAnalysis
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          <div className="maha-note">
-            Note: Click a row to show Antar Dasha periods for that Maha Dasha.
+            <div className="form-header-text">
+              <h3 className="form-title">Birth Details</h3>
+              <p className="form-subtitle">Enter your cosmic coordinates</p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="empty-state">
-          No Maha Dasha data. Submit the form above.
-        </div>
-      )}
-    </div>
-  </div>
-)}
+
+          <div className="form-grid">
+            {/* Date */}
+            <div className="col-span-5">
+              <div className="form-field">
+                <label className="form-field-label">
+                  <Calendar className="w-5 h-5 text-gold" />
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={e => setDob(e.target.value)}
+                  required
+                  className="form-field-input"
+                />
+                <p className="form-field-helper">Format: YYYY-MM-DD</p>
+              </div>
+            </div>
+
+            {/* Time */}
+            <div className="col-span-3">
+              <div className="form-field">
+                <label className="form-field-label">
+                  <Clock className="w-5 h-5 text-gold" />
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={tob}
+                  onChange={e => setTob(e.target.value)}
+                  step="1"
+                  required
+                  className="form-field-input"
+                />
+                <p className="form-field-helper">24-hour format</p>
+              </div>
+            </div>
+
+            {/* Place */}
+            <div className="col-span-4" style={{ position: 'relative' }}>
+              <div className="form-field">
+                <label className="form-field-label">
+                  <MapPin className="w-5 h-5 text-gold" />
+                  Place of Birth
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    placeholder="City, Country"
+                    value={place}
+                    onChange={e => {
+                      const q = e.target.value
+                      setPlace(q)
+                      setSelectedCoords(null)
+                      fetchSuggestions(q)
+                    }}
+                    autoComplete="off"
+                    required
+                    className="form-field-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={useMyLocation}
+                    disabled={locating}
+                    className="place-btn"
+                  >
+                    {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                    <span className="hidden md:inline">Use Location</span>
+                  </button>
+                </div>
+                <p className="form-field-helper">e.g., Mumbai, India</p>
+              </div>
+
+              {/* Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="suggestions">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setPlace(s.label)
+                        setSelectedCoords(s)
+                        setSuggestions([])
+                      }}
+                      className="suggestion-item"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-gold" />
+                      <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {s.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Timezone selector */}
+            <div className="col-span-12 md:col-span-12">
+              <div className="form-field timezone-field">
+                <label className="form-field-label">
+                  <Clock className="w-5 h-5 text-gold" />
+                  Timezone (UTC offset)
+                </label>
+                <select
+                  value={tzHours}
+                  onChange={(e) => setTzHours(parseFloat(e.target.value))}
+                  className="form-field-input timezone-select"
+                >
+                  {[
+                    -12,-11,-10,-9.5,-9,-8,-7,-6,-5,-4.5,-4,-3.5,-3,-2,-1,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,5.75,6,6.5,7,7.5,8,8.75,9,9.5,10,10.5,11,12,12.75,13,14
+                  ].map(v => {
+                    const sign = v >= 0 ? '+' : ''
+                    const labelHours = Math.trunc(Math.abs(v))
+                    const mins = Math.round((Math.abs(v) - labelHours) * 60)
+                    const hhmm = `${sign}${labelHours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}`
+                    const pretty = `UTC${hhmm}`
+                    return <option key={v} value={v}>{pretty}{v===5.5 ? ' (IST default)' : ''}</option>
+                  })}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="form-actions">
+            <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Calculating…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Get Predictions
+                </>
+              )}
+            </button>
+            <button
+              type="reset"
+              onClick={() => {
+                setDob('')
+                setTob('')
+                setPlace('')
+                setResult(null)
+                setError('')
+                setSelectedMaha(null)
+                setTzHours(5.5) // default
+              }}
+              className="btn btn-ghost"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
+
+        {/* Results */}
+        {result && (
+          <div style={{ marginTop: '3rem', maxWidth: '90rem', marginLeft: 'auto', marginRight: 'auto' }}>
+            {/* Birth Info */}
+            <div className="card">
+              <div className="results-header">
+                <Sun style={{ color: '#ca8a04' }} />
+                <h3 className="results-title">Birth Information</h3>
+              </div>
+              <div className="birth-info-grid">
+                {[
+                  { icon: Calendar, label: 'Date', value: result.input.dob },
+                  { icon: Clock, label: 'Time', value: result.input.tob },
+                  { icon: MapPin, label: 'Place', value: result.input.place },
+                  { icon: Orbit, label: 'Running Dasa', value: currentDashaChain || '—' },
+                  // show timezone used
+                  { icon: Clock, label: 'Timezone', value: `UTC${(() => {
+                      const v = Number(result.input.tz)
+                      const sign = v >= 0 ? '+' : ''
+                      const ah = Math.trunc(Math.abs(v))
+                      const mins = Math.round((Math.abs(v) - ah) * 60)
+                      return `${sign}${String(ah).padStart(2,'0')}:${String(mins).padStart(2,'0')}`
+                  })()}` }
+                ].map((item, i) => {
+                  const Icon = item.icon
+                  return (
+                    <div key={i} className="info-card">
+                      <div className="info-label">
+                        <Icon />
+                        {item.label}
+                      </div>
+                      <div className="info-value">{item.value}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Western Natal Wheel Chart */}
+            {result?.westernChartSvg && result.westernChartSvg.trim().startsWith('<svg') ? (
+              <div
+                className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
+                style={{ maxWidth: '640px', margin: '0 auto' }}
+              >
+                <div
+                  dangerouslySetInnerHTML={{ __html: result.westernChartSvg }}
+                  className="w-full"
+                  style={{ aspectRatio: '1 / 1' }}
+                />
+              </div>
+            ) : result && !result.westernChartSvg ? (
+              <div className="card mt-8 p-6 bg-yellow-50 border border-yellow-300 rounded-lg">
+                <p className="text-sm font-medium text-yellow-800">
+                  Western chart not available.
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Check: API key, internet, or try different birth details.
+                </p>
+              </div>
+            ) : null}
+
+            {/* Planet Placements */}
+            {placements.length > 0 ? (
+              <div
+                ref={setPlacementsRef}
+                id="planet-placements"
+                className="card"
+                style={{ scrollMarginTop: '96px' }}  // keeps it nicely below your fixed header when scrolled
+              >
+                <div className="results-header">
+                  <Orbit style={{ color: '#7c3aed' }} />
+                  <h3 className="results-title">Planet Placements (D1)</h3>
+                </div>
+
+                <div className="table-scroll-container">
+                  <table className="planet-table">
+                    <thead>
+                      <tr>
+                        <th>Planet</th>
+                        <th>Sign</th>
+                        <th>House</th>
+                        <th>Nakshatra &amp; Pada</th>
+                        <th>Full Degree</th>
+                        <th>Norm Degree</th>
+                        <th>Retro</th>
+                        <th>Strength</th>
+                        <th>Ishta</th>
+                        <th>Kashta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {placements.map(p => {
+                        const pname = (p.name || '').toString().trim()
+                        const lname = pname.toLowerCase()
+
+                        // match shadbala row
+                        let row = shadbalaRows.find(r => (r.name || '').toLowerCase() === lname)
+                        if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().startsWith(lname))
+                        if (!row) row = shadbalaRows.find(r => (r.name || '').toLowerCase().includes(lname))
+
+                        const parsePct = (v) => {
+                          const n = Number(v)
+                          return Number.isFinite(n) ? n : null
+                        }
+                        const pctVal   = row ? parsePct(row.percent ?? row.percentage ?? row.percentage_strength ?? row.shadbala_percent ?? row.strength_percent) : null
+                        const ishtaVal = row ? parsePct(row.ishta   ?? row.ishta_phala ?? row.ishta_bala ?? row.ishta_percent) : null
+                        const kashtaVal= row ? parsePct(row.kashta  ?? row.kashta_phala?? row.kashta_bala?? row.kashta_percent): null
+
+                        return (
+                          <tr key={p.name}>
+                            <td style={{ fontWeight: 500, color: '#1f2937' }}>{pname}</td>
+                            <td>{p.currentSign || '—'}</td>
+                            <td>{p.house ?? '—'}</td>
+                            <td>{`${p.nakshatra ?? '—'} (Pada:${p.pada ?? '—'})`}</td>
+                            <td>{typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}</td>
+                            <td>{typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}</td>
+                            <td>{p.retro ? <span style={{ color: '#198754' }}>Retro</span> : <span className="retro-badge">Not Retro</span>}</td>
+                            <td>{pctVal != null ? `${pctVal.toFixed(1)}%` : '—'}</td>
+                            <td style={{ width: '10rem' }}>
+                              {ishtaVal != null ? (
+                                <div className="progress-container">
+                                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${ishtaVal}%` }} /></div>
+                                  <div className="progress-label">{ishtaVal.toFixed(1)}%</div>
+                                </div>
+                              ) : '—'}
+                            </td>
+                            <td style={{ width: '10rem' }}>
+                              {kashtaVal != null ? (
+                                <div className="progress-container">
+                                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${kashtaVal}%` }} /></div>
+                                  <div className="progress-label">{kashtaVal.toFixed(1)}%</div>
+                                </div>
+                              ) : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="card">
+                <div className="empty-state">No planet data found. Submit the form or try a different timezone.</div>
+              </div>
+            )}
+
+            {/* Vimshottari Maha Dasha */}
+            <div className="card">
+              <div className="results-header">
+                <Moon style={{ color: '#4f46e5' }} />
+                <h3 className="results-title">Vimshottari Maha Dasha</h3>
+              </div>
+
+              {mahaRows.length > 0 ? (
+                <div className="table-scroll-container">
+                  <table className="planet-table">
+                    <thead>
+                      <tr>
+                        <th>Planet</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>AI Predictions</th>
+                        <th>MicroAnalysis</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mahaRows.map(row => {
+                        const startVal = row.start ? new Date(row.start) : null
+                        const endVal   = row.end   ? new Date(row.end)   : null
+                        const fmt = (d) => d ? d.toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' }) : '—'
+                        return (
+                          <tr key={row.key} onClick={() => openAntarModalFor(row.lord)} style={{ cursor:'pointer' }}>
+                            <td style={{ fontWeight: 500, color: '#1f2937' }}>{row.lord || '—'}</td>
+                            <td>{fmt(startVal)}</td>
+                            <td>{fmt(endVal)}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ fontSize:'0.75rem', padding:'0.25rem 0.75rem' }}
+                                onClick={(e) => { e.stopPropagation(); openAiPredictionsFor(row.lord); }}>
+                                Predict <Cpu />
+                              </button>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ fontSize:'0.75rem', padding:'0.25rem 0.75rem' }}
+                                onClick={(e) => { e.stopPropagation(); openAntarModalFor(row.lord); }}>
+                                MicroAnalysis
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="maha-note">Note: Click a row to show Antar Dasha periods for that Maha Dasha.</div>
+                </div>
+              ) : (
+                <div className="empty-state">No Maha Dasha data. Submit the form above.</div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Antar Dasha Modal */}
         <Modal
@@ -842,97 +880,38 @@ const westernChartSvg = westernChartSvgRaw
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* Header Card */}
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <Star className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-indigo-900">
-                        {selectedMaha} Maha Dasha Periods
-                      </h3>
-                    </div>
-                    <p className="text-sm text-indigo-700">
-                      Sub-periods (Antar Dashas) within the main {selectedMaha} planetary period according to Vimsottari system
-                    </p>
-                  </div>
-
-                  {/* Antar Dasha List */}
-                  <div className="space-y-2">
-                    {antarRows.map((ad, i) => {
-                      const startDate = ad.start ? new Date(ad.start).toLocaleDateString('en-GB', { 
-                        year: 'numeric', month: 'short', day: 'numeric' 
-                      }) : '—'
-                      const endDate = ad.end ? new Date(ad.end).toLocaleDateString('en-GB', { 
-                        year: 'numeric', month: 'short', day: 'numeric' 
-                      }) : '—'
-                      
-                      // Calculate duration in years/months
-                      let duration = '—'
-                      let durationColor = 'text-gray-500'
-                      if (ad.start && ad.end) {
-                        const start = new Date(ad.start)
-                        const end = new Date(ad.end)
-                        const diffMs = end.getTime() - start.getTime()
-                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-                        const years = Math.floor(diffDays / 365)
-                        const months = Math.floor((diffDays % 365) / 30)
-                        
-                        if (years > 2) {
-                          duration = months > 0 ? `${years}y ${months}m` : `${years}y`
-                          durationColor = 'text-purple-600'
-                        } else if (years > 0) {
-                          duration = months > 0 ? `${years}y ${months}m` : `${years}y`
-                          durationColor = 'text-blue-600'
-                        } else if (months > 6) {
-                          duration = `${months}m`
-                          durationColor = 'text-green-600'
-                        } else if (months > 0) {
-                          duration = `${months}m`
-                          durationColor = 'text-yellow-600'
-                        } else {
-                          duration = `${diffDays}d`
-                          durationColor = 'text-red-600'
-                        }
-                      }
-
-                      return (
-                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-gold/20 to-purple-100 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-bold text-purple-700">
-                                  {ad.lord?.slice(0, 2)?.toUpperCase() || '—'}
-                                </span>
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-base">{ad.lord}</h4>
-                                <p className="text-xs text-gray-500">Antar Dasha Lord</p>
-                              </div>
+                <div className="space-y-2">
+                  {antarRows.map((ad, i) => {
+                    const startDate = ad.start ? new Date(ad.start).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+                    const endDate = ad.end ? new Date(ad.end).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+                    return (
+                      <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-gold/20 to-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-purple-700">
+                                {ad.lord?.slice(0, 2)?.toUpperCase() || '—'}
+                              </span>
                             </div>
-                            <div className="text-right">
-                              <div className={`text-sm font-semibold ${durationColor}`}>
-                                {duration}
-                              </div>
-                              <div className="text-xs text-gray-500">Duration</div>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                              <div className="text-xs text-green-700 font-medium mb-1">START DATE</div>
-                              <div className="text-green-800 font-semibold">{startDate}</div>
-                            </div>
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                              <div className="text-xs text-red-700 font-medium mb-1">END DATE</div>
-                              <div className="text-red-800 font-semibold">{endDate}</div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-base">{ad.lord}</h4>
+                              <p className="text-xs text-gray-500">Antar Dasha Lord</p>
                             </div>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="text-xs text-green-700 font-medium mb-1">START DATE</div>
+                            <div className="text-green-800 font-semibold">{startDate}</div>
+                          </div>
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="text-xs text-red-700 font-medium mb-1">END DATE</div>
+                            <div className="text-red-800 font-semibold">{endDate}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
