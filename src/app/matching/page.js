@@ -510,17 +510,6 @@ export default function MatchingPage() {
           --c-pink: #ec4899;
         }
 
-        /* ------------------------------------------------------ */
-        /*  Base layout                                            */
-        /* ------------------------------------------------------ */
-        .container {
-          max-width: 1240px;
-          margin: 0 auto;
-          padding: 1.5rem;
-          font-family: var(--font-body);
-          background: var(--c-bg);
-          color: var(--c-text);
-        }
 
         h1, h2, h3, h4 { font-family: var(--font-heading); margin-bottom: .75rem; }
         h1 { font-size: 2.25rem; text-align:center; }
@@ -767,16 +756,28 @@ color: #fff;
         /*  Misc                                                   */
         /* ------------------------------------------------------ */
         .error { background: #fee2e2; color: var(--c-danger); padding: .75rem; border-radius: .5rem; margin-bottom: 1rem; }
-      `}</style>
+
+            
+         `}</style>
 
       {/* ---------------------------------------------------------- */}
       {/*  PAGE CONTENT                                              */}
       {/* ---------------------------------------------------------- */}
-      <div className="container">
-        <h1>Match Making</h1>
-        <p style={{ textAlign: "center", color: "var(--c-muted)", marginBottom: "1.5rem" }}>
+      <div className="app">
+
+        {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
+        <header className="header">
+        <h1 className="title">Match Making</h1>
+        <p className="subtitle">
           Enter birth details for both to get Ashtakoot score.
         </p>
+        </header>
 
         {error && <div className="error">{error}</div>}
 
