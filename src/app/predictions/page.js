@@ -419,15 +419,23 @@ const westernChartSvg = westernChartSvgRaw
 
   // ------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <div className="app">
+
+           {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
       {/* Header */}
-      <header className="border-b border-purple-200 bg-white/70 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-center gap-3">
+      <header className="header">
+        
           {/* <Sparkles className="w-8 h-8 text-gold" /> */}
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gold via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="title">
             Cosmic Insights
           </h1>
-        </div>
+
       </header>
 
       <div className="container mx-auto px-4 py-8">
