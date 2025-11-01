@@ -92,6 +92,7 @@ const Navigation = () => {
         { href: "/numerology", label: "Numerology" },
         { href: "/transit", label: "Planetary Transit" },
         { href: "/cosmic-event-tracker", label: "Cosmic Events Tracker" },
+        { href: "/panchang", label: "Panchang" },
       ],
     },
     { href: "/wallet", label: "Wallet", icon: Wallet },
