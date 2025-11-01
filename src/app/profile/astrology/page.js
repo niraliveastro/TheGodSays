@@ -161,12 +161,18 @@ export default function AstrologerProfilePage() {
   return (
     <>
       <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', padding: '2rem 0' }}>
-        <div className="container">
+        <div className="app">
 
+                  <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+        
           {/* Header */}
-          <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h1 style={{ fontSize: '2.75rem', fontWeight: 700 }}>Astrologer Dashboard</h1>
-            <p style={{ fontSize: '1.125rem', color: 'var(--color-gray-600)', maxWidth: '48rem', margin: '0 auto' }}>
+          <header className='header'>
+            <h1 className='title'>Astrologer Dashboard</h1>
+            <p className='subtitle'>
               Manage your profile, availability, pricing, and earnings.
             </p>
           </header>
