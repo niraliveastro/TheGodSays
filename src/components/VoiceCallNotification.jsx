@@ -1,12 +1,8 @@
-'use client'
-
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Phone, PhoneOff, X, Volume2 } from 'lucide-react'
 
 export default function VoiceCallNotification({ call, onAccept, onReject, onClose }) {
-  const [timeLeft, setTimeLeft] = useState(30) // 30 seconds to respond
+  const [timeLeft, setTimeLeft] = useState(30)
   const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
@@ -50,80 +46,132 @@ export default function VoiceCallNotification({ call, onAccept, onReject, onClos
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="max-w-md w-full mx-4 bg-white shadow-2xl border-2 border-green-200">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <Volume2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Voice Call</h3>
-                <p className="text-sm text-gray-600">From Astrologer {call.userId}</p>
-              </div>
+    <div className="modal-backdrop" onClick={handleReject}>
+      <div 
+        className="modal-container fade-in" 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          maxWidth: '28rem',
+          width: '90%',
+          animation: 'slideUp 0.3s ease-out'
+        }}
+      >
+        {/* Modal Header */}
+        <div className="modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '3rem',
+              height: '3rem',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            }}>
+              <Volume2 style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReject}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+            <div>
+              <h3 className="modal-title" style={{ marginBottom: '0.25rem' }}>Voice Call</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', margin: 0 }}>
+                From User {call.userId?.slice(-4) || 'Unknown'}
+              </p>
+            </div>
           </div>
+          <button className="modal-close-btn" onClick={handleReject}>
+            <X className="modal-close-icon" />
+            <div className="modal-close-ripple"></div>
+          </button>
+        </div>
 
+        {/* Modal Body */}
+        <div className="modal-body">
           {/* Call Type Indicator */}
-          <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-center space-x-2 text-green-700">
-              <Phone className="w-4 h-4" />
-              <span className="text-sm font-medium">Voice Consultation</span>
+          <div style={{
+            padding: '1rem',
+            background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid #6ee7b7',
+            marginBottom: '1.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#065f46', marginBottom: '0.25rem' }}>
+              <Phone style={{ width: '1rem', height: '1rem' }} />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Voice Consultation</span>
             </div>
-            <p className="text-xs text-green-600 mt-1">Audio call without video</p>
+            <p style={{ fontSize: '0.75rem', color: '#047857', margin: 0 }}>
+              Audio call without video
+            </p>
           </div>
 
           {/* Timer */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Auto-reject in:</span>
-              <span className="text-lg font-semibold text-red-600">{timeLeft}s</span>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>Auto-reject in:</span>
+              <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#dc2626' }}>{timeLeft}s</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-red-500 h-2 rounded-full transition-all duration-1000"
-                style={{ width: `${(timeLeft / 30) * 100}%` }}
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ 
+                  width: `${(timeLeft / 30) * 100}%`,
+                  background: '#dc2626'
+                }}
               ></div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3">
-            <Button
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+            <button
               onClick={handleReject}
-              variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              className="btn"
+              style={{
+                flex: 1,
+                background: 'white',
+                color: '#dc2626',
+                border: '2px solid #fca5a5',
+                padding: '0.875rem 1.25rem',
+                fontSize: '0.95rem',
+                fontWeight: 600
+              }}
             >
-              <PhoneOff className="w-4 h-4 mr-2" />
+              <PhoneOff style={{ width: '1.125rem', height: '1.125rem' }} />
               Reject
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleAccept}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="btn btn-primary"
+              style={{
+                flex: 1,
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                border: 'none',
+                padding: '0.875rem 1.25rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+              }}
             >
-              <Phone className="w-4 h-4 mr-2" />
+              <Phone style={{ width: '1.125rem', height: '1.125rem' }} />
               Accept
-            </Button>
+            </button>
           </div>
 
           {/* Call Info */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="text-xs text-gray-500 text-center">
-              Voice call started at {new Date(call.createdAt).toISOString()}
-            </div>
+          <div style={{
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--color-gray-200)',
+            textAlign: 'center'
+          }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', margin: 0 }}>
+              Voice call started at {new Date(call.createdAt?.seconds ? call.createdAt.seconds * 1000 : call.createdAt).toLocaleTimeString()}
+            </p>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
