@@ -54,8 +54,8 @@ const Navigation = () => {
   // Astrologer-specific navigation items
   const astrologerNavItems = [
     { href: "/astrologer-dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/profile/astrology", label: "My Profile", icon: User },
-    { href: `/account/astrologer/${user?.uid}`, label: "Account Settings", icon: Settings },
+    { href: `/account/astrologer/${user?.uid}`, label: "My Profile", icon: User },
+    { href: "/profile/astrology", label: "Account Settings", icon: Settings },
   ];
 
   // Regular user navigation items

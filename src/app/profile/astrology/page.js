@@ -171,7 +171,7 @@ export default function AstrologerProfilePage() {
         
           {/* Header */}
           <header className='header'>
-            <h1 className='title'>Astrologer Dashboard</h1>
+            <h1 className='title'>Account Settings</h1>
             <p className='subtitle'>
               Manage your profile, availability, pricing, and earnings.
             </p>
