@@ -29,6 +29,7 @@ export default function AstrologerProfile() {
   const [editForm, setEditForm] = useState({
     name: '',
     specialization: '',
+    specialties: '',
     bio: '',
     languages: '',
     experience: '',
@@ -67,6 +68,7 @@ export default function AstrologerProfile() {
         setEditForm({
           name: astrologerData.name || '',
           specialization: astrologerData.specialization || '',
+          specialties: (astrologerData.specialties || [astrologerData.specialization]).filter(Boolean).join(', '),
           bio: astrologerData.bio || '',
           languages: (astrologerData.languages || ['English']).join(', '),
           experience: astrologerData.experience || '',
@@ -123,9 +125,12 @@ export default function AstrologerProfile() {
 
     try {
       const docRef = doc(db, 'astrologers', id)
+      const specialtiesArray = editForm.specialties.split(',').map(s => s.trim()).filter(s => s)
+      
       const updatedData = {
         name: editForm.name.trim(),
         specialization: editForm.specialization.trim(),
+        specialties: specialtiesArray,
         bio: editForm.bio.trim(),
         languages: editForm.languages.split(',').map(l => l.trim()).filter(l => l),
         experience: editForm.experience.trim(),
@@ -208,16 +213,16 @@ export default function AstrologerProfile() {
 
   return (
     <>
-                {/* Desktop Layout - Custom Grid */}
-                <style jsx>{`
-                  @media (min-width: 1024px) {
-                    .desktop-layout {
-                      display: grid;
-                      grid-template-columns: 420px 1fr;
-                      gap: var(--space-xl);
-                    }
-                  }
-                `}</style>
+      {/* Desktop Layout - Custom Grid */}
+      <style jsx>{`
+        @media (min-width: 1024px) {
+          .desktop-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: var(--space-xl);
+          }
+        }
+      `}</style>
 
       <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', fontFamily: "'Inter', sans-serif" }}>
         {/* Header Navigation */}
@@ -228,7 +233,7 @@ export default function AstrologerProfile() {
           <div className="container">
             <div style={{ padding: 'var(--space-md) 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
-                onClick={() => router.push('/astrologers')}
+                onClick={() => router.push('/astrologer-dashboard')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -276,8 +281,6 @@ export default function AstrologerProfile() {
                 gap: 'var(--space-xl)'
               }}>
                 
-
-
                 <div className="desktop-layout">
                   {/* Left Side */}
                   <div>
@@ -795,11 +798,33 @@ export default function AstrologerProfile() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Specialization</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    Primary Specialization
+                  </label>
                   <input
                     type="text"
                     value={editForm.specialization}
                     onChange={e => setEditForm({ ...editForm, specialization: e.target.value })}
+                    placeholder="e.g., Vedic Astrology"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--color-gray-300)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '1rem',fontFamily: "'Inter', sans-serif"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    All Specialties (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.specialties}
+                    onChange={e => setEditForm({ ...editForm, specialties: e.target.value })}
+                    placeholder="e.g., Vedic Astrology, Tarot Reading, Numerology"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -809,9 +834,17 @@ export default function AstrologerProfile() {
                       fontFamily: "'Inter', sans-serif"
                     }}
                   />
+                  <p style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-gray-500)',
+                    marginTop: '0.25rem'
+                  }}>
+                    Enter multiple specialties separated by commas
+                  </p>
                 </div>
 
-                <div><label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Bio</label>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Bio</label>
                   <textarea
                     value={editForm.bio}
                     onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
@@ -829,11 +862,14 @@ export default function AstrologerProfile() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Languages (comma separated)</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    Languages (comma separated)
+                  </label>
                   <input
                     type="text"
                     value={editForm.languages}
                     onChange={e => setEditForm({ ...editForm, languages: e.target.value })}
+                    placeholder="e.g., English, Hindi, Punjabi"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -851,6 +887,7 @@ export default function AstrologerProfile() {
                     type="text"
                     value={editForm.experience}
                     onChange={e => setEditForm({ ...editForm, experience: e.target.value })}
+                    placeholder="e.g., 10+ Years"
                     style={{
                       width: '100%',
                       padding: '0.75rem',
