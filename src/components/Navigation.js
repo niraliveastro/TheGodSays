@@ -18,6 +18,8 @@ import {
   ChevronDown,
   MoreHorizontal,
   Sparkles,
+  LayoutDashboard,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -48,6 +50,33 @@ const Navigation = () => {
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+
+  // Astrologer-specific navigation items
+  const astrologerNavItems = [
+    { href: "/astrologer-dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/profile/astrology", label: "My Profile", icon: User },
+    { href: `/account/astrologer/${user?.uid}`, label: "Account Settings", icon: Settings },
+  ];
+
+  // Regular user navigation items
+  const userNavItems = [
+    { href: "/talk-to-astrologer", label: "Talk to Astrologer", icon: Phone },
+    { href: "/predictions", label: "AI Predictions", icon: Star },
+    { href: "/matching", label: "Matching", icon: BookOpen },
+    {
+      href: null,
+      label: "More",
+      icon: MoreHorizontal,
+      children: [
+        { href: "/numerology", label: "Numerology" },
+        { href: "/transit", label: "Planetary Transit" },
+        { href: "/cosmic-event-tracker", label: "Cosmic Events Tracker" },
+        { href: "/panchang", label: "Panchang" },
+      ],
+    },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/profile/user", label: "My Account", icon: User },
+  ];
 
   // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
@@ -80,33 +109,14 @@ const Navigation = () => {
     };
   }, [showMoreDropdown]);
 
-  const navItems = [
-    { href: "/panchang/calender", label: "Panchang", icon: Calendar },
-    { href: "/matching", label: "Matching", icon: BookOpen },
-    { href: "/predictions", label: "Predictions", icon: Star },
-    { href: "/talk-to-astrologer", label: "Talk to Astrologer", icon: Phone },
-    { href: "/wallet", label: "Wallet", icon: Wallet },
-    {
-      href: null,
-      label: "More",
-      icon: MoreHorizontal,
-      children: [
-        { href: "/numerology", label: "Numerology" },
-        { href: "/transit", label: "Transit" },
-        { href: "/cosmic-event-tracker", label: "Cosmic Event Tracker" },
-      ],
-    },
-    { href: "/account", label: "My Account", icon: User },
-  ];
-
-  const filteredNavItems =
-    userProfile?.collection === "astrologers"
-      ? [{ href: "/account", label: "My Account", icon: User }]
-      : navItems;
+  // Determine which nav items to show based on user type
+  const navItems = userProfile?.collection === "astrologers" 
+    ? astrologerNavItems 
+    : userNavItems;
 
   console.log("User profile:", userProfile);
   console.log("User role:", userProfile?.role);
-  console.log("Filtered nav items:", filteredNavItems);
+  console.log("Navigation items:", navItems);
 
   async function handleAccountClick() {
     if (user) {
@@ -227,26 +237,10 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="nav-desktop">
-            {filteredNavItems.map((item) => {
-              const Icon = item.icon
-              
-              if (item.href === '/account') {
-                return (
-                  <button
-                    type="button"
-                    key={item.href}
-                    onClick={handleAccountClick}
-                    className={`nav-button ${
-                      pathname === item.href ? "nav-link-active" : ""
-                    }`}
-                  >
-                    <Icon />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              }
+            {navItems.map((item) => {
+              const Icon = item.icon;
 
-              // Handle dropdown menu (More) 
+              // Handle dropdown menu (More) - only for users
               if (item.children) {
                 const isActive = item.children.some(child => pathname === child.href)
                 return (
@@ -314,29 +308,10 @@ const Navigation = () => {
         {isOpen && (
           <div className="nav-mobile-menu">
             <div className="nav-mobile-menu-content">
-              {filteredNavItems.map((item) => {
-                const Icon = item.icon
-                
-                if (item.href === '/account') {
-                  return (
-                    <button
-                      type="button"
-                      key={item.href}
-                      className={`nav-mobile-button ${
-                        pathname === item.href ? "nav-mobile-link-active" : ""
-                      }`}
-                      onClick={() => {
-                        setIsOpen(false);
-                        handleAccountClick();
-                      }}
-                    >
-                      <Icon />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                }
+              {navItems.map((item) => {
+                const Icon = item.icon;
 
-                // Handle dropdown menu (More) in mobile
+                // Handle dropdown menu (More) in mobile - only for users
                 if (item.children) {
                   const isActive = item.children.some(child => pathname === child.href)
                   return (

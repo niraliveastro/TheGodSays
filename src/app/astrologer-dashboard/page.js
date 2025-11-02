@@ -138,6 +138,26 @@ function AstrologerDashboardContent() {
     }
   }
 
+  // Helper to safely parse Firebase Timestamp to Date
+  const safeParseDate = (timestamp) => {
+    if (!timestamp || !timestamp.seconds) return null
+    const ms = timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000
+    const date = new Date(ms)
+    return isNaN(date.getTime()) ? null : date
+  }
+
+  // Helper to format date safely
+  const formatDate = (timestamp, fallback = 'N/A') => {
+    const date = safeParseDate(timestamp)
+    return date ? date.toLocaleString() : fallback
+  }
+
+  // Helper to format time only
+  const formatTime = (timestamp, fallback = 'Unknown time') => {
+    const date = safeParseDate(timestamp)
+    return date ? date.toLocaleTimeString() : fallback
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -151,7 +171,7 @@ function AstrologerDashboardContent() {
 
   return (
     <>
-      {/* Incoming Call Notification */}
+      {/* Incoming Call Notification - Enhanced with better props for styling */}
       {incomingCall && (
         incomingCall.callType === 'voice' ? (
           <VoiceCallNotification
@@ -159,6 +179,12 @@ function AstrologerDashboardContent() {
             onAccept={() => handleCallAction(incomingCall.id, 'active')}
             onReject={() => handleCallAction(incomingCall.id, 'rejected')}
             onClose={() => setIncomingCall(null)}
+            // Suggested props for improved style (pass to your component)
+            theme="golden" // Custom theme for astrologer app
+            showAvatar={true} // Show user avatar if available
+            animation="slide-down" // Entrance animation
+            buttonSize="lg" // Larger buttons for better UX
+            background="linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)" // Match dashboard
           />
         ) : (
           <CallNotification
@@ -166,6 +192,12 @@ function AstrologerDashboardContent() {
             onAccept={() => handleCallAction(incomingCall.id, 'active')}
             onReject={() => handleCallAction(incomingCall.id, 'rejected')}
             onClose={() => setIncomingCall(null)}
+            // Suggested props for improved style
+            theme="golden"
+            showAvatar={true}
+            animation="slide-down"
+            buttonSize="lg"
+            background="linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)"
           />
         )
       )}
@@ -192,8 +224,18 @@ function AstrologerDashboardContent() {
             </button>
           </header>
 
-          {/* Status Card */}
-          <div className="card" style={{ marginBottom: '2rem' }}>
+          {/* Status Card - Enhanced with subtle shadow and hover */}
+          <div className="card" style={{ 
+            marginBottom: '2rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            background: 'white',
+            transition: 'box-shadow 0.2s ease'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
+          >
             <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Your Status</h2>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -201,7 +243,8 @@ function AstrologerDashboardContent() {
                   width: '1rem',
                   height: '1rem',
                   borderRadius: '50%',
-                  backgroundColor: getStatusColor(status)
+                  backgroundColor: getStatusColor(status),
+                  boxShadow: '0 0 0 2px white, 0 0 0 4px rgba(16, 185, 129, 0.2)' // Glow effect
                 }}></div>
                 <span style={{ textTransform: 'capitalize', fontWeight: 500, fontSize: '1.125rem' }}>
                   {status}
@@ -213,7 +256,30 @@ function AstrologerDashboardContent() {
                     key={s}
                     onClick={() => updateStatus(s)}
                     className={`btn ${status === s ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.5rem', 
+                      padding: '0.5rem 1rem', 
+                      fontSize: '0.875rem',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s ease',
+                      background: status === s ? '#10b981' : 'white',
+                      color: status === s ? 'white' : '#6b7280',
+                      border: status === s ? '1px solid #10b981' : '1px solid #d1d5db'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (status !== s) {
+                        e.currentTarget.style.background = '#f3f4f6'
+                        e.currentTarget.style.transform = 'translateY(-1px)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (status !== s) {
+                        e.currentTarget.style.background = 'white'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                      }
+                    }}
                   >
                     <div style={{
                       width: '0.75rem',
@@ -228,9 +294,15 @@ function AstrologerDashboardContent() {
             </div>
           </div>
 
-          {/* Queue */}
+          {/* Queue - Enhanced with better visuals */}
           {queue.length > 0 && (
-            <div className="card" style={{ marginBottom: '2rem' }}>
+            <div className="card" style={{ 
+              marginBottom: '2rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              background: 'white'
+            }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
                 Waiting Queue ({queue.length})
               </h2>
@@ -242,43 +314,55 @@ function AstrologerDashboardContent() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '0.75rem 1rem',
-                      background: '#dbeafe',
+                      padding: '1rem',
+                      background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
                       border: '1px solid #93c5fd',
-                      borderRadius: '0.75rem'
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 4px rgba(59, 130, 246, 0.1)',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.15)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.1)'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{
-                        width: '2rem',
-                        height: '2rem',
-                        background: '#2563eb',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                         color: 'white',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 600,
-                        fontSize: '0.875rem'
+                        fontWeight: 700,
+                        fontSize: '1rem',
+                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
                       }}>
                         {i + 1}
                       </div>
                       <div>
-                        <p style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>
-                          {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} - User {call.userId}
+                        <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>
+                          {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} - User {call.userId?.slice(-4) || 'Unknown'}
                         </p>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                          Waiting since {new Date(call.createdAt?.seconds * 1000).toLocaleTimeString()}
+                        <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0' }}>
+                          Waiting since {formatTime(call.createdAt)}
                         </p>
                       </div>
                     </div>
                     <span style={{
-                      padding: '0.25rem 0.75rem',
-                      background: '#2563eb',
+                      padding: '0.375rem 0.875rem',
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                       color: 'white',
                       borderRadius: '9999px',
                       fontSize: '0.75rem',
-                      fontWeight: 500
+                      fontWeight: 600,
+                      boxShadow: '0 1px 2px rgba(59, 130, 246, 0.25)'
                     }}>
                       Queued
                     </span>
@@ -288,8 +372,13 @@ function AstrologerDashboardContent() {
             </div>
           )}
 
-          {/* Recent Calls */}
-          <div className="card">
+          {/* Recent Calls - Enhanced with better card styles */}
+          <div className="card" style={{ 
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            background: 'white'
+          }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Calls</h2>
 
             {calls.length === 0 ? (
@@ -306,36 +395,68 @@ function AstrologerDashboardContent() {
                   <div
                     key={call.id}
                     style={{
-                      border: '1px solid var(--color-gray-200)',
-                      borderRadius: '0.75rem',
-                      padding: '1rem'
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      padding: '1.25rem',
+                      background: 'white',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      e.currentTarget.style.borderColor = getCallStatusColor(call.status) + '20'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)'
+                      e.currentTarget.style.borderColor = '#e5e7eb'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{
-                          width: '0.75rem',
-                          height: '0.75rem',
+                          width: '0.875rem',
+                          height: '0.875rem',
                           borderRadius: '50%',
-                          backgroundColor: getCallStatusColor(call.status)
+                          backgroundColor: getCallStatusColor(call.status),
+                          boxShadow: `0 0 0 2px white, 0 0 0 4px ${getCallStatusColor(call.status)}20`
                         }}></div>
                         <div>
-                          <p style={{ fontWeight: 500 }}>
-                            {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from User {call.userId}
+                          <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>
+                            {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from User {call.userId?.slice(-4) || 'Unknown'}
                           </p>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>
-                            {new Date(call.createdAt?.seconds * 1000).toLocaleString()}
+                          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0' }}>
+                            {formatDate(call.createdAt)}
                           </p>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         {call.status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleCallAction(call.id, 'active')}
                               className="btn btn-primary"
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              style={{ 
+                                padding: '0.75rem 1.25rem', 
+                                fontSize: '0.875rem', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.375rem',
+                                borderRadius: '8px',
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                border: 'none',
+                                color: 'white',
+                                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.3)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)'
+                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)'
+                              }}
                             >
                               <CheckCircle style={{ width: '1rem', height: '1rem' }} />
                               Accept
@@ -343,7 +464,26 @@ function AstrologerDashboardContent() {
                             <button
                               onClick={() => handleCallAction(call.id, 'rejected')}
                               className="btn btn-ghost"
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem', borderColor: '#fca5a5', color: '#dc2626' }}
+                              style={{ 
+                                padding: '0.75rem 1.25rem', 
+                                fontSize: '0.875rem', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.375rem', 
+                                borderRadius: '8px',
+                                background: 'white',
+                                border: '1px solid #fca5a5',
+                                color: '#dc2626',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#fee2e2'
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'white'
+                                e.currentTarget.style.transform = 'translateY(0)'
+                              }}
                             >
                               <XCircle style={{ width: '1rem', height: '1rem' }} />
                               Reject
@@ -385,15 +525,54 @@ function AstrologerDashboardContent() {
                                 }
                               }}
                               className="btn btn-primary"
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              style={{ 
+                                padding: '0.75rem 1.25rem', 
+                                fontSize: '0.875rem', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.375rem',
+                                borderRadius: '8px',
+                                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                                border: 'none',
+                                color: 'white',
+                                boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)'
+                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)'
+                              }}
                             >
-                              {call.callType === 'voice' ? <Phone /> : <Video />}
+                              {call.callType === 'voice' ? <Phone style={{ width: '1rem', height: '1rem' }} /> : <Video style={{ width: '1rem', height: '1rem' }} />}
                               Join {call.callType === 'voice' ? 'Voice' : 'Video'}
                             </button>
                             <button
                               onClick={() => handleCallAction(call.id, 'completed')}
                               className="btn btn-ghost"
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem', borderColor: '#fca5a5', color: '#dc2626' }}
+                              style={{ 
+                                padding: '0.75rem 1.25rem', 
+                                fontSize: '0.875rem', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.375rem', 
+                                borderRadius: '8px',
+                                background: 'white',
+                                border: '1px solid #fca5a5',
+                                color: '#dc2626',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#fee2e2'
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'white'
+                                e.currentTarget.style.transform = 'translateY(0)'
+                              }}
                             >
                               <PhoneOff style={{ width: '1rem', height: '1rem' }} />
                               End
@@ -402,13 +581,14 @@ function AstrologerDashboardContent() {
                         )}
 
                         <span style={{
-                          padding: '0.25rem 0.75rem',
+                          padding: '0.375rem 0.75rem',
                           borderRadius: '9999px',
                           fontSize: '0.75rem',
-                          fontWeight: 500,
-                          backgroundColor: getCallStatusColor(call.status) + '20',
+                          fontWeight: 600,
+                          backgroundColor: getCallStatusColor(call.status) + '10',
                           color: getCallStatusColor(call.status),
-                          border: `1px solid ${getCallStatusColor(call.status)}40`
+                          border: `1px solid ${getCallStatusColor(call.status)}30`,
+                          textTransform: 'capitalize'
                         }}>
                           {call.status}
                         </span>
@@ -416,8 +596,16 @@ function AstrologerDashboardContent() {
                     </div>
 
                     {call.roomName && (
-                      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                        Room: {call.roomName}
+                      <div style={{ 
+                        marginTop: '0.75rem', 
+                        fontSize: '0.875rem', 
+                        color: '#9ca3af',
+                        padding: '0.5rem',
+                        background: '#f9fafb',
+                        borderRadius: '6px',
+                        borderLeft: `3px solid ${getCallStatusColor(call.status)}`
+                      }}>
+                        Room: <code style={{ fontFamily: 'monospace', color: '#6b7280' }}>{call.roomName}</code>
                       </div>
                     )}
                   </div>

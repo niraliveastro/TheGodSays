@@ -42,7 +42,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       const userId = localStorage.getItem('tgs:userId')
       if (!userId) {
-        router.push('/auth/user')
+        router.push('/auth')
         return
       }
 
@@ -135,12 +135,18 @@ export default function ProfilePage() {
   return (
     <>
       <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', padding: '2rem 0' }}>
-        <div className="container">
+        <div className="app">
+                 {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
 
           {/* Header */}
-          <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h1 style={{ fontSize: '2.75rem', fontWeight: 700 }}>My Profile</h1>
-            <p style={{ fontSize: '1.125rem', color: 'var(--color-gray-600)', maxWidth: '48rem', margin: '0 auto' }}>
+          <header className='header'>
+            <h1 className='title'>My Profile</h1>
+            <p className='subtitle'>
               Manage your account details, wallet balance, and call history.
             </p>
           </header>
