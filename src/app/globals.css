@@ -1959,3 +1959,20 @@ body{
   letter-spacing: 0.1em;
   color: #666;
 }
+/*Timezone Input*/
+.col-span-12 { grid-column: 1 / -1; }
+
+/* (optional) if you really want a Tailwind-like md: variant without Tailwind */
+@media (min-width: 768px) {
+  .md\:col-span-12 { grid-column: 1 / -1; }  /* note the escaped colon */
+}
+
+/* Width */
+.col-span-12 { grid-column: 1 / -1; }
+@media (min-width: 768px) { .md\:col-span-12 { grid-column: 1 / -1; } }
+
+/* Timezone-specific */
+.timezone-field { position: relative; margin-bottom: 2rem;}
+.timezone-input-wrap { display:flex; align-items:center; position:relative;}
+.timezone-select { padding-left: 1rem; font-variant-numeric: tabular-nums; } /* adjust here */
+.timezone-select:focus { border-color: var(--color-gold); box-shadow: 0 0 0 3px rgba(212,175,55,.2); }

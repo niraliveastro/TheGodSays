@@ -34,6 +34,8 @@ const API_ENDPOINTS = {
   'horoscope-chart-svg-code': 'horoscope-chart-svg-code',
   // Added for Predictions page
   'planets': 'planets',
+  'planets/extended': 'planets/extended',
+  'western/natal-wheel-chart': 'western/natal-wheel-chart',
   'vimsottari/dasa-information': 'vimsottari/dasa-information',
   'shadbala/summary': 'shadbala/summary',
   'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
