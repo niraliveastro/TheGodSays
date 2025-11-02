@@ -265,7 +265,6 @@ export default function VoiceCallRoom() {
         padding: '2rem 0',
       }}
     >
-      <div className="app">
         {/* Header */}
         <header
           style={{
