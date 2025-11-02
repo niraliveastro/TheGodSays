@@ -461,7 +461,7 @@ export default function VoiceCallRoom() {
             </div>
           </div>
         </div>
-      </div>
+      
 
       {/* Mobile responsive adjustments */}
       <style jsx>{`
