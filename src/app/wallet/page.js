@@ -61,28 +61,20 @@ export default function WalletPage() {
       background: 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
       padding: '2rem 0'
     }}>
-      <div className="container">
+      <div className="app">
+             {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
         {/* Wallet Header */}
-        <header style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            fontWeight: 700,
-            fontFamily: 'var(--font-heading)',
-            color: 'var(--color-gray-900)',
-            marginBottom: '0.75rem',
-            background: 'linear-gradient(135deg, #d4af37, #b8972e)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
+        <header className='header'>
+          <h1 className='title'>
             My Wallet
           </h1>
-          <p style={{
-            color: 'var(--color-gray-600)',
-            fontSize: '1.125rem',
-            maxWidth: '640px',
-            margin: '0 auto'
-          }}>
+          <p className='subtitle'>
             Manage your earnings, view transaction history, and withdraw funds securely.
           </p>
         </header>
