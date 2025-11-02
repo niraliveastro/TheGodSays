@@ -165,6 +165,7 @@ export default function VideoCallRoom() {
     return (
       <div style={{
         minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -366,7 +367,7 @@ export default function VideoCallRoom() {
             </div>
           </div>
         </div>
-      
+      </div>
 
       {/* Mobile responsive adjustments */}
       <style jsx>{`
@@ -381,7 +382,6 @@ export default function VideoCallRoom() {
           }
         }
       `}</style>
-    </div>
     </div>
   )
 }
