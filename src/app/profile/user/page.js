@@ -194,7 +194,7 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 500, color: 'var(--color-gray-900)' }}>
                     {user.name}
                   </h2>
                   <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>

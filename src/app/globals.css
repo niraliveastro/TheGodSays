@@ -1977,3 +1977,241 @@ body{
 .timezone-select { padding-left: 1rem; font-variant-numeric: tabular-nums; } /* adjust here */
 .timezone-select:focus { border-color: var(--color-gold); box-shadow: 0 0 0 3px rgba(212,175,55,.2); }
 
+/* ============================================= */
+/*  RESPONSIVE STYLES FOR TALK TO ASTROLOGER    */
+/* ============================================= */
+
+/* Mobile First - Base styles are for mobile */
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  position: relative;
+}
+
+/* Header responsive */
+.header {
+  text-align: center;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: #555;
+  margin-top: 0.5rem;
+  padding: 0 1rem;
+}
+
+/* Search and Filter responsive */
+.card {
+  padding: 1rem;
+}
+
+/* Astrologer cards - Mobile first grid */
+.astrologer-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 1.5rem;
+}
+
+/* Card adjustments for mobile */
+.card {
+  min-width: auto !important;
+  padding: 1rem !important;
+}
+
+/* Avatar smaller on mobile */
+.avatar {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Name and info text sizing */
+.astrologer-name {
+  font-size: 1rem;
+}
+
+.astrologer-spec {
+  font-size: 0.75rem;
+}
+
+/* Button sizing for mobile */
+.btn-primary,
+.btn-outline {
+  height: 2.5rem !important;
+  padding: 0 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+.btn-primary svg,
+.btn-outline svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+/* Review button smaller */
+.review-btn {
+  font-size: 0.625rem !important;
+  padding: 0.125rem 0.5rem !important;
+  height: 1.5rem !important;
+}
+
+/* ============================================= */
+/*  TABLET BREAKPOINT (640px and up)            */
+/* ============================================= */
+@media (min-width: 640px) {
+  .app {
+    padding: 1.5rem;
+  }
+
+  .header {
+    margin-top: 2rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    padding: 0;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  /* Two columns on tablet */
+  .astrologer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    height: 2.75rem !important;
+    font-size: 0.9375rem !important;
+  }
+}
+
+/* ============================================= */
+/*  DESKTOP BREAKPOINT (1024px and up)          */
+/* ============================================= */
+@media (min-width: 1024px) {
+  .app {
+    padding: 2rem 1rem;
+  }
+
+  .header {
+    margin-top: 3rem;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+
+  /* Three columns on desktop */
+  .astrologer-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  .avatar {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .astrologer-name {
+    font-size: 1.25rem;
+  }
+
+  .astrologer-spec {
+    font-size: 0.875rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    height: 3rem !important;
+    padding: 0 1.5rem !important;
+    font-size: 1rem !important;
+  }
+
+  .btn-primary svg,
+  .btn-outline svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .review-btn {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.75rem !important;
+    height: 1.75rem !important;
+  }
+}
+
+/* ============================================= */
+/*  LARGE DESKTOP (1280px and up)               */
+/* ============================================= */
+@media (min-width: 1280px) {
+  .astrologer-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================= */
+/*  EXTRA MOBILE ADJUSTMENTS                    */
+/* ============================================= */
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 0.8125rem;
+  }
+
+  /* Stack action buttons vertically on very small screens */
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    width: 100%;
+  }
+
+  /* Rating and review section */
+  .rating-review-section {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+
+  /* Smaller language tags */
+  .language-tag {
+    font-size: 0.625rem !important;
+    padding: 0.125rem 0.5rem !important;
+  }
+}

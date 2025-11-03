@@ -192,7 +192,7 @@ export default function AstrologerProfilePage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontWeight: 'bold',
+                      fontWeight: 700,
                       fontSize: '1.75rem',
                     }}
                   >
