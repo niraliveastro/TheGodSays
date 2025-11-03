@@ -41,6 +41,8 @@ const API_ENDPOINTS = {
   'vimsottari/maha-dasas': 'vimsottari/maha-dasas',
   // New combined endpoint returning maha + antar lists grouped by maha
   'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
+  //match-making
+  ,'match-making/ashtakoot-score': 'match-making/ashtakoot-score'
 }
 
 export const astrologyAPI = {
