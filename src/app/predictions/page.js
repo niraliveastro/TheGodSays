@@ -105,18 +105,6 @@ export default function PredictionsPage() {
   const fmtTime = (h, m, s = 0) =>
     `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 
-// put near your other helpers
-const fmtDate = (val) => {
-  if (!val) return '—';
-  const d = new Date(val);
-  if (isNaN(d)) return '—';
-  return d.toLocaleDateString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
   const safeParse = (v) => {
     try { return typeof v === 'string' ? JSON.parse(v) : v } catch { return v }
   }
@@ -606,9 +594,39 @@ const fmtDate = (val) => {
               )}
             </div>
 
-            {/* Timezone selector */}
-            <div className="col-span-12 md:col-span-12">
-              <div className="form-field timezone-field">
+
+          </div>
+
+
+
+          {/* Action Buttons with Timezone */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(12, 1fr)', 
+            gap: '1rem', 
+            alignItems: 'end',
+            marginTop: '1.5rem'
+          }}>
+            {/* Submit Button - Full width on mobile, 3 cols on md+ */}
+            <div style={{ gridColumn: 'span 12' }} className="md:col-span-3">
+              <button type="submit" disabled={submitting} className="btn btn-primary w-full">
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Calculating…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Get Predictions
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Timezone - Full width on mobile, 8 cols on md+ */}
+            <div style={{ gridColumn: 'span 12' }} className="md:col-span-8">
+              <div className="form-field">
                 <label className="form-field-label">
                   <Clock className="w-5 h-5 text-gold" />
                   Timezone (UTC offset)
@@ -616,7 +634,7 @@ const fmtDate = (val) => {
                 <select
                   value={tzHours}
                   onChange={(e) => setTzHours(parseFloat(e.target.value))}
-                  className="form-field-input timezone-select"
+                  className="form-field-input timezone-select w-full"
                 >
                   {[
                     -12,-11,-10,-9.5,-9,-8,-7,-6,-5,-4.5,-4,-3.5,-3,-2,-1,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,5.75,6,6.5,7,7.5,8,8.75,9,9.5,10,10.5,11,12,12.75,13,14
@@ -631,38 +649,25 @@ const fmtDate = (val) => {
                 </select>
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="form-actions">
-            <button type="submit" disabled={submitting} className="btn btn-primary flex-1">
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Calculating…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Get Predictions
-                </>
-              )}
-            </button>
-            <button
-              type="reset"
-              onClick={() => {
-                setDob('')
-                setTob('')
-                setPlace('')
-                setResult(null)
-                setError('')
-                setSelectedMaha(null)
-                setTzHours(5.5) // default
-              }}
-              className="btn btn-ghost"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            {/* Reset Button - Full width on mobile, 1 col on md+ */}
+            <div style={{ gridColumn: 'span 12' }} className="md:col-span-1">
+              <button
+                type="reset"
+                onClick={() => {
+                  setDob('')
+                  setTob('')
+                  setPlace('')
+                  setResult(null)
+                  setError('')
+                  setSelectedMaha(null)
+                  setTzHours(5.5) // default
+                }}
+                className="btn btn-ghost w-full"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </form>
 
@@ -875,70 +880,78 @@ const fmtDate = (val) => {
         )}
 
         {/* Antar Dasha Modal */}
-<Modal
-  open={antarOpen}
-  onClose={() => setAntarOpen(false)}
-  title={selectedMaha ? `${selectedMaha} Maha Dasha — Antar Periods` : 'Antar Dasha'}
-  position="center"
->
-  {antarLoading ? (
-    <div className="py-16 text-center">
-      <Loader2 className="w-10 h-10 text-gold animate-spin mx-auto mb-4" />
-      <div className="text-base text-gray-600 font-medium">Loading Antar Dasha periods...</div>
-      <div className="text-sm text-gray-500 mt-1">Calculating planetary sub-periods</div>
-    </div>
-  ) : antarError ? (
-    <div className="py-6 px-6 text-center">
-      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <X className="w-6 h-6 text-red-600" />
-      </div>
-      <h3 className="text-lg font-semibold text-red-800 mb-2">Unable to Load Data</h3>
-      <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-        {antarError}
-      </p>
-    </div>
-  ) : (
-    <div className="max-h-96 overflow-y-auto">
-      {antarRows.length === 0 ? (
-        <div className="py-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Moon className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">No Antar Dasha Data</h3>
-          <p className="text-sm text-gray-500">
-            No sub-periods found for this Maha Dasha. Please submit the form above to generate data.
-          </p>
-        </div>
-      ) : (
-        <div className="table-scroll-container">
-          <table className="planet-table">
-            <thead>
-              <tr>
-                <th>Antar Lord</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {antarRows.map((ad, i) => (
-                <tr key={`${ad.lord}-${ad.start}-${i}`}>
-                  <td style={{ fontWeight: 500, color: '#1f2937' }}>{ad.lord || '—'}</td>
-                  <td>{fmtDate(ad.start)}</td>
-                  <td>{fmtDate(ad.end)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="maha-note">
-            Showing Antar (sub) periods within <strong>{selectedMaha}</strong> Maha Dasha.
-          </div>
-        </div>
-      )}
-    </div>
-  )}
-</Modal>
-
+        <Modal
+          open={antarOpen}
+          onClose={() => setAntarOpen(false)}
+          title={selectedMaha ? `${selectedMaha} Maha Dasha — Antar Periods` : 'Antar Dasha'}
+          position="center"
+        >
+          {antarLoading ? (
+            <div className="py-16 text-center">
+              <Loader2 className="w-10 h-10 text-gold animate-spin mx-auto mb-4" />
+              <div className="text-base text-gray-600 font-medium">Loading Antar Dasha periods...</div>
+              <div className="text-sm text-gray-500 mt-1">Calculating planetary sub-periods</div>
+            </div>
+          ) : antarError ? (
+            <div className="py-6 px-6 text-center">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <X className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Unable to Load Data</h3>
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                {antarError}
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              {antarRows.length === 0 ? (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Moon className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Antar Dasha Data</h3>
+                  <p className="text-sm text-gray-500">
+                    No sub-periods found for this Maha Dasha. Please submit the form above to generate data.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {antarRows.map((ad, i) => {
+                    const startDate = ad.start ? new Date(ad.start).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+                    const endDate = ad.end ? new Date(ad.end).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+                    return (
+                      <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-gold/20 to-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-purple-700">
+                                {ad.lord?.slice(0, 2)?.toUpperCase() || '—'}
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-base">{ad.lord}</h4>
+                              <p className="text-xs text-gray-500">Antar Dasha Lord</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="text-xs text-green-700 font-medium mb-1">START DATE</div>
+                            <div className="text-green-800 font-semibold">{startDate}</div>
+                          </div>
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="text-xs text-red-700 font-medium mb-1">END DATE</div>
+                            <div className="text-red-800 font-semibold">{endDate}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </Modal>
 
         {/* AI Predictions Modal */}
         <Modal
