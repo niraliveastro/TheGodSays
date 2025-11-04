@@ -220,13 +220,13 @@ export default function AstrologerProfilePage() {
                   </button>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
+                  <h2 style={{ fontSize: '2.25rem', fontWeight: 600, color: 'var(--color-gray-900)', fontFamily: 'var(--font-heading)', lineHeight: 1.3, margin: 0 }}>
                     {astrologer.name}
                     {astrologer.verified && (
                       <CheckCircle style={{ width: '1.25rem', height: '1.25rem', color: '#10b981', display: 'inline-block', marginLeft: '0.5rem' }} />
                     )}
                   </h2>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', margin: 0 }}>
                     {astrologer.specialization} • {astrologer.experience}
                   </p>
                 </div>
@@ -308,7 +308,7 @@ export default function AstrologerProfilePage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <Wallet style={{ width: '1.5rem', height: '1.5rem', color: 'var(--color-gold)' }} />
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Total Earnings</h3>
+                    <h3 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-gray-900)', fontFamily: 'var(--font-heading)', lineHeight: 1.3, margin: 0 }}>Total Earnings</h3>
                   </div>
                   <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: '#10b981' }} />
                 </div>
@@ -322,7 +322,7 @@ export default function AstrologerProfilePage() {
 
               {/* Stats */}
               <div className="card" style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Performance</h3>
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-gray-900)', fontFamily: 'var(--font-heading)', lineHeight: 1.3, marginBottom: '1rem' }}>Performance</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Total Calls</p>
@@ -359,7 +359,7 @@ export default function AstrologerProfilePage() {
           {/* Call History */}
           <div className="card" style={{ marginTop: '2rem', padding: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-gray-900)', fontFamily: 'var(--font-heading)', lineHeight: 1.3, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                 <Clock style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-indigo)' }} />
                 Recent Calls
               </h3>
@@ -403,19 +403,19 @@ export default function AstrologerProfilePage() {
                         {call.type === 'video' ? 'V' : 'A'}
                       </div>
                       <div>
-                        <p style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-gray-900)' }}>
+                        <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-gray-900)', margin: 0 }}>
                           {call.userName || 'User'}
                         </p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', margin: 0 }}>
                           {new Date(call.startedAt).toLocaleString()}
                         </p>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#059669' }}>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#059669', margin: 0 }}>
                         +₹{call.earning?.toFixed(2)}
                       </p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', margin: 0 }}>
                         {call.duration} min
                       </p>
                     </div>

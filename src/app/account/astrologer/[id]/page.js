@@ -211,6 +211,14 @@ export default function AstrologerProfile() {
     window.open(`/talk-to-astrologer/${type}?astrologerId=${astrologer.id}`, '_blank')
   }
 
+  const handleBackNavigation = () => {
+    if (isOwner) {
+      router.push('/astrologer-dashboard')
+    } else {
+      router.push('/talk-to-astrologer')
+    }
+  }
+
   return (
     <>
       {/* Desktop Layout - Custom Grid */}
@@ -233,7 +241,7 @@ export default function AstrologerProfile() {
           <div className="container">
             <div style={{ padding: 'var(--space-md) 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
-                onClick={() => router.push('/astrologer-dashboard')}
+                onClick={handleBackNavigation}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -686,7 +694,8 @@ export default function AstrologerProfile() {
                                   </div>
                                   <div style={{
                                     fontSize: '0.875rem',
-                                    color: 'var(--color-gray-500)'
+                                    color: 'var(--color-gray-500)',
+                                    fontFamily: "Courier New, monospace"
                                   }}>
                                     {review.createdAt
                                       ? new Date(review.createdAt.toDate ? review.createdAt.toDate() : review.createdAt).toLocaleDateString()
