@@ -184,7 +184,7 @@ export default function CosmicEventTracker() {
 
       {/* Header Section */}
       <div className="header">
-        <div className="headerIcon">
+        <div className="headerIcon" style={{width: 36, height: 36,}}>
           <CircleOff className="header-icon" />
         </div>
         <h1 className="title">Cosmic Event Tracker</h1>

@@ -753,7 +753,7 @@ color: #fff;
         </div>
 
         <header className="header">
-        <IoHeartCircle className='headerIcon' style={{ color: 'white', padding:'0.4rem' }}  />
+        <IoHeartCircle className='headerIcon' style={{ color: 'white', padding:'0.4rem', width: 36, height: 36, }}  />
         <h1 className="title">Match Making</h1>
         <p className="subtitle">
           Enter birth details for both to get Ashtakoot score.

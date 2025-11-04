@@ -462,7 +462,7 @@ export default function PredictionsPage() {
 {/* Header */}
       <header className="header">
 
-            <Sparkles className='headerIcon' style={{  color: '#ffff' , padding:'0.4rem'}} />
+            <Sparkles className='headerIcon' style={{  color: '#ffff' , padding:'0.4rem', width: 36, height: 36,}} />
             <h1 className="title" >
               Cosmic Insights
             </h1>
@@ -520,7 +520,7 @@ export default function PredictionsPage() {
                   type="time"
                   value={tob}
                   onChange={e => setTob(e.target.value)}
-                  step="1"
+                  step="60"
                   required
                   className="form-field-input"
                 />
@@ -592,7 +592,25 @@ export default function PredictionsPage() {
 
 
 
-          {/* Action Buttons with Timezone */}
+           {/* Action Buttons with Timezone */}
+          <style jsx>{`
+            @media (max-width: 767px) {
+              .submit-col, .tz-col, .reset-col {
+                grid-column: span 12;
+              }
+            }
+            @media (min-width: 768px) {
+              .submit-col {
+                grid-column: span 3;
+              }
+              .tz-col {
+                grid-column: span 8;
+              }
+              .reset-col {
+                grid-column: span 1;
+              }
+            }
+          `}</style>
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(12, 1fr)', 
@@ -600,8 +618,8 @@ export default function PredictionsPage() {
             alignItems: 'end',
             marginTop: '1.5rem'
           }}>
-            {/* Submit Button - Full width on mobile, 3 cols on md+ */}
-            <div style={{ gridColumn: 'span 12' }} className="md:col-span-3">
+            {/* Submit Button */}
+            <div className="submit-col">
               <button type="submit" disabled={submitting} className="btn btn-primary w-full">
                 {submitting ? (
                   <>
@@ -617,8 +635,8 @@ export default function PredictionsPage() {
               </button>
             </div>
 
-            {/* Timezone - Full width on mobile, 8 cols on md+ */}
-            <div style={{ gridColumn: 'span 12' }} className="md:col-span-8">
+            {/* Timezone */}
+            <div className="tz-col">
               <div className="form-field">
                 <label className="form-field-label">
                   <Clock className="w-5 h-5 text-gold" />
@@ -643,8 +661,8 @@ export default function PredictionsPage() {
               </div>
             </div>
 
-            {/* Reset Button - Full width on mobile, 1 col on md+ */}
-            <div style={{ gridColumn: 'span 12' }} className="md:col-span-1">
+            {/* Reset Button */}
+            <div className="reset-col">
               <button
                 type="reset"
                 onClick={() => {

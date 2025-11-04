@@ -52,20 +52,17 @@ export default function PricingPage() {
       background: 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
       padding: '2rem 0'
     }}>
-      <div className="container">
+      <div className="app">
+
+                          <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
         {/* Header */}
         <header style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            fontWeight: 700,
-            fontFamily: 'var(--font-heading)',
-            color: 'var(--color-gray-900)',
-            marginBottom: '0.75rem',
-            background: 'linear-gradient(135deg, #d4af37, #b8972e)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
+          <h1 className='title'>
             Pricing Settings
           </h1>
           <p style={{
