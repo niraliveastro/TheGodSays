@@ -191,7 +191,7 @@ export default function MatchingPage() {
         latitude: p.latitude,
         longitude: p.longitude,
         timezone: p.timezone,
-        config: { observation_point: "geocentric", ayanamsha: "lahiri" },
+        config: { observation_point: "topocentric", ayanamsha: "lahiri" },
       });
 
       const fPayload = mkSinglePayload(payload.female);
