@@ -2053,7 +2053,7 @@ body{
   margin-bottom: 2rem;
 }
 
-.title {
+/* .title {
   font-family: "Cormorant Garamond", serif;
   font-size: 2rem;
   font-weight: 700;
@@ -2062,7 +2062,7 @@ body{
   background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
-}
+} */
 
 .subtitle {
   font-size: 0.875rem;
