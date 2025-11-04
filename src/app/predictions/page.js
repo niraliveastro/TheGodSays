@@ -461,20 +461,13 @@ export default function PredictionsPage() {
 
 {/* Header */}
       <header className="header">
-        <div className="container" style={{ margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            gap: '1rem', 
-            padding: '1.5rem 0' 
-          }}>
-            <Sparkles style={{ width: '2rem', height: '2rem', color: '#ca8a04' }} />
+
+            <Sparkles className='headerIcon' style={{  color: '#ffff' , padding:'0.4rem'}} />
             <h1 className="title" >
               Cosmic Insights
             </h1>
-          </div>
-        </div>
+  
+
       </header>
 
       <div className="container mx-auto px-4 py-8">

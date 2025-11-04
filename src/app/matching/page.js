@@ -11,6 +11,8 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { IoHeartCircle } from "react-icons/io5";
+
 
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 
@@ -488,33 +490,11 @@ export default function MatchingPage() {
       {/*  INTERNAL CSS (styled-jsx) – completely self-contained    */}
       {/* ---------------------------------------------------------- */}
       <style jsx>{`
-        /* ------------------------------------------------------ */
-        /*  Root variables – minimalistic professional palette    */
-        /* ------------------------------------------------------ */
-        :root {
-          --font-body: "Inter", system-ui, sans-serif;
-          --font-heading: "Cormorant Garamond", Georgia, serif;
 
-          --c-bg: #fafafa;
-          --c-card: #ffffff;
-          --c-border: #e2e8f0;
-          --c-text: #1a1a1a;
-          --c-muted: #64748b;
-          --c-primary: #3b82f6;
-          --c-success: #10b981;
-          --c-warn: #f59e0b;
-          --c-danger: #ef4444;
-          --c-gold: #d4af37;
-          --c-purple: #7c3aed;
-          --c-cyan: #22d3ee;
-          --c-pink: #ec4899;
-        }
 
 
         h1, h2, h3, h4 { font-family: var(--font-heading); margin-bottom: .75rem; }
-        h1 { font-size: 2.25rem; text-align:center; }
-        h2 { font-size: 1.75rem; }
-        h3 { font-size: 1.35rem; }
+
 
         /* ------------------------------------------------------ */
         /*  Form                                                   */
@@ -773,6 +753,7 @@ color: #fff;
         </div>
 
         <header className="header">
+        <IoHeartCircle className='headerIcon' style={{ color: 'white', padding:'0.4rem' }}  />
         <h1 className="title">Match Making</h1>
         <p className="subtitle">
           Enter birth details for both to get Ashtakoot score.
