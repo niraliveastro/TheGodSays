@@ -186,7 +186,16 @@ export default function AstrologerProfile() {
           <p style={{ color: 'var(--color-gray-600)', marginBottom: 'var(--space-lg)' }}>
             {error || 'The astrologer you are looking for does not exist.'}
           </p>
-          <button onClick={() => router.push('/talk-to-astrologer')} className="btn btn-primary">
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back()
+              } else {
+                router.push('/talk-to-astrologer')
+              }
+            }}
+            className="btn btn-primary"
+          >
             Back to Astrologers
           </button>
         </div>
@@ -241,7 +250,15 @@ export default function AstrologerProfile() {
           <div className="container">
             <div style={{ padding: 'var(--space-md) 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
-                onClick={handleBackNavigation}
+                onClick={() => {
+                  // Try to go back in history first
+                  if (window.history.length > 1) {
+                    router.back()
+                  } else {
+                    // If no history, go to astrologers list
+                    router.push('/talk-to-astrologer')
+                  }
+                }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

@@ -240,7 +240,7 @@ export default function TalkToAstrologer() {
             setConnectingCallType(null)
             router.push(
               type === 'video'
-                ? `/talk-to-astrologer/video/${roomName}`
+                ? `/talk-to-astrologer/room/${roomName}`
                 : `/talk-to-astrologer/voice/${roomName}`
             )
           } else {
