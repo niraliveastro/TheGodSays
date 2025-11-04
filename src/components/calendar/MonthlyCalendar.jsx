@@ -5,6 +5,7 @@ import HinduDateCard from './HinduDateCard';
 import Modal from '@/components/Modal';
 import astrologyAPI from '@/lib/api';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import '../styles/calender.css'; 
 
 export default function MonthlyCalendar({
   header,

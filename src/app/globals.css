@@ -2034,595 +2034,241 @@ body{
 .timezone-select { padding-left: 1rem; font-variant-numeric: tabular-nums; } /* adjust here */
 .timezone-select:focus { border-color: var(--color-gold); box-shadow: 0 0 0 3px rgba(212,175,55,.2); }
 
-.birth-card {
+/* ============================================= */
+/*  RESPONSIVE STYLES FOR TALK TO ASTROLOGER    */
+/* ============================================= */
+
+/* Mobile First - Base styles are for mobile */
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  position: relative;
+}
+
+/* Header responsive */
+.header {
+  text-align: center;
+  margin-top: 1rem;
   margin-bottom: 2rem;
 }
 
-.birth-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
+/* .title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+} */
 
-.info-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #555;
-  border-radius: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-.info-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.info-gender-icon {
-  width: 18px;
-  height: 18px;
-  margin-right: 0.5rem;
-  color: var(--c-muted); /* neutral gray */
-  opacity: 0.9;
-}
-
-.info-gender-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--c-text);
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  margin-top: 0.35rem;
+.subtitle {
   font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.info-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 0.4rem;
-  color: var(--c-muted);
-  opacity: 0.9;
-  flex-shrink: 0;
-  position: relative;
-  top: 1px; /* <-- subtle tweak to vertically align all icons */
-}
-
-.info-label-text {
-  font-weight: 500;
-  color: var(--c-muted);
-  margin-right: 0.25rem;
-}
-
-.info-value-text {
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-/* Wraps long place names instead of truncating */
-.info-place-text {
-  display: inline-block;
-  white-space: normal;
-  word-break: break-word;
-  max-width: 100%;
-}
-/* ----- Verdict Section (Predictions Style) ----- */
-.verdict-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.verdict-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.verdict-score-wrapper {
-  text-align: center;
+  color: #555;
   margin-top: 0.5rem;
+  padding: 0 1rem;
 }
 
-.verdict-score-number {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--color-gold);
-  line-height: 1;
-}
-
-.verdict-score-max {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-gray-500);
-  margin-left: 0.25rem;
-}
-
-.verdict-score-label {
-  font-size: 0.9rem;
-  color: var(--color-gray-500);
-  margin-top: 0.25rem;
-}
-
-/* Koot list styling */
-.verdict-koot-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 1rem;
-  width: 100%;
-  max-width: 400px;
-  border-top: 1px solid var(--color-gray-200);
-}
-
-.verdict-koot-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.verdict-koot-name {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: var(--color-gray-900);
-  text-transform: capitalize;
-}
-
-.verdict-koot-icon {
-  width: 14px;
-  height: 14px;
-  color: var(--color-gold);
-  opacity: 0.8;
-}
-
-.verdict-koot-value {
-  font-weight: 600;
-  color: var(--color-gray-900);
-}
-
-.verdict-koot-item:last-child {
-  border-bottom: none;
-}
-
-/* ----- Koot Breakdown (Predictions Page Style) ----- */
-.koot-breakdown-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-top: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.koot-breakdown-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.koot-breakdown-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.koot-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.koot-name {
-  text-transform: capitalize;
-  font-weight: 500;
-  color: var(--color-gray-900);
-}
-
-.koot-score-text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-gray-500);
-}
-
-.koot-bar-bg {
-  height: 0.5rem;
-  background: var(--color-gray-200);
-  border-radius: 0.25rem;
-  overflow: hidden;
-}
-
-.koot-bar-fill {
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--color-gold) 0%,
-    var(--color-indigo) 100%
-  );
-  border-radius: 0.25rem;
-  transition: width 0.4s ease;
-}
-
-.koot-breakdown-item.no-data {
-  opacity: 0.7;
-}
-
-/* ---------- Charts Section (Matches Gold Theme UI) ---------- */
-.chart-wrapper {
-  margin-top: 2rem;
-  padding: 2rem;
-}
-
-.chart-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 768px) {
-  .chart-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.chart-card {
-  background: var(--color-cream);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 0.75rem;
-  padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-}
-
-.chart-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.chart-header {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-gold);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.chart-inner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.chart-empty {
-  color: var(--color-gray-500);
-  text-align: center;
-  font-size: 0.875rem;
+/* Search and Filter responsive */
+.card {
   padding: 1rem;
 }
 
-/* ---------- Person Details (Matches Predictions Tables) ---------- */
-.person-details-section {
-  margin-top: 2rem;
-  padding: 2rem;
-}
-
-.person-grid {
+/* Astrologer cards - Mobile first grid */
+.astrologer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 1.5rem;
 }
 
-.person-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-sm);
-  padding: 1.25rem 1.5rem;
-  transition: all 0.3s ease;
+/* Card adjustments for mobile */
+.card {
+  min-width: auto !important;
+  padding: 1rem !important;
 }
 
-.person-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+/* Avatar smaller on mobile */
+.avatar {
+  width: 3rem;
+  height: 3rem;
 }
 
-.person-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.person-icon {
-  width: 1rem;
-  height: 1rem;
-  color: var(--color-gold);
-  opacity: 0.8;
-}
-
-.person-title {
+/* Name and info text sizing */
+.astrologer-name {
   font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-gray-900);
-  margin: 0;
 }
 
-/* Table styling (same as predictions) */
-.person-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.person-table tr:nth-child(odd) {
-  background: #f9fafb;
-}
-.person-table td {
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-.person-label {
-  font-weight: 500;
-  color: var(--color-gray-600);
-  text-transform: capitalize;
-  width: 50%;
-}
-.person-value {
-  font-weight: 600;
-  color: var(--color-gray-900);
-  text-align: right;
+.astrologer-spec {
+  font-size: 0.75rem;
 }
 
-/* ===========================
-   MATCHING PAGE FORM STYLES
-   =========================== */
-
-/* --- Card container --- */
-.match-form {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: 1.5rem;
-  padding: 2.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  max-width: 80rem;
-  margin: 0 auto 2rem auto;
+/* Button sizing for mobile */
+.btn-primary,
+.btn-outline {
+  height: 2.5rem !important;
+  padding: 0 1rem !important;
+  font-size: 0.875rem !important;
 }
 
-/* --- Header --- */
-.match-form .form-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
+.btn-primary svg,
+.btn-outline svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
 }
 
-.match-form .form-header-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 0.75rem;
-  background: linear-gradient(to bottom right, rgba(255, 215, 0, 0.25), rgba(139, 0, 255, 0.25));
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Review button smaller */
+.review-btn {
+  font-size: 0.625rem !important;
+  padding: 0.125rem 0.5rem !important;
+  height: 1.5rem !important;
 }
 
-.match-form .form-header-icon svg {
-  width: 24px;
-  height: 24px;
-  color: #d4af37;
-}
-
-.match-form .form-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #d4af37;
-  margin: 0;
-}
-
-.match-form .form-subtitle {
-  color: #475569;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-/* --- Grid layout --- */
-.match-form .form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.match-form .form-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.match-form .form-section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 1rem;
-}
-
-/* --- Field --- */
-.match-form .form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.match-form .form-field-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.match-form .form-field-label svg {
-  width: 16px;
-  height: 16px;
-  color: #d4af37;
-  flex-shrink: 0;
-  position: relative;
-  top: 1px; /* subtle optical alignment fix */
-}
-
-.match-form .form-field-input {
-  border: 1px solid #d1d5db;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  background: #ffffff;
-}
-
-.match-form .form-field-input:focus {
-  outline: none;
-  border-color: #d4af37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
-}
-
-/* --- Suggestions dropdown --- */
-.match-form .suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  margin-top: 0.25rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  max-height: 14rem;
-  overflow-y: auto;
-  z-index: 30;
-}
-
-.match-form .suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  border: none;
-  font-size: 0.875rem;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.match-form .suggestion-item:hover {
-  background: #f9fafb;
-}
-
-.match-form .suggestion-item svg {
-  width: 14px;
-  height: 14px;
-  color: #d4af37;
-}
-
-/* --- Actions --- */
-.match-form .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.match-form .btn {
-  font-weight: 600;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.match-form .btn-primary {
-  background: #d4af37;
-  color: #fff;
-  border: 1px solid #d4af37;
-}
-
-.match-form .btn-primary:hover {
-  background: #b8962f;
-  border-color: #b8962f;
-}
-
-.match-form .btn-ghost {
-  background: transparent;
-  border: 1px solid #d4af37;
-  color: #d4af37;
-}
-
-.match-form .btn-ghost:hover {
-  background: #d4af37;
-  color: #fff;
-}
-
-/* --- Utility icons --- */
-.match-form svg.spin {
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* --- Responsive --- */
-@media (max-width: 640px) {
-  .match-form {
+/* ============================================= */
+/*  TABLET BREAKPOINT (640px and up)            */
+/* ============================================= */
+@media (min-width: 640px) {
+  .app {
     padding: 1.5rem;
   }
-  .match-form .form-grid {
-    gap: 1.5rem;
+
+  .header {
+    margin-top: 2rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    padding: 0;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  /* Two columns on tablet */
+  .astrologer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    height: 2.75rem !important;
+    font-size: 0.9375rem !important;
   }
 }
 
-/* --- Match Score Button (same as Predictions) --- */
-.match-form .btn-primary {
-  background: linear-gradient(90deg, #d4af37 0%, #e5c468 100%);
-  border: none;
-  color: #111827;
-  font-weight: 600;
-  border-radius: 0.75rem;
-  padding: 0.9rem 1.75rem;
-  font-size: 1rem;
-  letter-spacing: 0.3px;
-  transition: all 0.25s ease;
-  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.35);
+/* ============================================= */
+/*  DESKTOP BREAKPOINT (1024px and up)          */
+/* ============================================= */
+@media (min-width: 1024px) {
+  .app {
+    padding: 2rem 1rem;
+  }
+
+  .header {
+    margin-top: 3rem;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+
+  /* Three columns on desktop */
+  .astrologer-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  .avatar {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .astrologer-name {
+    font-size: 1.25rem;
+  }
+
+  .astrologer-spec {
+    font-size: 0.875rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    height: 3rem !important;
+    padding: 0 1.5rem !important;
+    font-size: 1rem !important;
+  }
+
+  .btn-primary svg,
+  .btn-outline svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .review-btn {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.75rem !important;
+    height: 1.75rem !important;
+  }
 }
 
-.match-form .btn-primary:hover {
-  background: linear-gradient(90deg, #e5c468 0%, #d4af37 100%);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
-  transform: translateY(-1px);
+/* ============================================= */
+/*  LARGE DESKTOP (1280px and up)               */
+/* ============================================= */
+@media (min-width: 1280px) {
+  .astrologer-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.match-form .btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
+/* ============================================= */
+/*  EXTRA MOBILE ADJUSTMENTS                    */
+/* ============================================= */
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.75rem;
+  }
 
+  .subtitle {
+    font-size: 0.8125rem;
+  }
+
+  /* Stack action buttons vertically on very small screens */
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    width: 100%;
+  }
+
+  /* Rating and review section */
+  .rating-review-section {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+
+  /* Smaller language tags */
+  .language-tag {
+    font-size: 0.625rem !important;
+    padding: 0.125rem 0.5rem !important;
+  }
+}

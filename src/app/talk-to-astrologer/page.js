@@ -471,10 +471,11 @@ export default function TalkToAstrologer() {
 
 {!fetchingAstrologers && filteredAstrologers.length > 0 && (
   <div
+    className="astrologer-grid"
     style={{
       display: 'grid',
-      gap: '1.5rem',
-      gridTemplateColumns: 'repeat(3, minmax(16rem, 1fr))',
+      gap: '1rem',
+      gridTemplateColumns: '1fr',
       marginTop: '1.5rem',
     }}
   >
@@ -517,7 +518,7 @@ export default function TalkToAstrologer() {
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            fontWeight: 'bold',
+            fontWeight: 700,
             fontSize: '1.25rem',
           }}
         >
@@ -545,7 +546,7 @@ export default function TalkToAstrologer() {
             <h3
               style={{
                 fontSize: '1.25rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 color: 'var(--color-gray-900)',
                 margin: 0,
                 whiteSpace: 'nowrap',
@@ -814,15 +815,29 @@ export default function TalkToAstrologer() {
       </div>
 
       {/* Local animations */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+<style jsx>{`
+  @media (min-width: 640px) {
+    .astrologer-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 1.25rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .astrologer-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 1.5rem !important;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`}</style>
     </>
   )
 }
