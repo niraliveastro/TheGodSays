@@ -1,5 +1,4 @@
 "use client";
-
 import { useMemo, useRef, useState, useEffect } from "react";
 import Modal from "@/components/Modal";
 import {
@@ -16,39 +15,31 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { astrologyAPI, geocodePlace } from "@/lib/api";
-
 export default function PredictionsPage() {
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
-
   // Timezone (UTC offset hours) — default IST 5.5
   const [tzHours, setTzHours] = useState(5.5);
-
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const suggestTimer = useRef(null);
-
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
   const [result, setResult] = useState(null);
   const [selectedMaha, setSelectedMaha] = useState(null);
-
   const [antarOpen, setAntarOpen] = useState(false);
   const [antarLoading, setAntarLoading] = useState(false);
   const [antarError, setAntarError] = useState("");
   const [antarRows, setAntarRows] = useState([]);
-
   const [predictionsOpen, setPredictionsOpen] = useState(false);
   const [predictionsLoading, setPredictionsLoading] = useState(false);
   const [predictionsError, setPredictionsError] = useState("");
   const [aiPredictions, setAiPredictions] = useState("");
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] =
     useState(null);
-
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
   const setPlacementsRef = (el) => {
@@ -65,7 +56,6 @@ export default function PredictionsPage() {
       return () => clearTimeout(t);
     }
   }, [result]); // placements depends on result; recompute happens right after
-
   const getZodiacSign = (signNumber) => {
     const signs = [
       "Aries",
@@ -83,7 +73,6 @@ export default function PredictionsPage() {
     ];
     return signs[(signNumber - 1) % 12];
   };
-
   async function reverseGeocodeCoords(lat, lon) {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
@@ -95,7 +84,6 @@ export default function PredictionsPage() {
       return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     }
   }
-
   async function useMyLocation() {
     if (typeof window === "undefined" || !navigator.geolocation) return;
     setLocating(true);
@@ -119,7 +107,6 @@ export default function PredictionsPage() {
       setLocating(false);
     }
   }
-
   function validate() {
     if (!dob) return "Please enter your Date of Birth.";
     if (!tob) return "Please enter your Time of Birth.";
@@ -128,12 +115,10 @@ export default function PredictionsPage() {
       return "Please select a valid timezone.";
     return "";
   }
-
   const fmtTime = (h, m, s = 0) =>
     `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
       s
     ).padStart(2, "0")}`;
-
   const safeParse = (v) => {
     try {
       return typeof v === "string" ? JSON.parse(v) : v;
@@ -141,7 +126,6 @@ export default function PredictionsPage() {
       return v;
     }
   };
-
   const fetchSuggestions = (q) => {
     if (!q || q.length < 2) {
       setSuggestions([]);
@@ -174,7 +158,6 @@ export default function PredictionsPage() {
       }
     }, 250);
   };
-
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -191,13 +174,10 @@ export default function PredictionsPage() {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country)."
         );
-
       const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
       const tparts = tob.split(":").map((n) => parseInt(n, 10));
       const [H, Min, S = 0] = tparts;
-
       const tz = Number.isFinite(Number(tzHours)) ? Number(tzHours) : 5.5;
-
       const payload = {
         year: Y,
         month: M,
@@ -215,7 +195,6 @@ export default function PredictionsPage() {
           language: "en",
         },
       };
-
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
         [
           "shadbala/summary",
@@ -227,12 +206,10 @@ export default function PredictionsPage() {
         ],
         payload
       );
-
       const vimsRaw = results?.["vimsottari/dasa-information"];
       const shadbalaRaw = results?.["shadbala/summary"];
       const mahaRaw = results?.["vimsottari/maha-dasas"];
       const planetsRaw = results?.["planets/extended"];
-
       const westernChartSvgRaw = results?.["western/natal-wheel-chart"];
       const westernChartSvg = westernChartSvgRaw
         ? typeof westernChartSvgRaw.output === "string"
@@ -241,7 +218,6 @@ export default function PredictionsPage() {
           ? westernChartSvgRaw
           : null
         : null;
-
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
         : null;
@@ -261,7 +237,6 @@ export default function PredictionsPage() {
       ) {
         shadbalaParsed = safeParse(shadbalaParsed.output);
       }
-
       let finalShadbala = shadbalaParsed;
       const looksEmpty =
         !shadbalaParsed ||
@@ -284,7 +259,6 @@ export default function PredictionsPage() {
             finalShadbala = altParsed;
         } catch {}
       }
-
       let planetsParsed = planetsRaw
         ? safeParse(safeParse(planetsRaw.output ?? planetsRaw))
         : null;
@@ -295,7 +269,6 @@ export default function PredictionsPage() {
       ) {
         planetsParsed = safeParse(planetsParsed.output);
       }
-
       let finalPlanetParsed = planetsParsed;
       const looksEmptyPlanets =
         !planetsParsed ||
@@ -318,7 +291,6 @@ export default function PredictionsPage() {
             finalPlanetParsed = altParsed;
         } catch {}
       }
-
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
@@ -336,7 +308,6 @@ export default function PredictionsPage() {
       setSubmitting(false);
     }
   }
-
   const currentDashaChain = useMemo(() => {
     const v = result?.vimsottari;
     if (!v) return null;
@@ -373,7 +344,6 @@ export default function PredictionsPage() {
       .filter(Boolean)
       .join(" > ");
   }, [result]);
-
   function buildPayloadForApi() {
     const inp = result?.input;
     const coords = result?.coords;
@@ -401,7 +371,6 @@ export default function PredictionsPage() {
       },
     };
   }
-
   async function openAntarModalFor(mahaLord) {
     setSelectedMaha(mahaLord);
     setAntarOpen(true);
@@ -438,7 +407,6 @@ export default function PredictionsPage() {
       setAntarLoading(false);
     }
   }
-
   async function openAiPredictionsFor(planetLord) {
     setSelectedPlanetForPredictions(planetLord);
     setPredictionsOpen(true);
@@ -462,11 +430,9 @@ export default function PredictionsPage() {
       setPredictionsLoading(false);
     }
   }
-
   async function generateAiPredictions(planet, mahaPeriod) {
     return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`;
   }
-
   const mahaRows = useMemo(() => {
     const m = result?.maha;
     if (!m) return [];
@@ -481,7 +447,6 @@ export default function PredictionsPage() {
       }))
       .sort((a, b) => new Date(a.start) - new Date(b.start));
   }, [result]);
-
   const shadbalaRows = useMemo(() => {
     let sb = result?.shadbala;
     if (!sb) return [];
@@ -517,11 +482,9 @@ export default function PredictionsPage() {
       })
       .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0));
   }, [result]);
-
   const placements = useMemo(() => {
     const pl = result?.planets;
     if (!pl) return [];
-
     const SIGN_NAMES = [
       "Aries",
       "Taurus",
@@ -536,7 +499,6 @@ export default function PredictionsPage() {
       "Aquarius",
       "Pisces",
     ];
-
     if (typeof pl === "object" && !Array.isArray(pl)) {
       return Object.entries(pl)
         .filter(([name]) => name.toLowerCase() !== "ascendant")
@@ -546,7 +508,6 @@ export default function PredictionsPage() {
           const currentSign = signNum
             ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
             : v.zodiac_sign_name || v.sign_name || v.sign;
-
           return {
             name,
             currentSign,
@@ -562,11 +523,9 @@ export default function PredictionsPage() {
           };
         });
     }
-
     const arr = Array.isArray(pl)
       ? pl
       : pl.planets || pl.planet_positions || Object.values(pl || {});
-
     return arr
       .filter((p) => (p.name || p.planet)?.toLowerCase() !== "ascendant")
       .map((p) => {
@@ -575,7 +534,6 @@ export default function PredictionsPage() {
         const currentSign = signNum
           ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
           : p.sign || p.rashi || p.sign_name;
-
         return {
           name: p.name || p.planet,
           currentSign,
@@ -588,7 +546,6 @@ export default function PredictionsPage() {
         };
       });
   }, [result]);
-
   return (
     <div className="app">
       {/* Orbs */}
@@ -604,7 +561,6 @@ export default function PredictionsPage() {
         <div className="orb orb2" />
         <div className="orb orb3" />
       </div>
-
       {/* Header */}
       <header className="header">
         <Sparkles
@@ -613,14 +569,12 @@ export default function PredictionsPage() {
         />
         <h1 className="title">Cosmic Insights</h1>
       </header>
-
       <div className="container mx-auto px-4 py-8">
         {error && (
           <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
             <span>Warning</span> {error}
           </div>
         )}
-
         {/* ==== FORM ==== */}
         <form
           onSubmit={onSubmit}
@@ -635,7 +589,6 @@ export default function PredictionsPage() {
               <p className="form-subtitle">Enter your cosmic coordinates</p>
             </div>
           </div>
-
           <div className="form-grid">
             {/* Date */}
             <div className="col-span-5">
@@ -654,7 +607,6 @@ export default function PredictionsPage() {
                 <p className="form-field-helper">Format: YYYY-MM-DD</p>
               </div>
             </div>
-
             {/* Time */}
             <div className="col-span-3">
               <div className="form-field">
@@ -673,15 +625,14 @@ export default function PredictionsPage() {
                 <p className="form-field-helper">24-hour format</p>
               </div>
             </div>
-
             {/* Place */}
-            <div className="col-span-4" style={{ position: "relative" }}>
+            <div className="col-span-4">
               <div className="form-field">
                 <label className="form-field-label">
                   <MapPin className="w-5 h-5 text-gold" />
                   Place of Birth
                 </label>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ display: "flex", gap: "0.5rem", position: "relative" }}>
                   <input
                     placeholder="City, Country"
                     value={place}
@@ -709,43 +660,40 @@ export default function PredictionsPage() {
                     )}
                     <span className="hidden md:inline">Use Location</span>
                   </button>
+                  {/* Suggestions */}
+                  {suggestions.length > 0 && (
+                    <div
+                      className="suggest-list"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 30,
+                        maxHeight: "12rem",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {suggestions.map((s, i) => (
+                        <div
+                          key={i}
+                          className="suggest-item"
+                          onClick={() => {
+                            setPlace(s.label);
+                            setSelectedCoords(s);
+                            setSuggestions([]);
+                          }}
+                        >
+                          {s.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <p className="form-field-helper">e.g., Mumbai, India</p>
               </div>
-
-              {/* Suggestions */}
-              {suggestions.length > 0 && (
-                <div className="suggestions">
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => {
-                        setPlace(s.label);
-                        setSelectedCoords(s);
-                        setSuggestions([]);
-                      }}
-                      className="suggestion-item"
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-gold" />
-                      <span
-                        style={{
-                          flex: 1,
-                          textAlign: "left",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {s.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
-
           {/* Action Buttons with Timezone */}
           <style jsx>{`
             @media (max-width: 767px) {
@@ -811,14 +759,13 @@ export default function PredictionsPage() {
                 </select>
               </div>
             </div>
-
             {/* Submit Button */}
             <div className="submit-col">
               <button
                 type="submit"
                 disabled={submitting}
                 className="btn btn-primary w-full"
-                style={{marginBottom:'1rem', 
+                style={{marginBottom:'1rem',
                   marginLeft:'0.8rem'
                 }}
               >
@@ -835,7 +782,6 @@ export default function PredictionsPage() {
                 )}
               </button>
             </div>
-
             {/* Reset Button */}
             <div className="reset-col">
               <button
@@ -857,7 +803,6 @@ export default function PredictionsPage() {
             </div>
           </div>
         </form>
-
         {/* Results */}
         {result && (
           <div
@@ -875,20 +820,15 @@ export default function PredictionsPage() {
                 <h3 className="results-title">Birth Information</h3>
               </div>
               <div className="birth-info-grid">
-                {[
-                  { icon: Calendar, label: "Date", value: result.input.dob },
-                  { icon: Clock, label: "Time", value: result.input.tob },
-                  { icon: MapPin, label: "Place", value: result.input.place },
-                  {
-                    icon: Orbit,
-                    label: "Running Dasa",
-                    value: currentDashaChain || "—",
-                  },
-                  // show timezone used
-                  {
-                    icon: Clock,
-                    label: "Timezone",
-                    value: `UTC${(() => {
+                <div className="info-card">
+                  <div className="info-label">
+                    <Calendar />
+                    Birth Details
+                  </div>
+                  <div className="info-value" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <div>Date: {result.input.dob}</div>
+                    <div>Time: {result.input.tob}</div>
+                    <div>Timezone: UTC{(() => {
                       const v = Number(result.input.tz);
                       const sign = v >= 0 ? "+" : "";
                       const ah = Math.trunc(Math.abs(v));
@@ -896,23 +836,25 @@ export default function PredictionsPage() {
                       return `${sign}${String(ah).padStart(2, "0")}:${String(
                         mins
                       ).padStart(2, "0")}`;
-                    })()}`,
-                  },
-                ].map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={i} className="info-card">
-                      <div className="info-label">
-                        <Icon />
-                        {item.label}
-                      </div>
-                      <div className="info-value">{item.value}</div>
-                    </div>
-                  );
-                })}
+                    })()}</div>
+                  </div>
+                </div>
+                <div className="info-card">
+                  <div className="info-label">
+                    <MapPin />
+                    Place
+                  </div>
+                  <div className="info-value">{result.input.place}</div>
+                </div>
+                <div className="info-card">
+                  <div className="info-label">
+                    <Orbit />
+                    Running Dasa
+                  </div>
+                  <div className="info-value">{currentDashaChain || "—"}</div>
+                </div>
               </div>
             </div>
-
             {/* Western Natal Wheel Chart */}
             {result?.westernChartSvg &&
             result.westernChartSvg.trim().startsWith("<svg") ? (
@@ -936,7 +878,6 @@ export default function PredictionsPage() {
                 </p>
               </div>
             ) : null}
-
             {/* Planet Placements */}
             {placements.length > 0 ? (
               <div
@@ -949,7 +890,6 @@ export default function PredictionsPage() {
                   <Orbit style={{ color: "#7c3aed" }} />
                   <h3 className="results-title">Planet Placements (D1)</h3>
                 </div>
-
                 <div className="table-scroll-container">
                   <table className="planet-table">
                     <thead>
@@ -957,10 +897,8 @@ export default function PredictionsPage() {
                         <th>Planet</th>
                         <th>Sign</th>
                         <th>House</th>
-                        <th>Nakshatra &amp; Pada</th>
-                        <th>Full Degree</th>
-                        <th>Norm Degree</th>
-                        <th>Retro</th>
+                        <th>Nakshatra (Pada)</th>
+                        <th>Degrees</th>
                         <th>Strength</th>
                         <th>Ishta</th>
                         <th>Kashta</th>
@@ -970,7 +908,6 @@ export default function PredictionsPage() {
                       {placements.map((p) => {
                         const pname = (p.name || "").toString().trim();
                         const lname = pname.toLowerCase();
-
                         // match shadbala row
                         let row = shadbalaRows.find(
                           (r) => (r.name || "").toLowerCase() === lname
@@ -983,7 +920,6 @@ export default function PredictionsPage() {
                           row = shadbalaRows.find((r) =>
                             (r.name || "").toLowerCase().includes(lname)
                           );
-
                         const parsePct = (v) => {
                           const n = Number(v);
                           return Number.isFinite(n) ? n : null;
@@ -1013,34 +949,21 @@ export default function PredictionsPage() {
                                 row.kashta_percent
                             )
                           : null;
-
+                        const planetDisplay = p.retro ? `${pname} (Retro)` : pname;
+                        const degreesDisplay = [
+                          typeof p.fullDegree === "number" ? `Full: ${p.fullDegree.toFixed(2)}°` : null,
+                          typeof p.normDegree === "number" ? `Norm: ${p.normDegree.toFixed(2)}°` : null
+                        ].filter(Boolean).join(' ') || '—';
+                        const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {pname}
+                              {planetDisplay}
                             </td>
                             <td>{p.currentSign || "—"}</td>
                             <td>{p.house ?? "—"}</td>
-                            <td>{`${p.nakshatra ?? "—"} (Pada:${
-                              p.pada ?? "—"
-                            })`}</td>
-                            <td>
-                              {typeof p.fullDegree === "number"
-                                ? `${p.fullDegree.toFixed(2)}°`
-                                : "—"}
-                            </td>
-                            <td>
-                              {typeof p.normDegree === "number"
-                                ? `${p.normDegree.toFixed(2)}°`
-                                : "—"}
-                            </td>
-                            <td>
-                              {p.retro ? (
-                                <span style={{ color: "#198754" }}>Retro</span>
-                              ) : (
-                                <span className="retro-badge">Not Retro</span>
-                              )}
-                            </td>
+                            <td>{nakshatraDisplay}</td>
+                            <td>{degreesDisplay}</td>
                             <td>
                               {pctVal != null ? `${pctVal.toFixed(1)}%` : "—"}
                             </td>
@@ -1093,14 +1016,12 @@ export default function PredictionsPage() {
                 </div>
               </div>
             )}
-
             {/* Vimshottari Maha Dasha */}
             <div className="card">
               <div className="results-header">
                 <Moon style={{ color: "#4f46e5" }} />
                 <h3 className="results-title">Vimshottari Maha Dasha</h3>
               </div>
-
               {mahaRows.length > 0 ? (
                 <div className="table-scroll-container">
                   <table className="planet-table">
@@ -1186,7 +1107,6 @@ export default function PredictionsPage() {
             </div>
           </div>
         )}
-
         {/* Antar Dasha Modal */}
         <Modal
           open={antarOpen}
@@ -1300,7 +1220,6 @@ export default function PredictionsPage() {
             </div>
           )}
         </Modal>
-
         {/* AI Predictions Modal */}
         <Modal
           open={predictionsOpen}
