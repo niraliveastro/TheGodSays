@@ -1,10 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 /* ============================================= */
 /*  GLOBAL STYLES – CLASSIC ASTROLOGY THEME      */
 /*  Inspired by AstroTalk & Astrology.com        */
 /*  No Tailwind – Pure CSS + Custom Properties   */
 /* ============================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 
 /* ---------- Root Variables (Light Theme Only) ---------- */
 :root {

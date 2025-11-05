@@ -463,7 +463,6 @@ const fmtDate = (val) => {
 
   return (
     <div className="app">
-
            {/* Orbs */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
