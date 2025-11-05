@@ -548,14 +548,21 @@ export default function PredictionsPage() {
   }, [result]);
   return (
     <div className="app">
-           {/* Orbs */}
-        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <div className="orb orb1" />
-          <div className="orb orb2" />
-          <div className="orb orb3" />
-        </div>
+      {/* Orbs */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <div className="orb orb1" />
+        <div className="orb orb2" />
+        <div className="orb orb3" />
+      </div>
 
-{/* Header */}
+      {/* Header */}
       <header className="header">
         <Sparkles
           className="headerIcon"
@@ -626,7 +633,13 @@ export default function PredictionsPage() {
                   <MapPin className="w-5 h-5 text-gold" />
                   Place of Birth
                 </label>
-                <div style={{ display: "flex", gap: "0.5rem", position: "relative" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    position: "relative",
+                  }}
+                >
                   <input
                     placeholder="City, Country"
                     value={place}
@@ -652,7 +665,6 @@ export default function PredictionsPage() {
                     ) : (
                       <MapPin className="w-4 h-4" />
                     )}
-  
                   </button>
                   {/* Suggestions */}
                   {suggestions.length > 0 && (
@@ -759,9 +771,7 @@ export default function PredictionsPage() {
                 type="submit"
                 disabled={submitting}
                 className="btn btn-primary w-full"
-                style={{marginBottom:'1rem',
-                  marginLeft:'0.8rem'
-                }}
+                style={{ marginBottom: "1rem", marginLeft: "0.8rem" }}
               >
                 {submitting ? (
                   <>
@@ -790,7 +800,7 @@ export default function PredictionsPage() {
                   setTzHours(5.5); // default
                 }}
                 className="btn btn-ghost w-full"
-                style={{marginBottom:'1rem'}}
+                style={{ marginBottom: "1rem" }}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -819,18 +829,28 @@ export default function PredictionsPage() {
                     <Calendar />
                     Birth Details
                   </div>
-                  <div className="info-value" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  <div
+                    className="info-value"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.25rem",
+                    }}
+                  >
                     <div>Date: {result.input.dob}</div>
                     <div>Time: {result.input.tob}</div>
-                    <div>Timezone: UTC{(() => {
-                      const v = Number(result.input.tz);
-                      const sign = v >= 0 ? "+" : "";
-                      const ah = Math.trunc(Math.abs(v));
-                      const mins = Math.round((Math.abs(v) - ah) * 60);
-                      return `${sign}${String(ah).padStart(2, "0")}:${String(
-                        mins
-                      ).padStart(2, "0")}`;
-                    })()}</div>
+                    <div>
+                      Timezone: UTC
+                      {(() => {
+                        const v = Number(result.input.tz);
+                        const sign = v >= 0 ? "+" : "";
+                        const ah = Math.trunc(Math.abs(v));
+                        const mins = Math.round((Math.abs(v) - ah) * 60);
+                        return `${sign}${String(ah).padStart(2, "0")}:${String(
+                          mins
+                        ).padStart(2, "0")}`;
+                      })()}
+                    </div>
                   </div>
                 </div>
                 <div className="info-card">
@@ -943,12 +963,23 @@ export default function PredictionsPage() {
                                 row.kashta_percent
                             )
                           : null;
-                        const planetDisplay = p.retro ? `${pname} (Retro)` : pname;
-                        const degreesDisplay = [
-                          typeof p.fullDegree === "number" ? `Full: ${p.fullDegree.toFixed(2)}°` : null,
-                          typeof p.normDegree === "number" ? `Norm: ${p.normDegree.toFixed(2)}°` : null
-                        ].filter(Boolean).join(' ') || '—';
-                        const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
+                        const planetDisplay = p.retro
+                          ? `${pname} (Retro)`
+                          : pname;
+                        const degreesDisplay =
+                          [
+                            typeof p.fullDegree === "number"
+                              ? `Full: ${p.fullDegree.toFixed(2)}°`
+                              : null,
+                            typeof p.normDegree === "number"
+                              ? `Norm: ${p.normDegree.toFixed(2)}°`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ") || "—";
+                        const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                          p.pada ?? "—"
+                        })`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
