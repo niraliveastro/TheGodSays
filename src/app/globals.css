@@ -423,7 +423,7 @@ a:hover {
   display: grid;
   gap: 2rem; /* increased gap for better spacing */
   grid-template-columns: 1fr;
-  align-items: start; /* align items to start for consistent spacing */
+  align-items: flex-end; /* align items to bottom for consistent field alignment */
 }
 
 @media (min-width: 768px) {
@@ -453,7 +453,14 @@ a:hover {
   .col-span-3,
   .col-span-4,
   .col-span-12 {
-    grid-column: span 1 / span 1; /* full width on mobile */
+    grid-column: span 12 / span 12; /* full width on mobile */
+  }
+}
+
+/* Desktop-specific column spans */
+@media (min-width: 768px) {
+  .md\:col-span-5 {
+    grid-column: span 5 / span 5;
   }
 }
 
@@ -661,6 +668,7 @@ select {
   );
   color: white;
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  padding: 1rem 1.25rem;
 }
 
 .btn-primary:hover {
@@ -1840,7 +1848,7 @@ body{
 .title {
   font-family: "Cormorant Garamond", serif;
   font-size: 3rem;
-  font-weight: 700;
+  font-weight: 500;
   background: linear-gradient(135deg, #d4af37, #b8972e);
   -webkit-background-clip: text;
   background-clip: text;

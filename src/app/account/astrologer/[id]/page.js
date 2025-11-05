@@ -7,7 +7,7 @@ import { db, auth } from '@/lib/firebase'
 import {
   Star, CheckCircle, Phone, Video, Languages, Globe,
   Award, Calendar, TrendingUp, MessageCircle, IndianRupee,
-  Edit2, X, Save
+  Edit2, X, Save, Camera
 } from 'lucide-react'
 
 export default function AstrologerProfile() {
@@ -23,6 +23,7 @@ export default function AstrologerProfile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -143,6 +144,115 @@ export default function AstrologerProfile() {
     } catch (err) {
       console.error('Failed to update profile:', err)
       alert('Failed to save changes. Please try again.')
+    }
+  }
+
+  // Helper function to compress and resize image
+  const compressImage = (file, maxWidth = 300, maxHeight = 300, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions maintaining aspect ratio
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw image to canvas
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to blob with compression
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to create blob'));
+              return;
+            }
+            // Ensure it's JPEG for better compression
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Handle avatar upload with compression and base64 storage
+  const handleAvatarUpload = async (e) => {
+    if (!currentUser || currentUser.uid !== id) return
+    
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    // Validate original file size (max 2MB before compression)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size should be less than 2MB (will be compressed automatically)')
+      return
+    }
+
+    try {
+      setUploadingAvatar(true)
+      
+      // Step 1: Compress the image
+      const compressedFile = await compressImage(file, 300, 300, 0.7); // Smaller dims/quality for base64 efficiency
+      
+      // Step 2: Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result); // Returns data:image/... base64 string
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile); // Handles MIME type automatically
+      });
+      
+      // Step 3: Validate final size (base64 < 800KB to stay under Firestore limits)
+      if (base64.length > 800 * 1024) { // Rough check for 600KB binary equiv.
+        throw new Error('Compressed image too large for storage');
+      }
+      
+      // Step 4: Update Firestore directly
+      const docRef = doc(db, 'astrologers', id)
+      await updateDoc(docRef, { avatar: base64 }) // Store as string
+      
+      // Step 5: Update local state
+      setAstrologer(prev => ({ ...prev, avatar: base64 }))
+      
+      // Reset input
+      e.target.value = ''
+      
+      alert('Avatar updated successfully!')
+    } catch (err) {
+      console.error('Failed to upload avatar:', err)
+      alert(`Failed to upload: ${err.message}. Please try a smaller image.`)
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -326,20 +436,23 @@ export default function AstrologerProfile() {
                           left: 'var(--space-xl)',
                           width: '120px',
                           height: '120px',
-                          background: 'linear-gradient(135deg, var(--color-indigo), var(--color-purple))',
+                          background: astrologer.avatar ? `url(${astrologer.avatar})` : 'linear-gradient(135deg, var(--color-indigo), var(--color-purple))',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                           borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                           fontSize: '2.25rem',
-        fontWeight: 700,
-        textTransform: 'uppercase',
+                          fontSize: '2.25rem',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
                           border: '4px solid white',
                           boxShadow: 'var(--shadow-lg)',
-                          fontFamily: "'Cormorant Garamond', serif"
+                          fontFamily: "'Cormorant Garamond', serif",
+                          position: 'relative'
                         }}>
-                          {astrologer.name.split(' ').map(n => n[0]).join('')}
+                          {!astrologer.avatar && astrologer.name.split(' ').map(n => n[0]).join('')}
 
                           {isOnline && (
                             <div style={{
@@ -353,6 +466,35 @@ export default function AstrologerProfile() {
                               borderRadius: '50%',
                               animation: 'pulse 2s infinite'
                             }} />
+                          )}
+
+                          {/* Avatar Upload Button - Only for owner */}
+                          {isOwner && (
+                            <label style={{
+                              position: 'absolute',
+                              bottom: '0',
+                              right: '0',
+                              width: '36px',
+                              height: '36px',
+                              background: 'var(--color-indigo)',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
+                              border: '3px solid white',
+                              boxShadow: 'var(--shadow-md)',
+                              opacity: uploadingAvatar ? 0.5 : 1
+                            }}>
+                              <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                disabled={uploadingAvatar}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
                           )}
                         </div>
 
@@ -383,7 +525,7 @@ export default function AstrologerProfile() {
                       <div style={{ paddingTop: '60px' }}>
                         <h1 style={{
                           fontSize: '2rem',
-                          fontWeight: 400,
+                          fontWeight: 500,
                           marginBottom: '0.5rem',
                           color: 'var(--color-gray-900)',
                           fontFamily: "'Cormorant Garamond', serif"
@@ -419,7 +561,7 @@ export default function AstrologerProfile() {
                             }} />
                             <span style={{ 
                               fontSize: '1.25rem', 
-                              fontWeight: 700,
+                              fontWeight: 500,
                               fontFamily: "'Courier New', monospace"
                             }}>
                               {rating || 'N/A'}
@@ -615,7 +757,7 @@ export default function AstrologerProfile() {
                     <div className="card" style={{ marginBottom: 'var(--space-lg)' }}>
                       <h2 style={{
                         fontSize: '1.5rem',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         marginBottom: 'var(--space-md)',
                         color: 'var(--color-gray-900)',
                         fontFamily: "'Cormorant Garamond', serif"
@@ -635,7 +777,7 @@ export default function AstrologerProfile() {
                     <div className="card" style={{ marginBottom: 'var(--space-lg)' }}>
                       <h2 style={{
                         fontSize: '1.5rem',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         marginBottom: 'var(--space-md)',
                         color: 'var(--color-gray-900)',
                         fontFamily: "'Cormorant Garamond', serif"
@@ -672,7 +814,7 @@ export default function AstrologerProfile() {
                     <div className="card">
                       <h2 style={{
                         fontSize: '1.5rem',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         marginBottom: 'var(--space-lg)',
                         color: 'var(--color-gray-900)',
                         fontFamily: "'Cormorant Garamond', serif"
@@ -702,7 +844,7 @@ export default function AstrologerProfile() {
                               }}>
                                 <div>
                                   <div style={{
-                                    fontWeight: 600,
+                                    fontWeight: 500,
                                     marginBottom: '0.25rem',
                                     fontFamily: "'Cormorant Garamond', serif",
                                     fontSize: '1.1rem'
@@ -970,19 +1112,18 @@ export default function AstrologerProfile() {
             </div>
           </div>
         )}
-      
 
-      {/* Animations */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        
-        body {
-          font-family: 'Cormorant Garamond', sans-serif;
-        }
-      `}</style>
+        {/* Animations */}
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+          
+          body {
+            font-family: 'Cormorant Garamond', sans-serif;
+          }
+        `}</style>
       </div>
     </>
   )
