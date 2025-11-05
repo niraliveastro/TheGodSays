@@ -548,20 +548,14 @@ export default function PredictionsPage() {
   }, [result]);
   return (
     <div className="app">
-      {/* Orbs */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          overflow: "hidden",
-          pointerEvents: "none",
-        }}
-      >
-        <div className="orb orb1" />
-        <div className="orb orb2" />
-        <div className="orb orb3" />
-      </div>
-      {/* Header */}
+           {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
+{/* Header */}
       <header className="header">
         <Sparkles
           className="headerIcon"
@@ -658,7 +652,7 @@ export default function PredictionsPage() {
                     ) : (
                       <MapPin className="w-4 h-4" />
                     )}
-                    <span className="hidden md:inline">Use Location</span>
+  
                   </button>
                   {/* Suggestions */}
                   {suggestions.length > 0 && (
