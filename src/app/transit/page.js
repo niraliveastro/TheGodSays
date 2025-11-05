@@ -341,13 +341,19 @@ export default function TransitPage() {
 
   return (
     <div className="transit-container">
+                 {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
       <div className="transit-content">
         {/* Header */}
         <header className="transit-header">
-          <h1 className="transit-title">
+          <h1 className="title">
             Planetary Transit
           </h1>
-          <p className="transit-subtitle">
+          <p className="subtitle">
             Current planetary movements and their cosmic influences
           </p>
         </header>

@@ -174,14 +174,21 @@ export default function CosmicEventTracker() {
   const displayedNEOs = filteredAndSortedNEOs();
 
   return (
-    <div className="page-container">
+    <div className="app">
+              {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
       {/* Header Section */}
-      <div className="page-header">
-        <div className="header-icon-wrapper">
+      <div className="header">
+        <div className="headerIcon" style={{width: 36, height: 36,}}>
           <CircleOff className="header-icon" />
         </div>
-        <h1 className="page-title">Cosmic Event Tracker</h1>
-        <p className="page-subtitle">Monitoring Near-Earth Objects & Asteroid Close Approaches</p>
+        <h1 className="title">Cosmic Event Tracker</h1>
+        <p className="subtitle">Monitoring Near-Earth Objects & Asteroid Close Approaches</p>
       </div>
 
       {/* Controls Card */}

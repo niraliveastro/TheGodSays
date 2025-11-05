@@ -207,7 +207,7 @@ function AstrologerDashboardContent() {
           {/* Header */}
           <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
+              <h1 style={{ fontSize: '2.25rem', fontWeight: 500, color: 'var(--color-gray-900)' }}>
                 Welcome, {userProfile?.name || 'Astrologer'}
               </h1>
               <p style={{ color: 'var(--color-gray-600)', fontSize: '1rem' }}>
@@ -424,7 +424,7 @@ function AstrologerDashboardContent() {
                           <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>
                             {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from User {call.userId?.slice(-4) || 'Unknown'}
                           </p>
-                          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0' }}>
+                          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0', fontFamily: 'Courier New, monospace' }}>
                             {formatDate(call.createdAt)}
                           </p>
                         </div>

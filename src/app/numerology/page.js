@@ -258,13 +258,20 @@ export default function NumerologyPage() {
 
   return (
     <div className="numerology-container">
-      <div className="numerology-content">
+      <div className="app">
+              {/* Orbs */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div className="orb orb1" />
+          <div className="orb orb2" />
+          <div className="orb orb3" />
+        </div>
+
         {/* Header */}
-        <header className="numerology-header">
-          <h1 className="numerology-title">
+        <header className="header">
+          <h1 className="title">
             Universal Numerology Analyzer
           </h1>
-          <p className="numerology-subtitle">
+          <p className="subtitle">
             Composite Scoring System: Inner Engine (Pythagorean) × Outer Vehicle (Chaldean)
           </p>
         </header>

@@ -240,7 +240,7 @@ export default function TalkToAstrologer() {
             setConnectingCallType(null)
             router.push(
               type === 'video'
-                ? `/talk-to-astrologer/video/${roomName}`
+                ? `/talk-to-astrologer/room/${roomName}`
                 : `/talk-to-astrologer/voice/${roomName}`
             )
           } else {
@@ -398,7 +398,7 @@ export default function TalkToAstrologer() {
                     transform: 'translateY(-50%)',
                     width: '1.25rem',
                     height: '1.25rem',
-                    color: 'var(--color-goldignition',
+                    color: 'var(--color-gold)',
                   }}
                 />
                 <select
@@ -471,10 +471,11 @@ export default function TalkToAstrologer() {
 
 {!fetchingAstrologers && filteredAstrologers.length > 0 && (
   <div
+    className="astrologer-grid"
     style={{
       display: 'grid',
-      gap: '1.5rem',
-      gridTemplateColumns: 'repeat(3, minmax(16rem, 1fr))',
+      gap: '1rem',
+      gridTemplateColumns: '1fr',
       marginTop: '1.5rem',
     }}
   >
@@ -517,7 +518,7 @@ export default function TalkToAstrologer() {
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            fontWeight: 'bold',
+            fontWeight: 700,
             fontSize: '1.25rem',
           }}
         >
@@ -544,13 +545,15 @@ export default function TalkToAstrologer() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3
               style={{
-                fontSize: '1.25rem',
+                fontSize: '1.5rem',
                 fontWeight: 700,
                 color: 'var(--color-gray-900)',
                 margin: 0,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                fontFamily: 'var(--font-heading)',
+                lineHeight: 1.3,
               }}
               title={a.name}
             >
@@ -565,6 +568,7 @@ export default function TalkToAstrologer() {
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                fontFamily: 'var(--font-body)',
               }}
               title={a.specialization}
             >
@@ -576,6 +580,7 @@ export default function TalkToAstrologer() {
                 color: 'var(--color-gray-500)',
                 margin: '0.25rem 0 0',
                 fontWeight: 500,
+                fontFamily: 'Courier New, monospace',
               }}
             >
               {a.experience}
@@ -593,13 +598,14 @@ export default function TalkToAstrologer() {
                 color: 'var(--color-amber-700)',
                 padding: '0.25rem 0.5rem',
                 borderRadius: '9999px',
+                fontFamily: 'Courier New, monospace',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 whiteSpace: 'nowrap',
               }}
             >
               <Star style={{ width: '0.875rem', height: '0.875rem', fill: '#f59e0b', color: '#f59e0b' }} />
-              {a.rating} <span style={{ color: 'var(--color-gray-500)', marginLeft: '0.125rem' }}>({a.reviews})</span>
+              {a.rating} <span style={{ color: 'var(--color-gray-500)', marginLeft: '0.125rem', fontFamily: 'Courier New, monospace', }}>({a.reviews})</span>
             </div>
 
             <Button
@@ -647,7 +653,7 @@ export default function TalkToAstrologer() {
     {/* Rest of content */}
     {a.perMinuteCharge && (
       <div style={{ marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
-        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669' }}>
+        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669', fontFamily: 'Courier New, monospace', }}>
           ₹{a.perMinuteCharge}/min
         </span>
       </div>
@@ -656,6 +662,7 @@ export default function TalkToAstrologer() {
     <p
       style={{
         fontSize: '0.875rem',
+        fontFamily: 'var(--font-body)',
         color: 'var(--color-gray-600)',
         marginBottom: '1rem',
         display: '-webkit-box',
@@ -670,7 +677,7 @@ export default function TalkToAstrologer() {
     </p>
 
     <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
-      <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gray-500)', marginBottom: '0.5rem' }}>
+      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-gray-600)', marginBottom: '0.5rem' }}>
         Speaks:
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
@@ -682,7 +689,7 @@ export default function TalkToAstrologer() {
               background: 'var(--color-indigo-light)',
               color: 'var(--color-indigo)',
               fontSize: '0.75rem',
-              fontWeight: 500,
+              fontWeight: 700,
               borderRadius: '9999px',
             }}
           >
@@ -814,15 +821,29 @@ export default function TalkToAstrologer() {
       </div>
 
       {/* Local animations */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+<style jsx>{`
+  @media (min-width: 640px) {
+    .astrologer-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 1.25rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .astrologer-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 1.5rem !important;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`}</style>
     </>
   )
 }

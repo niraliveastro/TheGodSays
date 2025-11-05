@@ -186,7 +186,16 @@ export default function AstrologerProfile() {
           <p style={{ color: 'var(--color-gray-600)', marginBottom: 'var(--space-lg)' }}>
             {error || 'The astrologer you are looking for does not exist.'}
           </p>
-          <button onClick={() => router.push('/talk-to-astrologer')} className="btn btn-primary">
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back()
+              } else {
+                router.push('/talk-to-astrologer')
+              }
+            }}
+            className="btn btn-primary"
+          >
             Back to Astrologers
           </button>
         </div>
@@ -211,6 +220,14 @@ export default function AstrologerProfile() {
     window.open(`/talk-to-astrologer/${type}?astrologerId=${astrologer.id}`, '_blank')
   }
 
+  const handleBackNavigation = () => {
+    if (isOwner) {
+      router.push('/astrologer-dashboard')
+    } else {
+      router.push('/talk-to-astrologer')
+    }
+  }
+
   return (
     <>
       {/* Desktop Layout - Custom Grid */}
@@ -224,7 +241,7 @@ export default function AstrologerProfile() {
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', fontFamily: "'Inter', sans-serif" }}>
+      <div className='app'>
         {/* Header Navigation */}
         <div style={{
           background: 'var(--color-white)',
@@ -233,7 +250,15 @@ export default function AstrologerProfile() {
           <div className="container">
             <div style={{ padding: 'var(--space-md) 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
-                onClick={() => router.push('/astrologer-dashboard')}
+                onClick={() => {
+                  // Try to go back in history first
+                  if (window.history.length > 1) {
+                    router.back()
+                  } else {
+                    // If no history, go to astrologers list
+                    router.push('/talk-to-astrologer')
+                  }
+                }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -278,7 +303,7 @@ export default function AstrologerProfile() {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr',
-                gap: 'var(--space-xl)'
+                gap: 'var(--space-lg)'
               }}>
                 
                 <div className="desktop-layout">
@@ -307,8 +332,9 @@ export default function AstrologerProfile() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                          fontSize: '2.5rem',
-                          fontWeight: 700,
+                           fontSize: '2.25rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
                           border: '4px solid white',
                           boxShadow: 'var(--shadow-lg)',
                           fontFamily: "'Cormorant Garamond', serif"
@@ -432,9 +458,9 @@ export default function AstrologerProfile() {
                                     color: 'var(--color-gold)'
                                   }} />
                                   <span style={{
-                                    fontSize: '0.75rem',
+                                    fontSize: '0.90rem',
                                     color: 'var(--color-gray-600)',
-                                    fontWeight: 500,
+                                    fontWeight: 800,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.05em',
                                     fontFamily: "'Cormorant Garamond', sans-serif"
@@ -685,7 +711,8 @@ export default function AstrologerProfile() {
                                   </div>
                                   <div style={{
                                     fontSize: '0.875rem',
-                                    color: 'var(--color-gray-500)'
+                                    color: 'var(--color-gray-500)',
+                                    fontFamily: "Courier New, monospace"
                                   }}>
                                     {review.createdAt
                                       ? new Date(review.createdAt.toDate ? review.createdAt.toDate() : review.createdAt).toLocaleDateString()
@@ -943,7 +970,7 @@ export default function AstrologerProfile() {
             </div>
           </div>
         )}
-      </div>
+      
 
       {/* Animations */}
       <style>{`
@@ -953,9 +980,10 @@ export default function AstrologerProfile() {
         }
         
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Cormorant Garamond', sans-serif;
         }
       `}</style>
+      </div>
     </>
   )
 }

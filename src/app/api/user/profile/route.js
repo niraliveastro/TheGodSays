@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
+import { WalletService } from '@/lib/wallet'
 
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
@@ -33,8 +34,26 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
     }
 
-    const data = snap.data() || {}
-    return NextResponse.json({ success: true, user: { id: snap.id, ...data } })
+    const userData = snap.data() || {}
+    
+    // Fetch wallet balance from wallets collection
+    let balance = 0
+    try {
+      const walletData = await WalletService.getWallet(userId)
+      balance = walletData.balance || 0
+    } catch (error) {
+      console.warn('Failed to fetch wallet balance:', error.message)
+      // Don't fail the entire request if wallet fetch fails
+    }
+    
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: snap.id,
+        ...userData,
+        balance
+      }
+    })
   } catch (error) {
     console.error('Error in user profile GET:', error)
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
@@ -63,7 +82,25 @@ export async function PUT(request) {
     }
 
     const updated = await userRef.get()
-    return NextResponse.json({ success: true, user: { id: updated.id, ...(updated.data() || {}) } })
+    const updatedUserData = updated.data() || {}
+    
+    // Also fetch wallet balance for PUT response
+    let balance = 0
+    try {
+      const walletData = await WalletService.getWallet(userId)
+      balance = walletData.balance || 0
+    } catch (error) {
+      console.warn('Failed to fetch wallet balance:', error.message)
+    }
+    
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: updated.id,
+        ...updatedUserData,
+        balance
+      }
+    })
   } catch (error) {
     console.error('Error in user profile PUT:', error)
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })

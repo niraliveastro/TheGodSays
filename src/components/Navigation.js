@@ -20,6 +20,8 @@ import {
   Sparkles,
   LayoutDashboard,
   Settings,
+  Hash,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -65,13 +67,12 @@ const Navigation = () => {
     { href: "/matching", label: "Matching", icon: BookOpen },
     {
       href: null,
-      label: "More",
-      icon: MoreHorizontal,
+      label: "Tools",
       children: [
-        { href: "/numerology", label: "Numerology" },
-        { href: "/transit", label: "Planetary Transit" },
-        { href: "/cosmic-event-tracker", label: "Cosmic Events Tracker" },
-        { href: "/panchang", label: "Panchang" },
+        { href: "/numerology", label: "Numerology", icon: Hash },
+        { href: "/transit", label: "Planetary Transit", icon: Zap },
+        { href: "/cosmic-event-tracker", label: "Cosmic Events Tracker", icon: Calendar },
+        { href: "/panchang", label: "Panchang", icon: BookOpen },
       ],
     },
     { href: "/wallet", label: "Wallet", icon: Wallet },
@@ -239,8 +240,7 @@ const Navigation = () => {
           <div className="nav-desktop">
             {navItems.map((item) => {
               const Icon = item.icon;
-
-              // Handle dropdown menu (More) - only for users
+              // Handle dropdown menu (Tools) - only for users
               if (item.children) {
                 const isActive = item.children.some(child => pathname === child.href)
                 return (
@@ -255,8 +255,9 @@ const Navigation = () => {
                       className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
                       onClick={() => setShowMoreDropdown(!showMoreDropdown)}
                     >
-                      <Icon />
+                      {item.icon && <Icon />}
                       <span>{item.label}</span>
+                      <ChevronDown className={`dropdown-icon ${showMoreDropdown ? 'rotated' : ''}`} />
                     </button>
                     
                     {showMoreDropdown && (
@@ -264,17 +265,21 @@ const Navigation = () => {
                         <div className="nav-dropdown-bridge"></div>
                         <div className="nav-dropdown-menu">
                           <div className="nav-dropdown-content">
-                            {item.children.map((child) => (
-                              <Link
-                                key={child.href}
-                                href={child.href}
-                                className={`nav-dropdown-item ${
-                                  pathname === child.href ? 'active' : ''
-                                }`}
-                              >
-                                {child.label}
-                              </Link>
-                            ))}
+                            {item.children.map((child) => {
+                              const ChildIcon = child.icon;
+                              return (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  className={`nav-dropdown-item ${
+                                    pathname === child.href ? 'active' : ''
+                                  }`}
+                                >
+                                  {ChildIcon && <ChildIcon />}
+                                  <span>{child.label}</span>
+                                </Link>
+                              );
+                            })}
                           </div>
                         </div>
                       </>
@@ -291,7 +296,7 @@ const Navigation = () => {
                     pathname === item.href ? "nav-link-active" : ""
                   }`}
                 >
-                  <Icon />
+                  {Icon && <Icon />}
                   <span>{item.label}</span>
                 </Link>
               );
@@ -311,20 +316,20 @@ const Navigation = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
 
-                // Handle dropdown menu (More) in mobile - only for users
+                // Handle dropdown menu (Tools) in mobile - only for users
                 if (item.children) {
                   const isActive = item.children.some(child => pathname === child.href)
                   return (
                     <div key={item.label} data-dropdown-container>
-                      {/* More button */}
+                      {/* Tools button */}
                       <button
                         type="button"
                         className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
                         onClick={() => setShowMoreDropdown(!showMoreDropdown)}
                       >
                         <div className="flex items-center">
-                          <Icon />
-                          <span style={{ marginLeft: '0.5rem' }}>{item.label}</span>
+                          {Icon && <Icon className="mr-2" />}
+                          <span>{item.label}</span>
                         </div>
                         <ChevronDown className={`chevron-icon ${showMoreDropdown ? 'rotated' : ''}`} />
                       </button>
@@ -332,21 +337,25 @@ const Navigation = () => {
                       {/* Expandable children */}
                       {showMoreDropdown && (
                         <div className="nav-mobile-dropdown-content">
-                          {item.children.map((child) => (
-                            <Link
-                              key={child.href}
-                              href={child.href}
-                              className={`nav-mobile-dropdown-item ${
-                                pathname === child.href ? 'active' : ''
-                              }`}
-                              onClick={() => {
-                                setIsOpen(false)
-                                setShowMoreDropdown(false)
-                              }}
-                            >
-                              {child.label}
-                            </Link>
-                          ))}
+                          {item.children.map((child) => {
+                            const ChildIcon = child.icon;
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`nav-mobile-dropdown-item ${
+                                  pathname === child.href ? 'active' : ''
+                                }`}
+                                onClick={() => {
+                                  setIsOpen(false)
+                                  setShowMoreDropdown(false)
+                                }}
+                              >
+                                {ChildIcon && <ChildIcon className="mr-2" />}
+                                <span>{child.label}</span>
+                              </Link>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -362,7 +371,7 @@ const Navigation = () => {
                     }`}
                     onClick={() => setIsOpen(false)}
                   >
-                    <Icon />
+                    {Icon && <Icon className="mr-2" />}
                     <span>{item.label}</span>
                   </Link>
                 );

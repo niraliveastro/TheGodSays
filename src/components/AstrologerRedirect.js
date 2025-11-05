@@ -24,7 +24,11 @@ export default function AstrologerRedirect() {
       '/account/astrologer',
       '/auth'
     ]
-    const isAllowedPath = allowedPaths.some(path => pathname === path || pathname.startsWith(path))
+    
+    // Also allow access to specific astrologer profile pages
+    const isSpecificProfile = /^\/account\/astrologer\/[^\/]+$/.test(pathname)
+    
+    const isAllowedPath = allowedPaths.some(path => pathname === path || pathname.startsWith(path)) || isSpecificProfile
 
     if (isAstrologer && !isAllowedPath) {
       router.replace('/unauthorized')
