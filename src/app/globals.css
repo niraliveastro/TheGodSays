@@ -973,42 +973,71 @@ select {
   height: 1.25rem;
   color: #fbbf24;
 }
-
 /* -------------------------------------------------
    BIRTH INFO GRID
    ------------------------------------------------- */
 .birth-info-grid {
   display: grid;
+  width: 100%;                           
   gap: 1rem;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+  /* auto-fit ensures dynamic expansion */
+  margin-top: 0.75rem;
+  align-items: stretch;                   
 }
-@media (min-width: 768px) {
-  .birth-info-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
+
+/* -------------------------------------------------
+   INFO CARD ITEM
+   ------------------------------------------------- */
 .info-card {
   background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   padding: 1rem;
-  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;                       
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
+
+.info-card:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* -------------------------------------------------
+   LABEL + ICON
+   ------------------------------------------------- */
 .info-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #6b7280;
   margin-bottom: 0.25rem;
+  text-transform: uppercase;
 }
+
 .info-label svg {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--color-gold);
+  flex-shrink: 0;
 }
+
+/* -------------------------------------------------
+   VALUE TEXT
+   ------------------------------------------------- */
 .info-value {
   font-weight: 600;
   color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-break: break-word;
 }
+
 
 /* -------------------------------------------------
    CHART & TABLE

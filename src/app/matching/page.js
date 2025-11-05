@@ -11,6 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 
 
@@ -762,326 +763,661 @@ color: #fff;
 
         {error && <div className="error">{error}</div>}
 
-        <form onSubmit={onSubmit} className="form-wrapper">
-          <div className="form-grid">
-            {/* ---------- Female ---------- */}
-            <div className="person-box female">
-              <div className="person-header">
-                <h3>Female</h3>
-                <span style={{ fontSize: ".75rem", opacity: .7 }}>
-                  {fFilled}/3 filled
-                </span>
-              </div>
-
-              <div className="field">
-                <label>Date of Birth</label>
-                <input
-                  type="date"
-                  value={female.dob}
-                  onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "dob")}
-                  required
-                />
-              </div>
-
-              <div className="field">
-                <label>Time of Birth</label>
-                <input
-                  type="time"
-                  step="1"
-                  value={female.tob}
-                  onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "tob")}
-                  required
-                />
-              </div>
-
-  {/* ---------- Female Place ---------- */}
-<div className="field" style={{ position: "relative" }}>
-  <label>Place</label>
-  <input
-    placeholder="City, Country"
-    value={female.place}
-    onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, "place")}
-    autoComplete="off"
-    required
-    style={{ position: "relative", zIndex: 1 }}
-  />
-  {fSuggest.length > 0 && (
-    <div
-      className="suggest-list"
-      style={{
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        right: 0,
-        zIndex: 30,
-        maxHeight: "12rem",
-        overflowY: "auto",
-      }}
-    >
-      {fSuggest.map((s, i) => (
-        <div
-          key={`${s.label}-${i}`}
-          className="suggest-item"
-          onClick={() => {
-            setFemale((p) => ({ ...p, place: s.label }));
-            setFCoords(s);
-            setFSuggest([]);
-          }}
-        >
-          {s.label}
-        </div>
-      ))}
+<form
+  onSubmit={onSubmit}
+  className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-6xl mx-auto"
+>
+  {/* Header */}
+  <div className="form-header">
+    <div className="form-header-icon">
+      <Moon className="w-6 h-6 text-gold" />
     </div>
-  )}
-</div>
-            </div>
-
-            {/* ---------- Male ---------- */}
-            <div className="person-box male">
-              <div className="person-header">
-                <h3>Male</h3>
-                <span style={{ fontSize: ".75rem", opacity: .7 }}>
-                  {mFilled}/3 filled
-                </span>
-              </div>
-
-              <div className="field">
-                <label>Date of Birth</label>
-                <input
-                  type="date"
-                  value={male.dob}
-                  onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "dob")}
-                  required
-                />
-              </div>
-
-              <div className="field">
-                <label>Time of Birth</label>
-                <input
-                  type="time"
-                  step="1"
-                  value={male.tob}
-                  onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "tob")}
-                  required
-                />
-              </div>
-
-<div className="field" style={{ position: "relative" }}>
-  <label>Place</label>
-  <input
-    placeholder="City, Country"
-    value={male.place}
-    onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, "place")}
-    autoComplete="off"
-    required
-    style={{ position: "relative", zIndex: 1 }}
-  />
-  {mSuggest.length > 0 && (
-    <div
-      className="suggest-list"
-      style={{
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        right: 0,
-        zIndex: 30,
-        maxHeight: "12rem",
-        overflowY: "auto",
-      }}
-    >
-      {mSuggest.map((s, i) => (
-        <div
-          key={`${s.label}-${i}`}
-          className="suggest-item"
-          onClick={() => {
-            setMale((p) => ({ ...p, place: s.label }));
-            setMCoords(s);
-            setMSuggest([]);
-          }}
-        >
-          {s.label}
-        </div>
-      ))}
+    <div className="form-header-text">
+      <h3 className="form-title">Birth Details</h3>
+      <p className="form-subtitle">Enter birth details for both individuals</p>
     </div>
-  )}
-</div>
-            </div>
-          </div>
+  </div>
 
-<div className="btn-group">
-  <button
-    type="reset"
-    className="btn btn-reset"
-    onClick={() => {
-      setFemale({ dob: "", tob: "", place: "" });
-      setMale({ dob: "", tob: "", place: "" });
-      setFCoords(null);
-      setMCoords(null);
-      setFSuggest([]);
-      setMSuggest([]);
-      setError("");
-      setResult(null);
-      setFDetails(null);
-      setMDetails(null);
+  {/* Grid */}
+  <div className="grid md:grid-cols-2 gap-8 mt-4">
+    {/* ---------- Female ---------- */}
+    <div className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6">
+      <div className="results-header mb-3">
+        <Moon style={{ color: '#a78bfa' }} />
+        <h3 className="results-title">Female Details</h3>
+      </div>
+
+      <div className="form-grid">
+        {/* Date */}
+        <div className="form-field">
+          <label className="form-field-label">
+            <Calendar className="w-5 h-5 text-pink-500" />
+            Date of Birth
+          </label>
+          <input
+            type="date"
+            value={female.dob}
+            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'dob')}
+            required
+            className="form-field-input"
+          />
+          <p className="form-field-helper">Format: YYYY-MM-DD</p>
+        </div>
+
+        {/* Time */}
+        <div className="form-field">
+          <label className="form-field-label">
+            <Clock className="w-5 h-5 text-pink-500" />
+            Time of Birth
+          </label>
+          <input
+            type="time"
+            step="60"
+            value={female.tob}
+            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'tob')}
+            required
+            className="form-field-input"
+          />
+          <p className="form-field-helper">24-hour format</p>
+        </div>
+
+        {/* Place */}
+        <div className="form-field relative">
+          <label className="form-field-label">
+            <MapPin className="w-5 h-5 text-pink-500" />
+            Place
+          </label>
+          <input
+            placeholder="City, Country"
+            value={female.place}
+            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'place')}
+            autoComplete="off"
+            required
+            className="form-field-input"
+          />
+          {fSuggest.length > 0 && (
+            <div className="suggestions">
+              {fSuggest.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setFemale((p) => ({ ...p, place: s.label }));
+                    setFCoords(s);
+                    setFSuggest([]);
+                  }}
+                  className="suggestion-item"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-pink-500" />
+                  <span className="truncate">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* ---------- Male ---------- */}
+    <div className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6">
+      <div className="results-header mb-3">
+        <Sun style={{ color: '#ca8a04' }} />
+        <h3 className="results-title">Male Details</h3>
+      </div>
+
+      <div className="form-grid">
+        {/* Date */}
+        <div className="form-field">
+          <label className="form-field-label">
+            <Calendar className="w-5 h-5 text-blue-500" />
+            Date of Birth
+          </label>
+          <input
+            type="date"
+            value={male.dob}
+            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'dob')}
+            required
+            className="form-field-input"
+          />
+          <p className="form-field-helper">Format: YYYY-MM-DD</p>
+        </div>
+
+        {/* Time */}
+        <div className="form-field">
+          <label className="form-field-label">
+            <Clock className="w-5 h-5 text-blue-500" />
+            Time of Birth
+          </label>
+          <input
+            type="time"
+            step="60"
+            value={male.tob}
+            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'tob')}
+            required
+            className="form-field-input"
+          />
+          <p className="form-field-helper">24-hour format</p>
+        </div>
+
+        {/* Place */}
+        <div className="form-field relative">
+          <label className="form-field-label">
+            <MapPin className="w-5 h-5 text-blue-500" />
+            Place
+          </label>
+          <input
+            placeholder="City, Country"
+            value={male.place}
+            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'place')}
+            autoComplete="off"
+            required
+            className="form-field-input"
+          />
+          {mSuggest.length > 0 && (
+            <div className="suggestions">
+              {mSuggest.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setMale((p) => ({ ...p, place: s.label }));
+                    setMCoords(s);
+                    setMSuggest([]);
+                  }}
+                  className="suggestion-item"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="truncate">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Action Buttons */}
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(12, 1fr)',
+      gap: '1rem',
+      alignItems: 'end',
+      marginTop: '2rem',
     }}
   >
-    Reset
-  </button>
+    <div className="submit-col col-span-3">
+      <button
+        type="submit"
+        disabled={submitting || fFilled < 3 || mFilled < 3}
+        className="btn btn-primary w-full"
+      >
+        {submitting ? (
+          <>
+            <Sparkles className="w-4 h-4 animate-spin mr-2" />
+            Calculating…
+          </>
+        ) : (
+          <>
+            <Sparkles className="w-4 h-4 mr-2" />
+            Get Match Score
+          </>
+        )}
+      </button>
+    </div>
 
-  <button
-    type="submit"
-    className="btn submit-btn"  
-    disabled={submitting || fFilled < 3 || mFilled < 3}
-  >
-    {submitting ? "Calculating…" : "Get Match Score"}
-  </button>
-</div>
-        </form>
+    <div className="reset-col col-span-2">
+      <button
+        type="reset"
+        onClick={() => {
+          setFemale({ dob: '', tob: '', place: '' });
+          setMale({ dob: '', tob: '', place: '' });
+          setFCoords(null);
+          setMCoords(null);
+          setFSuggest([]);
+          setMSuggest([]);
+          setError('');
+          setResult(null);
+          setFDetails(null);
+          setMDetails(null);
+        }}
+        className="btn btn-ghost w-full"
+      >
+        <RotateCcw className="w-4 h-4" /> Reset
+      </button>
+    </div>
+  </div>
+</form>
+
 
         {/* ---------------------------------------------------------- */}
         {/*  RESULT SECTION                                            */}
         {/* ---------------------------------------------------------- */}
-        {result && (
-          <div className="result-wrapper">
-            <h2>Pro Kundali Match</h2>
+{result && (
+  <div className="app fade-in">
+    {/* Background Orbs */}
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      <div className="orb orb1" />
+      <div className="orb orb2" />
+      <div className="orb orb3" />
+    </div>
 
-            {/* ----- Birth info snapshot ----- */}
-            <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: "1.5rem" }}>
-              <div>
-                <div style={{ fontSize: ".75rem", color: "var(--c-muted)" }}>Female</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", marginTop: ".25rem" }}>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtDate(female.dob)}</span>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtTime(female.tob)}</span>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={female.place}>{female.place || "—"}</span>
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: ".75rem", color: "var(--c-muted)" }}>Male</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", marginTop: ".25rem" }}>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtDate(male.dob)}</span>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem" }}>{fmtTime(male.tob)}</span>
-                  <span style={{ background: "#1e293b", color: "#e2e8f0", padding: ".25rem .5rem", borderRadius: ".25rem", fontSize: ".875rem", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={male.place}>{male.place || "—"}</span>
-                </div>
-              </div>
+    {/* Header */}
+    <header className="header left-align">
+      <h1 className="title">Pro Kundali Match</h1>
+    </header>
+
+    {/* Birth Info Snapshot */}
+<div className="grid md:grid-cols-2 gap-6 mt-4">
+  {/* Female Birth Info */}
+  <div className="card">
+    <div className="results-header">
+      <Moon style={{ color: '#a78bfa' }} />
+      <h3 className="results-title">Female Birth Information</h3>
+    </div>
+    <div className="birth-info-grid">
+      {[
+        { icon: Calendar, label: 'Date', value: fmtDate(female.dob) },
+        { icon: Clock, label: 'Time', value: fmtTime(female.tob) },
+        { icon: MapPin, label: 'Place', value: female.place || '—' },
+      ].map((item, i) => {
+        const Icon = item.icon
+        return (
+          <div key={i} className="info-card">
+            <div className="info-label">
+              <Icon />
+              {item.label}
             </div>
-
-            {/* ----- Quick verdict ----- */}
-            <section className="verdict">
-              <div className="verdict-score">
-                {Number(result?.total_score ?? 0)}
-                <span className="verdict-max">/{Number(result?.out_of ?? 36)}</span>
-              </div>
-              <div style={{ fontSize: ".875rem", marginTop: ".25rem" }}>Ashtakoot Score</div>
-
-              <ul className="koot-list" style={{ marginTop: "1rem" }}>
-                {KOOTS.map((k) => {
-                  const sec = result?.[k];
-                  const title = k.replace(/_/g, " ");
-                  const val = typeof sec?.score === "number" ? sec.score : "—";
-                  return (
-                    <li key={k} className="koot-item">
-                      <span style={{ textTransform: "capitalize", fontWeight: "500" }}>{title}</span>
-                      <span style={{ fontWeight: "600" }}>{val}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-
-            {/* ----- Koot breakdown (bars) ----- */}
-            <section style={{ marginTop: "2rem" }}>
-              <h3>Koot Breakdown</h3>
-              <div style={{ display: "grid", gap: ".75rem" }}>
-                {KOOTS.map((k) => {
-                  const sec = result?.[k];
-                  const label = k.replace(/_/g, " ");
-                  if (!sec || typeof sec.score !== "number" || typeof sec.out_of !== "number" || sec.out_of === 0) {
-                    return (
-                      <div key={k} style={{ opacity: .7 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ".25rem" }}>
-                          <span style={{ textTransform: "capitalize" }}>{label}</span>
-                          <span style={{ fontSize: ".875rem" }}>No data</span>
-                        </div>
-                        <div style={{ height: ".5rem", background: "#e2e8f0", borderRadius: ".25rem" }} />
-                      </div>
-                    );
-                  }
-                  const pct = Math.round((sec.score / sec.out_of) * 100);
-                  return (
-                    <div key={k}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ".25rem" }}>
-                        <span style={{ textTransform: "capitalize" }}>{label}</span>
-                        <span style={{ fontSize: ".875rem", fontWeight: "500" }}>{sec.score} / {sec.out_of}</span>
-                      </div>
-                      <div style={{ height: ".5rem", background: "#e2e8f0", borderRadius: ".25rem", overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: "var(--c-cyan)", transition: "width .3s ease" }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* ----- Charts ----- */}
-            {mounted && (
-              <div className="chart-section">
-                {/* Bar chart */}
-                <section className="chart-card">
-                  <div style={{ marginBottom: ".5rem", fontSize: ".875rem", color: "var(--c-muted)" }}>Koot Scores (Bar)</div>
-                  {kootData.length > 0 ? (
-                    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-                      <div style={{ maxWidth: "400px", width: BAR_W }}>
-                        <BarChart width={BAR_W} height={BAR_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                          <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                          <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
-                          <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                          <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #475569", color: "#e2e8f0" }} />
-                          <Bar dataKey="score" fill="var(--c-cyan)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: "var(--c-muted)" }}>No chart data</div>
-                  )}
-                </section>
-
-                {/* Line chart */}
-                <section className="chart-card">
-                  <div style={{ marginBottom: ".5rem", fontSize: ".875rem", color: "var(--c-muted)" }}>Koot Percentage (Line)</div>
-                  {kootData.length > 0 ? (
-                    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-                      <div style={{ maxWidth: "400px", width: LINE_W }}>
-                        <LineChart width={LINE_W} height={LINE_H} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                          <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                          <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
-                          <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} />
-                          <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #475569", color: "#e2e8f0" }} />
-                          <Line type="monotone" dataKey="pct" stroke="#a78bfa" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: "var(--c-muted)" }}>No chart data</div>
-                  )}
-                </section>
-              </div>
-            )}
-
-            {/* ----- Individual details ----- */}
-            {(fDetails || mDetails) && (
-              <div style={{ marginTop: "2rem", display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-                <PersonDetails title="Female Details" d={fDetails} />
-                <PersonDetails title="Male Details" d={mDetails} />
-              </div>
-            )}
-
-            {/* ----- Footer actions ----- */}
-            <div style={{ marginTop: "2rem", display: "flex", gap: ".75rem", justifyContent: "flex-end" }}>
-              <button className="btn btn-reset">Download PDF</button>
-              <button className="btn btn-submit">Share</button>
-            </div>
+            <div className="info-value">{item.value}</div>
           </div>
-        )}
+        )
+      })}
+    </div>
+  </div>
+
+  {/* Male Birth Info */}
+  <div className="card">
+    <div className="results-header">
+      <Sun style={{ color: '#ca8a04' }} />
+      <h3 className="results-title">Male Birth Information</h3>
+    </div>
+    <div className="birth-info-grid">
+      {[
+        { icon: Calendar, label: 'Date', value: fmtDate(male.dob) },
+        { icon: Clock, label: 'Time', value: fmtTime(male.tob) },
+        { icon: MapPin, label: 'Place', value: male.place || '—' },
+      ].map((item, i) => {
+        const Icon = item.icon
+        return (
+          <div key={i} className="info-card">
+            <div className="info-label">
+              <Icon />
+              {item.label}
+            </div>
+            <div className="info-value">{item.value}</div>
+          </div>
+        )
+      })}
+    </div>
+  </div>
+</div>
+
+
+    {/* Verdict Card */}
+    <div className="card">
+      <div className="results-header">
+        <Sun style={{ color: '#ca8a04' }} />
+        <h3 className="results-title">Ashtakoot Compatibility</h3>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="text-4xl font-bold text-gold">
+          {Number(result?.total_score ?? 0)}
+          <span className="text-gray-500 text-xl">/{Number(result?.out_of ?? 36)}</span>
+        </div>
+        <div className="liveBadge">
+          <div className="pulseDot" /> Score Summary
+        </div>
+      </div>
+
+{/* Koot Table */}
+<div className="table-scroll-container mt-4">
+  <table className="planet-table">
+    <thead>
+      <tr>
+        <th>Kootam</th>
+        <th>Points</th>
+        <th>Area of Life</th>
+      </tr>
+    </thead>
+    <tbody>
+      {KOOTS.map((k) => {
+        const sec = result?.[k];
+        const name = k.replace(/_?kootam/i, "").replace(/_/g, " ").trim();
+        const score = typeof sec?.score === "number" ? sec.score : "—";
+        const outOf = typeof sec?.out_of === "number" ? sec.out_of : "—";
+
+        // Define the meaning map OUTSIDE normalization scope
+        const meaningMap = {
+          varna: "Spiritual Compatibility",
+          vasya: "Mutual Affection / Control",
+          tara: "Health & Longevity",
+          yoni: "Sexual Compatibility",
+          graha_maitri: "Mental Harmony",
+          gana: "Temperament",
+          rasi: "Love & Emotion",
+          nadi: "Health & Genes",
+        };
+
+        // Normalize name to match map keys correctly
+        const normalizedKey = k
+          .replace(/_?kootam/i, "")
+          .trim()
+          .toLowerCase();
+
+        const area = meaningMap[normalizedKey] || "—";
+
+        return (
+          <tr key={k}>
+            <td className="capitalize font-medium text-gray-700">
+              {name}
+            </td>
+            <td className="font-semibold text-gray-900">
+              {score} / {outOf}
+            </td>
+            <td className="text-gray-600">{area}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
+
+
+    </div>
+  {/* Charts Section */}
+    {mounted && (
+      <div className="grid md:grid-cols-2 gap-6 mt-8">
+        {/* Bar Chart */}
+        <div className="card">
+          <div className="results-header">
+            <Sun style={{ color: '#d4af37' }} />
+            <h3 className="results-title">Koot Scores (Bar)</h3>
+          </div>
+          {kootData.length > 0 ? (
+            <div className="flex justify-center">
+              <BarChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                <Tooltip
+  contentStyle={{
+    background: "#ffffff",
+    border: "1px solid var(--color-gold)",
+    color: "#1f2937",
+    borderRadius: "0.5rem",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+    padding: "0.5rem 0.75rem",
+  }}
+  itemStyle={{
+    color: "#1f2937",
+    fontWeight: 600,
+  }}
+  labelStyle={{
+    color: "var(--color-gold)",
+    fontWeight: 700,
+    marginBottom: "0.25rem",
+  }}
+/>
+
+                <Bar dataKey="score" fill="var(--color-gold)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </div>
+          ) : (
+            <div className="empty-state">No chart data</div>
+          )}
+        </div>
+
+        {/* Line Chart */}
+        <div className="card">
+          <div className="results-header">
+            <Moon style={{ color: '#a78bfa' }} />
+            <h3 className="results-title">Koot Percentage (Line)</h3>
+          </div>
+          {kootData.length > 0 ? (
+            <div className="flex justify-center">
+              <LineChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} />
+<Tooltip
+  contentStyle={{
+    background: "#ffffff",
+    border: "1px solid var(--color-gold)",
+    color: "#1f2937",
+    borderRadius: "0.5rem",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+    padding: "0.5rem 0.75rem",
+  }}
+  itemStyle={{
+    color: "#1f2937",
+    fontWeight: 600,
+  }}
+  labelStyle={{
+    color: "var(--color-gold)",
+    fontWeight: 700,
+    marginBottom: "0.25rem",
+  }}
+/>
+                <Line type="monotone" dataKey="pct" stroke="#7c3aed" strokeWidth={2} dot={false} />
+              </LineChart>
+            </div>
+          ) : (
+            <div className="empty-state">No chart data</div>
+          )}
+        </div>
+      </div>
+    )}
+    {/* Female and Male Details */}
+{(fDetails || mDetails) && (
+  <div className="grid md:grid-cols-2 gap-6 mt-8">
+    {/* Female Details */}
+    <div className="card">
+      <div className="results-header">
+        <Moon style={{ color: '#a78bfa' }} />
+        <h3 className="results-title">Female Details</h3>
+      </div>
+
+      {/* Shadbala / Ishta-Kashta */}
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Strength %</th>
+              <th>Ishta %</th>
+              <th>Kashta %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(fDetails?.shadbalaRows || []).map((p, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
+                <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
+                <td>
+                  {p.ishta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.ishta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+                <td>
+                  {p.kashta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.kashta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Planet Placements */}
+      <div className="mt-6 table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Sign</th>
+              <th>House</th>
+              <th>Normal Degree</th>
+              <th>Full Degree</th>
+              <th>Retro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(fDetails?.placements || [])
+              .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
+              .map((p, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{p.name}</td>
+                  <td>{p.currentSign || '—'}</td>
+                  <td>{p.house ?? '—'}</td>
+                  <td>
+                    {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
+                  </td>
+                  <td>
+                    {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
+                  </td>
+                  <td>
+                    {p.retro ? (
+                      <span style={{ color: '#198754' }}>Retro</span>
+                    ) : (
+                      <span className="retro-badge">Not Retro</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* Male Details */}
+    <div className="card">
+      <div className="results-header">
+        <Sun style={{ color: '#d4af37' }} />
+        <h3 className="results-title">Male Details</h3>
+      </div>
+
+      {/* Shadbala / Ishta-Kashta */}
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Strength %</th>
+              <th>Ishta %</th>
+              <th>Kashta %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(mDetails?.shadbalaRows || []).map((p, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
+                <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
+                <td>
+                  {p.ishta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.ishta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+                <td>
+                  {p.kashta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.kashta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Planet Placements */}
+      <div className="mt-6 table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Sign</th>
+              <th>House</th>
+              <th>Normal Degree</th>
+              <th>Full Degree</th>
+              <th>Retro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(mDetails?.placements || [])
+              .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
+              .map((p, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{p.name}</td>
+                  <td>{p.currentSign || '—'}</td>
+                  <td>{p.house ?? '—'}</td>
+                  <td>
+                    {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
+                  </td>
+                  <td>
+                    {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
+                  </td>
+                  <td>
+                    {p.retro ? (
+                      <span style={{ color: '#198754' }}>Retro</span>
+                    ) : (
+                      <span className="retro-badge">Not Retro</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+    {/* Footer */}
+    <div className="actionBar mt-8">
+      <button className="btn btn-ghost"><RotateCcw className="w-4 h-4" /> Reset</button>
+      <div className="flex gap-3">
+        <button className="btn btn-primary">Download PDF</button>
+        <button className="btn btn-primary">Share</button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </>
   );
