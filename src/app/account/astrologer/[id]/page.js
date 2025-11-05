@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { db, auth } from '@/lib/firebase'
+import { db, auth, storage } from '@/lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
   Star, CheckCircle, Phone, Video, Languages, Globe,
   Award, Calendar, TrendingUp, MessageCircle, IndianRupee,
-  Edit2, X, Save
+  Edit2, X, Save, Camera
 } from 'lucide-react'
 
 export default function AstrologerProfile() {
@@ -23,6 +24,7 @@ export default function AstrologerProfile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -143,6 +145,52 @@ export default function AstrologerProfile() {
     } catch (err) {
       console.error('Failed to update profile:', err)
       alert('Failed to save changes. Please try again.')
+    }
+  }
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (e) => {
+    if (!currentUser || currentUser.uid !== id) return
+    
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size should be less than 2MB')
+      return
+    }
+
+    try {
+      setUploadingAvatar(true)
+      
+      // Create storage reference
+      const storageRef = ref(storage, `avatars/${id}`)
+      
+      // Upload file
+      await uploadBytes(storageRef, file)
+      
+      // Get download URL
+      const downloadURL = await getDownloadURL(storageRef)
+      
+      // Update Firestore
+      const docRef = doc(db, 'astrologers', id)
+      await updateDoc(docRef, { avatar: downloadURL })
+      
+      // Update local state
+      setAstrologer(prev => ({ ...prev, avatar: downloadURL }))
+      
+      setUploadingAvatar(false)
+    } catch (err) {
+      console.error('Failed to upload avatar:', err)
+      alert('Failed to upload avatar. Please try again.')
+      setUploadingAvatar(false)
     }
   }
 
@@ -326,20 +374,23 @@ export default function AstrologerProfile() {
                           left: 'var(--space-xl)',
                           width: '120px',
                           height: '120px',
-                          background: 'linear-gradient(135deg, var(--color-indigo), var(--color-purple))',
+                          background: astrologer.avatar ? `url(${astrologer.avatar})` : 'linear-gradient(135deg, var(--color-indigo), var(--color-purple))',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                           borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                           fontSize: '2.25rem',
-        fontWeight: 700,
-        textTransform: 'uppercase',
+                          fontSize: '2.25rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
                           border: '4px solid white',
                           boxShadow: 'var(--shadow-lg)',
-                          fontFamily: "'Cormorant Garamond', serif"
+                          fontFamily: "'Cormorant Garamond', serif",
+                          position: 'relative'
                         }}>
-                          {astrologer.name.split(' ').map(n => n[0]).join('')}
+                          {!astrologer.avatar && astrologer.name.split(' ').map(n => n[0]).join('')}
 
                           {isOnline && (
                             <div style={{
@@ -353,6 +404,35 @@ export default function AstrologerProfile() {
                               borderRadius: '50%',
                               animation: 'pulse 2s infinite'
                             }} />
+                          )}
+
+                          {/* Avatar Upload Button - Only for owner */}
+                          {isOwner && (
+                            <label style={{
+                              position: 'absolute',
+                              bottom: '0',
+                              right: '0',
+                              width: '36px',
+                              height: '36px',
+                              background: 'var(--color-indigo)',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
+                              border: '3px solid white',
+                              boxShadow: 'var(--shadow-md)',
+                              opacity: uploadingAvatar ? 0.5 : 1
+                            }}>
+                              <Camera style={{ width: '18px', height: '18px', color: 'white' }} />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                disabled={uploadingAvatar}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
                           )}
                         </div>
 
@@ -746,244 +826,243 @@ export default function AstrologerProfile() {
                       ) : (
                         <p style={{
                           color: 'var(--color-gray-500)',
-                          textAlign: 'center',
-                          padding: 'var(--space-xl) 0'
-                        }}>
-                          No reviews yet
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+textAlign: 'center',
+padding: 'var(--space-xl) 0'
+}}>
+No reviews yet
+</p>
+)}
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+    {/* Edit Modal */}
+    {isEditOpen && (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        padding: 'var(--space-lg)'
+      }} onClick={() => setIsEditOpen(false)}>
+        <div
+          className="card"
+          style={{
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            position: 'relative'
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 'var(--space-lg)',
+            paddingBottom: 'var(--space-md)',
+            borderBottom: '1px solid var(--color-gray-200)'
+          }}>
+            <h3 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: 600,
+              fontFamily: "'Cormorant Garamond', serif"
+            }}>
+              Edit Profile
+            </h3>
+            <button
+              onClick={() => setIsEditOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <X style={{ width: '20px', height: '20px', color: 'var(--color-gray-500)' }} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Name</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
             </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                Primary Specialization
+              </label>
+              <input
+                type="text"
+                value={editForm.specialization}
+                onChange={e => setEditForm({ ...editForm, specialization: e.target.value })}
+                placeholder="e.g., Vedic Astrology"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                All Specialties (comma separated)
+              </label>
+              <input
+                type="text"
+                value={editForm.specialties}
+                onChange={e => setEditForm({ ...editForm, specialties: e.target.value })}
+                placeholder="e.g., Vedic Astrology, Tarot Reading, Numerology"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+              <p style={{
+                fontSize: '0.75rem',
+                color: 'var(--color-gray-500)',
+                marginTop: '0.25rem'
+              }}>
+                Enter multiple specialties separated by commas
+              </p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Bio</label>
+              <textarea
+                value={editForm.bio}
+                onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  resize: 'vertical',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                Languages (comma separated)
+              </label>
+              <input
+                type="text"
+                value={editForm.languages}
+                onChange={e => setEditForm({ ...editForm, languages: e.target.value })}
+                placeholder="e.g., English, Hindi, Punjabi"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Experience</label>
+              <input
+                type="text"
+                value={editForm.experience}
+                onChange={e => setEditForm({ ...editForm, experience: e.target.value })}
+                placeholder="e.g., 10+ Years"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Status</label>
+              <select
+                value={editForm.status}
+                onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid var(--color-gray-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '1rem',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              >
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            gap: 'var(--space-md)',
+            marginTop: 'var(--space-lg)',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              onClick={() => setIsEditOpen(false)}
+              className="btn btn-ghost"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveProfile}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Save style={{ width: '16px', height: '16px' }} />
+              Save Changes
+            </button>
           </div>
         </div>
-
-        {/* Edit Modal */}
-        {isEditOpen && (
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-            padding: 'var(--space-lg)'
-          }} onClick={() => setIsEditOpen(false)}>
-            <div
-              className="card"
-              style={{
-                maxWidth: '500px',
-                width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                position: 'relative'
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 'var(--space-lg)',
-                paddingBottom: 'var(--space-md)',
-                borderBottom: '1px solid var(--color-gray-200)'
-              }}>
-                <h3 style={{ 
-                  fontSize: '1.25rem', 
-                  fontWeight: 600,
-                  fontFamily: "'Cormorant Garamond', serif"
-                }}>
-                  Edit Profile
-                </h3>
-                <button
-                  onClick={() => setIsEditOpen(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  <X style={{ width: '20px', height: '20px', color: 'var(--color-gray-500)' }} />
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Name</label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
-                    Primary Specialization
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.specialization}
-                    onChange={e => setEditForm({ ...editForm, specialization: e.target.value })}
-                    placeholder="e.g., Vedic Astrology"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
-                    All Specialties (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.specialties}
-                    onChange={e => setEditForm({ ...editForm, specialties: e.target.value })}
-                    placeholder="e.g., Vedic Astrology, Tarot Reading, Numerology"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                  <p style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--color-gray-500)',
-                    marginTop: '0.25rem'
-                  }}>
-                    Enter multiple specialties separated by commas
-                  </p>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Bio</label>
-                  <textarea
-                    value={editForm.bio}
-                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                    rows={4}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      resize: 'vertical',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
-                    Languages (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.languages}
-                    onChange={e => setEditForm({ ...editForm, languages: e.target.value })}
-                    placeholder="e.g., English, Hindi, Punjabi"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Experience</label>
-                  <input
-                    type="text"
-                    value={editForm.experience}
-                    onChange={e => setEditForm({ ...editForm, experience: e.target.value })}
-                    placeholder="e.g., 10+ Years"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Status</label>
-                  <select
-                    value={editForm.status}
-                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--color-gray-300)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '1rem',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
-                  >
-                    <option value="online">Online</option>
-                    <option value="offline">Offline</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                gap: 'var(--space-md)',
-                marginTop: 'var(--space-lg)',
-                justifyContent: 'flex-end'
-              }}>
-                <button
-                  onClick={() => setIsEditOpen(false)}
-                  className="btn btn-ghost"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveProfile}
-                  className="btn btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <Save style={{ width: '16px', height: '16px' }} />
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      
-
-      {/* Animations */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        
-        body {
-          font-family: 'Cormorant Garamond', sans-serif;
-        }
-      `}</style>
       </div>
-    </>
-  )
+    )}
+  
+
+  {/* Animations */}
+  <style>{`
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    body {
+      font-family: 'Cormorant Garamond', sans-serif;
+    }
+  `}</style>
+  </div>
+</>
+)
 }

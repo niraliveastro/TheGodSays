@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage' 
 
 // Build-time / runtime config read from NEXT_PUBLIC_ env vars
 // These are expected to be defined in .env.local for local development
@@ -29,3 +30,5 @@ if (typeof window !== 'undefined' || typeof process !== 'undefined') {
 // Export auth and db for both client and server
 export const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
+export const storage = app ? getStorage(app) : null
+
