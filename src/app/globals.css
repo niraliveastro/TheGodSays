@@ -9,6 +9,11 @@
 /*  Inspired by AstroTalk & Astrology.com        */
 /*  No Tailwind – Pure CSS + Custom Properties   */
 /* ============================================= */
+@layer components {
+  .card {
+    @apply bg-white/85 backdrop-blur-md border border-yellow-500/20 rounded-xl shadow-lg p-8;
+  }
+}
 
 
 /* ---------- Root Variables (Light Theme Only) ---------- */
@@ -2313,4 +2318,10 @@ body{
     font-size: 0.625rem !important;
     padding: 0.125rem 0.5rem !important;
   }
+}
+
+.btn-primary,
+.btn-ghost,
+.place-btn {
+  height: 52px; /* aligns buttons with inputs */
 }
