@@ -14,6 +14,7 @@ import {
   Cpu,
   RotateCcw,
 } from "lucide-react";
+import styles from "./predictions.css";
 import { astrologyAPI, geocodePlace } from "@/lib/api";
 export default function PredictionsPage() {
   const [dob, setDob] = useState("");
@@ -501,7 +502,6 @@ export default function PredictionsPage() {
     ];
     if (typeof pl === "object" && !Array.isArray(pl)) {
       return Object.entries(pl)
-        .filter(([name]) => name.toLowerCase() !== "ascendant")
         .map(([name, v]) => {
           const signNum =
             v.current_sign != null ? Number(v.current_sign) : undefined;
@@ -590,222 +590,170 @@ export default function PredictionsPage() {
               <p className="form-subtitle">Enter your cosmic coordinates</p>
             </div>
           </div>
-          <div className="form-grid">
-            {/* Date */}
-            <div className="col-span-5">
-              <div className="form-field">
-                <label className="form-field-label">
-                  <Calendar className="w-5 h-5 text-gold" />
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  required
-                  className="form-field-input"
-                />
-                <p className="form-field-helper">Format: YYYY-MM-DD</p>
-              </div>
+{/* ---- Birth Details Section ---- */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+  {/* Date of Birth */}
+  <div>
+    <label className="form-field-label flex items-center gap-2 mb-2">
+      <Calendar className="w-5 h-5 text-gold" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={dob}
+      onChange={(e) => setDob(e.target.value)}
+      className="form-field-input"
+      required
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
+
+  {/* Time of Birth */}
+  <div>
+    <label className="form-field-label flex items-center gap-2">
+      <Clock className="w-5 h-5 text-gold" />
+      Time
+    </label>
+    <input
+      type="time"
+      value={tob}
+      onChange={(e) => setTob(e.target.value)}
+      step="60"
+      className="form-field-input"
+      required
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
+
+  {/* Place of Birth */}
+  <div>
+    <label className="form-field-label flex items-center gap-2">
+      <MapPin className="w-5 h-5 text-gold" />
+      Place of Birth
+    </label>
+    <div className="flex gap-2 relative">
+      <input
+        placeholder="City, Country"
+        value={place}
+        onChange={(e) => {
+          const q = e.target.value;
+          setPlace(q);
+          setSelectedCoords(null);
+          fetchSuggestions(q);
+        }}
+        className="form-field-input flex-1"
+        autoComplete="off"
+        required
+      />
+      <button
+        type="button"
+        onClick={useMyLocation}
+        disabled={locating}
+        className="place-btn"
+      >
+        {locating ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <MapPin className="w-4 h-4" />
+        )}
+      </button>
+      {suggestions.length > 0 && (
+        <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <div
+              key={i}
+              className="suggest-item"
+              onClick={() => {
+                setPlace(s.label);
+                setSelectedCoords(s);
+                setSuggestions([]);
+              }}
+            >
+              {s.label}
             </div>
-            {/* Time */}
-            <div className="col-span-3">
-              <div className="form-field">
-                <label className="form-field-label">
-                  <Clock className="w-5 h-5 text-gold" />
-                  Time
-                </label>
-                <input
-                  type="time"
-                  value={tob}
-                  onChange={(e) => setTob(e.target.value)}
-                  step="60"
-                  required
-                  className="form-field-input"
-                />
-                <p className="form-field-helper">24-hour format</p>
-              </div>
-            </div>
-            {/* Place */}
-            <div className="col-span-4">
-              <div className="form-field">
-                <label className="form-field-label">
-                  <MapPin className="w-5 h-5 text-gold" />
-                  Place of Birth
-                </label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    placeholder="City, Country"
-                    value={place}
-                    onChange={(e) => {
-                      const q = e.target.value;
-                      setPlace(q);
-                      setSelectedCoords(null);
-                      fetchSuggestions(q);
-                    }}
-                    autoComplete="off"
-                    required
-                    className="form-field-input"
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={useMyLocation}
-                    disabled={locating}
-                    className="place-btn"
-                  >
-                    {locating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <MapPin className="w-4 h-4" />
-                    )}
-                  </button>
-                  {/* Suggestions */}
-                  {suggestions.length > 0 && (
-                    <div
-                      className="suggest-list"
-                      style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        zIndex: 30,
-                        maxHeight: "12rem",
-                        overflowY: "auto",
-                      }}
-                    >
-                      {suggestions.map((s, i) => (
-                        <div
-                          key={i}
-                          className="suggest-item"
-                          onClick={() => {
-                            setPlace(s.label);
-                            setSelectedCoords(s);
-                            setSuggestions([]);
-                          }}
-                        >
-                          {s.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <p className="form-field-helper">e.g., Mumbai, India</p>
-              </div>
-            </div>
-          </div>
-          {/* Action Buttons with Timezone */}
-          <style jsx>{`
-            @media (max-width: 767px) {
-              .tz-col,
-              .submit-col,
-              .reset-col {
-                grid-column: span 10;
-              }
-            }
-            @media (min-width: 768px) {
-              .tz-col {
-                grid-column: span 4;
-              }
-              .submit-col {
-                grid-column: span 3;
-              }
-              .reset-col {
-                grid-column: span 3;
-              }
-            }
-          `}</style>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(12, 1fr)",
-              gap: "1rem",
-              alignItems: "end",
-              marginTop: "1.5rem",
-            }}
-          >
-            {/* Timezone */}
-            <div className="tz-col">
-              <div className="form-field">
-                <label className="form-field-label">
-                  <Clock className="" />
-                  Timezone (UTC offset)
-                </label>
-                <select
-                  value={tzHours}
-                  onChange={(e) => setTzHours(parseFloat(e.target.value))}
-                  className="form-field-input timezone-select w-full"
-                >
-                  {[
-                    -12, -11, -10, -9.5, -9, -8, -7, -6, -5, -4.5, -4, -3.5, -3,
-                    -2, -1, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5,
-                    5.75, 6, 6.5, 7, 7.5, 8, 8.75, 9, 9.5, 10, 10.5, 11, 12,
-                    12.75, 13, 14,
-                  ].map((v) => {
-                    const sign = v >= 0 ? "+" : "";
-                    const labelHours = Math.trunc(Math.abs(v));
-                    const mins = Math.round((Math.abs(v) - labelHours) * 60);
-                    const hhmm = `${sign}${labelHours
-                      .toString()
-                      .padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-                    const pretty = `UTC${hhmm}`;
-                    return (
-                      <option key={v} value={v}>
-                        {pretty}
-                        {v === 5.5 ? " (IST default)" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-            {/* Submit Button */}
-            <div className="submit-col">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn btn-primary w-full"
-                style={{ marginBottom: "1rem", marginLeft: "0.8rem" }}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Calculating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Predictions
-                  </>
-                )}
-              </button>
-            </div>
-            {/* Reset Button */}
-            <div className="reset-col">
-              <button
-                type="reset"
-                onClick={() => {
-                  setDob("");
-                  setTob("");
-                  setPlace("");
-                  setResult(null);
-                  setError("");
-                  setSelectedMaha(null);
-                  setTzHours(5.5); // default
-                }}
-                className="btn btn-ghost w-full"
-                style={{ marginBottom: "1rem" }}
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          ))}
+        </div>
+      )}
+    </div>
+    <p className="form-field-helper">e.g., Mumbai, India</p>
+  </div>
+
+{/* Timezone + Buttons (full-width row) */}
+<div className="col-span-1 md:col-span-3 tz-row">
+  {/* Timezone */}
+  <div>
+    <label className="form-field-label flex items-center gap-2">
+      <Clock className="w-5 h-5 text-gold" />
+      Timezone (UTC offset)
+    </label>
+    <select
+      value={tzHours}
+      onChange={(e) => setTzHours(parseFloat(e.target.value))}
+      className="form-field-input"
+    >
+      {[...Array(57)]
+        .map((_, i) => -12 + i * 0.5)
+        .map((v) => {
+          const sign = v >= 0 ? "+" : "";
+          const h = Math.trunc(Math.abs(v));
+          const m = Math.round((Math.abs(v) - h) * 60);
+          const hhmm = `${sign}${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+          return (
+            <option key={v} value={v}>
+              {`UTC${hhmm}${v === 5.5 ? " (IST default)" : ""}`}
+            </option>
+          );
+        })}
+    </select>
+  </div>
+
+  {/* Get Predictions */}
+  <div className="align-with-label">
+    <button
+      type="submit"
+      disabled={submitting}
+      className="btn btn-primary w-full h-[52px]"
+    >
+      {submitting ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          Calculating…
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-4 h-4 mr-2" />
+          Get Predictions
+        </>
+      )}
+    </button>
+  </div>
+
+  {/* Reset */}
+  <div className="align-with-label">
+    <button
+      type="reset"
+      onClick={() => {
+        setDob("");
+        setTob("");
+        setPlace("");
+        setResult(null);
+        setError("");
+        setSelectedMaha(null);
+        setTzHours(5.5);
+      }}
+      className="btn btn-ghost w-full h-[52px]"
+    >
+      <RotateCcw className="w-4 h-4" />
+    </button>
+  </div>
+</div>
+
+
+
+</div>
+
+
+
         </form>
         {/* Results */}
         {result && (
@@ -994,14 +942,14 @@ export default function PredictionsPage() {
                             </td>
                             <td style={{ width: "10rem" }}>
                               {ishtaVal != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
+                                <div className="strength-container">
+                                  <div className="strength-bar">
                                     <div
-                                      className="progress-fill"
+                                      className="strength-fill"
                                       style={{ width: `${ishtaVal}%` }}
                                     />
                                   </div>
-                                  <div className="progress-label">
+                                  <div className="strength-label">
                                     {ishtaVal.toFixed(1)}%
                                   </div>
                                 </div>
@@ -1011,14 +959,14 @@ export default function PredictionsPage() {
                             </td>
                             <td style={{ width: "10rem" }}>
                               {kashtaVal != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
+                                <div className="strength-container">
+                                  <div className="strength-bar">
                                     <div
-                                      className="progress-fill"
+                                      className="strength-fill"
                                       style={{ width: `${kashtaVal}%` }}
                                     />
                                   </div>
-                                  <div className="progress-label">
+                                  <div className="strength-label">
                                     {kashtaVal.toFixed(1)}%
                                   </div>
                                 </div>
@@ -1181,66 +1129,45 @@ export default function PredictionsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {antarRows.map((ad, i) => {
-                    const startDate = ad.start
-                      ? new Date(ad.start).toLocaleDateString("en-GB", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "—";
-                    const endDate = ad.end
-                      ? new Date(ad.end).toLocaleDateString("en-GB", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "—";
-                    return (
-                      <div
-                        key={i}
-                        className="bg-white border border-gray-200 rounded-xl p-4"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-gold/20 to-purple-100 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-bold text-purple-700">
-                                {ad.lord?.slice(0, 2)?.toUpperCase() || "—"}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900 text-base">
-                                {ad.lord}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                Antar Dasha Lord
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="text-xs text-green-700 font-medium mb-1">
-                              START DATE
-                            </div>
-                            <div className="text-green-800 font-semibold">
-                              {startDate}
-                            </div>
-                          </div>
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <div className="text-xs text-red-700 font-medium mb-1">
-                              END DATE
-                            </div>
-                            <div className="text-red-800 font-semibold">
-                              {endDate}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+<div className="table-scroll-container">
+  <table className="planet-table">
+    <thead>
+      <tr>
+        <th>Antar Dasha Lord</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {antarRows.map((ad, i) => {
+        const startDate = ad.start
+          ? new Date(ad.start).toLocaleDateString("en-GB", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "—";
+        const endDate = ad.end
+          ? new Date(ad.end).toLocaleDateString("en-GB", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "—";
+        return (
+          <tr key={i}>
+            <td style={{ fontWeight: 500, color: "#1f2937" }}>
+              {ad.lord || "—"}
+            </td>
+            <td>{startDate}</td>
+            <td>{endDate}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
               )}
             </div>
           )}

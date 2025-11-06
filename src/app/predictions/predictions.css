@@ -40,39 +40,6 @@
   height: 36px;
 }
 
-/* Other specific styles */
-.orb {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-.orb1 {
-  width: 400px;
-  height: 400px;
-  background: #ca8a04;
-  top: -200px;
-  right: -200px;
-}
-
-.orb2 {
-  width: 300px;
-  height: 300px;
-  background: #7c3aed;
-  bottom: -150px;
-  left: -150px;
-}
-
-.orb3 {
-  width: 250px;
-  height: 250px;
-  background: #ec4899;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
 
 /* Planet table specific styles */
 .planet-table td:nth-child(7) .retro-badge {
@@ -335,4 +302,73 @@
   border-radius: 0.5rem;
   padding: 1rem;
   text-align: center;
+}
+/* Apply only inside the PredictionsPage form */
+.card .form-field-label {
+  margin-bottom: 0.5rem; /* same as Tailwind mb-2 */
+}
+
+.strength-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  background: linear-gradient(to right, #ca8a04, #eab308);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.strength-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  min-width: 3rem;
+  text-align: right;
+}
+/* Put timezone + buttons on one line and align bottoms */
+.tz-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .tz-row {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: end;            /* align bottoms */
+  }
+}
+
+/* The select has a global bottom margin; remove it just for this row
+   so its bottom edge lines up with the buttons. */
+.tz-row .form-field-input {
+  margin-bottom: 0 !important;
+}
+
+/* Nudge the two buttons down by the label’s height so their tops
+   start where the select starts (under the label). */
+.align-with-label {
+  margin-top: 2.5rem;            /* tweak 2.25–2.75rem if needed */
+}
+
+/* Make sure all three controls have the same visual height */
+.btn-primary,
+.btn-ghost,
+.place-btn,
+.tz-row .form-field-input {
+  height: 52px;
+  line-height: 52px;             /* helps certain browsers */
+  padding-top: 0;                 /* avoid extra internal height */
+  padding-bottom: 0;
 }
