@@ -861,6 +861,7 @@
   width: 100%;
   overflow-x: auto;
   margin-bottom: 2rem;
+  padding-top: .5rem;
 }
 
 .planet-tabs {
@@ -1067,4 +1068,43 @@
   .planet-tab-title {
     font-size: 2rem;
   }
+}
+
+/* ---------- Timeframe Filter Buttons ---------- */
+.timeframe-filters {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  color: #444;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.filter-btn:hover {
+  background: #fffaf0;
+  border-color: #d4af37;
+  color: #b8972e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.25);
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  color: #fff;
+  border-color: #d4af37;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+  transform: scale(1.03);
 }
