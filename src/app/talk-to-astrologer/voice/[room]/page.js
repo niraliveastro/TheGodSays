@@ -73,11 +73,70 @@ export default function VoiceCallRoom() {
     return () => clearInterval(timer)
   }, [])
 
-  const handleDisconnect = () => {
-    if (token && wsUrl) {
-      const role = localStorage.getItem('tgs:role')
-      const path = role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
-      router.push(path)
+  const handleDisconnect = async () => {
+    try {
+      // Get call details from localStorage or URL
+      const callId = localStorage.getItem('tgs:currentCallId') || localStorage.getItem('tgs:callId') || params.room
+      const durationMinutes = Math.max(1, Math.ceil(callDuration / 60)) // Convert seconds to minutes, minimum 1 minute
+      
+      // Clear stored call ID after use
+      localStorage.removeItem('tgs:currentCallId')
+      localStorage.removeItem('tgs:callId')
+      
+      console.log(`Ending voice call ${callId} with duration ${durationMinutes} minutes`)
+      
+      // Finalize billing before disconnecting
+      if (callId && durationMinutes > 0) {
+        // Try direct billing API first
+        const billingResponse = await fetch('/api/billing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'immediate-settlement',
+            callId: callId,
+            durationMinutes: durationMinutes
+          })
+        })
+        
+        const billingResult = await billingResponse.json()
+        
+        if (billingResult.success) {
+          console.log(`✅ Voice billing finalized: ₹${billingResult.finalAmount} charged, ₹${billingResult.refundAmount} refunded`)
+          
+          // Update call status
+          await fetch('/api/calls', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update-call-status',
+              callId: callId,
+              status: 'completed',
+              durationMinutes: durationMinutes
+            })
+          })
+        } else {
+          console.error('❌ Voice billing finalization failed:', billingResult.error)
+          // Still update call status even if billing fails
+          await fetch('/api/calls', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update-call-status',
+              callId: callId,
+              status: 'completed'
+            })
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error finalizing voice call:', error)
+    } finally {
+      // Navigate away regardless of billing result
+      if (token && wsUrl) {
+        const role = localStorage.getItem('tgs:role')
+        const path = role === 'astrologer' ? '/astrologer-dashboard' : '/talk-to-astrologer'
+        router.push(path)
+      }
     }
   }
 

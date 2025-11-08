@@ -16,43 +16,226 @@ function AstrologerDashboardContent() {
   const [queue, setQueue] = useState([])
   const [loading, setLoading] = useState(true)
   const [incomingCall, setIncomingCall] = useState(null)
+  const [userNames, setUserNames] = useState({})
+  const [connectionStatus, setConnectionStatus] = useState('connecting')
+  const [notificationPermission, setNotificationPermission] = useState('default')
   const { getUserId, userProfile } = useAuth()
   const astrologerId = getUserId()
   const router = useRouter()
 
+  // Request notification permission on component mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          setNotificationPermission(permission)
+        })
+      } else {
+        setNotificationPermission(Notification.permission)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (!astrologerId) return
 
-    const unsubAstrologer = onSnapshot(doc(db, 'astrologers', astrologerId), (doc) => {
-      const data = doc.data()
-      if (data) setStatus(data.status || 'offline')
-    })
+    let unsubAstrologer, unsubCalls, pollInterval
+    let isConnected = true
 
-    const q = query(collection(db, 'calls'), where('astrologerId', '==', astrologerId))
+    // Enhanced real-time listener with connection monitoring
+    const setupRealtimeListeners = () => {
+      try {
+        setConnectionStatus('connecting')
+        unsubAstrologer = onSnapshot(doc(db, 'astrologers', astrologerId), (doc) => {
+          const data = doc.data()
+          if (data) setStatus(data.status || 'offline')
+          isConnected = true
+          setConnectionStatus('connected')
+        }, (error) => {
+          console.warn('Astrologer listener error:', error)
+          isConnected = false
+          setConnectionStatus('disconnected')
+        })
 
-    const unsubCalls = onSnapshot(q, (snapshot) => {
-      const callsList = []
-      const queueList = []
-      let newIncomingCall = null
+        const q = query(collection(db, 'calls'), where('astrologerId', '==', astrologerId))
 
-      snapshot.forEach((doc) => {
-        const call = { id: doc.id, ...doc.data() }
-        if (call.status === 'pending') newIncomingCall = call
-        if (call.status === 'queued') queueList.push(call)
-        callsList.push(call)
-      })
+        unsubCalls = onSnapshot(q, async (snapshot) => {
+          const callsList = []
+          const queueList = []
+          let newIncomingCall = null
 
-      setCalls(callsList)
-      setQueue(queueList)
-      if (newIncomingCall) setIncomingCall(newIncomingCall)
-      setLoading(false)
-    })
+          for (const doc of snapshot.docs) {
+            let call = { id: doc.id, ...doc.data() }
+            
+            // For completed calls, try to get billing info if missing duration/amount
+            if (call.status === 'completed' && (!call.durationMinutes || !call.finalAmount)) {
+              try {
+                const billingDoc = await db.collection('call_billing').doc(doc.id).get()
+                if (billingDoc.exists) {
+                  const billingData = billingDoc.data()
+                  call.durationMinutes = call.durationMinutes || billingData.durationMinutes
+                  call.finalAmount = call.finalAmount || billingData.finalAmount
+                }
+              } catch (error) {
+                console.warn('Error fetching billing data for call:', doc.id, error)
+              }
+            }
+            
+            if (call.status === 'pending') newIncomingCall = call
+            if (call.status === 'queued') queueList.push(call)
+            callsList.push(call)
+          }
+
+          setCalls(callsList)
+          setQueue(queueList)
+          if (newIncomingCall) setIncomingCall(newIncomingCall)
+          setLoading(false)
+          isConnected = true
+          setConnectionStatus('connected')
+        }, (error) => {
+          console.warn('Calls listener error:', error)
+          isConnected = false
+          setConnectionStatus('disconnected')
+        })
+      } catch (error) {
+        console.error('Error setting up listeners:', error)
+        isConnected = false
+        setConnectionStatus('disconnected')
+      }
+    }
+
+    // Polling fallback for when real-time connection fails
+    const pollForUpdates = async () => {
+      try {
+        const response = await fetch(`/api/calls?astrologerId=${astrologerId}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.calls) {
+            const callsList = data.calls
+            const queueList = callsList.filter(call => call.status === 'queued')
+            const newIncomingCall = callsList.find(call => call.status === 'pending')
+            
+            setCalls(callsList)
+            setQueue(queueList)
+            if (newIncomingCall && (!incomingCall || incomingCall.id !== newIncomingCall.id)) {
+              setIncomingCall(newIncomingCall)
+              
+              // Enhanced notifications for voice calls
+              if (newIncomingCall.callType === 'voice') {
+                // Play notification sound
+                try {
+                  const audio = new Audio('/notification.mp3')
+                  audio.play().catch(e => console.log('Audio play failed:', e))
+                } catch (e) {
+                  console.log('Audio notification failed:', e)
+                }
+                
+                // Show browser notification
+                if (notificationPermission === 'granted') {
+                  try {
+                    new Notification('Incoming Voice Call', {
+                      body: `Voice call from ${userNames[newIncomingCall.userId] || 'User'}`,
+                      icon: '/favicon.ico',
+                      tag: 'voice-call',
+                      requireInteraction: true
+                    })
+                  } catch (e) {
+                    console.log('Browser notification failed:', e)
+                  }
+                }
+              }
+            }
+            setLoading(false)
+          }
+        }
+      } catch (error) {
+        console.warn('Polling error:', error)
+      }
+    }
+
+    // Start with real-time listeners
+    setupRealtimeListeners()
+
+    // Set up polling as backup (optimized for production)
+    pollInterval = setInterval(() => {
+      if (!isConnected) {
+        console.log('Real-time connection lost, using polling fallback')
+        pollForUpdates()
+      }
+      // Only poll occasionally when connected to reduce server load
+    }, 5000)
+
+    // Connection health check every 10 seconds
+    const healthCheck = setInterval(() => {
+      if (!isConnected) {
+        console.log('Attempting to reconnect real-time listeners')
+        if (unsubAstrologer) unsubAstrologer()
+        if (unsubCalls) unsubCalls()
+        setupRealtimeListeners()
+      }
+    }, 10000)
+
+    // Handle browser visibility changes for better background polling
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // When tab is hidden, poll more frequently but reasonably
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = setInterval(() => {
+          if (!isConnected) {
+            pollForUpdates()
+          }
+        }, 3000) // Poll every 3 seconds when hidden
+      } else {
+        // When tab is visible, restore normal polling
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = setInterval(() => {
+          if (!isConnected) {
+            console.log('Real-time connection lost, using polling fallback')
+            pollForUpdates()
+          }
+        }, 5000)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
-      unsubAstrologer()
-      unsubCalls()
+      if (unsubAstrologer) unsubAstrologer()
+      if (unsubCalls) unsubCalls()
+      if (pollInterval) clearInterval(pollInterval)
+      if (healthCheck) clearInterval(healthCheck)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [astrologerId])
+
+  // Effect to fetch user names for calls
+  useEffect(() => {
+    if (calls.length === 0) return
+
+    const fetchUserNames = async () => {
+      const newUserNames = { ...userNames }
+      let hasNewNames = false
+
+      for (const call of calls) {
+        if (call.userId && !newUserNames[call.userId]) {
+          try {
+            newUserNames[call.userId] = await getUserName(call.userId)
+            hasNewNames = true
+          } catch (error) {
+            console.warn('Error fetching user name for:', call.userId, error)
+            newUserNames[call.userId] = `User ${call.userId.substring(0, 8)}`
+            hasNewNames = true
+          }
+        }
+      }
+
+      if (hasNewNames) {
+        setUserNames(newUserNames)
+      }
+    }
+
+    fetchUserNames()
+  }, [calls])
 
   const updateStatus = async (newStatus) => {
     if (!astrologerId) return
@@ -140,9 +323,17 @@ function AstrologerDashboardContent() {
 
   // Helper to safely parse Firebase Timestamp to Date
   const safeParseDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return null
-    const ms = timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000
-    const date = new Date(ms)
+    if (!timestamp) return null
+    
+    // Handle Firestore Timestamp
+    if (timestamp.seconds) {
+      const ms = timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000
+      const date = new Date(ms)
+      return isNaN(date.getTime()) ? null : date
+    }
+    
+    // Handle ISO string or Date object
+    const date = new Date(timestamp)
     return isNaN(date.getTime()) ? null : date
   }
 
@@ -156,6 +347,41 @@ function AstrologerDashboardContent() {
   const formatTime = (timestamp, fallback = 'Unknown time') => {
     const date = safeParseDate(timestamp)
     return date ? date.toLocaleTimeString() : fallback
+  }
+
+  // Helper to get user name from userId
+  const getUserName = async (userId) => {
+    if (!userId) return 'Anonymous User'
+    
+    try {
+      // Try multiple collection names
+      const collectionNames = ['users', 'user', 'user_profiles', 'profiles']
+      
+      for (const collectionName of collectionNames) {
+        try {
+          const userDoc = await db.collection(collectionName).doc(userId).get()
+          if (userDoc.exists) {
+            const userData = userDoc.data()
+            const userName = userData.name || userData.displayName || userData.email || userData.fullName
+            if (userName) {
+              // If email, extract username part
+              if (userName.includes('@')) {
+                return userName.split('@')[0]
+              }
+              return userName
+            }
+          }
+        } catch (collectionError) {
+          // Continue to next collection
+        }
+      }
+      
+      // Fallback to partial userId
+      return `User ${userId.substring(0, 8)}`
+    } catch (error) {
+      console.error('Error fetching user name:', error)
+      return `User ${userId.substring(0, 8)}`
+    }
   }
 
   if (loading) {
@@ -207,10 +433,26 @@ function AstrologerDashboardContent() {
           {/* Header */}
           <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ fontSize: '2.25rem', fontWeight: 500, color: 'var(--color-gray-900)' }}>
-                Welcome, {userProfile?.name || 'Astrologer'}
-              </h1>
-              <p style={{ color: 'var(--color-gray-600)', fontSize: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h1 style={{ fontSize: '2.25rem', fontWeight: 500, color: 'var(--color-gray-900)', margin: 0 }}>
+                  Welcome, {userProfile?.name || 'Astrologer'}
+                </h1>
+                {(incomingCall || queue.length > 0) && (
+                  <div style={{
+                    padding: '0.5rem 1rem',
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    color: 'white',
+                    borderRadius: '20px',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    animation: 'pulse 2s infinite',
+                    boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                  }}>
+                    {incomingCall ? 'Incoming Call!' : `${queue.length} Waiting`}
+                  </div>
+                )}
+              </div>
+              <p style={{ color: 'var(--color-gray-600)', fontSize: '1rem', margin: '0.5rem 0 0' }}>
                 Manage your availability and handle client calls
               </p>
             </div>
@@ -348,7 +590,7 @@ function AstrologerDashboardContent() {
                       </div>
                       <div>
                         <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>
-                          {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} - User {call.userId?.slice(-4) || 'Unknown'}
+                          {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from {userNames[call.userId] || `User ${call.userId?.substring(0, 8) || 'Unknown'}`}
                         </p>
                         <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0' }}>
                           Waiting since {formatTime(call.createdAt)}
@@ -422,11 +664,16 @@ function AstrologerDashboardContent() {
                         }}></div>
                         <div>
                           <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>
-                            {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from User {call.userId?.slice(-4) || 'Unknown'}
+                            {call.callType === 'voice' ? 'Voice Call' : 'Video Call'} from {userNames[call.userId] || `User ${call.userId?.substring(0, 8) || 'Unknown'}`}
                           </p>
                           <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0', fontFamily: 'Courier New, monospace' }}>
                             {formatDate(call.createdAt)}
                           </p>
+                          {call.status === 'completed' && (call.durationMinutes || call.finalAmount) && (
+                            <p style={{ fontSize: '0.75rem', color: '#059669', margin: '0.25rem 0 0', fontWeight: 600 }}>
+                              {call.durationMinutes ? `Duration: ${call.durationMinutes} min` : 'Duration: N/A'}{call.finalAmount ? ` • Earned: ₹${call.finalAmount}` : ''}
+                            </p>
+                          )}
                         </div>
                       </div>
 

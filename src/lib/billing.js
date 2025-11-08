@@ -135,7 +135,7 @@ export class BillingService {
   /**
     * Finalize call billing - calculate final cost and settle payment with immediate refund
     */
-   static async finalizeCallBilling(callId, actualDurationMinutes) {
+  static async finalizeCallBilling(callId, actualDurationMinutes) {
      try {
        const db = getDb()
        const billingRef = db.collection('call_billing').doc(callId)
@@ -169,7 +169,7 @@ export class BillingService {
        // Note: The hold amount was already deducted when holdMoney() was called
        // So we need to account for that in our calculations
 
-       console.log(`Immediate settlement for call ${callId}:`, {
+      console.log(`Immediate settlement for call ${callId}:`, {
          initialHoldAmount,
          finalAmount,
          actualDurationMinutes,
@@ -248,18 +248,41 @@ export class BillingService {
   /**
     * Immediate settlement for completed calls with duration-based charging
     */
-   static async immediateCallSettlement(callId, actualDurationMinutes) {
+  static async immediateCallSettlement(callId, actualDurationMinutes) {
      try {
        const db = getDb()
        const billingRef = db.collection('call_billing').doc(callId)
        const billingDoc = await billingRef.get()
 
        if (!billingDoc.exists) {
-         throw new Error('Call billing record not found')
+         console.warn(`Call billing record not found for callId: ${callId}. Creating minimal settlement.`)
+         return {
+           success: true,
+           finalAmount: 0,
+           durationMinutes: actualDurationMinutes,
+           breakdown: 'No billing record found - no charges applied',
+           initialHoldAmount: 0,
+           refundAmount: 0,
+           actualCost: 0
+         }
        }
 
        const billingData = billingDoc.data()
-       const { userId, astrologerId, pricing, initialHoldAmount } = billingData
+       const { userId, astrologerId, pricing, initialHoldAmount, status } = billingData
+
+       // Check if already completed to prevent duplicate processing
+       if (status === 'completed') {
+         console.log(`Call ${callId} already completed, skipping duplicate processing`)
+         return {
+           success: true,
+           finalAmount: billingData.finalAmount || 0,
+           durationMinutes: billingData.durationMinutes || actualDurationMinutes,
+           breakdown: 'Already processed',
+           initialHoldAmount: billingData.initialHoldAmount || 0,
+           refundAmount: billingData.refundAmount || 0,
+           actualCost: billingData.finalAmount || 0
+         }
+       }
 
        // Calculate final cost based on actual duration
        const costCalculation = PricingService.calculateCallCost(pricing, actualDurationMinutes)
@@ -294,7 +317,8 @@ export class BillingService {
        // Since the hold was already deducted, we refund the unused portion
        const refundAmount = Math.max(0, initialHoldAmount - finalAmount)
        if (refundAmount > 0) {
-         await WalletService.addMoney(userId, refundAmount, `refund-hold-${callId}`, `Refund of unused hold amount for call ${callId}`)
+         const refundTransactionId = `refund-hold-${callId}-${Date.now()}`
+         await WalletService.addMoney(userId, refundAmount, refundTransactionId, `Refund of unused hold amount for call ${callId}`)
        }
 
        // Get balance after settlement
@@ -305,7 +329,7 @@ export class BillingService {
        // releaseHold() should only be used for cancelled calls, not completed calls
 
        return {
-         success: true,
+        success: true,
          finalAmount,
          durationMinutes: actualDurationMinutes,
          breakdown: costCalculation.breakdown,

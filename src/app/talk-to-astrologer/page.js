@@ -198,6 +198,7 @@ export default function TalkToAstrologer() {
       const { call } = await callRes.json()
 
       localStorage.setItem('tgs:callId', call.id)
+      localStorage.setItem('tgs:currentCallId', call.id)
       localStorage.setItem('tgs:astrologerId', astrologerId)
 
       /* ---- Init billing ---- */

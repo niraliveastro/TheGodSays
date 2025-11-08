@@ -38,11 +38,61 @@ export async function GET(request) {
       query = query.where('astrologerId', '==', astrologerId)
     }
 
-    const snapshot = await query.orderBy('createdAt', 'desc').limit(100).get()
+    // Try the query with orderBy first, if it fails, fallback to without orderBy
+    let snapshot
+    try {
+      snapshot = await query.orderBy('createdAt', 'desc').limit(100).get()
+    } catch (indexError) {
+      console.log('Index not ready, querying without orderBy:', indexError.message)
+      snapshot = await query.limit(100).get()
+    }
     const history = []
     
     for (const doc of snapshot.docs) {
       const callData = doc.data()
+      
+      // Log the complete call data structure for debugging
+      console.log(`Call data for document ${doc.id}:`, JSON.stringify(callData, null, 2))
+      
+      // Fetch user name from users collection
+      let userName = 'Anonymous User'
+      if (callData.userId) {
+        try {
+          console.log('Fetching user data for userId:', callData.userId)
+          
+          // Try multiple collection names
+          const collectionNames = ['users', 'user', 'user_profiles', 'profiles']
+          let userFound = false
+          
+          for (const collectionName of collectionNames) {
+            try {
+              const userDoc = await db.collection(collectionName).doc(callData.userId).get()
+              if (userDoc.exists) {
+                const userData = userDoc.data()
+                console.log(`Found user in ${collectionName} collection:`, userData)
+                userName = userData.name || userData.displayName || userData.email || userData.fullName || `User ${callData.userId.substring(0, 8)}`
+                userFound = true
+                break
+              }
+            } catch (collectionError) {
+              console.log(`Error checking ${collectionName} collection:`, collectionError.message)
+            }
+          }
+          
+          if (!userFound) {
+            console.log('User not found in any collection, using userId as fallback')
+            // Also try to extract a name from the userId itself (some auth systems use email as ID)
+            if (callData.userId.includes('@')) {
+              userName = callData.userId.split('@')[0]
+            } else {
+              userName = `User ${callData.userId.substring(0, 8)}`
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error)
+          userName = `User ${callData.userId.substring(0, 8)}`
+        }
+      }
       
       // Fetch astrologer name from astrologers collection
       let astrologerName = 'Unknown'
@@ -101,6 +151,8 @@ export async function GET(request) {
         id: doc.id,
         astrologerName: astrologerName,
         astrologerId: callData.astrologerId,
+        userName: userName, // Add user name to the response
+        userId: callData.userId, // Also include userId for reference
         type: callData.callType || 'voice',
         startedAt: startedAt.toISOString(), // Ensure it's a valid date string
         cost: finalCost,

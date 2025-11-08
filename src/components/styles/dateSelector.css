@@ -3,10 +3,42 @@
    ------------------------------------------------- */
 
 /* ---- CARD (glass) ---- */
-.date-location-card {
-  @apply card;                     /* your existing glass-card style */
+.date-location-card
+{
+  /* your existing glass-card style - using the card class defined in globals.css */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
 }
 
+.date-location-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gold),
+    transparent
+  );
+  opacity: 0.6;
+}
+
+.date-location-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  border-color: rgba(212, 175, 55, 0.4);
+}
 /* ---- ROW (two columns) ---- */
 .date-location-row {
   display: flex;

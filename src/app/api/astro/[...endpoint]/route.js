@@ -21,7 +21,8 @@ const ALLOWED_ENDPOINTS = [
 export async function POST(request, { params }) {
   try {
     // Properly read the endpoint param
-    const endpointArray = params?.endpoint || []
+    const resolvedParams = await params
+    const endpointArray = resolvedParams?.endpoint || []
     const endpointPath = Array.isArray(endpointArray) ? endpointArray.join('/') : endpointArray
 
     console.log('[DEBUG] Endpoint:', endpointPath)

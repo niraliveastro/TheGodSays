@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import admin from 'firebase-admin'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
+import { BillingService } from '@/lib/billing'
 
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
@@ -22,10 +23,10 @@ const db = getFirestore()
 
 export async function POST(request) {
   try {
-    const { action, astrologerId, callId, userId, status, callType = 'video' } = await request.json()
+    const { action, astrologerId, callId, userId, status, callType = 'video', durationMinutes } = await request.json()
 
     // Validate action
-    const validActions = ['create-call', 'update-call-status', 'get-queue', 'get-astrologer-calls']
+    const validActions = ['create-call', 'update-call-status', 'finalize-call', 'get-queue', 'get-astrologer-calls']
     if (!validActions.includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
@@ -93,10 +94,87 @@ export async function POST(request) {
             roomName: updateData.roomName
           })
         }
+        
+        // Handle call completion and billing finalization
+        if (status === 'completed' && durationMinutes !== undefined) {
+          try {
+            console.log(`Finalizing billing for call ${callId} with duration ${durationMinutes} minutes`)
+            const billingResult = await BillingService.immediateCallSettlement(callId, durationMinutes)
+            console.log('Billing finalization result:', billingResult)
+            updateData.billingFinalized = true
+            updateData.finalAmount = billingResult.finalAmount
+            updateData.refundAmount = billingResult.refundAmount
+            updateData.endTime = new Date()
+            updateData.durationMinutes = durationMinutes // Store duration in call document
+            
+            // Update astrologer status back to online
+            const callDoc = await callToUpdateRef.get()
+            if (callDoc.exists) {
+              const callData = callDoc.data()
+              if (callData.astrologerId) {
+                const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
+                await astrologerRef.update({ status: 'online' })
+                console.log(`Updated astrologer ${callData.astrologerId} status to online`)
+              }
+            }
+          } catch (billingError) {
+            console.error('Error finalizing billing:', billingError)
+            updateData.billingError = billingError.message
+          }
+        } else if (status === 'completed' && durationMinutes === undefined) {
+          // Handle completed calls without duration (shouldn't happen normally, but just in case)
+          console.warn(`Call ${callId} marked as completed without durationMinutes`)
+          updateData.endTime = new Date()
+        }
 
         await callToUpdateRef.update(updateData)
 
         return NextResponse.json({ success: true, call: { id: callId, ...callToUpdateDoc.data(), ...updateData } })
+
+      case 'finalize-call':
+        if (!callId || durationMinutes === undefined) {
+          return NextResponse.json({ error: 'Call ID and duration minutes are required' }, { status: 400 })
+        }
+
+        try {
+          console.log(`Finalizing call ${callId} with duration ${durationMinutes} minutes`)
+          
+          // Finalize billing first
+          const billingResult = await BillingService.immediateCallSettlement(callId, durationMinutes)
+          console.log('Billing finalization result:', billingResult)
+          
+          // Update call status to completed
+          const callFinalizeRef = db.collection('calls').doc(callId)
+          const callDoc = await callFinalizeRef.get()
+          
+          await callFinalizeRef.update({
+            status: 'completed',
+            endTime: new Date(),
+            durationMinutes,
+            billingFinalized: true,
+            finalAmount: billingResult.finalAmount,
+            refundAmount: billingResult.refundAmount
+          })
+          
+          // Update astrologer status back to online
+          if (callDoc.exists) {
+            const callData = callDoc.data()
+            if (callData.astrologerId) {
+              const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
+              await astrologerRef.update({ status: 'online' })
+              console.log(`Updated astrologer ${callData.astrologerId} status to online`)
+            }
+          }
+          
+          return NextResponse.json({ 
+            success: true, 
+            message: 'Call finalized successfully',
+            billing: billingResult
+          })
+        } catch (error) {
+          console.error('Error finalizing call:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
 
       case 'get-queue':
         const queueSnapshot = await db.collection('calls').where('astrologerId', '==', astrologerId).where('status', '==', 'queued').orderBy('createdAt').get()

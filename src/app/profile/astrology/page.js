@@ -46,6 +46,14 @@ export default function AstrologerProfilePage() {
   })
   const [saving, setSaving] = useState(false)
   const [callHistory, setCallHistory] = useState([])
+  const [calculatedEarnings, setCalculatedEarnings] = useState(0)
+  const [monthlyEarnings, setMonthlyEarnings] = useState(0)
+  const [totalCalls, setTotalCalls] = useState(0)
+  const [avgRating, setAvgRating] = useState(0)
+  const [reviewsCount, setReviewsCount] = useState(0)
+  const [perMinuteRate, setPerMinuteRate] = useState(50)
+  const [apiError, setApiError] = useState(null)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologer + history                                     */
@@ -56,46 +64,213 @@ export default function AstrologerProfilePage() {
       return
     }
 
-    // Use Firebase Auth user data directly with mock astrologer data
-    const astrologerData = {
-      name: authUser.displayName || 'Astrologer',
-      email: authUser.email,
-      phone: authUser.phoneNumber || '',
-      specialization: 'Vedic Astrology',
-      experience: '10+ years',
-      languages: ['Hindi', 'English'],
-      pricing: { finalPrice: 50 },
-      bio: 'Experienced astrologer specializing in Vedic astrology.',
-      verified: true,
-      earnings: 15000.00,
-      monthlyEarnings: 5000,
-      totalCalls: 150,
-      rating: 4.8,
-      reviews: 89,
-      status: 'online'
-    }
-    
-    setAstrologer(astrologerData)
-    setIsOnline(astrologerData.status === 'online')
-    setEditForm({
-      name: astrologerData.name,
-      email: astrologerData.email,
-      phone: astrologerData.phone,
-      specialization: astrologerData.specialization,
-      experience: astrologerData.experience,
-      languages: astrologerData.languages,
-      perMinuteCharge: astrologerData.pricing.finalPrice,
-      bio: astrologerData.bio,
-    })
-    
-    // Mock call history
-    setCallHistory([
-      { id: 1, userName: 'Priya S.', startedAt: '2024-01-15T10:30:00Z', duration: 15, earning: 750, type: 'audio' },
-      { id: 2, userName: 'Raj K.', startedAt: '2024-01-14T14:20:00Z', duration: 20, earning: 1000, type: 'video' },
-    ])
-    
-    setLoading(false)
+    fetchAstrologerData()
   }, [authUser, userProfile, router])
+
+  const fetchAstrologerData = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch astrologer profile from Firestore
+      const astrologerResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/user/profile`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      let astrologerData = {
+        name: authUser.displayName || 'Astrologer',
+        email: authUser.email,
+        phone: authUser.phoneNumber || '',
+        specialization: 'Vedic Astrology',
+        experience: '10+ years',
+        languages: ['Hindi', 'English'],
+        pricing: { finalPrice: 50 },
+        bio: 'Experienced astrologer specializing in Vedic astrology.',
+        verified: true,
+        status: 'online'
+      }
+
+      if (astrologerResponse.ok) {
+        const profileData = await astrologerResponse.json()
+        if (profileData.success && profileData.profile) {
+          astrologerData = { ...astrologerData, ...profileData.profile }
+        }
+      }
+
+      // Fetch reviews and ratings
+      let reviewsData = { rating: 0, reviews: 0 }
+      try {
+        console.log('Fetching reviews for astrologer:', authUser.uid)
+        const reviewsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/reviews?astrologerId=${authUser.uid}`)
+        console.log('Reviews response status:', reviewsResponse.status)
+        
+        if (reviewsResponse.ok) {
+          const reviewsResult = await reviewsResponse.json()
+          console.log('Reviews API response:', reviewsResult)
+          
+          if (reviewsResult.success && reviewsResult.reviews) {
+            const reviews = reviewsResult.reviews
+            console.log('Found reviews:', reviews.length, reviews)
+            
+            const totalRating = reviews.reduce((sum, review) => {
+              const rating = parseFloat(review.rating) || 0
+              console.log('Processing review rating:', review.rating, '->', rating)
+              return sum + rating
+            }, 0)
+            
+            const avgRating = reviews.length > 0 ? totalRating / reviews.length : 0
+            
+            reviewsData = {
+              rating: parseFloat(avgRating.toFixed(1)),
+              reviews: reviews.length
+            }
+            
+            console.log('Final reviews data:', reviewsData)
+          } else {
+            console.log('No reviews found or API error')
+            reviewsData = { rating: 0, reviews: 0 }
+          }
+        } else {
+          const errorText = await reviewsResponse.text()
+          console.error('Reviews API error:', errorText)
+          reviewsData = { rating: 0, reviews: 0 }
+        }
+      } catch (reviewError) {
+        console.error('Error fetching reviews:', reviewError)
+        reviewsData = { rating: 0, reviews: 0 }
+      }
+
+      // Merge reviews data into astrologer profile
+      const finalAstrologerData = { ...astrologerData, ...reviewsData }
+      setAstrologer(finalAstrologerData)
+      setIsOnline(finalAstrologerData.status === 'online')
+      setPerMinuteRate(finalAstrologerData.pricing?.finalPrice || 50)
+      setAvgRating(finalAstrologerData.rating || 0)
+      setReviewsCount(finalAstrologerData.reviews || 0)
+      
+      setEditForm({
+        name: finalAstrologerData.name,
+        email: finalAstrologerData.email,
+        phone: finalAstrologerData.phone,
+        specialization: finalAstrologerData.specialization,
+        experience: finalAstrologerData.experience,
+        languages: finalAstrologerData.languages,
+        perMinuteCharge: finalAstrologerData.pricing?.finalPrice || 50,
+        bio: finalAstrologerData.bio,
+      })
+
+      // Fetch call history from Firestore
+      await fetchCallHistory()
+      
+    } catch (error) {
+      console.error('Error fetching astrologer data:', error)
+      setLoading(false)
+    }
+  }
+
+  const fetchCallHistory = async (retryCount = 0) => {
+    try {
+      setIsRetrying(true)
+      setApiError(null)
+      
+      const responseUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/calls/history?astrologerId=${authUser.uid}`
+      console.log('Fetching call history from:', responseUrl)
+      
+      const historyResponse = await fetch(responseUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      console.log('Call history response status:', historyResponse.status)
+
+      if (historyResponse.ok) {
+        const data = await historyResponse.json()
+        console.log('Call history data:', data)
+        
+        if (data.success && data.history && data.history.length > 0) {
+          setCallHistory(data.history)
+          calculatePerformanceMetrics(data.history)
+          setIsRetrying(false)
+        } else {
+          console.log('No call history found')
+          setCallHistory([])
+          calculatePerformanceMetrics([])
+          setIsRetrying(false)
+        }
+      } else {
+        const errorText = await historyResponse.text()
+        console.error('Call history API error:', errorText)
+        setApiError('Unable to load call history. This might be due to database indexing issues.')
+        setCallHistory([])
+        calculatePerformanceMetrics([])
+        setIsRetrying(false)
+      }
+    } catch (error) {
+      console.error('Error fetching call history:', error)
+      setApiError('Failed to connect to server. Please try again later.')
+      setCallHistory([])
+      calculatePerformanceMetrics([])
+      setIsRetrying(false)
+    }
+  }
+
+  const handleRetryFetch = () => {
+    fetchCallHistory()
+  }
+
+  const calculatePerformanceMetrics = (calls) => {
+    try {
+      console.log('Calculating performance metrics for calls:', calls)
+      
+      // Calculate total earnings
+      const totalEarnings = calls.reduce((sum, call) => {
+        return sum + (call.cost || 0)
+      }, 0)
+
+      // Calculate current month earnings
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth()
+      const currentYear = currentDate.getFullYear()
+      
+      const monthlyEarningsData = calls
+        .filter(call => {
+          try {
+            const callDate = new Date(call.startedAt)
+            return callDate.getMonth() === currentMonth && callDate.getFullYear() === currentYear
+          } catch (error) {
+            console.error('Error parsing call date:', error, call)
+            return false
+          }
+        })
+        .reduce((sum, call) => sum + (call.cost || 0), 0)
+
+      // Calculate performance metrics
+      const totalCallsCount = calls.length
+      
+      // Only update earnings and calls - keep existing rating and reviews data
+      console.log('Calculated metrics:', {
+        totalEarnings,
+        monthlyEarningsData,
+        totalCallsCount,
+        avgRating, // Using existing state
+        reviewsCount // Using existing state
+      })
+
+      setCalculatedEarnings(totalEarnings)
+      setMonthlyEarnings(monthlyEarningsData)
+      setTotalCalls(totalCallsCount)
+      // Do NOT update avgRating and reviewsCount here as they are already set from reviews API
+    } catch (error) {
+      console.error('Error calculating performance metrics:', error)
+      // Set fallback values for earnings and calls only
+      setCalculatedEarnings(0)
+      setMonthlyEarnings(0)
+      setTotalCalls(0)
+      // Keep existing rating and reviews data
+    } finally {
+      setLoading(false)
+    }
+  }
 
   /* --------------------------------------------------------------- */
   /*  Toggle online status                                           */
@@ -312,12 +487,51 @@ export default function AstrologerProfilePage() {
                   </div>
                   <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: '#10b981' }} />
                 </div>
+                
+                {apiError && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '0.5rem',
+                    padding: '0.75rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem'
+                  }}>
+                    <div>
+                      <p style={{ fontSize: '0.875rem', color: '#dc2626', margin: 0, fontWeight: 500 }}>Data Loading Issue</p>
+                      <p style={{ fontSize: '0.75rem', color: '#7f1d1d', margin: '0.25rem 0 0 0' }}>{apiError}</p>
+                    </div>
+                    <Button
+                      onClick={handleRetryFetch}
+                      disabled={isRetrying}
+                      variant="outline"
+                      style={{
+                        fontSize: '0.75rem',
+                        height: '2rem',
+                        padding: '0 0.75rem',
+                        borderColor: '#dc2626',
+                        color: '#dc2626'
+                      }}
+                    >
+                      {isRetrying ? 'Retrying...' : 'Retry'}
+                    </Button>
+                  </div>
+                )}
+                
                 <p style={{ fontSize: '1.875rem', fontWeight: 700, color: '#059669' }}>
-                  ₹{astrologer.earnings?.toFixed(2) || '0.00'}
+                  ₹{calculatedEarnings?.toFixed(2) || '0.00'}
                 </p>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', marginTop: '0.5rem' }}>
-                  This month: ₹{astrologer.monthlyEarnings || '0'}
+                  This month: ₹{monthlyEarnings?.toFixed(2) || '0.00'}
                 </p>
+                {apiError && (
+                  <p style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.5rem' }}>
+                    ⚠️ Showing ₹0.00 due to database connection issues
+                  </p>
+                )}
               </div>
 
               {/* Stats */}
@@ -327,7 +541,7 @@ export default function AstrologerProfilePage() {
                   <div>
                     <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Total Calls</p>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
-                      {astrologer.totalCalls || 0}
+                      {totalCalls || 0}
                     </p>
                   </div>
                   <div>
@@ -335,20 +549,20 @@ export default function AstrologerProfilePage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Star style={{ width: '1rem', height: '1rem', fill: '#fbbf24', color: '#fbbf24' }} />
                       <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
-                        {astrologer.rating || '0.0'}
+                        {avgRating || '0.0'}
                       </span>
                     </div>
                   </div>
                   <div>
                     <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Rate/min</p>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#059669' }}>
-                      ₹{astrologer.pricing?.finalPrice || 0}
+                      ₹{perMinuteRate || 0}
                     </p>
                   </div>
                   <div>
                     <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Reviews</p>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>
-                      {astrologer.reviews || 0}
+                      {reviewsCount || 0}
                     </p>
                   </div>
                 </div>
@@ -404,7 +618,7 @@ export default function AstrologerProfilePage() {
                       </div>
                       <div>
                         <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-gray-900)', margin: 0 }}>
-                          {call.userName || 'User'}
+                          {call.userName || 'Anonymous User'}
                         </p>
                         <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', margin: 0 }}>
                           {new Date(call.startedAt).toLocaleString()}
@@ -413,7 +627,7 @@ export default function AstrologerProfilePage() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#059669', margin: 0 }}>
-                        +₹{call.earning?.toFixed(2)}
+                        +₹{call.cost?.toFixed(2)}
                       </p>
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', margin: 0 }}>
                         {call.duration} min

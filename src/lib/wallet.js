@@ -22,7 +22,7 @@ export class WalletService {
 
        if (!walletDoc.exists) {
          // Create wallet with zero balance if it doesn't exist
-         await this.createWallet(userId)
+        await this.createWallet(userId)
          return { balance: 0, transactions: [] }
        }
 
@@ -30,7 +30,7 @@ export class WalletService {
        const transactions = data.transactions || []
 
        // Calculate balance from transactions
-       const calculatedBalance = this.calculateBalanceFromTransactions(transactions)
+      const calculatedBalance = this.calculateBalanceFromTransactions(transactions)
 
        return {
          balance: calculatedBalance,
@@ -61,17 +61,15 @@ export class WalletService {
               balance -= transaction.amount
               break
             case 'hold':
-              //Hold transactions are temporary reservations and should not affect
-              //the final balance calculation. They will be either converted to
-              //debit transactions (for actual charges) or result in credit
-              //transactions (for refunds of unused amounts)
+              // Completed hold transactions should be deducted as they represent finalized charges
+              balance -= transaction.amount
               break
             default:
               break
           }
         } else if (transaction.status === 'pending' && transaction.type === 'hold') {
-          //Pending hold transactions should be deducted from available balance
-          //as they represent reserved funds
+          // Pending hold transactions should be deducted from available balance
+          // as they represent reserved funds
           balance -= transaction.amount
         }
       })
@@ -219,7 +217,7 @@ export class WalletService {
        // Find the hold transaction
        const holdTransaction = wallet.transactions.find(t => t.callId === callId && t.type === 'hold')
 
-       if (!holdTransaction) {
+      if (!holdTransaction) {
          console.warn(`No hold found for call ${callId}, skipping release`)
          return { success: true, transaction: null }
        }
@@ -295,7 +293,7 @@ export class WalletService {
      try {
        const wallet = await this.getWallet(userId)
        return wallet.transactions
-         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
          .slice(0, limitCount)
      } catch (error) {
        console.error('Error getting transaction history:', error)
