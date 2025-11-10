@@ -15,13 +15,12 @@ import {
   RotateCcw,
 } from "lucide-react";
 import styles from "./predictions.css";
-import { astrologyAPI, geocodePlace } from "@/lib/api";
+import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 export default function PredictionsPage() {
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
   // Timezone (UTC offset hours) — default IST 5.5
-  const [tzHours, setTzHours] = useState(5.5);
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
@@ -41,6 +40,8 @@ export default function PredictionsPage() {
   const [aiPredictions, setAiPredictions] = useState("");
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] =
     useState(null);
+  const [fullName, setFullName] = useState("");
+
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
   const setPlacementsRef = (el) => {
@@ -112,8 +113,6 @@ export default function PredictionsPage() {
     if (!dob) return "Please enter your Date of Birth.";
     if (!tob) return "Please enter your Time of Birth.";
     if (!place.trim()) return "Please enter your Place of Birth.";
-    if (!Number.isFinite(Number(tzHours)))
-      return "Please select a valid timezone.";
     return "";
   }
   const fmtTime = (h, m, s = 0) =>
@@ -178,7 +177,8 @@ export default function PredictionsPage() {
       const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
       const tparts = tob.split(":").map((n) => parseInt(n, 10));
       const [H, Min, S = 0] = tparts;
-      const tz = Number.isFinite(Number(tzHours)) ? Number(tzHours) : 5.5;
+// Automatically determine timezone based on location
+      const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
       const payload = {
         year: Y,
         month: M,
@@ -592,6 +592,23 @@ export default function PredictionsPage() {
           </div>
 {/* ---- Birth Details Section ---- */}
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+  {/* Full Name */}
+<div>
+  <label className="form-field-label flex items-center gap-2 mb-2">
+    <Sparkles className="w-5 h-5 text-gold" />
+    Full Name
+  </label>
+  <input
+    type="text"
+    value={fullName}
+    onChange={(e) => setFullName(e.target.value)}
+    placeholder="Enter your full name"
+    className="form-field-input"
+    required
+  />
+  <p className="form-field-helper">Your full name as per records</p>
+</div>
+
   {/* Date of Birth */}
   <div>
     <label className="form-field-label flex items-center gap-2 mb-2">
@@ -677,78 +694,42 @@ export default function PredictionsPage() {
     </div>
     <p className="form-field-helper">e.g., Mumbai, India</p>
   </div>
+{/* Action Buttons */}
+<div className="col-span-1 md:col-span-3 tz-row flex gap-4 mt-2">
+  <button
+    type="submit"
+    disabled={submitting}
+    className="btn btn-primary w-full h-[52px]"
+  >
+    {submitting ? (
+      <>
+        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        Calculating…
+      </>
+    ) : (
+      <>
+        <Sparkles className="w-4 h-4 mr-2" />
+        Get Predictions
+      </>
+    )}
+  </button>
 
-{/* Timezone + Buttons (full-width row) */}
-<div className="col-span-1 md:col-span-3 tz-row">
-  {/* Timezone */}
-  <div>
-    <label className="form-field-label flex items-center gap-2">
-      <Clock className="w-5 h-5 text-gold" />
-      Timezone (UTC offset)
-    </label>
-    <select
-      value={tzHours}
-      onChange={(e) => setTzHours(parseFloat(e.target.value))}
-      className="form-field-input"
-    >
-      {[...Array(57)]
-        .map((_, i) => -12 + i * 0.5)
-        .map((v) => {
-          const sign = v >= 0 ? "+" : "";
-          const h = Math.trunc(Math.abs(v));
-          const m = Math.round((Math.abs(v) - h) * 60);
-          const hhmm = `${sign}${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-          return (
-            <option key={v} value={v}>
-              {`UTC${hhmm}${v === 5.5 ? " (IST default)" : ""}`}
-            </option>
-          );
-        })}
-    </select>
-  </div>
-
-  {/* Get Predictions */}
-  <div className="align-with-label">
-    <button
-      type="submit"
-      disabled={submitting}
-      className="btn btn-primary w-full h-[52px]"
-    >
-      {submitting ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          Calculating…
-        </>
-      ) : (
-        <>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Get Predictions
-        </>
-      )}
-    </button>
-  </div>
-
-  {/* Reset */}
-  <div className="align-with-label">
-    <button
-      type="reset"
-      onClick={() => {
-        setDob("");
-        setTob("");
-        setPlace("");
-        setResult(null);
-        setError("");
-        setSelectedMaha(null);
-        setTzHours(5.5);
-      }}
-      className="btn btn-ghost w-full h-[52px]"
-    >
-      <RotateCcw className="w-4 h-4" />
-    </button>
-  </div>
+  <button
+    type="reset"
+    onClick={() => {
+      setFullName("");
+      setDob("");
+      setTob("");
+      setPlace("");
+      setResult(null);
+      setError("");
+      setSelectedMaha(null);
+    }}
+    className="btn btn-ghost w-full h-[52px]"
+  >
+    <RotateCcw className="w-4 h-4" />
+  </button>
 </div>
-
-
 
 </div>
 

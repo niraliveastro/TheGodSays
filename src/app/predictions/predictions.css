@@ -372,3 +372,48 @@
   padding-top: 0;                 /* avoid extra internal height */
   padding-bottom: 0;
 }
+
+/* === Force exact equal height for all form inputs and buttons === */
+.card .form-field-input,
+.card input[type="text"],
+.card input[type="date"],
+.card input[type="time"],
+.card input[type="number"],
+.card select,
+.card textarea {
+  height: 52px !important;
+  line-height: 1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+}
+
+/* Just to be 100% consistent with button visuals */
+.btn-primary,
+.btn-ghost,
+.place-btn {
+  height: 52px !important;
+  line-height: 52px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* === Fix: Align 'Get Predictions' button perfectly with inputs === */
+.tz-row {
+  margin-top: 0 !important; /* remove gap from previous row */
+  align-items: start !important; /* align items with labels, not bottom edges */
+}
+
+@media (min-width: 768px) {
+  .tz-row {
+    align-items: start !important;
+  }
+}
+
+/* Optional: reduce the label bottom margin slightly to balance vertically */
+.card .form-field-label {
+  margin-bottom: 0.35rem !important;
+}
+
