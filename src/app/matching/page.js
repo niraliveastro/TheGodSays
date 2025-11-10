@@ -49,8 +49,9 @@ const Badge = ({ children, tone = "neutral" }) => {
 /*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 export default function MatchingPage() {
-  const [female, setFemale] = useState({ dob: "", tob: "", place: "" });
-  const [male, setMale] = useState({ dob: "", tob: "", place: "" });
+const [female, setFemale] = useState({ fullName: "", dob: "", tob: "", place: "" });
+const [male, setMale] = useState({ fullName: "", dob: "", tob: "", place: "" });
+
 
   const [fCoords, setFCoords] = useState(null);
   const [mCoords, setMCoords] = useState(null);
@@ -168,10 +169,14 @@ export default function MatchingPage() {
     setFDetails(null);
     setMDetails(null);
 
-    if (!female.dob || !female.tob || !female.place || !male.dob || !male.tob || !male.place) {
-      setError("Please complete all fields for both.");
-      return;
-    }
+if (
+  !female.fullName || !female.dob || !female.tob || !female.place ||
+  !male.fullName || !male.dob || !male.tob || !male.place
+) {
+  setError("Please complete all fields for both individuals, including names.");
+  return;
+}
+
 
     setSubmitting(true);
     try {
@@ -787,75 +792,90 @@ color: #fff;
         <h3 className="results-title">Female Details</h3>
       </div>
 
-      <div className="form-grid">
-        {/* Date */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Calendar className="w-5 h-5 text-pink-500" />
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            value={female.dob}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'dob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">Format: YYYY-MM-DD</p>
-        </div>
+<div className="form-grid-2col">
+  {/* Row 1: Full Name + Date */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Sparkles className="w-5 h-5 text-pink-500" />
+      Full Name
+    </label>
+    <input
+      type="text"
+      placeholder="Enter full name"
+      value={female.fullName}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'fullName')}
+      required
+      className="form-field-input"
+    />
+  </div>
 
-        {/* Time */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Clock className="w-5 h-5 text-pink-500" />
-            Time of Birth
-          </label>
-          <input
-            type="time"
-            step="60"
-            value={female.tob}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'tob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">24-hour format</p>
-        </div>
+  <div className="form-field">
+    <label className="form-field-label">
+      <Calendar className="w-5 h-5 text-pink-500" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={female.dob}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'dob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
 
-        {/* Place */}
-        <div className="form-field relative">
-          <label className="form-field-label">
-            <MapPin className="w-5 h-5 text-pink-500" />
-            Place
-          </label>
-          <input
-            placeholder="City, Country"
-            value={female.place}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'place')}
-            autoComplete="off"
-            required
-            className="form-field-input"
-          />
-          {fSuggest.length > 0 && (
-            <div className="suggestions">
-              {fSuggest.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setFemale((p) => ({ ...p, place: s.label }));
-                    setFCoords(s);
-                    setFSuggest([]);
-                  }}
-                  className="suggestion-item"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-pink-500" />
-                  <span className="truncate">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+  {/* Row 2: Time + Place */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Clock className="w-5 h-5 text-pink-500" />
+      Time of Birth
+    </label>
+    <input
+      type="time"
+      step="60"
+      value={female.tob}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'tob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
+
+  <div className="form-field relative">
+    <label className="form-field-label">
+      <MapPin className="w-5 h-5 text-pink-500" />
+      Place
+    </label>
+    <input
+      placeholder="City, Country"
+      value={female.place}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'place')}
+      autoComplete="off"
+      required
+      className="form-field-input"
+    />
+    {fSuggest.length > 0 && (
+      <div className="suggestions">
+        {fSuggest.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              setFemale((p) => ({ ...p, place: s.label }));
+              setFCoords(s);
+              setFSuggest([]);
+            }}
+            className="suggestion-item"
+          >
+            <MapPin className="w-3.5 h-3.5 text-pink-500" />
+            <span className="truncate">{s.label}</span>
+          </button>
+        ))}
       </div>
+    )}
+  </div>
+</div>
+
     </div>
 
     {/* ---------- Male ---------- */}
@@ -865,75 +885,90 @@ color: #fff;
         <h3 className="results-title">Male Details</h3>
       </div>
 
-      <div className="form-grid">
-        {/* Date */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            value={male.dob}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'dob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">Format: YYYY-MM-DD</p>
-        </div>
+<div className="form-grid-2col">
+  {/* Row 1: Full Name + Date */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Sparkles className="w-5 h-5 text-blue-500" />
+      Full Name
+    </label>
+    <input
+      type="text"
+      placeholder="Enter full name"
+      value={male.fullName}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'fullName')}
+      required
+      className="form-field-input"
+    />
+  </div>
 
-        {/* Time */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Clock className="w-5 h-5 text-blue-500" />
-            Time of Birth
-          </label>
-          <input
-            type="time"
-            step="60"
-            value={male.tob}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'tob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">24-hour format</p>
-        </div>
+  <div className="form-field">
+    <label className="form-field-label">
+      <Calendar className="w-5 h-5 text-blue-500" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={male.dob}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'dob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
 
-        {/* Place */}
-        <div className="form-field relative">
-          <label className="form-field-label">
-            <MapPin className="w-5 h-5 text-blue-500" />
-            Place
-          </label>
-          <input
-            placeholder="City, Country"
-            value={male.place}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'place')}
-            autoComplete="off"
-            required
-            className="form-field-input"
-          />
-          {mSuggest.length > 0 && (
-            <div className="suggestions">
-              {mSuggest.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setMale((p) => ({ ...p, place: s.label }));
-                    setMCoords(s);
-                    setMSuggest([]);
-                  }}
-                  className="suggestion-item"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="truncate">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+  {/* Row 2: Time + Place */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Clock className="w-5 h-5 text-blue-500" />
+      Time of Birth
+    </label>
+    <input
+      type="time"
+      step="60"
+      value={male.tob}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'tob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
+
+  <div className="form-field relative">
+    <label className="form-field-label">
+      <MapPin className="w-5 h-5 text-blue-500" />
+      Place
+    </label>
+    <input
+      placeholder="City, Country"
+      value={male.place}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'place')}
+      autoComplete="off"
+      required
+      className="form-field-input"
+    />
+    {mSuggest.length > 0 && (
+      <div className="suggestions">
+        {mSuggest.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              setMale((p) => ({ ...p, place: s.label }));
+              setMCoords(s);
+              setMSuggest([]);
+            }}
+            className="suggestion-item"
+          >
+            <MapPin className="w-3.5 h-3.5 text-blue-500" />
+            <span className="truncate">{s.label}</span>
+          </button>
+        ))}
       </div>
+    )}
+  </div>
+</div>
+
     </div>
   </div>
 
@@ -1018,6 +1053,7 @@ color: #fff;
     </div>
     <div className="birth-info-grid">
       {[
+        { icon: Sparkles, label: 'Full Name', value: female.fullName || '—' },
         { icon: Calendar, label: 'Date', value: fmtDate(female.dob) },
         { icon: Clock, label: 'Time', value: fmtTime(female.tob) },
         { icon: MapPin, label: 'Place', value: female.place || '—' },
@@ -1044,6 +1080,7 @@ color: #fff;
     </div>
     <div className="birth-info-grid">
       {[
+        { icon: Sparkles, label: 'Full Name', value: male.fullName || '—' },
         { icon: Calendar, label: 'Date', value: fmtDate(male.dob) },
         { icon: Clock, label: 'Time', value: fmtTime(male.tob) },
         { icon: MapPin, label: 'Place', value: male.place || '—' },
