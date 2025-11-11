@@ -11,7 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin } from "lucide-react";
+import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin, Trash2 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 
 
@@ -66,6 +66,48 @@ const [male, setMale] = useState({ fullName: "", dob: "", tob: "", place: "" });
   const [fDetails, setFDetails] = useState(null);
   const [mDetails, setMDetails] = useState(null);
   const [mounted, setMounted] = useState(false);
+    // === Matching History ===
+  const MATCHING_HISTORY_KEY = "matching_history_v1";
+  const [history, setHistory] = useState([]);
+
+  const getHistory = () => {
+    try {
+      const stored = localStorage.getItem(MATCHING_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveToHistory = (entry) => {
+    let current = getHistory();
+    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${entry.femaleDob}-${entry.maleDob}`;
+    current = current.filter(
+      (it) =>
+        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${it.femaleDob}-${it.maleDob}` !==
+        key
+    );
+    current.unshift(entry);
+    if (current.length > 10) current = current.slice(0, 10);
+    localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(current));
+    setHistory(current);
+  };
+
+  const deleteHistoryItem = (id) => {
+    const updated = history.filter((h) => h.id !== id);
+    localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem(MATCHING_HISTORY_KEY);
+    setHistory([]);
+  };
+
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
+
   const [vw, setVw] = useState(1024);
 
   /* -------------------------------------------------------------- */
@@ -187,6 +229,18 @@ if (
       );
       const out = typeof res?.output === "string" ? JSON.parse(res.output) : res?.output || res;
       setResult(out);
+      saveToHistory({
+        id: Date.now(),
+        femaleName: female.fullName,
+        femaleDob: female.dob,
+        femaleTob: female.tob,
+        femalePlace: female.place,
+        maleName: male.fullName,
+        maleDob: male.dob,
+        maleTob: male.tob,
+        malePlace: male.place,
+      });
+
 
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -1024,6 +1078,72 @@ color: #fff;
     </div>
   </div>
 </form>
+
+{/* Matching History Table */}
+<section className="results-section" style={{ marginTop: "3rem" }}>
+  <div className="card">
+    <div className="results-header">
+      <Sparkles style={{ color: "#ca8a04" }} />
+      <h3 className="results-title flex items-center gap-2">
+        Matching History
+      </h3>
+
+      {history.length > 0 && (
+        <button
+          onClick={clearHistory}
+          className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+        >
+          <RotateCcw className="w-4 h-4" /> Clear
+        </button>
+      )}
+    </div>
+
+    {history.length === 0 ? (
+      <div className="empty-state">No matching history yet.</div>
+    ) : (
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Female Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Place</th>
+              <th>Male Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Place</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item) => (
+              <tr key={item.id}>
+                <td>{item.femaleName}</td>
+                <td>{item.femaleDob}</td>
+                <td>{item.femaleTob}</td>
+                <td>{item.femalePlace}</td>
+                <td>{item.maleName}</td>
+                <td>{item.maleDob}</td>
+                <td>{item.maleTob}</td>
+                <td>{item.malePlace}</td>
+                <td>
+                  <button
+                    onClick={() => deleteHistoryItem(item.id)}
+                    className="delete-btn"
+                    aria-label={`Delete ${item.femaleName} & ${item.maleName}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</section>
 
 
         {/* ---------------------------------------------------------- */}

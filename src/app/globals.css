@@ -2336,3 +2336,17 @@ body{
 .place-btn {
   height: 52px; /* aligns buttons with inputs */
 }
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+.delete-btn:hover {
+  color: #dc2626;
+  transform: scale(1.1);
+}

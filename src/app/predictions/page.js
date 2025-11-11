@@ -13,6 +13,7 @@ import {
   Loader2,
   Cpu,
   RotateCcw,
+  Trash2
 } from "lucide-react";
 import styles from "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -41,6 +42,47 @@ export default function PredictionsPage() {
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] =
     useState(null);
   const [fullName, setFullName] = useState("");
+
+    // === Prediction History ===
+  const PREDICTION_HISTORY_KEY = "prediction_history_v1";
+  const [history, setHistory] = useState([]);
+
+  const getHistory = () => {
+    try {
+      const stored = localStorage.getItem(PREDICTION_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const saveToHistory = (entry) => {
+    let current = getHistory();
+    const key = `${entry.fullName.toUpperCase()}-${entry.dob}-${entry.tob}`;
+    current = current.filter(
+      (it) => `${it.fullName.toUpperCase()}-${it.dob}-${it.tob}` !== key
+    );
+    current.unshift(entry);
+    if (current.length > 10) current = current.slice(0, 10);
+    localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(current));
+    setHistory(current);
+  };
+
+  const deleteHistoryItem = (id) => {
+    const updated = history.filter((h) => h.id !== id);
+    localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem(PREDICTION_HISTORY_KEY);
+    setHistory([]);
+  };
+
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
+
 
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
@@ -162,6 +204,7 @@ export default function PredictionsPage() {
     e.preventDefault();
     setError("");
     setResult(null);
+    
     const v = validate();
     if (v) {
       setError(v);
@@ -174,15 +217,22 @@ export default function PredictionsPage() {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country)."
         );
-      const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
-      const tparts = tob.split(":").map((n) => parseInt(n, 10));
-      const [H, Min, S = 0] = tparts;
-// Automatically determine timezone based on location
-      const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
-      const payload = {
-        year: Y,
-        month: M,
-        date: D,
+        const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
+        const tparts = tob.split(":").map((n) => parseInt(n, 10));
+        const [H, Min, S = 0] = tparts;
+        // Automatically determine timezone based on location
+        const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+        saveToHistory({
+          id: Date.now(),
+          fullName,
+          dob,
+          tob: fmtTime(H, Min, S),
+          place: geo.label || place,
+        });
+        const payload = {
+          year: Y,
+          month: M,
+          date: D,
         hours: H,
         minutes: Min,
         seconds: S,
@@ -736,6 +786,67 @@ export default function PredictionsPage() {
 
 
         </form>
+                      {/* Prediction History Table */}
+<section className="results-section" style={{ marginTop: "3rem" }}>
+  <div className="card">
+    <div className="results-header">
+      <Sparkles style={{ color: "#ca8a04" }} />
+      <h3 className="results-title flex items-center gap-2">
+        Prediction History
+      </h3>
+
+      {history.length > 0 && (
+        <button
+          onClick={clearHistory}
+          className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+        >
+          <RotateCcw className="w-4 h-4" /> Clear
+        </button>
+      )}
+    </div>
+
+    {history.length === 0 ? (
+      <div className="empty-state">No prediction history yet.</div>
+    ) : (
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date of Birth</th>
+              <th>Time of Birth</th>
+              <th>Place of Birth</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item) => (
+              <tr key={item.id}>
+                <td style={{ fontWeight: 500, color: "#1f2937" }}>
+                  {item.fullName}
+                </td>
+                <td>{item.dob}</td>
+                <td>{item.tob}</td>
+                <td>{item.place}</td>
+                <td>
+                  <button
+                    onClick={() => deleteHistoryItem(item.id)}
+                    className="delete-btn"
+                    aria-label={`Delete ${item.fullName}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</section>
+
+
         {/* Results */}
         {result && (
           <div
