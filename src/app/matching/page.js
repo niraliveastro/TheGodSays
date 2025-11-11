@@ -11,7 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin } from "lucide-react";
+import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin, Trash2 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 
 
@@ -49,8 +49,9 @@ const Badge = ({ children, tone = "neutral" }) => {
 /*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 export default function MatchingPage() {
-  const [female, setFemale] = useState({ dob: "", tob: "", place: "" });
-  const [male, setMale] = useState({ dob: "", tob: "", place: "" });
+const [female, setFemale] = useState({ fullName: "", dob: "", tob: "", place: "" });
+const [male, setMale] = useState({ fullName: "", dob: "", tob: "", place: "" });
+
 
   const [fCoords, setFCoords] = useState(null);
   const [mCoords, setMCoords] = useState(null);
@@ -65,6 +66,48 @@ export default function MatchingPage() {
   const [fDetails, setFDetails] = useState(null);
   const [mDetails, setMDetails] = useState(null);
   const [mounted, setMounted] = useState(false);
+    // === Matching History ===
+  const MATCHING_HISTORY_KEY = "matching_history_v1";
+  const [history, setHistory] = useState([]);
+
+  const getHistory = () => {
+    try {
+      const stored = localStorage.getItem(MATCHING_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveToHistory = (entry) => {
+    let current = getHistory();
+    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${entry.femaleDob}-${entry.maleDob}`;
+    current = current.filter(
+      (it) =>
+        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${it.femaleDob}-${it.maleDob}` !==
+        key
+    );
+    current.unshift(entry);
+    if (current.length > 10) current = current.slice(0, 10);
+    localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(current));
+    setHistory(current);
+  };
+
+  const deleteHistoryItem = (id) => {
+    const updated = history.filter((h) => h.id !== id);
+    localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem(MATCHING_HISTORY_KEY);
+    setHistory([]);
+  };
+
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
+
   const [vw, setVw] = useState(1024);
 
   /* -------------------------------------------------------------- */
@@ -168,10 +211,14 @@ export default function MatchingPage() {
     setFDetails(null);
     setMDetails(null);
 
-    if (!female.dob || !female.tob || !female.place || !male.dob || !male.tob || !male.place) {
-      setError("Please complete all fields for both.");
-      return;
-    }
+if (
+  !female.fullName || !female.dob || !female.tob || !female.place ||
+  !male.fullName || !male.dob || !male.tob || !male.place
+) {
+  setError("Please complete all fields for both individuals, including names.");
+  return;
+}
+
 
     setSubmitting(true);
     try {
@@ -182,6 +229,18 @@ export default function MatchingPage() {
       );
       const out = typeof res?.output === "string" ? JSON.parse(res.output) : res?.output || res;
       setResult(out);
+      saveToHistory({
+        id: Date.now(),
+        femaleName: female.fullName,
+        femaleDob: female.dob,
+        femaleTob: female.tob,
+        femalePlace: female.place,
+        maleName: male.fullName,
+        maleDob: male.dob,
+        maleTob: male.tob,
+        malePlace: male.place,
+      });
+
 
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -787,75 +846,90 @@ color: #fff;
         <h3 className="results-title">Female Details</h3>
       </div>
 
-      <div className="form-grid">
-        {/* Date */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Calendar className="w-5 h-5 text-pink-500" />
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            value={female.dob}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'dob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">Format: YYYY-MM-DD</p>
-        </div>
+<div className="form-grid-2col">
+  {/* Row 1: Full Name + Date */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Sparkles className="w-5 h-5 text-pink-500" />
+      Full Name
+    </label>
+    <input
+      type="text"
+      placeholder="Enter full name"
+      value={female.fullName}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'fullName')}
+      required
+      className="form-field-input"
+    />
+  </div>
 
-        {/* Time */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Clock className="w-5 h-5 text-pink-500" />
-            Time of Birth
-          </label>
-          <input
-            type="time"
-            step="60"
-            value={female.tob}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'tob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">24-hour format</p>
-        </div>
+  <div className="form-field">
+    <label className="form-field-label">
+      <Calendar className="w-5 h-5 text-pink-500" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={female.dob}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'dob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
 
-        {/* Place */}
-        <div className="form-field relative">
-          <label className="form-field-label">
-            <MapPin className="w-5 h-5 text-pink-500" />
-            Place
-          </label>
-          <input
-            placeholder="City, Country"
-            value={female.place}
-            onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'place')}
-            autoComplete="off"
-            required
-            className="form-field-input"
-          />
-          {fSuggest.length > 0 && (
-            <div className="suggestions">
-              {fSuggest.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setFemale((p) => ({ ...p, place: s.label }));
-                    setFCoords(s);
-                    setFSuggest([]);
-                  }}
-                  className="suggestion-item"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-pink-500" />
-                  <span className="truncate">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+  {/* Row 2: Time + Place */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Clock className="w-5 h-5 text-pink-500" />
+      Time of Birth
+    </label>
+    <input
+      type="time"
+      step="60"
+      value={female.tob}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'tob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
+
+  <div className="form-field relative">
+    <label className="form-field-label">
+      <MapPin className="w-5 h-5 text-pink-500" />
+      Place
+    </label>
+    <input
+      placeholder="City, Country"
+      value={female.place}
+      onChange={onChangePerson(setFemale, setFCoords, setFSuggest, fTimer, 'place')}
+      autoComplete="off"
+      required
+      className="form-field-input"
+    />
+    {fSuggest.length > 0 && (
+      <div className="suggestions">
+        {fSuggest.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              setFemale((p) => ({ ...p, place: s.label }));
+              setFCoords(s);
+              setFSuggest([]);
+            }}
+            className="suggestion-item"
+          >
+            <MapPin className="w-3.5 h-3.5 text-pink-500" />
+            <span className="truncate">{s.label}</span>
+          </button>
+        ))}
       </div>
+    )}
+  </div>
+</div>
+
     </div>
 
     {/* ---------- Male ---------- */}
@@ -865,75 +939,90 @@ color: #fff;
         <h3 className="results-title">Male Details</h3>
       </div>
 
-      <div className="form-grid">
-        {/* Date */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            value={male.dob}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'dob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">Format: YYYY-MM-DD</p>
-        </div>
+<div className="form-grid-2col">
+  {/* Row 1: Full Name + Date */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Sparkles className="w-5 h-5 text-blue-500" />
+      Full Name
+    </label>
+    <input
+      type="text"
+      placeholder="Enter full name"
+      value={male.fullName}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'fullName')}
+      required
+      className="form-field-input"
+    />
+  </div>
 
-        {/* Time */}
-        <div className="form-field">
-          <label className="form-field-label">
-            <Clock className="w-5 h-5 text-blue-500" />
-            Time of Birth
-          </label>
-          <input
-            type="time"
-            step="60"
-            value={male.tob}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'tob')}
-            required
-            className="form-field-input"
-          />
-          <p className="form-field-helper">24-hour format</p>
-        </div>
+  <div className="form-field">
+    <label className="form-field-label">
+      <Calendar className="w-5 h-5 text-blue-500" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={male.dob}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'dob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
 
-        {/* Place */}
-        <div className="form-field relative">
-          <label className="form-field-label">
-            <MapPin className="w-5 h-5 text-blue-500" />
-            Place
-          </label>
-          <input
-            placeholder="City, Country"
-            value={male.place}
-            onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'place')}
-            autoComplete="off"
-            required
-            className="form-field-input"
-          />
-          {mSuggest.length > 0 && (
-            <div className="suggestions">
-              {mSuggest.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setMale((p) => ({ ...p, place: s.label }));
-                    setMCoords(s);
-                    setMSuggest([]);
-                  }}
-                  className="suggestion-item"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="truncate">{s.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+  {/* Row 2: Time + Place */}
+  <div className="form-field">
+    <label className="form-field-label">
+      <Clock className="w-5 h-5 text-blue-500" />
+      Time of Birth
+    </label>
+    <input
+      type="time"
+      step="60"
+      value={male.tob}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'tob')}
+      required
+      className="form-field-input"
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
+
+  <div className="form-field relative">
+    <label className="form-field-label">
+      <MapPin className="w-5 h-5 text-blue-500" />
+      Place
+    </label>
+    <input
+      placeholder="City, Country"
+      value={male.place}
+      onChange={onChangePerson(setMale, setMCoords, setMSuggest, mTimer, 'place')}
+      autoComplete="off"
+      required
+      className="form-field-input"
+    />
+    {mSuggest.length > 0 && (
+      <div className="suggestions">
+        {mSuggest.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              setMale((p) => ({ ...p, place: s.label }));
+              setMCoords(s);
+              setMSuggest([]);
+            }}
+            className="suggestion-item"
+          >
+            <MapPin className="w-3.5 h-3.5 text-blue-500" />
+            <span className="truncate">{s.label}</span>
+          </button>
+        ))}
       </div>
+    )}
+  </div>
+</div>
+
     </div>
   </div>
 
@@ -990,6 +1079,72 @@ color: #fff;
   </div>
 </form>
 
+{/* Matching History Table */}
+<section className="results-section" style={{ marginTop: "3rem" }}>
+  <div className="card">
+    <div className="results-header">
+      <Sparkles style={{ color: "#ca8a04" }} />
+      <h3 className="results-title flex items-center gap-2">
+        Matching History
+      </h3>
+
+      {history.length > 0 && (
+        <button
+          onClick={clearHistory}
+          className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+        >
+          <RotateCcw className="w-4 h-4" /> Clear
+        </button>
+      )}
+    </div>
+
+    {history.length === 0 ? (
+      <div className="empty-state">No matching history yet.</div>
+    ) : (
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Female Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Place</th>
+              <th>Male Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Place</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item) => (
+              <tr key={item.id}>
+                <td>{item.femaleName}</td>
+                <td>{item.femaleDob}</td>
+                <td>{item.femaleTob}</td>
+                <td>{item.femalePlace}</td>
+                <td>{item.maleName}</td>
+                <td>{item.maleDob}</td>
+                <td>{item.maleTob}</td>
+                <td>{item.malePlace}</td>
+                <td>
+                  <button
+                    onClick={() => deleteHistoryItem(item.id)}
+                    className="delete-btn"
+                    aria-label={`Delete ${item.femaleName} & ${item.maleName}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</section>
+
 
         {/* ---------------------------------------------------------- */}
         {/*  RESULT SECTION                                            */}
@@ -1018,6 +1173,7 @@ color: #fff;
     </div>
     <div className="birth-info-grid">
       {[
+        { icon: Sparkles, label: 'Full Name', value: female.fullName || '—' },
         { icon: Calendar, label: 'Date', value: fmtDate(female.dob) },
         { icon: Clock, label: 'Time', value: fmtTime(female.tob) },
         { icon: MapPin, label: 'Place', value: female.place || '—' },
@@ -1044,6 +1200,7 @@ color: #fff;
     </div>
     <div className="birth-info-grid">
       {[
+        { icon: Sparkles, label: 'Full Name', value: male.fullName || '—' },
         { icon: Calendar, label: 'Date', value: fmtDate(male.dob) },
         { icon: Clock, label: 'Time', value: fmtTime(male.tob) },
         { icon: MapPin, label: 'Place', value: male.place || '—' },

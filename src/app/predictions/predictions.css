@@ -372,3 +372,139 @@
   padding-top: 0;                 /* avoid extra internal height */
   padding-bottom: 0;
 }
+
+/* === Force exact equal height for all form inputs and buttons === */
+.card .form-field-input,
+.card input[type="text"],
+.card input[type="date"],
+.card input[type="time"],
+.card input[type="number"],
+.card select,
+.card textarea {
+  height: 52px !important;
+  line-height: 1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+}
+
+/* Just to be 100% consistent with button visuals */
+.btn-primary,
+.btn-ghost,
+.place-btn {
+  height: 52px !important;
+  line-height: 52px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* === Fix: Align 'Get Predictions' button perfectly with inputs === */
+.tz-row {
+  margin-top: 0 !important; /* remove gap from previous row */
+  align-items: start !important; /* align items with labels, not bottom edges */
+}
+
+@media (min-width: 768px) {
+  .tz-row {
+    align-items: start !important;
+  }
+}
+
+/* Optional: reduce the label bottom margin slightly to balance vertically */
+.card .form-field-label {
+  margin-bottom: 0.35rem !important;
+}
+
+/* === Prediction History Table === */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-title.history {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-gold, #ca8a04);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-history-btn {
+  background: transparent;
+  border: 1px solid rgba(202, 138, 4, 0.4);
+  color: #ca8a04;
+  font-size: 0.85rem;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  transition: all 0.2s ease;
+}
+.clear-history-btn:hover {
+  background: rgba(202, 138, 4, 0.1);
+}
+.history-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+}
+
+
+.history-empty {
+  color: #6b7280;
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 1.5rem 0;
+}
+
+.history-table-container {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.history-table th {
+  background: rgba(202, 138, 4, 0.1);
+  color: #92400e;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(202, 138, 4, 0.2);
+}
+
+.history-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.history-table tr:hover {
+  background: rgba(202, 138, 4, 0.08);
+  transition: background 0.2s ease;
+}
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+.delete-btn:hover {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
