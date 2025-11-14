@@ -263,7 +263,7 @@ if (
         "shadbala/summary",
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
-        "planets",
+        "planets/extended",
       ];
 
       const [fCalc, mCalc] = await Promise.all([
@@ -288,7 +288,15 @@ if (
         if (v && typeof v === "object" && v.output) v = safeParse(v.output);
         return v;
       };
-      const parsePlanets = (raw) => safeParse(safeParse(raw?.output ?? raw));
+
+const parsePlanets = (raw) => {
+  if (!raw) return null;
+  let v = safeParse(safeParse(raw.output ?? raw));
+  if (v && typeof v === "object" && v.output) {
+    v = safeParse(v.output);
+  }
+  return v;
+};
 
       const currentDashaChain = (v) => {
         if (!v) return null;
@@ -343,46 +351,90 @@ if (
           .sort((a, b) => (Number(b.percent ?? 0) - Number(a.percent ?? 0)));
       };
 
-      const SIGN_NAMES = [
-        "Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces",
-      ];
-      const toPlacements = (pl) => {
-        if (!pl) return [];
-        if (Array.isArray(pl) && pl.length >= 2 && typeof pl[1] === "object" && !Array.isArray(pl[1])) {
-          const map = pl[1];
-          return Object.keys(map).map((name) => {
-            const v = map[name] || {};
-            const signNum = v.current_sign != null ? Number(v.current_sign) : undefined;
-            const currentSign = signNum
-              ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
-              : v.sign_name || v.sign || v.rashi;
-            return {
-              name,
-              currentSign,
-              house: v.house_number,
-              retro: String(v.isRetro).toLowerCase() === "true" || v.is_retro || v.retrograde || false,
-              fullDegree: typeof v.fullDegree === "number" ? v.fullDegree : typeof v.longitude === "number" ? v.longitude : undefined,
-              normDegree: typeof v.normDegree === "number" ? v.normDegree : undefined,
-            };
-          });
-        }
-        const arr = Array.isArray(pl) ? pl : pl.planets || pl.planet_positions || [];
-        const list = Array.isArray(arr) ? arr : Object.values(arr || {});
-        return list.map((p) => {
-          const signNum = p.current_sign != null ? Number(p.current_sign) : undefined;
-          const currentSign = signNum
-            ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
-            : p.sign || p.rashi || p.sign_name;
-          return {
-            name: p.name || p.planet,
-            currentSign,
-            house: p.house || p.house_number,
-            retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === "true",
-            fullDegree: typeof p.fullDegree === "number" ? p.fullDegree : typeof p.longitude === "number" ? p.longitude : undefined,
-            normDegree: typeof p.normDegree === "number" ? p.normDegree : undefined,
-          };
-        });
+const SIGN_NAMES = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+];
+
+const toPlacements = (pl) => {
+  if (!pl) return [];
+
+  // planets/extended often comes as an object keyed by planet name
+  if (typeof pl === "object" && !Array.isArray(pl)) {
+    return Object.entries(pl).map(([name, v]) => {
+      const signNum =
+        v.current_sign != null ? Number(v.current_sign) : undefined;
+      const currentSign = signNum
+        ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+        : v.zodiac_sign_name || v.sign_name || v.sign || v.rashi;
+
+      return {
+        name: v.name || v.planet || name,
+        currentSign,
+        house: v.house_number ?? v.house,
+        nakshatra: v.nakshatra_name || v.nakshatra,
+        pada: v.nakshatra_pada || v.pada,
+        retro:
+          v.isRetro === "true" ||
+          v.retrograde === true ||
+          v.is_retro === true,
+        fullDegree:
+          typeof v.fullDegree === "number"
+            ? v.fullDegree
+            : typeof v.longitude === "number"
+            ? v.longitude
+            : undefined,
+        normDegree:
+          typeof v.normDegree === "number" ? v.normDegree : undefined,
       };
+    });
+  }
+
+  // Fallback: array-like structures
+  const arr = Array.isArray(pl)
+    ? pl
+    : pl.planets || pl.planet_positions || Object.values(pl || {});
+
+  return (arr || []).map((p) => {
+    const signNum =
+      p.current_sign != null ? Number(p.current_sign) : undefined;
+    const currentSign = signNum
+      ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+      : p.zodiac_sign_name || p.sign || p.rashi || p.sign_name;
+
+    return {
+      name: p.name || p.planet,
+      currentSign,
+      house: p.house || p.house_number,
+      nakshatra: p.nakshatra_name || p.nakshatra,
+      pada: p.nakshatra_pada || p.pada,
+      retro:
+        p.retrograde === true ||
+        p.is_retro === true ||
+        String(p.isRetro).toLowerCase() === "true",
+      fullDegree:
+        typeof p.fullDegree === "number"
+          ? p.fullDegree
+          : typeof p.longitude === "number"
+          ? p.longitude
+          : undefined,
+      normDegree:
+        typeof p.normDegree === "number" ? p.normDegree : undefined,
+    };
+  });
+};
+
+
 
       const buildUserDetails = (calc) => {
         const r = calc?.results || {};
@@ -391,7 +443,7 @@ if (
           ? safeParse(safeParse(r["vimsottari/dasa-information"].output ?? r["vimsottari/dasa-information"]))
           : null;
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
-        const planets = parsePlanets(r["planets"]);
+        const planets = parsePlanets(r["planets/extended"]);
         return {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
@@ -520,8 +572,9 @@ if (
             {(d?.placements || []).map((p) => (
               <div key={`${title}-pl-${p.name}`} className="placement-item">
                 <div className="placement-head">
-                  <div className="placement-name">{p.name}</div>
-                  {p.retro && <Badge tone="warn">Retro</Badge>}
+                  <div className="placement-name">
+                    {p.retro ? `${p.name} (Retro)` : p.name}
+                  </div>
                 </div>
                 <div className="placement-badges">
                   <Badge tone="neutral">Sign: {p.currentSign || "—"}</Badge>
@@ -773,6 +826,8 @@ color: #fff;
         }
         .progress-fill {
           height: 100%;
+          background: linear-gradient(to right, #ca8a04, #eab308);
+          border-radius: 9999px; 
           transition: width .3s ease;
         }
         .bg-cyan-500 { background: var(--c-cyan); }
@@ -1060,8 +1115,8 @@ color: #fff;
       <button
         type="reset"
         onClick={() => {
-          setFemale({ dob: '', tob: '', place: '' });
-          setMale({ dob: '', tob: '', place: '' });
+          setFemale({ fullName: '', dob: '', tob: '', place: '' });
+          setMale({ fullName: '', dob: '', tob: '', place: '' });  
           setFCoords(null);
           setMCoords(null);
           setFSuggest([]);
@@ -1393,15 +1448,17 @@ color: #fff;
           <thead>
             <tr>
               <th>Planet</th>
-              <th>Strength %</th>
-              <th>Ishta %</th>
-              <th>Kashta %</th>
+              <th>Strength</th>
+              <th>Ishta</th>
+              <th>Kashta</th>
             </tr>
           </thead>
           <tbody>
             {(fDetails?.shadbalaRows || []).map((p, i) => (
               <tr key={i}>
-                <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
+                <td style={{ fontWeight: 500 }}>
+                  {p.retro ? `${p.name} (Retro)` : p.name}
+                </td>
                 <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
                 <td>
                   {p.ishta != null ? (
@@ -1429,45 +1486,49 @@ color: #fff;
         </table>
       </div>
 
-      {/* Planet Placements */}
-      <div className="mt-6 table-scroll-container">
-        <table className="planet-table">
-          <thead>
-            <tr>
-              <th>Planet</th>
-              <th>Sign</th>
-              <th>House</th>
-              <th>Normal Degree</th>
-              <th>Full Degree</th>
-              <th>Retro</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(fDetails?.placements || [])
-              .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
-              .map((p, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 500 }}>{p.name}</td>
-                  <td>{p.currentSign || '—'}</td>
-                  <td>{p.house ?? '—'}</td>
-                  <td>
-                    {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
-                  </td>
-                  <td>
-                    {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
-                  </td>
-                  <td>
-                    {p.retro ? (
-                      <span style={{ color: '#198754' }}>Retro</span>
-                    ) : (
-                      <span className="retro-badge">Not Retro</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+{/* Planet Placements */}
+<div className="mt-6 table-scroll-container">
+  <table className="planet-table">
+<thead>
+  <tr>
+    <th>Planet</th>
+    <th>Sign</th>
+    <th>House</th>
+    <th>Nakshatra (Pada)</th>
+    <th>Degrees</th>
+  </tr>
+</thead>
+<tbody>
+  {(fDetails?.placements || []).map((p, i) => {
+    const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
+    const degreesDisplay =
+      [
+        typeof p.fullDegree === "number"
+          ? `Full: ${p.fullDegree.toFixed(2)}°`
+          : null,
+        typeof p.normDegree === "number"
+          ? `Norm: ${p.normDegree.toFixed(2)}°`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || "—";
+
+    return (
+      <tr key={i}>
+        <td style={{ fontWeight: 500 }}>
+           {p.retro ? `${p.name} (Retro)` : p.name}
+        </td>
+        <td>{p.currentSign || "—"}</td>
+        <td>{p.house ?? "—"}</td>
+        <td>{nakshatraDisplay}</td>
+        <td>{degreesDisplay}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
+  </table>
+</div>
     </div>
 
     {/* Male Details */}
@@ -1483,9 +1544,9 @@ color: #fff;
           <thead>
             <tr>
               <th>Planet</th>
-              <th>Strength %</th>
-              <th>Ishta %</th>
-              <th>Kashta %</th>
+              <th>Strength</th>
+              <th>Ishta</th>
+              <th>Kashta</th>
             </tr>
           </thead>
           <tbody>
@@ -1519,45 +1580,49 @@ color: #fff;
         </table>
       </div>
 
-      {/* Planet Placements */}
-      <div className="mt-6 table-scroll-container">
-        <table className="planet-table">
-          <thead>
-            <tr>
-              <th>Planet</th>
-              <th>Sign</th>
-              <th>House</th>
-              <th>Normal Degree</th>
-              <th>Full Degree</th>
-              <th>Retro</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(mDetails?.placements || [])
-              .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
-              .map((p, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 500 }}>{p.name}</td>
-                  <td>{p.currentSign || '—'}</td>
-                  <td>{p.house ?? '—'}</td>
-                  <td>
-                    {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
-                  </td>
-                  <td>
-                    {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
-                  </td>
-                  <td>
-                    {p.retro ? (
-                      <span style={{ color: '#198754' }}>Retro</span>
-                    ) : (
-                      <span className="retro-badge">Not Retro</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+{/* Planet Placements */}
+<div className="mt-6 table-scroll-container">
+  <table className="planet-table">
+<thead>
+  <tr>
+    <th>Planet</th>
+    <th>Sign</th>
+    <th>House</th>
+    <th>Nakshatra (Pada)</th>
+    <th>Degrees</th>
+  </tr>
+</thead>
+<tbody>
+  {(mDetails?.placements || []).map((p, i) => {
+    const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
+    const degreesDisplay =
+      [
+        typeof p.fullDegree === "number"
+          ? `Full: ${p.fullDegree.toFixed(2)}°`
+          : null,
+        typeof p.normDegree === "number"
+          ? `Norm: ${p.normDegree.toFixed(2)}°`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || "—";
+
+    return (
+      <tr key={i}>
+        <td style={{ fontWeight: 500 }}>
+            {p.retro ? `${p.name} (Retro)` : p.name}
+        </td>
+        <td>{p.currentSign || "—"}</td>
+        <td>{p.house ?? "—"}</td>
+        <td>{nakshatraDisplay}</td>
+        <td>{degreesDisplay}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
+  </table>
+</div>
     </div>
   </div>
 )}
