@@ -10,26 +10,77 @@ import {
 } from 'lucide-react'
 import './numerology.css'
 
+/**
+ * NumerologyPage Component
+ * 
+ * A React component for performing comprehensive numerology calculations based on Pythagorean and Chaldean systems.
+ * It computes core numbers (Destiny, Soul Urge, Dream, Power, Life Path, Mulank), composite performance scores,
+ * and provides timing analysis. Includes localStorage-based history for up to 10 calculations with comparison table.
+ * 
+ * Features:
+ * - Real-time calculation on input change using useMemo.
+ * - Handles master numbers (11, 22, 33) without reduction.
+ * - Composite scoring averages Pythagorean and Chaldean traits across Fame, Wealth, Luck, Health, Speed.
+ * - History management: save, delete, clear (max 10 entries).
+ * - Responsive two-column layout with charts for system understanding.
+ * - Validation for required fields before saving.
+ * 
+ * Dependencies:
+ * - React hooks: useState, useEffect, useMemo.
+ * - Lucide React icons for UI elements.
+ * - External CSS: './numerology.css' for styling (assumed to define orb animations, cards, etc.).
+ * 
+ * Styling Notes:
+ * - Golden/orange theme with section-based color coding (yellow for totals, orange/purple/green for cores, etc.).
+ * - Progress bars for composite scores.
+ * - History table with 12-point comparison columns.
+ * 
+ * @returns {JSX.Element} The rendered numerology calculator page.
+ */
 export default function NumerologyPage() {
-  const [fullName, setFullName] = useState('')
-  const [birthDate, setBirthDate] = useState('')
-  const [history, setHistory] = useState([])
+  // Form input states
+  const [fullName, setFullName] = useState('') // User's full birth name for letter-based calculations
+  const [birthDate, setBirthDate] = useState('') // Birth date (YYYY-MM-DD) for Life Path and Mulank
+  const [history, setHistory] = useState([]) // Array of saved calculation history objects
 
   // Numerology data constants
+  /**
+   * Pythagorean letter-to-number mapping (A=1, B=2, ..., I=9, J=1, etc.).
+   * Used for Destiny, Soul Urge, and Dream numbers.
+   */
   const PYTHAGOREAN_MAP = {
     A:1, J:1, S:1, B:2, K:2, T:2, C:3, L:3, U:3, D:4, M:4, V:4,
     E:5, N:5, W:5, F:6, O:6, X:6, G:7, P:7, Y:7, H:8, Q:8, Z:8, I:9, R:9
   }
 
+  /**
+   * Chaldean letter-to-number mapping (A=1, B=2, ..., no 9 assignment).
+   * Used for outer manifestation and composite scoring.
+   */
   const CHALDEAN_MAP = {
     A:1, I:1, J:1, Q:1, Y:1, B:2, K:2, R:2, C:3, G:3, L:3, S:3,
     D:4, M:4, T:4, E:5, H:5, N:5, X:5, U:6, V:6, W:6, O:7, Z:7, F:8, P:8
   }
 
+  /**
+   * Standard vowels for Soul Urge calculation (Y treated contextually).
+   */
   const VOWELS_STANDARD = ['A', 'E', 'I', 'O', 'U']
+
+  /**
+   * Master numbers that are not reduced further.
+   */
   const MASTER_NUMBERS = [11, 22, 33]
+
+  /**
+   * localStorage key for persisting history.
+   */
   const NUMEROLOGY_HISTORY_KEY = 'numerology_history_v2'
 
+  /**
+   * Archetype and trait ratings (1-5 stars) for numbers 1-9.
+   * Used for composite scoring across Fame, Wealth, Luck, Health, Speed.
+   */
   const NUMBER_TRAITS = {
     1: { archetype: "Pioneer / Leader", Fame: 4, Wealth: 4, Luck: 3, Health: 2, Speed: 5 },
     2: { archetype: "Diplomat / Peacemaker", Fame: 2, Wealth: 2, Luck: 4, Health: 3, Speed: 2 },
@@ -42,6 +93,10 @@ export default function NumerologyPage() {
     9: { archetype: "Warrior / Visionary", Fame: 4, Wealth: 2, Luck: 3, Health: 1, Speed: 3 }
   }
 
+  /**
+   * Timing analysis descriptions based on Life Path number.
+   * Provides insights into success timing and karmic themes.
+   */
   const TIMING_ANALYSIS = {
     1: "Early Success (before 30). Strong leadership presence opens doors quickly.",
     5: "Early Success (before 30). Adaptability creates opportunities early.",
@@ -58,6 +113,12 @@ export default function NumerologyPage() {
   }
 
   // Helper functions
+  /**
+   * Reduces a number to a single digit, preserving master numbers (11, 22, 33).
+   * Recursively sums digits until single digit or master number.
+   * @param {number|null} num - Input number to reduce.
+   * @returns {number|null} Reduced number or null if invalid input.
+   */
   const reduceNumber = (num) => {
     if (num === null || isNaN(num) || num === 0) return null
     let current = num
@@ -71,6 +132,14 @@ export default function NumerologyPage() {
     return current
   }
 
+  /**
+   * Determines if a character is a vowel, with special handling for 'Y'.
+   * 'Y' is a vowel if not surrounded by vowels or at word boundaries.
+   * @param {string} char - Character to check (uppercase).
+   * @param {string} str - Full string for context.
+   * @param {number} index - Position of char in str.
+   * @returns {boolean} True if vowel.
+   */
   const isVowel = (char, str, index) => {
     if (VOWELS_STANDARD.includes(char)) return true
     if (char === 'Y') {
@@ -83,6 +152,11 @@ export default function NumerologyPage() {
     return false
   }
 
+  /**
+   * Reduces a Life Path component (month/day/year) to single digit or master number.
+   * @param {number} n - Input number (month, day, or year).
+   * @returns {number} Reduced value.
+   */
   const reduceLifePathComponent = (n) => {
     let sum = n
     while (sum > 9 && ![11, 22, 33].includes(sum)) {
@@ -91,6 +165,12 @@ export default function NumerologyPage() {
     return sum
   }
 
+  /**
+   * Calculates Life Path number from birth date.
+   * Sums reduced month + day + year.
+   * @param {string} dateStr - YYYY-MM-DD birth date.
+   * @returns {number|null} Life Path number or null if invalid.
+   */
   const calculateLifePath = (dateStr) => {
     if (!dateStr) return null
     const [year, month, day] = dateStr.split('-').map(v => parseInt(v))
@@ -98,6 +178,11 @@ export default function NumerologyPage() {
     return reduceNumber(reduceLifePathComponent(month) + reduceLifePathComponent(day) + reduceLifePathComponent(year))
   }
 
+  /**
+   * Calculates Mulank (day number) from birth date.
+   * @param {string} dateStr - YYYY-MM-DD birth date.
+   * @returns {number|null} Mulank or null if invalid.
+   */
   const calculateMulank = (dateStr) => {
     if (!dateStr) return null
     const day = parseInt(dateStr.split('-')[2])
@@ -105,6 +190,13 @@ export default function NumerologyPage() {
     return reduceLifePathComponent(day)
   }
 
+  /**
+   * Computes composite trait scores by averaging Pythagorean and Chaldean ratings.
+   * Converts to stars (1-5) and percentages (0-100).
+   * @param {number} pythagorean - Pythagorean reduced number.
+   * @param {number} chaldean - Chaldean reduced number.
+   * @returns {object} Composite scores for Fame, Wealth, etc.
+   */
   const getCompositeScores = (pythagorean, chaldean) => {
     const pythTraits = NUMBER_TRAITS[pythagorean] || {}
     const chalTraits = NUMBER_TRAITS[chaldean] || {}
@@ -122,6 +214,13 @@ export default function NumerologyPage() {
   }
 
   // Main calculation function
+  /**
+   * Performs full numerology calculation for name and birth date.
+   * Computes totals, reductions, core numbers, and composites.
+   * @param {string} rawName - Raw full name input.
+   * @param {string} dateStr - YYYY-MM-DD birth date.
+   * @returns {object|null} Calculation results or null if insufficient data.
+   */
   const performCalculation = (rawName, dateStr) => {
     const name = rawName.trim()
     const lifePath = calculateLifePath(dateStr)
@@ -189,11 +288,18 @@ export default function NumerologyPage() {
   }
 
   // Calculate results whenever inputs change
+  /**
+   * Memoized results object, recomputed on fullName or birthDate change.
+   */
   const results = useMemo(() => {
     return performCalculation(fullName, birthDate) || {}
   }, [fullName, birthDate])
 
   // History management
+  /**
+   * Retrieves history from localStorage.
+   * @returns {array} History array or empty on error.
+   */
   const getHistory = () => {
     try {
       const stored = localStorage.getItem(NUMEROLOGY_HISTORY_KEY)
@@ -203,6 +309,10 @@ export default function NumerologyPage() {
     }
   }
 
+  /**
+   * Saves result to history: dedupes by name+DOB, unshifts, limits to 10.
+   * @param {object} result - Calculation result to save.
+   */
   const saveToHistory = (result) => {
     let currentHistory = getHistory()
     const key = `${result.name.toUpperCase()}-${result.dob}`
@@ -213,18 +323,28 @@ export default function NumerologyPage() {
     setHistory(currentHistory)
   }
 
+  /**
+   * Saves current results to history if valid.
+   */
   const saveCurrentResult = () => {
     if (results && results.lifePath !== null && results.destiny !== null) {
       saveToHistory(results)
     }
   }
 
+  /**
+   * Deletes a history item by ID.
+   * @param {number} id - Item ID to delete.
+   */
   const deleteHistoryItem = (id) => {
     const updated = history.filter(item => item.id !== id)
     localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(updated))
     setHistory(updated)
   }
 
+  /**
+   * Clears all history from localStorage.
+   */
   const clearHistory = () => {
     localStorage.removeItem(NUMEROLOGY_HISTORY_KEY)
     setHistory([])
@@ -236,9 +356,18 @@ export default function NumerologyPage() {
   }, [])
 
   // Check if save button should be enabled
+  /**
+   * Determines if current results are savable (requires destiny, lifePath, composite).
+   */
   const canSave = results && results.destiny !== null && results.lifePath !== null && results.composite !== null
 
   // Helper function to render detail rows
+  /**
+   * Renders a composite score row with progress bar and percentage.
+   * @param {string} label - Metric label (e.g., 'Fame Index').
+   * @param {object} data - Score data {percent}.
+   * @returns {JSX.Element|null} Row element or null if no data.
+   */
   const renderDetailRow = (label, data) => {
     if (!data) return null
     
@@ -259,7 +388,7 @@ export default function NumerologyPage() {
   return (
     <div className="numerology-container">
       <div className="app">
-              {/* Orbs */}
+        {/* Orbs */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
           <div className="orb orb2" />
@@ -278,518 +407,517 @@ export default function NumerologyPage() {
 
         {/* Two Column Layout */}
         <div className="two-column-layout">
-        {/* Form Section - Centered */}
-        <div className="form-container">
-          <div className="form-wrapper">
-            <div className="form-card">
-              {/* Form Header */}
-              <div className="form-header">
-                <div className="form-icon-circle">
-                  <Calculator className="w-7 h-7 text-white" />
+          {/* Form Section - Centered */}
+          <div className="form-container">
+            <div className="form-wrapper">
+              <div className="form-card">
+                {/* Form Header */}
+                <div className="form-header">
+                  <div className="form-icon-circle">
+                    <Calculator className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="form-header-text">
+                    <h3 className="form-header-title">Your Details</h3>
+                    <p className="form-header-subtitle">Enter your information below</p>
+                  </div>
                 </div>
-                <div className="form-header-text">
-                  <h3 className="form-header-title">Your Details</h3>
-                  <p className="form-header-subtitle">Enter your information below</p>
-                </div>
-              </div>
 
-              {/* Full Name Input */}
-              <div className="input-group">
-                <label htmlFor="fullName" className="input-label">
-                  <User className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
-                  Full Birth Name
-                  <span className="required-badge">*Required</span>
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  placeholder="e.g., Emily Ann Brown"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-              
-              {/* Date of Birth Input */}
-              <div className="input-group">
-                <label htmlFor="birthDate" className="input-label">
-                  <Calendar className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
-                  Date of Birth
-                  <span className="required-badge">*Required</span>
-                </label>
-                <input
-                  id="birthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="input-field date-input"
-                />
-                <p className="input-hint">Required for Life Path & Timing analysis</p>
-              </div>
-              
-              {/* Save Button */}
-              <button
-                onClick={saveCurrentResult}
-                disabled={!canSave}
-                className="save-button"
-              >
-                <Save className="w-5 h-5" />
-                Save to History
-              </button>
-              
-              {/* Info Text */}
-              <div className="info-box">
-                <p className="info-text">
-                  💡 Your calculation will be saved for comparison for comparison<br />
-                  in the history table below
-                </p>
+                {/* Full Name Input */}
+                <div className="input-group">
+                  <label htmlFor="fullName" className="input-label">
+                    <User className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
+                    Full Birth Name
+                    <span className="required-badge">*Required</span>
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    placeholder="e.g., Emily Ann Brown"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                
+                {/* Date of Birth Input */}
+                <div className="input-group">
+                  <label htmlFor="birthDate" className="input-label">
+                    <Calendar className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
+                    Date of Birth
+                    <span className="required-badge">*Required</span>
+                  </label>
+                  <input
+                    id="birthDate"
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="input-field date-input"
+                  />
+                  <p className="input-hint">Required for Life Path & Timing analysis</p>
+                </div>
+                
+                {/* Save Button */}
+                <button
+                  onClick={saveCurrentResult}
+                  disabled={!canSave}
+                  className="save-button"
+                >
+                  <Save className="w-5 h-5" />
+                  Save to History
+                </button>
+                
+                {/* Info Text */}
+                <div className="info-box">
+                  <p className="info-text">
+                    💡 Your calculation will be saved for comparison for comparison<br />
+                    in the history table below
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        {/* End LEFT COLUMN */}
+          {/* End LEFT COLUMN */}
 
-        {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
-        <div className="right-column-outer-vehicle">
-        <section className="results-section outer-vehicle-section">
-          <h2 className="section-title outer-vehicle">
-            Outer Vehicle: Chaldean Vibration & Manifestation
+          {/* RIGHT COLUMN - Outer Vehicle Section (35%) */}
+          <div className="right-column-outer-vehicle">
+            <section className="results-section outer-vehicle-section">
+              <h2 className="section-title outer-vehicle">
+                Outer Vehicle: Chaldean Vibration & Manifestation
+              </h2>
+              <div className="grid-2-vertical">
+                <div className="result-card yellow">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">Σ</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Pythagorean Total</h3>
+                        <p className="card-desc">Raw sum and its reduced digit used for Destiny</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Value</span>
+                      <span className="time-value">
+                        {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="result-card yellow">
+                  <div className="card-header">
+                    <div className="header-content">
+                      <div className="icon-wrapper">
+                        <span className="card-icon">☥</span>
+                      </div>
+                      <div className="title-group">
+                        <h3 className="card-title">Chaldean Total</h3>
+                        <p className="card-desc">Esoteric vibration used in composite scoring</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card-body">
+                    <div className="time-row">
+                      <span className="time-label">Value</span>
+                      <span className="time-value">
+                        {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+          {/* End RIGHT COLUMN */}
+        </div>
+        {/* End Two Column Layout */}
+
+        {/* 2) Inner Engine */}
+        <section className="results-section">
+          <h2 className="section-title inner-engine">
+            Inner Engine (Pythagorean): Purpose & Psychology
           </h2>
-          <div className="grid-2-vertical">
-            <div className="result-card yellow">
+          <div className="grid-3">
+            <div className="result-card orange">
               <div className="card-header">
                 <div className="header-content">
                   <div className="icon-wrapper">
-                    <span className="card-icon">Σ</span>
+                    <span className="card-icon">1</span>
                   </div>
                   <div className="title-group">
-                    <h3 className="card-title">Pythagorean Total</h3>
-                    <p className="card-desc">Raw sum and its reduced digit used for Destiny</p>
+                    <h3 className="card-title">Destiny / Expression</h3>
+                    <p className="card-desc">Life purpose, public path (Pythagorean total reduced)</p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
-                  <span className="time-label">Value</span>
-                  <span className="time-value">
-                    {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : ''}`}>
+                    {results.destiny || '-'}
                   </span>
                 </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #1</span>
               </div>
             </div>
-            <div className="result-card yellow">
+            
+            <div className="result-card purple">
               <div className="card-header">
                 <div className="header-content">
                   <div className="icon-wrapper">
-                    <span className="card-icon">☥</span>
+                    <span className="card-icon">2</span>
                   </div>
                   <div className="title-group">
-                    <h3 className="card-title">Chaldean Total</h3>
-                    <p className="card-desc">Esoteric vibration used in composite scoring</p>
+                    <h3 className="card-title">Soul Urge / Heart's Desire</h3>
+                    <p className="card-desc">Innermost desires (Vowels only)</p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
-                  <span className="time-label">Value</span>
-                  <span className="time-value">
-                    {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : ''}`}>
+                    {results.soulUrge || '-'}
                   </span>
                 </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #2</span>
+              </div>
+            </div>
+            
+            <div className="result-card green">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">3</span>
+                  </div>
+                  <div className="title-group">
+                    <h3 className="card-title">Personality / Dream</h3>
+                    <p className="card-desc">Outer impression (Consonants only)</p>
+                  </div>
+                </div>
+              </div>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : ''}`}>
+                    {results.dream || '-'}
+                  </span>
+                </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #3</span>
               </div>
             </div>
           </div>
         </section>
-      </div>
-      {/* End RIGHT COLUMN */}
-    </div>
-    {/* End Two Column Layout */}
 
-    {/* 2) Inner Engine */}
-    <section className="results-section">
-              <h2 className="section-title inner-engine">
-                Inner Engine (Pythagorean): Purpose & Psychology
-              </h2>
-              <div className="grid-3">
-                <div className="result-card orange">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">1</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Destiny / Expression</h3>
-                        <p className="card-desc">Life purpose, public path (Pythagorean total reduced)</p>
-                      </div>
-                    </div>
+        {/* 3) Timing */}
+        <section className="results-section">
+          <h2 className="section-title timing">
+            Timing & Karmic Script (DOB & Composite)
+          </h2>
+          <div className="grid-3">
+            <div className="result-card gray">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">4</span>
                   </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : ''}`}>
-                        {results.destiny || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #1</span>
-                  </div>
-                </div>
-                
-                <div className="result-card purple">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">2</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Soul Urge / Heart's Desire</h3>
-                        <p className="card-desc">Innermost desires (Vowels only)</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : ''}`}>
-                        {results.soulUrge || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #2</span>
-                  </div>
-                </div>
-                
-                <div className="result-card green">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">3</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Personality / Dream</h3>
-                        <p className="card-desc">Outer impression (Consonants only)</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : ''}`}>
-                        {results.dream || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #3</span>
+                  <div className="title-group">
+                    <h3 className="card-title">Power Number</h3>
+                    <p className="card-desc">Activation Frequency (Life Path + Destiny)</p>
                   </div>
                 </div>
               </div>
-            </section>
-
-            {/* 3) Timing */}
-            <section className="results-section">
-              <h2 className="section-title timing">
-                Timing & Karmic Script (DOB & Composite)
-              </h2>
-              <div className="grid-3">
-                <div className="result-card gray">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">4</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Power Number</h3>
-                        <p className="card-desc">Activation Frequency (Life Path + Destiny)</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : ''}`}>
-                        {results.powerNumber || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #4</span>
-                  </div>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : ''}`}>
+                    {results.powerNumber || '-'}
+                  </span>
                 </div>
-                
-                <div className="result-card blue">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">5</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Life Path</h3>
-                        <p className="card-desc">Unchangeable karmic script and timing modifier</p>
-                      </div>
-                    </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #4</span>
+              </div>
+            </div>
+            
+            <div className="result-card blue">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">5</span>
                   </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : ''}`}>
-                        {results.lifePath || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #5</span>
-                  </div>
-                </div>
-                
-                <div className="result-card red">
-                  <div className="card-header">
-                    <div className="header-content">
-                      <div className="icon-wrapper">
-                        <span className="card-icon">6</span>
-                      </div>
-                      <div className="title-group">
-                        <h3 className="card-title">Day Number (Mulank)</h3>
-                        <p className="card-desc">Innate, core daily characteristics</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <div className="time-row">
-                      <span className="time-label">Number</span>
-                      <span className={`time-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : ''}`}>
-                        {results.mulank || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="card-footer">
-                    <span className="period-number">Core Number #6</span>
+                  <div className="title-group">
+                    <h3 className="card-title">Life Path</h3>
+                    <p className="card-desc">Unchangeable karmic script and timing modifier</p>
                   </div>
                 </div>
               </div>
-            </section>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : ''}`}>
+                    {results.lifePath || '-'}
+                  </span>
+                </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #5</span>
+              </div>
+            </div>
+            
+            <div className="result-card red">
+              <div className="card-header">
+                <div className="header-content">
+                  <div className="icon-wrapper">
+                    <span className="card-icon">6</span>
+                  </div>
+                  <div className="title-group">
+                    <h3 className="card-title">Day Number (Mulank)</h3>
+                    <p className="card-desc">Innate, core daily characteristics</p>
+                  </div>
+                </div>
+              </div>
+              <div className="card-body">
+                <div className="time-row">
+                  <span className="time-label">Number</span>
+                  <span className={`time-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : ''}`}>
+                    {results.mulank || '-'}
+                  </span>
+                </div>
+              </div>
+              <div className="card-footer">
+                <span className="period-number">Core Number #6</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            {/* Composite Scoring */}
-            {canSave && (
-              <section className="results-section">
-                <h2 className="section-title composite">
-                  Composite Performance Scoring (Inner Engine × Outer Vehicle)
-                </h2>
-                
-                <div className="composite-card">
-                  <h3 className="composite-title">Composite Index Summary</h3>
-                  <p className="composite-subtitle">
-                    Pythagorean Engine: <strong>{results.destiny} ({(NUMBER_TRAITS[results.destiny] || {}).archetype || '-'})</strong> |
-                    Chaldean Vehicle: <strong>{results.chaldeanReduced} ({(NUMBER_TRAITS[results.chaldeanReduced] || {}).archetype || '-'})</strong>
+        {/* Composite Scoring */}
+        {canSave && (
+          <section className="results-section">
+            <h2 className="section-title composite">
+              Composite Performance Scoring (Inner Engine × Outer Vehicle)
+            </h2>
+            
+            <div className="composite-card">
+              <h3 className="composite-title">Composite Index Summary</h3>
+              <p className="composite-subtitle">
+                Pythagorean Engine: <strong>{results.destiny} ({(NUMBER_TRAITS[results.destiny] || {}).archetype || '-'})</strong> |
+                Chaldean Vehicle: <strong>{results.chaldeanReduced} ({(NUMBER_TRAITS[results.chaldeanReduced] || {}).archetype || '-'})</strong>
+              </p>
+              <div className="space-y-2 text-sm">
+                {results.composite && (
+                  <>
+                    {renderDetailRow('Fame Index', results.composite.fame)}
+                    {renderDetailRow('Wealth Index', results.composite.wealth)}
+                    {renderDetailRow('Luck Index', results.composite.luck)}
+                    {renderDetailRow('Health Index', results.composite.health)}
+                    {renderDetailRow('Speed Index', results.composite.speed)}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Timing Analysis */}
+            
+            {results.lifePath !== null && results.powerNumber !== null && (
+              <div className="timing-card" style={{marginTop: '2rem'}}>
+                <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
+                <div className="timing-content">
+                  <p>{TIMING_ANALYSIS[results.lifePath] || "General Life Path timing suggests a steady pace of development."}</p>
+                  <p style={{marginTop: '1rem'}}>
+                    Your <strong>Power Number is {results.powerNumber}</strong> {(results.powerNumber === 1 || results.powerNumber === 5) 
+                      ? "(High Activation). This accelerates your Life Path's potential." 
+                      : "(Steady Activation). Expect compounding results with patience."}
                   </p>
-                  <div className="space-y-2 text-sm">
-                    {results.composite && (
-                      <>
-                        {renderDetailRow('Fame Index', results.composite.fame)}
-                        {renderDetailRow('Wealth Index', results.composite.wealth)}
-                        {renderDetailRow('Luck Index', results.composite.luck)}
-                        {renderDetailRow('Health Index', results.composite.health)}
-                        {renderDetailRow('Speed Index', results.composite.speed)}
-                      </>
-                    )}
-                  </div>
                 </div>
-
-                {/* Timing Analysis */}
-                
-                {results.lifePath !== null && results.powerNumber !== null && (
-                  <div className="timing-card" style={{marginTop: '2rem'}}>
-                    <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
-                    <div className="timing-content">
-                      <p>{TIMING_ANALYSIS[results.lifePath] || "General Life Path timing suggests a steady pace of development."}</p>
-                      <p style={{marginTop: '1rem'}}>
-                        Your <strong>Power Number is {results.powerNumber}</strong> {(results.powerNumber === 1 || results.powerNumber === 5) 
-                          ? "(High Activation). This accelerates your Life Path's potential." 
-                          : "(Steady Activation). Expect compounding results with patience."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </section>
+              </div>
             )}
+          </section>
+        )}
 
-            {/* History */}
-            <section className="results-section">
-              <div className="history-header">
-                <h2 className="section-title history" style={{border: 'none', padding: 0, margin: 0}}>Calculation History (12-Point Comparison)</h2>
-                {history.length > 0 && (
-                  <button
-                    onClick={clearHistory}
-                    className="clear-history-btn"
-                  >
-                    Clear History
-                  </button>
-                )}
-              </div>
-              
-              <div className="history-card">
-                {history.length === 0 ? (
-                  <p className="history-empty">No calculation history yet.</p>
-                ) : (
-                  <div className="history-table-container">
-                    <table className="history-table">
-                      <thead>
-                        <tr>
-                          <th>Name / DOB</th>
-                          <th className="text-blue-600">#1</th>
-                          <th className="text-green-600">#2</th>
-                          <th className="text-teal-600">#3</th>
-                          <th className="text-red-600">#4</th>
-                          <th className="text-orange-600">#5</th>
-                          <th className="text-purple-600">#6</th>
-                          <th className="text-yellow-600">#7</th>
-                          <th className="text-red-700">Fame</th>
-                          <th className="text-yellow-700">Wealth</th>
-                          <th className="text-blue-700">Luck</th>
-                          <th className="text-green-700">Health</th>
-                          <th className="text-indigo-700">Speed</th>
-                          <th></th>
+        {/* History */}
+        <section className="results-section">
+          <div className="history-header">
+            <h2 className="section-title history" style={{border: 'none', padding: 0, margin: 0}}>Calculation History (12-Point Comparison)</h2>
+            {history.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="clear-history-btn"
+              >
+                Clear History
+              </button>
+            )}
+          </div>
+          
+          <div className="history-card">
+            {history.length === 0 ? (
+              <p className="history-empty">No calculation history yet.</p>
+            ) : (
+              <div className="history-table-container">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Name / DOB</th>
+                      <th className="text-blue-600">#1</th>
+                      <th className="text-green-600">#2</th>
+                      <th className="text-teal-600">#3</th>
+                      <th className="text-red-600">#4</th>
+                      <th className="text-orange-600">#5</th>
+                      <th className="text-purple-600">#6</th>
+                      <th className="text-yellow-600">#7</th>
+                      <th className="text-red-700">Fame</th>
+                      <th className="text-yellow-700">Wealth</th>
+                      <th className="text-blue-700">Luck</th>
+                      <th className="text-green-700">Health</th>
+                      <th className="text-indigo-700">Speed</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((item) => {
+                      const displayName = item.name.length > 20 ? item.name.slice(0, 17) + '...' : item.name
+                      const displayDob = item.dob ? item.dob.slice(5) : 'N/A'
+                      const metrics = item.composite || {
+                        fame: { percent: 0 },
+                        wealth: { percent: 0 },
+                        luck: { percent: 0 },
+                        health: { percent: 0 },
+                        speed: { percent: 0 }
+                      }
+                      
+                      return (
+                        <tr key={item.id}>
+                          <td title={`${item.name} (${item.dob || 'N/A'})`}>
+                            <span className="history-name">{displayName}</span>
+                            <span className="history-dob">{displayDob}</span>
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.destiny) ? 'font-bold text-red-600' : ''}>
+                            {item.destiny || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.soulUrge) ? 'font-bold text-red-600' : ''}>
+                            {item.soulUrge || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.dream) ? 'font-bold text-red-600' : ''}>
+                            {item.dream || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.powerNumber) ? 'font-bold text-red-600' : ''}>
+                            {item.powerNumber || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.lifePath) ? 'font-bold text-red-600' : ''}>
+                            {item.lifePath || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.mulank) ? 'font-bold text-red-600' : ''}>
+                            {item.mulank || '-'}
+                          </td>
+                          <td className={MASTER_NUMBERS.includes(item.chaldeanReduced) ? 'font-bold text-red-600' : ''}>
+                            {item.chaldeanReduced || '-'}
+                          </td>
+                          <td className="font-semibold">{metrics.fame.percent.toFixed(0)}%</td>
+                          <td className="font-semibold">{metrics.wealth.percent.toFixed(0)}%</td>
+                          <td className="font-semibold">{metrics.luck.percent.toFixed(0)}%</td>
+                          <td className="font-semibold">{metrics.health.percent.toFixed(0)}%</td>
+                          <td className="font-semibold">{metrics.speed.percent.toFixed(0)}%</td>
+                          <td>
+                            <button
+                              onClick={() => deleteHistoryItem(item.id)}
+                              className="delete-btn"
+                              aria-label={`Delete ${item.name}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {history.map((item) => {
-                          const displayName = item.name.length > 20 ? item.name.slice(0, 17) + '...' : item.name
-                          const displayDob = item.dob ? item.dob.slice(5) : 'N/A'
-                          const metrics = item.composite || {
-                            fame: { percent: 0 },
-                            wealth: { percent: 0 },
-                            luck: { percent: 0 },
-                            health: { percent: 0 },
-                            speed: { percent: 0 }
-                          }
-                          
-                          return (
-                            <tr key={item.id}>
-                              <td title={`${item.name} (${item.dob || 'N/A'})`}>
-                                <span className="history-name">{displayName}</span>
-                                <span className="history-dob">{displayDob}</span>
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.destiny) ? 'font-bold text-red-600' : ''}>
-                                {item.destiny || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.soulUrge) ? 'font-bold text-red-600' : ''}>
-                                {item.soulUrge || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.dream) ? 'font-bold text-red-600' : ''}>
-                                {item.dream || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.powerNumber) ? 'font-bold text-red-600' : ''}>
-                                {item.powerNumber || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.lifePath) ? 'font-bold text-red-600' : ''}>
-                                {item.lifePath || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.mulank) ? 'font-bold text-red-600' : ''}>
-                                {item.mulank || '-'}
-                              </td>
-                              <td className={MASTER_NUMBERS.includes(item.chaldeanReduced) ? 'font-bold text-red-600' : ''}>
-                                {item.chaldeanReduced || '-'}
-                              </td>
-                              <td className="font-semibold">{metrics.fame.percent.toFixed(0)}%</td>
-                              <td className="font-semibold">{metrics.wealth.percent.toFixed(0)}%</td>
-                              <td className="font-semibold">{metrics.luck.percent.toFixed(0)}%</td>
-                              <td className="font-semibold">{metrics.health.percent.toFixed(0)}%</td>
-                              <td className="font-semibold">{metrics.speed.percent.toFixed(0)}%</td>
-                              <td>
-                                <button
-                                  onClick={() => deleteHistoryItem(item.id)}
-                                  className="delete-btn"
-                                  aria-label={`Delete ${item.name}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </section>
+            )}
+          </div>
+        </section>
 
-            {/* System Charts */}
-            <section className="system-charts-card">
-              <h2 className="system-charts-title">
-                Understanding the Core Systems
-              </h2>
-              <p className="system-charts-description">
-                The <strong>Pythagorean System</strong> (Inner Self) is used for Destiny, Soul Urge, and Dream.
-                The <strong>Chaldean System</strong> (Outer Manifestation) is used for material reality and timing influence.
-              </p>
-              
-              <div className="grid-2">
-                <div>
-                  <h3 className="chart-title pythagorean">Pythagorean Chart (Inner Self)</h3>
-                  <div className="chart-table-container">
-                    <table className="chart-table pythagorean">
-                      <thead>
-                        <tr>
-                          {[1,2,3,4,5,6,7,8,9].map(num => (
-                            <th key={num}>{num}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td>
-                        </tr>
-                        <tr>
-                          <td>J</td><td>K</td><td>L</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td>
-                        </tr>
-                        <tr>
-                          <td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td><td></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="chart-title chaldean">Chaldean Chart (Outer Manifestation)</h3>
-                  <div className="chart-table-container">
-                    <table className="chart-table chaldean">
-                      <thead>
-                        <tr>
-                          {[1,2,3,4,5,6,7,8].map(num => (
-                            <th key={num}>{num}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>A, I, J, Q, Y</td>
-                          <td>B, K, R</td>
-                          <td>C, G, L, S</td>
-                          <td>D, M, T</td>
-                          <td>E, H, N, X</td>
-                          <td>U, V, W</td>
-                          <td>O, Z</td>
-                          <td>F, P</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+        {/* System Charts */}
+        <section className="system-charts-card">
+          <h2 className="system-charts-title">
+            Understanding the Core Systems
+          </h2>
+          <p className="system-charts-description">
+            The <strong>Pythagorean System</strong> (Inner Self) is used for Destiny, Soul Urge, and Dream.
+            The <strong>Chaldean System</strong> (Outer Manifestation) is used for material reality and timing influence.
+          </p>
+          
+          <div className="grid-2">
+            <div>
+              <h3 className="chart-title pythagorean">Pythagorean Chart (Inner Self)</h3>
+              <div className="chart-table-container">
+                <table className="chart-table pythagorean">
+                  <thead>
+                    <tr>
+                      {[1,2,3,4,5,6,7,8,9].map(num => (
+                        <th key={num}>{num}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td>
+                    </tr>
+                    <tr>
+                      <td>J</td><td>K</td><td>L</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td>
+                    </tr>
+                    <tr>
+                      <td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td><td></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </section>
+            </div>
+            
+            <div>
+              <h3 className="chart-title chaldean">Chaldean Chart (Outer Manifestation)</h3>
+              <div className="chart-table-container">
+                <table className="chart-table chaldean">
+                  <thead>
+                    <tr>
+                      {[1,2,3,4,5,6,7,8].map(num => (
+                        <th key={num}>{num}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>A, I, J, Q, Y</td>
+                      <td>B, K, R</td>
+                      <td>C, G, L, S</td>
+                      <td>D, M, T</td>
+                      <td>E, H, N, X</td>
+                      <td>U, V, W</td>
+                      <td>O, Z</td>
+                      <td>F, P</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <footer className="numerology-footer">
-              <p>
-                12-Point Analysis Summary (history): 1-Destiny, 2-Soul Urge, 3-Dream, 4-Power, 5-Life Path, 
-                6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
-              </p>
-            </footer>
-        </div>
+        <footer className="numerology-footer">
+          <p>
+            12-Point Analysis Summary (history): 1-Destiny, 2-Soul Urge, 3-Dream, 4-Power, 5-Life Path, 
+            6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
+          </p>
+        </footer>
       </div>
+    </div>
   )
 }
-    

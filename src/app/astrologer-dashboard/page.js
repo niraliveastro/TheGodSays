@@ -1,5 +1,34 @@
 'use client'
 
+/**
+ * Astrologer Dashboard Module
+ * 
+ * This module provides the main dashboard interface for astrologers in a consultation platform.
+ * It handles real-time call management, status updates, notifications, and call history.
+ * The dashboard supports both video and voice calls, with fallback polling for connection issues.
+ * 
+ * Key Features:
+ * - Real-time Firebase listeners for astrologer status and incoming calls.
+ * - Notification permissions and browser notifications for incoming calls.
+ * - Queue management for waiting clients.
+ * - Call actions: accept, reject, join, end calls.
+ * - Enhanced UI with hover effects, gradients, and responsive design.
+ * - Fallback polling and reconnection logic for robust connectivity.
+ * - User name resolution from multiple Firestore collections.
+ * 
+ * Dependencies:
+ * - React (useState, useEffect)
+ * - Next.js (useRouter)
+ * - Firebase Firestore (doc, updateDoc, onSnapshot, collection, query, where)
+ * - Lucide React icons
+ * - Custom components: CallNotification, VoiceCallNotification, AuthGuard
+ * - AuthContext: Provides getUserId and userProfile
+ * 
+ * Styling: Inline styles for layout, colors, and animations. Assumes global CSS variables (e.g., --color-gray-900) and classes (e.g., btn, card).
+ * 
+ * @module AstrologerDashboard
+ */
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Phone, PhoneOff, Video, Settings, CheckCircle, XCircle, Loader2 } from 'lucide-react'
@@ -10,20 +39,35 @@ import VoiceCallNotification from '@/components/VoiceCallNotification'
 import AuthGuard from '@/components/AuthGuard'
 import { useAuth } from '@/contexts/AuthContext'
 
+/**
+ * AstrologerDashboardContent Component
+ * 
+ * The core content component for the astrologer dashboard.
+ * Manages state for status, calls, queue, and handles real-time updates.
+ * Renders the UI for status control, call queue, and recent calls history.
+ * 
+ * @returns {JSX.Element} The dashboard content UI.
+ */
 function AstrologerDashboardContent() {
-  const [status, setStatus] = useState('offline')
-  const [calls, setCalls] = useState([])
-  const [queue, setQueue] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [incomingCall, setIncomingCall] = useState(null)
-  const [userNames, setUserNames] = useState({})
-  const [connectionStatus, setConnectionStatus] = useState('connecting')
-  const [notificationPermission, setNotificationPermission] = useState('default')
-  const { getUserId, userProfile } = useAuth()
-  const astrologerId = getUserId()
-  const router = useRouter()
+  // State management for dashboard data and UI
+  const [status, setStatus] = useState('offline') // Current astrologer availability status: 'online', 'busy', 'offline'
+  const [calls, setCalls] = useState([]) // Array of recent calls (all statuses)
+  const [queue, setQueue] = useState([]) // Array of queued calls (waiting clients)
+  const [loading, setLoading] = useState(true) // Initial loading state for data fetch
+  const [incomingCall, setIncomingCall] = useState(null) // Current pending incoming call
+  const [userNames, setUserNames] = useState({}) // Cache of user names by userId for display
+  const [connectionStatus, setConnectionStatus] = useState('connecting') // Realtime connection health: 'connecting', 'connected', 'disconnected'
+  const [notificationPermission, setNotificationPermission] = useState('default') // Browser notification permission status
 
-  // Request notification permission on component mount
+  // Auth and routing hooks
+  const { getUserId, userProfile } = useAuth() // Auth context for user ID and profile
+  const astrologerId = getUserId() // Current astrologer's unique ID
+  const router = useRouter() // Next.js router for navigation
+
+  /**
+   * Effect: Request browser notification permission on mount.
+   * Ensures notifications for incoming calls if granted.
+   */
   useEffect(() => {
     if ('Notification' in window) {
       if (Notification.permission === 'default') {
@@ -34,18 +78,25 @@ function AstrologerDashboardContent() {
         setNotificationPermission(Notification.permission)
       }
     }
-  }, [])
+  }, []) // Empty dependency array: runs once on mount
 
+  /**
+   * Effect: Set up real-time listeners and polling fallback.
+   * Listens for astrologer status and calls changes via Firestore.
+   * Includes connection monitoring, health checks, and visibility-based polling.
+   * Cleans up listeners and intervals on unmount.
+   */
   useEffect(() => {
-    if (!astrologerId) return
+    if (!astrologerId) return // Guard: no ID, no listeners
 
-    let unsubAstrologer, unsubCalls, pollInterval
-    let isConnected = true
+    let unsubAstrologer, unsubCalls, pollInterval // Cleanup references
+    let isConnected = true // Local flag for connection health
 
     // Enhanced real-time listener with connection monitoring
     const setupRealtimeListeners = () => {
       try {
         setConnectionStatus('connecting')
+        // Listen for astrologer status updates
         unsubAstrologer = onSnapshot(doc(db, 'astrologers', astrologerId), (doc) => {
           const data = doc.data()
           if (data) setStatus(data.status || 'offline')
@@ -57,8 +108,8 @@ function AstrologerDashboardContent() {
           setConnectionStatus('disconnected')
         })
 
+        // Query and listen for calls assigned to this astrologer
         const q = query(collection(db, 'calls'), where('astrologerId', '==', astrologerId))
-
         unsubCalls = onSnapshot(q, async (snapshot) => {
           const callsList = []
           const queueList = []
@@ -67,7 +118,7 @@ function AstrologerDashboardContent() {
           for (const doc of snapshot.docs) {
             let call = { id: doc.id, ...doc.data() }
             
-            // For completed calls, try to get billing info if missing duration/amount
+            // For completed calls, fetch billing info if missing
             if (call.status === 'completed' && (!call.durationMinutes || !call.finalAmount)) {
               try {
                 const billingDoc = await db.collection('call_billing').doc(doc.id).get()
@@ -199,6 +250,7 @@ function AstrologerDashboardContent() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
+    // Cleanup: Unsubscribe listeners and clear intervals
     return () => {
       if (unsubAstrologer) unsubAstrologer()
       if (unsubCalls) unsubCalls()
@@ -206,9 +258,13 @@ function AstrologerDashboardContent() {
       if (healthCheck) clearInterval(healthCheck)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [astrologerId])
+  }, [astrologerId]) // Dependencies: re-run if astrologerId changes
 
-  // Effect to fetch user names for calls
+  /**
+   * Effect: Fetch and cache user names for calls.
+   * Resolves names from Firestore and updates display cache.
+   * Runs when calls array changes.
+   */
   useEffect(() => {
     if (calls.length === 0) return
 
@@ -235,8 +291,12 @@ function AstrologerDashboardContent() {
     }
 
     fetchUserNames()
-  }, [calls])
+  }, [calls]) // Dependencies: re-run if calls change
 
+  /**
+   * Update astrologer status in Firestore.
+   * @param {string} newStatus - New status: 'online', 'busy', 'offline'
+   */
   const updateStatus = async (newStatus) => {
     if (!astrologerId) return
     try {
@@ -247,6 +307,13 @@ function AstrologerDashboardContent() {
     }
   }
 
+  /**
+   * Handle call actions: accept, reject, complete, etc.
+   * Updates call status in Firestore and navigates to call room if accepted.
+   * Manages astrologer status transitions (e.g., to 'busy' on accept).
+   * @param {string} callId - ID of the call to act on
+   * @param {string} action - Action: 'active', 'completed', 'rejected'
+   */
   const handleCallAction = async (callId, action) => {
     try {
       const callRef = doc(db, 'calls', callId)
@@ -302,22 +369,31 @@ function AstrologerDashboardContent() {
     }
   }
 
+  /**
+   * Get color for astrologer status indicator.
+   * @returns {string} Hex color code based on status
+   */
   const getStatusColor = () => {
     switch (status) {
-      case 'online': return '#10b981'
-      case 'busy': return '#f59e0b'
-      case 'offline': return '#6b7280'
+      case 'online': return '#10b981' // Green
+      case 'busy': return '#f59e0b' // Amber
+      case 'offline': return '#6b7280' // Gray
       default: return '#6b7280'
     }
   }
 
-  const getCallStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return '#f59e0b'
-      case 'active': return '#10b981'
-      case 'completed': return '#3b82f6'
-      case 'rejected': return '#ef4444'
-      default: return '#6b7280'
+  /**
+   * Get color for call status badge.
+   * @param {string} callStatus - Call status: 'pending', 'active', etc.
+   * @returns {string} Hex color code based on status
+   */
+  const getCallStatusColor = (callStatus) => {
+    switch (callStatus) {
+      case 'pending': return '#f59e0b' // Amber
+      case 'active': return '#10b981' // Green
+      case 'completed': return '#3b82f6' // Blue
+      case 'rejected': return '#ef4444' // Red
+      default: return '#6b7280' // Gray
     }
   }
 
@@ -349,7 +425,12 @@ function AstrologerDashboardContent() {
     return date ? date.toLocaleTimeString() : fallback
   }
 
-  // Helper to get user name from userId
+  /**
+   * Fetch user name from Firestore by userId.
+   * Tries multiple collection names as fallback.
+   * @param {string} userId - User ID to resolve name for
+   * @returns {Promise<string>} Resolved user name or fallback
+   */
   const getUserName = async (userId) => {
     if (!userId) return 'Anonymous User'
     
@@ -384,6 +465,7 @@ function AstrologerDashboardContent() {
     }
   }
 
+  // Render loading spinner
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -395,6 +477,7 @@ function AstrologerDashboardContent() {
     )
   }
 
+  // Main render: Dashboard UI
   return (
     <>
       {/* Incoming Call Notification - Enhanced with better props for styling */}
@@ -428,6 +511,7 @@ function AstrologerDashboardContent() {
         )
       )}
 
+      {/* Main Dashboard Container */}
       <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)', padding: '2rem 0' }}>
         <div className="container">
           {/* Header */}
@@ -866,6 +950,14 @@ function AstrologerDashboardContent() {
   )
 }
 
+/**
+ * AstrologerDashboard Wrapper Component
+ * 
+ * Simple wrapper that applies authentication guard.
+ * Ensures only authenticated astrologers can access the dashboard.
+ * 
+ * @returns {JSX.Element} Auth-guarded dashboard content.
+ */
 export default function AstrologerDashboard() {
   return (
     <AuthGuard requireAuth={true} allowedRoles={['astrologer']}>

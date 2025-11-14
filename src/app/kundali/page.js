@@ -13,9 +13,13 @@ import {
 } from 'lucide-react';
 import astrologyAPI from '@/lib/api';
 
-// ---------------------------------------------------------------------
-// Helper arrays
-// ---------------------------------------------------------------------
+/**
+ * Helper arrays for form options
+ * - hours12: Array of 1-12 for hour selection
+ * - minutes: Array of 0-59 for minute selection
+ * - years: Array of past 120 years from current year
+ * - months: Array of month names for reference (though not directly used in form)
+ */
 const hours12 = Array.from({ length: 12 }, (_, i) => i + 1);
 const minutes = Array.from({ length: 60 }, (_, i) => i);
 const years = Array.from({ length: 120 }, (_, i) => new Date().getFullYear() - i);
@@ -24,7 +28,52 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+/**
+ * KundaliPage Component
+ * 
+ * A React component for generating a Vedic Janam Kundali (birth chart) based on user-provided birth details.
+ * It includes a form for inputting name, gender, birth date/time, place, and language preferences.
+ * Uses geolocation suggestions via Nominatim API, an interactive calendar for date selection,
+ * and fetches an SVG chart from a custom astrology API.
+ * 
+ * Features:
+ * - Form validation for required fields.
+ * - Autocomplete suggestions for birth place with lat/long resolution.
+ * - 12-hour time picker with AM/PM.
+ * - Interactive calendar popup for date selection.
+ * - Handles timezone offset dynamically if coordinates are available (defaults to IST +5.5).
+ * - Renders SVG output inline and provides download functionality.
+ * - Responsive design with astrological-themed styling (floating orbs, gradients).
+ * - Error handling for API failures and form issues.
+ * 
+ * Dependencies:
+ * - React hooks: useState, useEffect, useRef.
+ * - Lucide React icons for UI elements.
+ * - Custom astrologyAPI for chart generation.
+ * - Nominatim (OpenStreetMap) for place suggestions.
+ * 
+ * Styling:
+ * - Inline JSX styles with CSS-in-JS.
+ * - Google Fonts: Cormorant Garamond (headings) and Inter (body).
+ * - Golden Vedic theme with blurs, animations, and responsive breakpoints.
+ * 
+ * @returns {JSX.Element} The rendered Kundali generation page.
+ */
 export default function KundaliPage() {
+  /**
+   * Form state object holding all user inputs.
+   * @type {object}
+   * @property {string} name - User's full name.
+   * @property {string} gender - Gender selection ('male', 'female', 'other').
+   * @property {string} birthDate - Birth date in YYYY-MM-DD format.
+   * @property {number} hour - Hour in 12-hour format (1-12).
+   * @property {number} minute - Minutes (0-59).
+   * @property {string} ampm - 'AM' or 'PM'.
+   * @property {string} place - Birth place text.
+   * @property {string} language - Preferred language for chart ('English', etc.).
+   * @property {number|null} latitude - Resolved latitude from place suggestion.
+   * @property {number|null} longitude - Resolved longitude from place suggestion.
+   */
   const [form, setForm] = useState({
     name: '',
     gender: 'male',
@@ -38,23 +87,32 @@ export default function KundaliPage() {
     longitude: null,
   });
 
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const suggestTimeout = useRef(null);
-  const [svgOutput, setSvgOutput] = useState('');
-  const [genError, setGenError] = useState('');
+  const [errors, setErrors] = useState({}); // Form validation errors object
+  const [submitting, setSubmitting] = useState(false); // Submission loading state
+  const [suggestions, setSuggestions] = useState([]); // Array of place suggestion objects from Nominatim
+  const [loadingSuggest, setLoadingSuggest] = useState(false); // Loading state for place suggestions
+  const suggestTimeout = useRef(null); // Ref for debouncing place search
+  const [svgOutput, setSvgOutput] = useState(''); // Raw SVG string for the generated chart
+  const [genError, setGenError] = useState(''); // Error message for chart generation
 
-  // Calendar
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const calendarRef = useRef(null);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth());
+  // Calendar state
+  const [showCalendar, setShowCalendar] = useState(false); // Toggle for calendar popup
+  const [calendarDate, setCalendarDate] = useState(new Date()); // Current date for calendar view
+  const calendarRef = useRef(null); // Ref for calendar to handle outside clicks
+  const [year, setYear] = useState(new Date().getFullYear()); // Current year for calendar
+  const [month, setMonth] = useState(new Date().getMonth()); // Current month for calendar (0-11)
 
+  /**
+   * Helper function to update a single form field.
+   * @param {string} k - Field key.
+   * @param {any} v - New value for the field.
+   */
   const setField = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  /**
+   * Validates required form fields.
+   * @returns {boolean} True if no errors, false otherwise.
+   */
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = 'Please enter your name';
@@ -64,7 +122,11 @@ export default function KundaliPage() {
     return Object.keys(e).length === 0;
   };
 
-  // Location suggestions
+  /**
+   * Fetches place suggestions from Nominatim API on place input change.
+   * Debounced to 350ms, triggers only if query >= 3 chars.
+   * Clears suggestions on unmount or short queries.
+   */
   useEffect(() => {
     const q = form.place.trim();
     if (suggestTimeout.current) clearTimeout(suggestTimeout.current);
@@ -88,7 +150,9 @@ export default function KundaliPage() {
     return () => suggestTimeout.current && clearTimeout(suggestTimeout.current);
   }, [form.place]);
 
-  // Close calendar on outside click
+  /**
+   * Closes calendar popup on outside click.
+   */
   useEffect(() => {
     const handler = e => {
       if (calendarRef.current && !calendarRef.current.contains(e.target)) {
@@ -99,7 +163,11 @@ export default function KundaliPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Calendar helpers
+  /**
+   * Handles date selection from calendar.
+   * Sets birthDate in YYYY-MM-DD format and closes popup.
+   * @param {number} day - Day of the month (1-31).
+   */
   const handleDateClick = day => {
     // Create date in local timezone to avoid UTC conversion issues
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -107,6 +175,11 @@ export default function KundaliPage() {
     setShowCalendar(false);
   };
 
+  /**
+   * Renders calendar grid cells for the current month.
+   * Includes empty cells for padding, highlights today and selected date.
+   * @returns {JSX.Element[]} Array of calendar day elements.
+   */
   const renderCalendar = () => {
     const first = new Date(year, month, 1).getDay();
     const daysIn = new Date(year, month + 1, 0).getDate();
@@ -132,68 +205,73 @@ export default function KundaliPage() {
     return cells;
   };
 
-const handleSubmit = async e => {
-  e.preventDefault();
-  if (!validate()) return;
+  /**
+   * Handles form submission.
+   * Validates, converts time to 24-hour, resolves timezone, calls API for SVG chart.
+   * @param {Event} e - Form submit event.
+   */
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!validate()) return;
 
-  setSubmitting(true);
-  setGenError('');
-  setSvgOutput('');
+    setSubmitting(true);
+    setGenError('');
+    setSvgOutput('');
 
-  try {
-    // Convert to 24-hour format
-    let hour24 = form.hour;
-    if (form.ampm === 'PM' && form.hour !== 12) hour24 += 12;
-    if (form.ampm === 'AM' && form.hour === 12) hour24 = 0;
+    try {
+      // Convert to 24-hour format
+      let hour24 = form.hour;
+      if (form.ampm === 'PM' && form.hour !== 12) hour24 += 12;
+      if (form.ampm === 'AM' && form.hour === 12) hour24 = 0;
 
-    // Parse birth date
-    const [y, m, d] = form.birthDate.split('-').map(Number);
+      // Parse birth date
+      const [y, m, d] = form.birthDate.split('-').map(Number);
 
-    // Get timezone offset if we have coordinates
-    let timezone = 5.5; // Default IST
-    if (form.latitude && form.longitude) {
-      try {
-        const { getTimezoneOffsetHours } = await import('@/lib/api');
-        timezone = await getTimezoneOffsetHours(form.latitude, form.longitude);
-      } catch (err) {
-        console.warn('Failed to get timezone, using default IST:', err);
+      // Get timezone offset if we have coordinates
+      let timezone = 5.5; // Default IST
+      if (form.latitude && form.longitude) {
+        try {
+          const { getTimezoneOffsetHours } = await import('@/lib/api');
+          timezone = await getTimezoneOffsetHours(form.latitude, form.longitude);
+        } catch (err) {
+          console.warn('Failed to get timezone, using default IST:', err);
+        }
       }
+
+      // The API route expects: year, month, date, hours, minutes, latitude, longitude
+      const payload = {
+        year: y,
+        month: m,
+        date: d,  // Note: 'date' not 'day'
+        hours: hour24,  // Note: 'hours' not 'hour'
+        minutes: form.minute,  // Note: 'minutes' not 'min'
+        seconds: 0,
+        latitude: form.latitude || 28.6139,
+        longitude: form.longitude || 77.2090,
+        timezone: timezone,
+      };
+
+      console.log('Sending payload:', payload);
+
+      const response = await astrologyAPI.getSingleCalculation('horoscope-chart-svg-code', payload);
+      
+      console.log('Received response:', response);
+      
+      if (response && response.svg_output) {
+        setSvgOutput(response.svg_output);
+      } else if (typeof response === 'string' && response.includes('<svg')) {
+        setSvgOutput(response);
+      } else {
+        console.error('Unexpected response format:', response);
+        throw new Error('No SVG data received from API');
+      }
+    } catch (err) {
+      console.error('Kundali generation error:', err);
+      setGenError(err.message || 'Failed to generate Kundali. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-
-    // The API route expects: year, month, date, hours, minutes, latitude, longitude
-    const payload = {
-      year: y,
-      month: m,
-      date: d,  // Note: 'date' not 'day'
-      hours: hour24,  // Note: 'hours' not 'hour'
-      minutes: form.minute,  // Note: 'minutes' not 'min'
-      seconds: 0,
-      latitude: form.latitude || 28.6139,
-      longitude: form.longitude || 77.2090,
-      timezone: timezone,
-    };
-
-    console.log('Sending payload:', payload);
-
-    const response = await astrologyAPI.getSingleCalculation('horoscope-chart-svg-code', payload);
-    
-    console.log('Received response:', response);
-    
-    if (response && response.svg_output) {
-      setSvgOutput(response.svg_output);
-    } else if (typeof response === 'string' && response.includes('<svg')) {
-      setSvgOutput(response);
-    } else {
-      console.error('Unexpected response format:', response);
-      throw new Error('No SVG data received from API');
-    }
-  } catch (err) {
-    console.error('Kundali generation error:', err);
-    setGenError(err.message || 'Failed to generate Kundali. Please try again.');
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   return (
     <>
@@ -558,18 +636,21 @@ const handleSubmit = async e => {
       `}</style>
 
       <div className="app">
+        {/* Background Orbs - Decorative floating elements for Vedic theme */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
 
+        {/* Header Section */}
         <header className="header">
           <div className="headerIcon"><ShieldCheck style={{ width: 36, height: 36, color: '#fff' }} /></div>
           <h1 className="title">Janam Kundali</h1>
           <p className="subtitle">Enter birth details to generate your Vedic chart</p>
         </header>
 
+        {/* Main Form Card */}
         <div className="card">
           <div className="cardHeader">
             <div className="cardTitle">
@@ -579,7 +660,7 @@ const handleSubmit = async e => {
           </div>
           <div className="cardBody">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name */}
+              {/* Name Input */}
               <div>
                 <label>Name</label>
                 <input
@@ -591,7 +672,7 @@ const handleSubmit = async e => {
                 {errors.name && <p className="error">{errors.name}</p>}
               </div>
 
-              {/* Gender */}
+              {/* Gender Radio Buttons */}
               <div>
                 <label>Gender</label>
                 <div style={{ display: 'flex', gap: '1.5rem' }}>
@@ -604,7 +685,7 @@ const handleSubmit = async e => {
                 </div>
               </div>
 
-              {/* Date Picker – Type or Calendar */}
+              {/* Birth Date Input with Calendar */}
               <div style={{ position: 'relative' }} ref={calendarRef}>
                 <label>Birth Date</label>
 
@@ -615,7 +696,7 @@ const handleSubmit = async e => {
                     value={form.birthDate}
                     onChange={e => setField('birthDate', e.target.value)}
                     placeholder="YYYY-MM-DD"
-                    pattern="\d{4}-\d{2}-\d{2}"
+                    pattern="\\d{4}-\\d{2}-\\d{2}"
                     style={{
                       flex: 1,
                       fontFamily: 'monospace',
@@ -686,7 +767,7 @@ const handleSubmit = async e => {
               </div>
               {errors.birthDate && <p className="error">{errors.birthDate}</p>}
 
-              {/* Time */}
+              {/* Birth Time Picker */}
               <div>
                 <label>Birth Time</label>
                 <div className="timeGrid">
@@ -706,7 +787,7 @@ const handleSubmit = async e => {
                 </div>
               </div>
 
-              {/* Place */}
+              {/* Place Input with Suggestions */}
               <div style={{ position: 'relative' }}>
                 <label>Place of Birth</label>
                 <div style={{ position: 'relative' }}>
@@ -730,7 +811,7 @@ const handleSubmit = async e => {
                 )}
               </div>
 
-              {/* Language */}
+              {/* Language Selector */}
               <div>
                 <label>Language</label>
                 <select value={form.language} onChange={e => setField('language', e.target.value)}>
@@ -738,10 +819,12 @@ const handleSubmit = async e => {
                 </select>
               </div>
 
+              {/* Submit Button */}
               <button type="submit" disabled={submitting} className="btn" style={{ background: '#d4af37', color: '#fff', border: 'none' }}>
                 {submitting ? <>Processing…</> : 'Get Kundali'}
               </button>
 
+              {/* Generation Error Display */}
               {genError && (
                 <div style={{ marginTop: '1rem', padding: '1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '.875rem', color: '#b91c1c', fontSize: '.9rem' }}>
                   {genError}
@@ -749,6 +832,7 @@ const handleSubmit = async e => {
               )}
             </form>
 
+            {/* Note on Timezone Handling */}
             <div className="note">
               <Globe style={{ width: 16, height: 16 }} />
               Time & date are converted to UTC for accurate calculations.
@@ -756,7 +840,7 @@ const handleSubmit = async e => {
           </div>
         </div>
 
-        {/* Result */}
+        {/* Result Card - SVG Chart */}
         {svgOutput && (
           <div className="card" style={{ marginTop: '2rem' }}>
             <div className="cardHeader">
@@ -766,6 +850,7 @@ const handleSubmit = async e => {
               <div style={{ overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: '.75rem', background: '#fff' }}>
                 <div dangerouslySetInnerHTML={{ __html: svgOutput }} />
               </div>
+              {/* Download Button */}
               <button
                 onClick={() => {
                   const blob = new Blob([svgOutput], { type: 'image/svg+xml' });

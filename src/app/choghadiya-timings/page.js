@@ -1,5 +1,32 @@
 'use client';
 
+/**
+ * Choghadiya Timings Module
+ * 
+ * This module provides a dynamic page for displaying Choghadiya timings, an astrological system
+ * used in Vedic traditions to determine auspicious and inauspicious periods throughout the day.
+ * The component fetches real-time data based on the user's location, displays a live clock,
+ * and renders interactive cards for each period with visual indicators, descriptions, and timings.
+ * 
+ * Key Features:
+ * - Automatic geolocation detection (with fallback to Delhi, India).
+ * - Real-time clock update every minute.
+ * - API integration for personalized Choghadiya calculations.
+ * - Responsive grid layout for periods with hover effects and current period highlighting.
+ * - Action buttons for refresh, download (JSON), and share (Web Share API or clipboard).
+ * - Inline styled-jsx for animations, gradients, and responsive design.
+ * 
+ * Dependencies:
+ * - React (useState, useEffect)
+ * - Lucide React icons
+ * - astrologyAPI: Custom API client for astrological calculations
+ * 
+ * Styling: Uses styled-jsx for scoped CSS with animations (orbs, pulse, spin) and responsive breakpoints.
+ * Assumes CSS custom properties (e.g., --amrit-color) for period-specific theming.
+ * 
+ * @module ChoghadiyaTimingsPage
+ */
+
 import { useState, useEffect } from 'react';
 import {
   Download,
@@ -19,20 +46,37 @@ import {
 } from 'lucide-react';
 import astrologyAPI from '@/lib/api';
 
+/**
+ * ChoghadiyaTimingsPage Component
+ * 
+ * Renders the main page for Choghadiya timings with live updates, location-based calculations,
+ * and interactive UI elements. Handles loading, error states, and user interactions like refresh/share.
+ * 
+ * @returns {JSX.Element} The Choghadiya timings page UI.
+ */
 export default function ChoghadiyaTimingsPage() {
-  const [choghadiyaData, setChoghadiyaData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // State management for data, loading, errors, and UI
+  const [choghadiyaData, setChoghadiyaData] = useState(null); // Raw API response data
+  const [isLoading, setIsLoading] = useState(false); // Loading state during API fetch
+  const [error, setError] = useState(null); // Error message from API or geolocation
+  const [userLocation, setUserLocation] = useState(null); // User's geolocation {latitude, longitude, timezone}
+  const [currentTime, setCurrentTime] = useState(new Date()); // Current local time for live clock
 
   /* ---------- Clock ---------- */
+  /**
+   * Effect: Live clock update.
+   * Sets up an interval to refresh currentTime every 60 seconds for real-time display.
+   */
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(t);
+    return () => clearInterval(t); // Cleanup interval on unmount
   }, []);
 
   /* ---------- Geolocation ---------- */
+  /**
+   * Effect: Fetch user's geolocation.
+   * Uses browser's Geolocation API; falls back to Delhi coordinates (IST timezone) on denial/error.
+   */
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -40,21 +84,29 @@ export default function ChoghadiyaTimingsPage() {
           setUserLocation({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            timezone: new Date().getTimezoneOffset() / -60,
+            timezone: new Date().getTimezoneOffset() / -60, // Convert to hours (positive for IST)
           });
         },
-        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 })
+        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 }) // Default: Delhi, India
       );
     } else {
       setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 });
     }
-  }, []);
+  }, []); // Empty deps: run once on mount
 
   /* ---------- Fetch ---------- */
+  /**
+   * Effect: Trigger API fetch when location is available.
+   * Ensures data is fetched only after geolocation resolves.
+   */
   useEffect(() => {
     if (userLocation) fetchChoghadiyaData();
-  }, [userLocation]);
+  }, [userLocation]); // Deps: re-run if userLocation changes
 
+  /**
+   * Fetch Choghadiya data from API.
+   * Constructs payload with current date/time and location; handles errors and loading states.
+   */
   const fetchChoghadiyaData = async () => {
     if (!userLocation) return;
     setIsLoading(true);
@@ -71,7 +123,7 @@ export default function ChoghadiyaTimingsPage() {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         timezone: userLocation.timezone,
-        config: { observation_point: 'geocentric', ayanamsha: 'lahiri' },
+        config: { observation_point: 'geocentric', ayanamsha: 'lahiri' }, // Fixed config for calculations
       };
       const data = await astrologyAPI.getSingleCalculation('choghadiya-timings', payload);
       setChoghadiyaData(data);
@@ -84,11 +136,28 @@ export default function ChoghadiyaTimingsPage() {
   };
 
   /* ---------- Helpers ---------- */
+  /**
+   * Parse raw API output to JSON object.
+   * Safely handles JSON parsing errors.
+   * @param {string} raw - Raw string output from API
+   * @returns {object|null} Parsed data or null on error
+   */
   const parse = (raw) => {
     try { return JSON.parse(raw.output); } catch { return null; }
   };
+
+  /**
+   * Format ISO timestamp to localized time string.
+   * Uses 12-hour format with leading zeros.
+   * @param {string} iso - ISO timestamp string
+   * @returns {string} Formatted time (e.g., "2:30 PM")
+   */
   const fmt = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+  /**
+   * Icon mapping for Choghadiya types.
+   * Defaults to Star if type not found.
+   */
   const iconMap = {
     amrit: Sun,
     shubh: Cloud,
@@ -98,11 +167,20 @@ export default function ChoghadiyaTimingsPage() {
     kaal: Skull,
     udveg: ZapIcon,
   };
+
+  /**
+   * Get icon component for a given Choghadiya type.
+   * @param {string} name - Choghadiya period name (e.g., 'Amrit')
+   * @returns {JSX.Element} Icon with fixed size
+   */
   const getIcon = (name) => {
     const Comp = iconMap[name.toLowerCase()] || Star;
     return <Comp style={{ width: 28, height: 28 }} />;
   };
 
+  /**
+   * Description mapping for Choghadiya types.
+   */
   const descMap = {
     amrit: 'Most auspicious time for all activities',
     shubh: 'Auspicious time for important work',
@@ -112,14 +190,35 @@ export default function ChoghadiyaTimingsPage() {
     kaal: 'Inauspicious – avoid all activities',
     udveg: 'Stressful time – avoid decisions',
   };
+
+  /**
+   * Get description for a given Choghadiya type.
+   * @param {string} name - Choghadiya period name
+   * @returns {string} Descriptive text or default
+   */
   const getDesc = (name) => descMap[name.toLowerCase()] || 'Choghadiya period';
 
+  /**
+   * Check if a period is currently active.
+   * Compares current timestamp with period start/end.
+   * @param {object} p - Period object with starts_at/ends_at ISO strings
+   * @returns {boolean} True if currently active
+   */
   const isCurrent = (p) => {
     const n = Date.now();
     return n >= new Date(p.starts_at) && n <= new Date(p.ends_at);
   };
 
+  /**
+   * Refresh data handler.
+   * Triggers a new API fetch.
+   */
   const handleRefresh = () => fetchChoghadiyaData();
+
+  /**
+   * Download JSON handler.
+   * Creates a downloadable blob of the parsed data.
+   */
   const handleDownload = () => {
     if (!choghadiyaData) return;
     const blob = new Blob([JSON.stringify(choghadiyaData, null, 2)], { type: 'application/json' });
@@ -128,24 +227,31 @@ export default function ChoghadiyaTimingsPage() {
     a.href = url; a.download = 'choghadiya-timings.json'; a.click();
     URL.revokeObjectURL(url);
   };
-const handleShare = async () => {
-  const fullUrl = window.location.href; // Gets complete URL including path
-  
-  if (navigator.share) {
-    try { 
-      await navigator.share({ 
-        title: 'Choghadiya Timings', 
-        url: fullUrl 
-      }); 
-    } catch {}
-  } else {
-    navigator.clipboard.writeText(fullUrl);
-    alert('Link copied to clipboard!');
-  }
-};
 
+  /**
+   * Share handler.
+   * Uses Web Share API if available; otherwise copies URL to clipboard.
+   */
+  const handleShare = async () => {
+    const fullUrl = window.location.href; // Gets complete URL including path
+    
+    if (navigator.share) {
+      try { 
+        await navigator.share({ 
+          title: 'Choghadiya Timings', 
+          url: fullUrl 
+        }); 
+      } catch {}
+    } else {
+      navigator.clipboard.writeText(fullUrl);
+      alert('Link copied to clipboard!');
+    }
+  };
+
+  // Parse data for rendering
   const parsed = choghadiyaData ? parse(choghadiyaData) : null;
 
+  // Main render: Page layout with inline styles
   return (
     <>
       {/* ====================== CSS ====================== */}
@@ -219,28 +325,28 @@ const handleShare = async () => {
 
       {/* ====================== JSX ====================== */}
       <div className="app">
-        {/* floating orbs */}
+        {/* floating orbs – Background decorative elements */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
 
-        {/* Header */}
+        {/* Header – Title and subtitle with icon */}
         <header className="header">
           <div className="headerIcon"><Zap style={{ width: 36, height: 36, color: '#fff' }} /></div>
           <h1 className="title">Choghadiya Timings</h1>
           <p className="subtitle">Auspicious &amp; Inauspicious Muhurats for Today</p>
         </header>
 
-        {/* Info Bar */}
+        {/* Info Bar – Displays date, time, and location */}
         <div className="infoBar">
           <div className="infoItem"><Calendar /><span className="infoLabel">Date:</span><span className="infoValue">{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
           <div className="infoItem"><Calendar /><span className="infoLabel">Time:</span><span className="infoValue pulse">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span></div>
           <div className="infoItem"><MapPin /><span className="infoLabel">Location:</span><span className="infoValue">{userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 'Detecting...'}</span></div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons – Refresh and share controls */}
         <div className="actionBar">
           <div style={{ display: 'flex', gap: '0.75rem', margin: '0 auto'}}>
           <button onClick={handleRefresh} disabled={isLoading} className="btn"><RefreshCw className={isLoading ? 'spin' : ''} />Refresh</button>
@@ -248,7 +354,7 @@ const handleShare = async () => {
           </div>
         </div>
 
-        {/* Loading */}
+        {/* Loading – Spinner with message */}
         {isLoading && (
           <div className="stateBox">
             <div className="spinner" />
@@ -256,7 +362,7 @@ const handleShare = async () => {
           </div>
         )}
 
-        {/* Error */}
+        {/* Error – Error message with retry button */}
         {error && !choghadiyaData && (
           <div className="stateBox" style={{ borderColor: '#fca5a5', background: '#fee2e2' }}>
             <p style={{ color: '#b91c1c' }}>{error}</p>
@@ -264,7 +370,7 @@ const handleShare = async () => {
           </div>
         )}
 
-        {/* Results */}
+        {/* Results – Grid of period cards */}
         {parsed && !isLoading && (
           <>
             <div className="resultsHeader"><Star /> <h2> Today's Choghadiya Periods</h2></div>
@@ -276,28 +382,28 @@ const handleShare = async () => {
 
                 return (
                   <div key={key} className={`card ${type} ${cur ? 'current' : ''}`}>
-                    <div className="accent" />
+                    <div className="accent" /> {/* Period-specific accent bar */}
                     <div className="cardBody">
                       <div className="iconBox" style={{ background: `linear-gradient(135deg, var(--${type}-color, #999), var(--${type}-dark, #666))` }}>
-                        {getIcon(p.name)}
+                        {getIcon(p.name)} {/* Dynamic icon based on type */}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div className="titleGroup">
-                          <h3>{p.name}</h3>
-                          <p className="desc">{getDesc(p.name)}</p>
+                          <h3>{p.name}</h3> {/* Period name */}
+                          <p className="desc">{getDesc(p.name)}</p> {/* Description */}
                         </div>
                         {cur && (
-                          <div className="liveBadge"><div className="pulseDot" />LIVE</div>
+                          <div className="liveBadge"><div className="pulseDot" />LIVE</div> 
                         )}
                       </div>
                     </div>
 
                     <div className="cardBody" style={{ paddingTop: 0 }}>
-                      <div className="timeRow"><span className="timeLabel">Starts</span><span className="timeValue">{fmt(p.starts_at)}</span></div>
-                      <div className="timeRow"><span className="timeLabel">Ends</span><span className="timeValue">{fmt(p.ends_at)}</span></div>
+                      <div className="timeRow"><span className="timeLabel">Starts</span><span className="timeValue">{fmt(p.starts_at)}</span></div> {/* Start time */}
+                      <div className="timeRow"><span className="timeLabel">Ends</span><span className="timeValue">{fmt(p.ends_at)}</span></div> {/* End time */}
                     </div>
 
-                    <div className="footer">Period #{key}</div>
+                    <div className="footer">Period #{key}</div> {/* Period number */}
                   </div>
                 );
               })}

@@ -21,20 +21,62 @@ import {
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+/**
+ * MahaDasasPage Component
+ * 
+ * A React component that displays Vimsottari Dasa (Maha Dasas) planetary periods based on Vedic astrology.
+ * It fetches data from the Free Astrology API, handles user location via geolocation,
+ * provides real-time clock, and renders individual cards for each dasa period with icons, durations, and status.
+ * 
+ * Features:
+ * - Geolocation-based location detection (defaults to Delhi, India).
+ * - Real-time clock update every minute.
+ * - Rate limit handling with mock sample data display.
+ * - Color-coded cards per planet with icons and descriptions.
+ * - Highlights current dasa with live badge and enhanced styling.
+ * - PDF download using jsPDF with table export.
+ * - Share functionality via Web Share API or clipboard fallback.
+ * - Responsive grid layout for dasa cards (1-3 columns based on screen size).
+ * - Astrological theme with floating orbs and gradients.
+ * 
+ * Dependencies:
+ * - React hooks: useState, useEffect.
+ * - Lucide React icons for planetary symbols.
+ * - jsPDF and jspdf-autotable for PDF generation.
+ * - Free Astrology API (Vimsottari Maha Dasas endpoint).
+ * 
+ * Styling:
+ * - Inline JSX styles with CSS-in-JS.
+ * - Google Fonts: Cormorant Garamond (headings) and Inter (body).
+ * - Golden Vedic theme with blurs, animations, and responsive design.
+ * 
+ * API Notes:
+ * - Endpoint: https://json.freeastrologyapi.com/vimsottari/maha-dasas (POST with payload).
+ * - API Key: Embedded (hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c) – Consider environment variables in production.
+ * - Payload includes current time, location, and config (geocentric, sayana ayanamsha).
+ * - Response parsed from JSON.stringified output.
+ * 
+ * @returns {JSX.Element} The rendered Maha Dasas page.
+ */
 export default function MahaDasasPage() {
-  const [mahaDasasData, setMahaDasasData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [mahaDasasData, setMahaDasasData] = useState(null); // Raw API response for maha dasas
+  const [isLoading, setIsLoading] = useState(false); // Loading indicator for API calls
+  const [error, setError] = useState(null); // Error message if API fetch fails
+  const [userLocation, setUserLocation] = useState(null); // User's geolocation {latitude, longitude, timezone}
+  const [currentTime, setCurrentTime] = useState(new Date()); // Real-time clock
 
-  // Clock
+  /**
+   * Updates the current time every minute for the live clock display.
+   */
   useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(t);
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000); // Update every 60 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
-  // Location
+  /**
+   * Fetches user's geolocation on mount. Estimates timezone from longitude (/15 for hours).
+   * Defaults to Delhi (28.6139, 77.2090, IST +5.5) if unavailable.
+   */
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -42,21 +84,29 @@ export default function MahaDasasPage() {
           setUserLocation({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            timezone: Math.round(pos.coords.longitude / 15),
+            timezone: Math.round(pos.coords.longitude / 15), // Rough timezone estimate
           });
         },
-        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 })
+        () => setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 }) // Fallback: Delhi, India
       );
     } else {
       setUserLocation({ latitude: 28.6139, longitude: 77.2090, timezone: 5.5 });
     }
   }, []);
 
-  // Fetch
+  /**
+   * Fetches maha dasas data when location is available.
+   * Triggers API call with current time, location, and config.
+   */
   useEffect(() => {
     if (userLocation) fetchMahaDasasData();
   }, [userLocation]);
 
+  /**
+   * Async function to fetch maha dasas from the Free Astrology API.
+   * Handles rate limit (429) by showing mock sample data.
+   * Payload includes current time components, location, and geocentric/Sayana config.
+   */
   const fetchMahaDasasData = async () => {
     setIsLoading(true);
     setError(null);
@@ -72,19 +122,20 @@ export default function MahaDasasPage() {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
         timezone: userLocation.timezone,
-        config: { observation_point: 'geocentric', ayanamsha: 'sayana' },
+        config: { observation_point: 'geocentric', ayanamsha: 'sayana' }, // Fixed config for calculations
       };
 
       const response = await fetch('https://json.freeastrologyapi.com/vimsottari/maha-dasas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c',
+          'x-api-key': 'hARFI2eGxQ3y0s1i3ru6H1EnqNbJ868LqRQsNa0c', // TODO: Move to env var
         },
         body: JSON.stringify(payload),
       });
 
       if (response.status === 429) {
+        // Mock sample data for rate limit
         const mock = {
           statusCode: 200,
           output: JSON.stringify({
@@ -114,29 +165,61 @@ export default function MahaDasasPage() {
     }
   };
 
+  /**
+   * Parses the raw API output (assumed to be a JSON string) into an object.
+   * @param {string} raw - Raw output from API.
+   * @returns {object|null} Parsed maha dasas data or null on error.
+   */
   const parse = (raw) => {
-    try { return JSON.parse(raw.output); } catch { return null; }
+    try { 
+      return JSON.parse(raw.output); 
+    } catch { 
+      return null; 
+    }
   };
 
+  /**
+   * Formats ISO timestamp to readable date-time string (e.g., "September 11, 2024, 10:30 PM").
+   * @param {string} iso - ISO date string.
+   * @returns {string} Formatted date-time or original string on error.
+   */
   const fmt = (iso) => {
     try {
       return new Date(iso).toLocaleString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true
       });
-    } catch { return iso; }
+    } catch { 
+      return iso; 
+    }
   };
 
+  /**
+   * Calculates approximate years duration between start and end timestamps.
+   * @param {string} s - Start ISO timestamp.
+   * @param {string} e - End ISO timestamp.
+   * @returns {number} Rounded years (to 1 decimal).
+   */
   const years = (s, e) => {
     const diff = (new Date(e) - new Date(s)) / (1000 * 60 * 60 * 24 * 365.25);
     return Math.round(diff * 10) / 10;
   };
 
+  /**
+   * Checks if the current time falls within a dasa period.
+   * @param {object} d - Dasa object with start_time and end_time ISO strings.
+   * @returns {boolean} True if current time is within the dasa.
+   */
   const isCurrent = (d) => {
     const n = Date.now();
     return n >= new Date(d.start_time) && n <= new Date(d.end_time);
   };
 
+  /**
+   * Returns the appropriate icon for a planet lord.
+   * @param {string} lord - Planet name (e.g., 'Sun', 'Moon').
+   * @returns {JSX.Element} Icon component.
+   */
   const planetIcon = (lord) => {
     const map = {
       sun: <Sun style={{ width: 28, height: 28 }} />,
@@ -152,93 +235,108 @@ export default function MahaDasasPage() {
     return map[lord.toLowerCase()] || <Star style={{ width: 28, height: 28 }} />;
   };
 
+  /**
+   * Returns color scheme for a planet lord (background, text, border).
+   * @param {string} lord - Planet name.
+   * @returns {object} {bg, text, border} for styling.
+   */
   const planetColor = (lord) => {
     const map = {
-      sun: '#fef3c7', text: '#92400e', border: '#f59e0b',
-      moon: '#dbeafe', text: '#1e40af', border: '#3b82f6',
-      mars: '#fee2e2', text: '#991b1b', border: '#ef4444',
-      rahu: '#e5e7eb', text: '#374151', border: '#6b7280',
-      jupiter: '#f3e8ff', text: '#7c2d12', border: '#a855f7',
-      saturn: '#e0e7ff', text: '#4338ca', border: '#6366f1',
-      mercury: '#d1fae5', text: '#065f46', border: '#10b981',
-      ketu: '#ffedd5', text: '#9a3412', border: '#f97316',
-      venus: '#fce7f3', text: '#be185d', border: '#ec4899',
+      sun: { bg: '#fef3c7', text: '#92400e', border: '#f59e0b' },
+      moon: { bg: '#dbeafe', text: '#1e40af', border: '#3b82f6' },
+      mars: { bg: '#fee2e2', text: '#991b1b', border: '#ef4444' },
+      rahu: { bg: '#e5e7eb', text: '#374151', border: '#6b7280' },
+      jupiter: { bg: '#f3e8ff', text: '#7c2d12', border: '#a855f7' },
+      saturn: { bg: '#e0e7ff', text: '#4338ca', border: '#6366f1' },
+      mercury: { bg: '#d1fae5', text: '#065f46', border: '#10b981' },
+      ketu: { bg: '#ffedd5', text: '#9a3412', border: '#f97316' },
+      venus: { bg: '#fce7f3', text: '#be185d', border: '#ec4899' },
     };
     return map[lord.toLowerCase()] || { bg: '#e5e7eb', text: '#374151', border: '#6b7280' };
   };
 
-  const parsed = mahaDasasData ? parse(mahaDasasData) : null;
+  // Derived data
+  const parsed = mahaDasasData ? parse(mahaDasasData) : null; // Parse API response
 
+  /**
+   * Generates and downloads PDF report using jsPDF.
+   * Includes table with planets, dates, durations, and status.
+   */
   const handleDownload = () => {
-  if (!parsed) return;
+    if (!parsed) return;
 
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 20;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text('Maha Dasas Report', pageWidth / 2, y, { align: 'center' });
-  y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Maha Dasas Report', pageWidth / 2, y, { align: 'center' });
+    y += 10;
 
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
-  y += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
+    y += 15;
 
-  const tableData = Object.entries(parsed).map(([k, d]) => [
-    d.Lord,
-    fmt(d.start_time).split(',')[0],
-    fmt(d.end_time).split(',')[0],
-    `${years(d.start_time, d.end_time)} yrs`,
-    isCurrent(d) ? 'CURRENT' : ''
-  ]);
+    const tableData = Object.entries(parsed).map(([k, d]) => [
+      d.Lord,
+      fmt(d.start_time).split(',')[0],
+      fmt(d.end_time).split(',')[0],
+      `${years(d.start_time, d.end_time)} yrs`,
+      isCurrent(d) ? 'CURRENT' : ''
+    ]);
 
-  doc.autoTable({
-    head: [['Planet', 'Start Date', 'End Date', 'Duration', 'Status']],
-    body: tableData,
-    startY: y,
-    theme: 'striped',
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [212, 175, 55], textColor: [255, 255, 255] },
-    alternateRowStyles: { fillColor: [253, 251, 247] },
-  });
+    doc.autoTable({
+      head: [['Planet', 'Start Date', 'End Date', 'Duration', 'Status']],
+      body: tableData,
+      startY: y,
+      theme: 'striped',
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [212, 175, 55], textColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: [253, 251, 247] },
+    });
 
-  doc.save('maha-dasas-report.pdf');
-};
-
-// Share (Web Share API + fallback)
-const handleShare = async () => {
-  if (!parsed) return;
-
-  const shareData = {
-    title: 'My Maha Dasas Report',
-    text: `Check out my current planetary periods! Currently in ${Object.values(parsed).find(isCurrent)?.Lord || 'Unknown'} Dasa.`,
-    url: window.location.href,
+    doc.save('maha-dasas-report.pdf');
   };
 
-  if (navigator.share && navigator.canShare(shareData)) {
-    try {
-      await navigator.share(shareData);
-    } catch (err) {
+  /**
+   * Handles sharing the report via Web Share API or clipboard fallback.
+   */
+  const handleShare = async () => {
+    if (!parsed) return;
+
+    const shareData = {
+      title: 'My Maha Dasas Report',
+      text: `Check out my current planetary periods! Currently in ${Object.values(parsed).find(isCurrent)?.Lord || 'Unknown'} Dasa.`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        fallbackCopy();
+      }
+    } else {
       fallbackCopy();
     }
-  } else {
-    fallbackCopy();
-  }
-};
+  };
 
-const fallbackCopy = () => {
-  const text = `Maha Dasas Report\n${window.location.href}\n\nCurrent: ${
-    Object.values(parsed).find(isCurrent)?.Lord || '—'
-  } Dasa\n\n${Object.entries(parsed)
-    .map(([k, d]) => `${d.Lord}: ${fmt(d.start_time)} → ${fmt(d.end_time)}`)
-    .join('\n')}`;
+  /**
+   * Fallback copy to clipboard with formatted text report.
+   */
+  const fallbackCopy = () => {
+    const text = `Maha Dasas Report\n${window.location.href}\n\nCurrent: ${
+      Object.values(parsed).find(isCurrent)?.Lord || '—'
+    } Dasa\n\n${Object.entries(parsed)
+      .map(([k, d]) => `${d.Lord}: ${fmt(d.start_time)} → ${fmt(d.end_time)}`)
+      .join('\n')}`;
 
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Report copied to clipboard!');
-  });
-};
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Report copied to clipboard!');
+    });
+  };
 
   return (
     <>
@@ -296,51 +394,69 @@ const fallbackCopy = () => {
       `}</style>
 
       <div className="app">
-        {/* Orbs */}
+        {/* Background Orbs - Decorative floating elements for astrological theme */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
 
-        {/* Header */}
+        {/* Header Section - Title and subtitle */}
         <header className="header">
           <div className="headerIcon"><Star style={{ width: 36, height: 36, color: '#fff' }} /></div>
           <h1 className="title">Maha Dasas</h1>
           <p className="subtitle">Vimsottari Planetary Periods</p>
         </header>
 
-        {/* Info Bar */}
+        {/* Info Bar - Displays date, time, and location */}
         <div className="infoBar">
-          <div className="infoItem"><Calendar /><span className="infoLabel">Date:</span><span className="infoValue">{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
-          <div className="infoItem"><Calendar /><span className="infoLabel">Time:</span><span className="infoValue pulse">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span></div>
-          <div className="infoItem"><MapPin /><span className="infoLabel">Location:</span><span className="infoValue">{userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 'Detecting...'}</span></div>
+          <div className="infoItem">
+            <Calendar />
+            <span className="infoLabel">Date:</span>
+            <span className="infoValue">
+              {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+          <div className="infoItem">
+            <Calendar />
+            <span className="infoLabel">Time:</span>
+            <span className="infoValue pulse">
+              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            </span>
+          </div>
+          <div className="infoItem">
+            <MapPin />
+            <span className="infoLabel">Location:</span>
+            <span className="infoValue">
+              {userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : 'Detecting...'}
+            </span>
+          </div>
         </div>
 
-{/* Action Buttons */}
-<div className="actionBar">
-  <button onClick={fetchMahaDasasData} disabled={isLoading} className="btn">
-    <RefreshCw className={isLoading ? 'spin' : ''} />Refresh
-  </button>
-  <div style={{ display: 'flex', gap: '0.75rem' }}>
-    <button
-      onClick={handleDownload}
-      disabled={!mahaDasasData}
-      className="btn"
-    >
-      <Download />Download PDF
-    </button>
-    <button
-      onClick={handleShare}
-      disabled={!mahaDasasData}
-      className="btn"
-    >
-      <Share />Share
-    </button>
-  </div>
-</div>
+        {/* Action Buttons - Refresh, Download, Share */}
+        <div className="actionBar">
+          <button onClick={fetchMahaDasasData} disabled={isLoading} className="btn">
+            <RefreshCw className={isLoading ? 'spin' : ''} />Refresh
+          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={handleDownload}
+              disabled={!mahaDasasData}
+              className="btn"
+            >
+              <Download />Download PDF
+            </button>
+            <button
+              onClick={handleShare}
+              disabled={!mahaDasasData}
+              className="btn"
+            >
+              <Share />Share
+            </button>
+          </div>
+        </div>
 
-        {/* Loading */}
+        {/* Loading Spinner */}
         {isLoading && (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'rgba(255,255,255,.9)', borderRadius: '1.5rem', border: '1px solid #e5e7eb' }}>
             <div style={{ width: 56, height: 56, border: '5px solid rgba(212,175,55,.2)', borderTopColor: '#d4af37', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }}></div>
@@ -348,7 +464,14 @@ const fallbackCopy = () => {
           </div>
         )}
 
-        {/* Results */}
+        {/* Error Display */}
+        {error && !isLoading && (
+          <div style={{ textAlign: 'center', color: '#ef4444', margin: '1rem', padding: '1rem', background: 'rgba(254, 242, 242, 0.9)', borderRadius: '1.5rem', border: '1px solid #fecaca' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Maha Dasas Grid - Individual Cards */}
         {parsed && !isLoading && (
           <div className="grid">
             {Object.entries(parsed).map(([k, d]) => {
@@ -356,99 +479,104 @@ const fallbackCopy = () => {
               const color = planetColor(d.Lord);
               return (
                 <div key={k} className={`card ${cur ? 'current' : ''}`}>
+                  {/* Accent Bar */}
                   <div className="accent" style={{ background: `linear-gradient(90deg, ${color.border}, ${color.border}dd)` }} />
-<div className="cardBody">
-  <div className="iconBox" style={{ background: `linear-gradient(135deg, ${color.border}, ${color.border}cc)` }}>
-    {planetIcon(d.Lord)}
-  </div>
-  <div style={{ flex: 1 }}>
-    <div className="titleGroup">
-      <h3>{d.Lord} Dasa</h3>
-      <p className="desc">
-        {(() => {
-          const desc = {
-            sun: 'Leadership, vitality',
-            moon: 'Emotions, intuition',
-            mars: 'Energy, courage',
-            rahu: 'Material desires',
-            jupiter: 'Wisdom, growth',
-            saturn: 'Discipline, karma',
-            mercury: 'Communication',
-            ketu: 'Detachment',
-            venus: 'Love, beauty',
-          };
-          return desc[d.Lord.toLowerCase()] || 'Planetary period';
-        })()}
-      </p>
-    </div>
-    {cur && (
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        background: 'rgba(212,175,55,.15)',
-        color: '#b8972e',
-        padding: '0.375rem 0.75rem',
-        borderRadius: '9999px',
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        border: '1px solid rgba(212,175,55,.4)',
-        marginTop: '0.5rem',
-        boxShadow: '0 0 8px rgba(212,175,55,.3)'
-      }}>
-        <div style={{
-          width: '8px',
-          height: '8px',
-          background: '#d4af37',
-          borderRadius: '50%',
-          animation: 'pulse 2s infinite'
-        }}></div>
-        LIVE
-      </div>
-    )}
-  </div>
-</div>
+                  
+                  {/* Card Body - Icon and Title */}
+                  <div className="cardBody">
+                    <div className="iconBox" style={{ background: `linear-gradient(135deg, ${color.border}, ${color.border}cc)` }}>
+                      {planetIcon(d.Lord)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div className="titleGroup">
+                        <h3>{d.Lord} Dasa</h3>
+                        <p className="desc">
+                          {(() => {
+                            const desc = {
+                              sun: 'Leadership, vitality',
+                              moon: 'Emotions, intuition',
+                              mars: 'Energy, courage',
+                              rahu: 'Material desires',
+                              jupiter: 'Wisdom, growth',
+                              saturn: 'Discipline, karma',
+                              mercury: 'Communication',
+                              ketu: 'Detachment',
+                              venus: 'Love, beauty',
+                            };
+                            return desc[d.Lord.toLowerCase()] || 'Planetary period';
+                          })()}
+                        </p>
+                      </div>
+                      {cur && (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          background: 'rgba(212,175,55,.15)',
+                          color: '#b8972e',
+                          padding: '0.375rem 0.75rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          border: '1px solid rgba(212,175,55,.4)',
+                          marginTop: '0.5rem',
+                          boxShadow: '0 0 8px rgba(212,175,55,.3)'
+                        }}>
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            background: '#d4af37',
+                            borderRadius: '50%',
+                            animation: 'pulse 2s infinite'
+                          }}></div>
+                          LIVE
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-<div style={{ padding: '0 1.75rem 1.5rem' }}>
-  <div style={{
-    display: 'grid',
-    gap: '0.75rem',
-    gridTemplateColumns: '1fr',
-    fontSize: '0.925rem',
-    lineHeight: '1.5'
-  }}>
-    {/* Duration */}
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span className="infoLabel">Duration</span>
-      <span className="infoValue">{years(d.start_time, d.end_time)} yrs</span>
-    </div>
+                  {/* Details Section - Duration, Start, End */}
+                  <div style={{ padding: '0 1.75rem 1.5rem' }}>
+                    <div style={{
+                      display: 'grid',
+                      gap: '0.75rem',
+                      gridTemplateColumns: '1fr',
+                      fontSize: '0.925rem',
+                      lineHeight: '1.5'
+                    }}>
+                      {/* Duration */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="infoLabel">Duration</span>
+                        <span className="infoValue">{years(d.start_time, d.end_time)} yrs</span>
+                      </div>
 
-    {/* Start */}
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <span className="infoLabel">Starts</span>
-      <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
-        <div>{new Date(d.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
-          {new Date(d.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-        </div>
-      </div>
-    </div>
+                      {/* Start */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span className="infoLabel">Starts</span>
+                        <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
+                          <div>{new Date(d.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
+                            {new Date(d.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </div>
+                        </div>
+                      </div>
 
-    {/* End */}
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <span className="infoLabel">Ends</span>
-      <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
-        <div>{new Date(d.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
-          {new Date(d.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+                      {/* End */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span className="infoLabel">Ends</span>
+                        <div style={{ textAlign: 'right', fontFamily: 'Courier New, monospace', fontWeight: 700, color: '#111' }}>
+                          <div>{new Date(d.end_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.125rem' }}>
+                            {new Date(d.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-<div className="footer">PERIOD #{k}</div>
+                  {/* Footer - Period Number */}
+                  <div className="footer">PERIOD #{k}</div>
                 </div>
               );
             })}

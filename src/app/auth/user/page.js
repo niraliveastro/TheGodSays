@@ -1,5 +1,34 @@
 'use client'
 
+/**
+ * User Authentication Module
+ * 
+ * This module provides the authentication interface for regular users (seekers) in a consultation platform.
+ * It supports both email/password login and signup, as well as Google OAuth integration.
+ * Upon successful authentication, it creates or verifies a user profile in Firestore
+ * and redirects to the astrologer consultation page. The form dynamically switches between login and signup modes.
+ * 
+ * Key Features:
+ * - Toggle between login and signup forms.
+ * - Password visibility toggle.
+ * - Form validation and error handling.
+ * - Google OAuth with automatic profile creation for new users.
+ * - Firestore integration for storing user profiles.
+ * - Role-based redirection (users only).
+ * 
+ * Dependencies:
+ * - React (useState)
+ * - Next.js (useRouter)
+ * - Firebase Firestore (doc, setDoc)
+ * - AuthContext: Provides signIn, signUp, signInWithGoogle, loading
+ * - Lucide React icons
+ * 
+ * Styling: Relies on CSS classes (e.g., .auth-page, .form-field-input) defined in external stylesheets.
+ * Assumes global CSS for animations, gradients, and responsive design.
+ * 
+ * @module UserAuth
+ */
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,38 +45,57 @@ import {
   Sparkles,
 } from 'lucide-react'
 
+/**
+ * UserAuth Component
+ * 
+ * The main authentication form for users.
+ * Renders a centered card layout with logo, form fields, and Google OAuth option.
+ * Handles form submission, Google sign-in, and conditional field rendering based on login/signup mode.
+ * 
+ * @returns {JSX.Element} The authentication page UI.
+ */
 export default function UserAuth() {
-  const [isLogin, setIsLogin] = useState(true)
-  const [showPassword, setShowPassword] = useState(false)
+  // Form state management
+  const [isLogin, setIsLogin] = useState(true) // Toggle between login (true) and signup (false) modes
+  const [showPassword, setShowPassword] = useState(false) // Toggle password visibility
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-    phone: '',
+    email: '', // Email address
+    password: '', // Password
+    name: '', // Full name (signup only)
+    phone: '', // Phone number (signup only)
   })
-  const [error, setError] = useState('')
-  const { signIn, signUp, signInWithGoogle, loading } = useAuth()
-  const router = useRouter()
+  const [error, setError] = useState('') // Form submission error message
+
+  // Auth and routing hooks
+  const { signIn, signUp, signInWithGoogle, loading } = useAuth() // Auth context methods and loading state
+  const router = useRouter() // Next.js router for navigation
 
   // --------------------------------------------------------------------------
   // EMAIL/PASSWORD AUTHENTICATION
   // --------------------------------------------------------------------------
+  /**
+   * Handle form submission for login or signup.
+   * For login: Authenticates and redirects based on user role.
+   * For signup: Creates auth user, stores user profile in Firestore, and redirects to consultation page.
+   * @param {Event} e - Form submit event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+    setError('') // Clear previous errors
 
     try {
       if (isLogin) {
-       const result = await signIn(formData.email, formData.password)
+        // Login flow
+        const result = await signIn(formData.email, formData.password)
         if (result.profile?.collection === 'users') {
-          router.push('/talk-to-astrologer')
+          router.push('/talk-to-astrologer') // Redirect to astrologer consultation page
         } else {
-          router.push('/unauthorized')
+          router.push('/unauthorized') // Redirect if not a user
         }
       } else {
         // SIGNUP FLOW
         const user = await signUp(formData.email, formData.password, { 
-          displayName: formData.name 
+          displayName: formData.name // Set display name in auth profile
         })
         
         // Create user profile in Firestore
@@ -62,15 +110,20 @@ export default function UserAuth() {
         router.push('/talk-to-astrologer')
       }
     } catch (err) {
-      setError(err.message)
+      setError(err.message) // Display error message
     }
   }
 
   // --------------------------------------------------------------------------
   // GOOGLE AUTHENTICATION
   // --------------------------------------------------------------------------
+  /**
+   * Handle Google OAuth sign-in.
+   * If new user, creates user profile with defaults.
+   * Redirects based on existing profile role.
+   */
   const handleGoogleAuth = async () => {
-    setError('')
+    setError('') // Clear previous errors
     
     try {
       const result = await signInWithGoogle()
@@ -93,18 +146,27 @@ export default function UserAuth() {
         }
       }
     } catch (err) {
-      setError(err.message)
+      setError(err.message) // Display error message
     }
   }
 
   // --------------------------------------------------------------------------
   // FORM FIELD HANDLERS
   // --------------------------------------------------------------------------
+  /**
+   * Toggle between login and signup modes.
+   * Clears any existing errors.
+   */
   const toggleAuthMode = () => {
     setIsLogin(!isLogin)
     setError('')
   }
 
+  /**
+   * Update a specific field in the form data state.
+   * @param {string} field - Field name (e.g., 'email', 'name')
+   * @param {string} value - New value for the field
+   */
   const updateFormField = (field, value) => {
     setFormData({ ...formData, [field]: value })
   }
@@ -112,14 +174,15 @@ export default function UserAuth() {
   // ============================================================================
   // RENDER UI
   // ============================================================================
+  // Main render: Authentication page layout
   return (
     <div className="auth-page">
-      {/* Animated background orbs */}
+      {/* Animated background orbs – decorative elements */}
       <div className="bg-orb bg-orb-1" />
       <div className="bg-orb bg-orb-2" />
       <div className="bg-orb bg-orb-3" />
 
-      {/* Back button */}
+      {/* Back button – allows navigation back in browser history */}
       <button
         className="back-btn"
         onClick={() => router.back()}
@@ -128,11 +191,11 @@ export default function UserAuth() {
         <ArrowLeft />
       </button>
 
-      {/* Auth card */}
+      {/* Auth card – centered container for form and branding */}
       <div className="auth-card">
-        <div className="accent-line" />
+        <div className="accent-line" /> {/* Decorative accent line */}
 
-        {/* Logo section */}
+        {/* Logo section – Branding and dynamic messaging */}
         <div className="logo-section">
           <div className="logo-badge">
             <div className="logo-icon">
@@ -150,16 +213,16 @@ export default function UserAuth() {
           </p>
         </div>
 
-        {/* Error alert */}
+        {/* Error alert – Displays validation or auth errors */}
         {error && (
           <div className="error-alert" role="alert">
             {error}
           </div>
         )}
 
-        {/* Auth form */}
+        {/* Auth form – Handles submission with dynamic fields */}
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
-          {/* Sign-up only fields */}
+          {/* Sign-up only fields – Conditionally rendered */}
           {!isLogin && (
             <>
               <div className="form-field">
@@ -196,7 +259,7 @@ export default function UserAuth() {
             </>
           )}
 
-          {/* Email field */}
+          {/* Email field – Common to both modes */}
           <div className="form-field">
             <label className="form-field-label">
               <Mail />
@@ -213,7 +276,7 @@ export default function UserAuth() {
             />
           </div>
 
-          {/* Password field */}
+          {/* Password field – Common to both modes */}
           <div className="form-field">
             <label className="form-field-label">
               <Lock />
@@ -240,7 +303,7 @@ export default function UserAuth() {
             </div>
           </div>
 
-          {/* Submit button */}
+          {/* Submit button – With loading spinner */}
           <button
             type="submit"
             disabled={loading}
@@ -249,7 +312,7 @@ export default function UserAuth() {
           >
             {loading ? (
               <>
-                <div className="spinner" />
+                <div className="spinner" /> {/* Inline spinner */}
                 <span>Processing...</span>
               </>
             ) : (
@@ -258,14 +321,14 @@ export default function UserAuth() {
           </button>
         </form>
 
-        {/* Divider */}
+        {/* Divider – Separates form from Google button */}
         <div className="divider">
           <div className="divider-line" />
           <span className="divider-text">OR CONTINUE WITH</span>
           <div className="divider-line" />
         </div>
 
-        {/* Google sign-in button */}
+        {/* Google sign-in button – OAuth integration */}
         <button
           onClick={handleGoogleAuth}
           disabled={loading}
@@ -294,7 +357,7 @@ export default function UserAuth() {
           <span>Google</span>
         </button>
 
-        {/* Toggle between login/signup */}
+        {/* Toggle between login/signup – Switch modes */}
         <p className="toggle-text">
           {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button onClick={toggleAuthMode} className="toggle-link" type="button">
