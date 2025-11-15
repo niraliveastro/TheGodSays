@@ -46,7 +46,7 @@ const writeHomeCache = (key, value) => {
 };
 
 export default function Home() {
-  const [panchangData, setPanchangData] = useState(mockPanchangData);
+  const [panchangData, setPanchangData] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
 
   // Date and location state
@@ -240,6 +240,25 @@ export default function Home() {
       return String(dateTimeString);
     }
   };
+// Helper to normalize all astrology API outputs (direct JSON or { output: "..." })
+const normalizeAstroOutput = (raw) => {
+  let out = raw;
+
+  // 1) Unwrap { output: ... } shape
+  if (out && typeof out === "object" && "output" in out) {
+    out = out.output;
+  }
+
+  // 2) If it's a JSON string, parse 1–2 times (handles double-encoded JSON)
+  try {
+    if (typeof out === "string") out = JSON.parse(out);
+  } catch {}
+  try {
+    if (typeof out === "string") out = JSON.parse(out);
+  } catch {}
+
+  return out || null;
+};
 
   const fetchRealPanchangData = async () => {
     if (!userLocation || !selectedDate) return;
@@ -364,35 +383,47 @@ export default function Home() {
       // Update panchang data with real API results
       const updatedPanchangData = { ...mockPanchangData };
 
-      // Process Tithi data
-      if (panchangResults.results["tithi-durations"]) {
-        try {
-          const tithiData = JSON.parse(
-            JSON.parse(panchangResults.results["tithi-durations"].output)
-          );
-          updatedPanchangData.tithi = `${tithiData.name} (${tithiData.paksha})`;
-        } catch (e) {
-          console.error("Error parsing tithi data:", e);
-        }
-      }
+// Process Tithi data 
+if (panchangResults.results["tithi-durations"]) {
+  try {
+    const raw = panchangResults.results["tithi-durations"];
+    const t = normalizeAstroOutput(raw);
+
+    if (t && t.name) {
+      // API gives paksha in lowercase: "krishna" / "shukla"
+      const paksha =
+        typeof t.paksha === "string" && t.paksha.length
+          ? t.paksha[0].toUpperCase() + t.paksha.slice(1).toLowerCase()
+          : null;
+
+      // Final label: "Krishna Paksha Ekadashi"
+      updatedPanchangData.tithi = paksha
+        ? `${paksha} Paksha ${t.name}`
+        : t.name;
+    }
+  } catch (e) {
+    console.error("Error parsing tithi data:", e);
+  }
+}
+
 
       // Process Nakshatra data
-      if (panchangResults.results["nakshatra-durations"]) {
-        try {
-          let nakOut = panchangResults.results["nakshatra-durations"].output;
-          try {
-            if (typeof nakOut === "string") nakOut = JSON.parse(nakOut);
-          } catch {}
-          try {
-            if (typeof nakOut === "string") nakOut = JSON.parse(nakOut);
-          } catch {}
-          const name =
-            nakOut?.name || nakOut?.nakshatra?.name || nakOut?.nakshatra_name;
-          if (name) updatedPanchangData.nakshatra = name;
-        } catch (e) {
-          console.error("Error parsing nakshatra data:", e);
-        }
-      }
+if (panchangResults.results["nakshatra-durations"]) {
+  try {
+    const raw = panchangResults.results["nakshatra-durations"];
+    const n = normalizeAstroOutput(raw);
+
+    const name =
+      n?.name || n?.nakshatra?.name || n?.nakshatra_name;
+
+    if (name) {
+      updatedPanchangData.nakshatra = name;
+    }
+  } catch (e) {
+    console.error("Error parsing nakshatra data:", e);
+  }
+}
+
 
       // Process Yoga data
       if (panchangResults.results["yoga-durations"]) {
@@ -694,28 +725,30 @@ export default function Home() {
     setError(null);
   };
 
-  const panchangItems = [
-    { label: "Tithi", value: panchangData.tithi },
-    { label: "Nakshatra", value: panchangData.nakshatra },
-    { label: "Yoga", value: panchangData.yoga },
-    { label: "Karana", value: panchangData.karana },
-    { label: "Sunrise", value: panchangData.sunrise },
-    { label: "Sunset", value: panchangData.sunset },
-    { label: "Moonrise", value: panchangData.moonrise },
-    { label: "Moonset", value: panchangData.moonset },
-  ];
+const panchangItems = [
+  { label: "Tithi", value: panchangData?.tithi || "Loading..." },
+  { label: "Nakshatra", value: panchangData?.nakshatra || "Loading..." },
+  { label: "Yoga", value: panchangData?.yoga || "Loading..." },
+  { label: "Karana", value: panchangData?.karana || "Loading..." },
+  { label: "Sunrise", value: panchangData?.sunrise || "Loading..." },
+  { label: "Sunset", value: panchangData?.sunset || "Loading..." },
+  { label: "Moonrise", value: panchangData?.moonrise || "Loading..." },
+  { label: "Moonset", value: panchangData?.moonset || "Loading..." },
+];
 
-  const inauspiciousTimings = [
-    { label: "Rahukalam", time: panchangData.rahukalam },
-    { label: "Gulika", time: panchangData.gulika },
-    { label: "Yamaganda", time: panchangData.yamaganda },
-    { label: "Abhijit Muhurat", time: panchangData.abhijitMuhurat },
-    { label: "Brahma Muhurat", time: panchangData.brahmaMuhurat },
-    { label: "Amrit Kaal", time: panchangData.amritKaal },
-    { label: "Dur Muhurat", time: panchangData.durMuhurat },
-    { label: "Varjyam", time: panchangData.varjyam },
-    { label: "Good & Bad Times", time: panchangData.goodBadTimes },
-  ];
+
+const inauspiciousTimings = [
+  { label: "Rahukalam", time: panchangData?.rahukalam || "Loading..." },
+  { label: "Gulika", time: panchangData?.gulika || "Loading..." },
+  { label: "Yamaganda", time: panchangData?.yamaganda || "Loading..." },
+  { label: "Abhijit Muhurat", time: panchangData?.abhijitMuhurat || "Loading..." },
+  { label: "Brahma Muhurat", time: panchangData?.brahmaMuhurat || "Loading..." },
+  { label: "Amrit Kaal", time: panchangData?.amritKaal || "Loading..." },
+  { label: "Dur Muhurat", time: panchangData?.durMuhurat || "Loading..." },
+  { label: "Varjyam", time: panchangData?.varjyam || "Loading..." },
+  { label: "Good & Bad Times", time: panchangData?.goodBadTimes || "Loading..." },
+];
+
 
   // Show form if option is selected
   if (selectedOption && !astrologyResult) {
@@ -1011,7 +1044,7 @@ export default function Home() {
                     <div className="hero-info-content">
                       <div className="hero-info-label">Tithi</div>
                       <div className="hero-info-value">
-                        {panchangData.tithi.split(" ")[0]}
+                        {panchangData?.tithi || "Loading..."}
                       </div>
                     </div>
                   </div>
@@ -1021,7 +1054,7 @@ export default function Home() {
                     <div className="hero-info-content">
                       <div className="hero-info-label">Nakshatra</div>
                       <div className="hero-info-value">
-                        {panchangData.nakshatra}
+                        {panchangData?.nakshatra || "Loading..."}
                       </div>
                     </div>
                   </div>
@@ -1167,7 +1200,7 @@ export default function Home() {
             </section>
 
             {/* FESTIVAL HIGHLIGHT */}
-            {panchangData.festivals.length > 0 && (
+            {panchangData?.festivals.length > 0 && (
               <section className="festival-section-enhanced">
                 <div className="festival-content-grid">
                   <div className="festival-left">
@@ -1182,7 +1215,7 @@ export default function Home() {
                   </div>
                   <div className="festival-right">
                     <div className="festival-card-wrapper">
-                      <FestivalCard festival={panchangData.festivals[0]} />
+                      <FestivalCard festival={panchangData?.festivals[0]} />
                     </div>
                   </div>
                 </div>

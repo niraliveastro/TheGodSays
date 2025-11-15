@@ -62,19 +62,28 @@ export const astrologyAPI = {
       let lastErr
       for (let attempt = 0; attempt < 3; attempt++) {
         // Use server proxy when running on the client to avoid CORS and hide API key
-        const isClient = typeof window !== 'undefined'
-        const url = isClient ? `/api/astro/${endpoint}` : `${API_BASE_URL}/${endpoint}`
-        const headers = isClient
-          ? { 'Content-Type': 'application/json' }
-          : { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            ...headers,
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify(payload),
-        })
+const isServer = typeof window === "undefined";
+const url = isServer
+  ? `${API_BASE_URL}/${endpoint}`
+  : `/api/astro/${endpoint}`;
+
+// Shared headers
+const headers = {
+  "Content-Type": "application/json",
+  "X-Requested-With": "XMLHttpRequest",
+};
+
+// Server only: attach key
+if (isServer) {
+  headers["x-api-key"] = API_KEY;
+}
+
+const response = await fetch(url, {
+  method: "POST",
+  headers,
+  body: JSON.stringify(payload),
+});
+
 
         if (response.ok) {
           const data = await response.json()
