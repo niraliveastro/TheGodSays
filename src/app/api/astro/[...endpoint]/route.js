@@ -9,13 +9,15 @@ if (!API_BASE_URL || !API_KEY) {
 }
 
 const ALLOWED_ENDPOINTS = [
+  'tithi-durations','nakshatra-durations', 
   'tithi-timings', 'nakshatra-timings', 'yoga-durations', 'karana-timings',
   'hora-timings', 'choghadiya-timings', 'rahu-kalam', 'gulika-kalam',
   'planets', 'planets/extended', 'shadbala/summary',
   'vimsottari/maha-dasas', 'vimsottari/dasa-information',
   'vimsottari/maha-dasas-and-antar-dasas',
   'western/natal-wheel-chart', 'horoscope-chart-svg-code',
-  'match-making/ashtakoot-score'
+  'match-making/ashtakoot-score','yama-gandam', 'abhijit-muhurat', 'amrit-kaal',
+  'brahma-muhurat','dur-muhurat', 'varjyam','good-bad-times'
 ]
 
 export async function POST(request, { params }) {

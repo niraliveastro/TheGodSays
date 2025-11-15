@@ -346,7 +346,7 @@ export default function MatchingPage() {
         "shadbala/summary",
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
-        "planets",
+        "planets/extended",
       ];
       const [fCalc, mCalc] = await Promise.all([
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
@@ -378,17 +378,16 @@ export default function MatchingPage() {
         if (v && typeof v === "object" && v.output) v = safeParse(v.output);
         return v;
       };
-      /**
-       * Parses planets raw response.
-       * @param {any} raw - Raw API response.
-       * @returns {object|null} Parsed planets data.
-       */
-      const parsePlanets = (raw) => safeParse(safeParse(raw?.output ?? raw));
-      /**
-       * Extracts current Dasha chain (MD > AD > PD) from Vimsottari data.
-       * @param {object} v - Vimsottari dasa data.
-       * @returns {string|null} Formatted chain or null.
-       */
+
+const parsePlanets = (raw) => {
+  if (!raw) return null;
+  let v = safeParse(safeParse(raw.output ?? raw));
+  if (v && typeof v === "object" && v.output) {
+    v = safeParse(v.output);
+  }
+  return v;
+};
+
       const currentDashaChain = (v) => {
         if (!v) return null;
         const cur = v.current || v.running || v.now || v?.mahadasha?.current;
@@ -445,56 +444,92 @@ export default function MatchingPage() {
           })
           .sort((a, b) => (Number(b.percent ?? 0) - Number(a.percent ?? 0)));
       };
-      const SIGN_NAMES = [
-        "Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces",
-      ];
-      /**
-       * Transforms planet placements data into rows.
-       * @param {object} pl - Planets data.
-       * @returns {array} Array of placement objects.
-       */
-      const toPlacements = (pl) => {
-        if (!pl) return [];
-        if (Array.isArray(pl) && pl.length >= 2 && typeof pl[1] === "object" && !Array.isArray(pl[1])) {
-          const map = pl[1];
-          return Object.keys(map).map((name) => {
-            const v = map[name] || {};
-            const signNum = v.current_sign != null ? Number(v.current_sign) : undefined;
-            const currentSign = signNum
-              ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
-              : v.sign_name || v.sign || v.rashi;
-            return {
-              name,
-              currentSign,
-              house: v.house_number,
-              retro: String(v.isRetro).toLowerCase() === "true" || v.is_retro || v.retrograde || false,
-              fullDegree: typeof v.fullDegree === "number" ? v.fullDegree : typeof v.longitude === "number" ? v.longitude : undefined,
-              normDegree: typeof v.normDegree === "number" ? v.normDegree : undefined,
-            };
-          });
-        }
-        const arr = Array.isArray(pl) ? pl : pl.planets || pl.planet_positions || [];
-        const list = Array.isArray(arr) ? arr : Object.values(arr || {});
-        return list.map((p) => {
-          const signNum = p.current_sign != null ? Number(p.current_sign) : undefined;
-          const currentSign = signNum
-            ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
-            : p.sign || p.rashi || p.sign_name;
-          return {
-            name: p.name || p.planet,
-            currentSign,
-            house: p.house || p.house_number,
-            retro: p.retrograde || p.is_retro || String(p.isRetro).toLowerCase() === "true",
-            fullDegree: typeof p.fullDegree === "number" ? p.fullDegree : typeof p.longitude === "number" ? p.longitude : undefined,
-            normDegree: typeof p.normDegree === "number" ? p.normDegree : undefined,
-          };
-        });
+
+const SIGN_NAMES = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+];
+
+const toPlacements = (pl) => {
+  if (!pl) return [];
+
+  // planets/extended often comes as an object keyed by planet name
+  if (typeof pl === "object" && !Array.isArray(pl)) {
+    return Object.entries(pl).map(([name, v]) => {
+      const signNum =
+        v.current_sign != null ? Number(v.current_sign) : undefined;
+      const currentSign = signNum
+        ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+        : v.zodiac_sign_name || v.sign_name || v.sign || v.rashi;
+
+      return {
+        name: v.name || v.planet || name,
+        currentSign,
+        house: v.house_number ?? v.house,
+        nakshatra: v.nakshatra_name || v.nakshatra,
+        pada: v.nakshatra_pada || v.pada,
+        retro:
+          v.isRetro === "true" ||
+          v.retrograde === true ||
+          v.is_retro === true,
+        fullDegree:
+          typeof v.fullDegree === "number"
+            ? v.fullDegree
+            : typeof v.longitude === "number"
+            ? v.longitude
+            : undefined,
+        normDegree:
+          typeof v.normDegree === "number" ? v.normDegree : undefined,
       };
-      /**
-       * Builds user details object from calculation results.
-       * @param {object} calc - API calculation results.
-       * @returns {object} Details with currentDasha, shadbalaRows, placements.
-       */
+    });
+  }
+
+  // Fallback: array-like structures
+  const arr = Array.isArray(pl)
+    ? pl
+    : pl.planets || pl.planet_positions || Object.values(pl || {});
+
+  return (arr || []).map((p) => {
+    const signNum =
+      p.current_sign != null ? Number(p.current_sign) : undefined;
+    const currentSign = signNum
+      ? `${SIGN_NAMES[(signNum - 1) % 12]} (${signNum})`
+      : p.zodiac_sign_name || p.sign || p.rashi || p.sign_name;
+
+    return {
+      name: p.name || p.planet,
+      currentSign,
+      house: p.house || p.house_number,
+      nakshatra: p.nakshatra_name || p.nakshatra,
+      pada: p.nakshatra_pada || p.pada,
+      retro:
+        p.retrograde === true ||
+        p.is_retro === true ||
+        String(p.isRetro).toLowerCase() === "true",
+      fullDegree:
+        typeof p.fullDegree === "number"
+          ? p.fullDegree
+          : typeof p.longitude === "number"
+          ? p.longitude
+          : undefined,
+      normDegree:
+        typeof p.normDegree === "number" ? p.normDegree : undefined,
+    };
+  });
+};
+
+
+
       const buildUserDetails = (calc) => {
         const r = calc?.results || {};
         const shadbala = parseShadbala(r["shadbala/summary"]);
@@ -502,7 +537,7 @@ export default function MatchingPage() {
           ? safeParse(safeParse(r["vimsottari/dasa-information"].output ?? r["vimsottari/dasa-information"]))
           : null;
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
-        const planets = parsePlanets(r["planets"]);
+        const planets = parsePlanets(r["planets/extended"]);
         return {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
@@ -831,8 +866,9 @@ export default function MatchingPage() {
             {(d?.placements || []).map((p) => (
               <div key={`${title}-pl-${p.name}`} className="placement-item">
                 <div className="placement-head">
-                  <div className="placement-name">{p.name}</div>
-                  {p.retro && <Badge tone="warn">Retro</Badge>}
+                  <div className="placement-name">
+                    {p.retro ? `${p.name} (Retro)` : p.name}
+                  </div>
                 </div>
                 <div className="placement-badges">
                   <Badge tone="neutral">Sign: {p.currentSign || "—"}</Badge>
@@ -1058,6 +1094,8 @@ export default function MatchingPage() {
         }
         .progress-fill {
           height: 100%;
+          background: linear-gradient(to right, #ca8a04, #eab308);
+          border-radius: 9999px; 
           transition: width .3s ease;
         }
         .bg-cyan-500 { background: var(--c-cyan); }
@@ -1406,424 +1444,442 @@ export default function MatchingPage() {
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
         {/* ---------------------------------------------------------- */}
-        {result && (
-          <div className="app fade-in">
-            {/* Background Orbs */}
-            <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-              <div className="orb orb1" />
-              <div className="orb orb2" />
-              <div className="orb orb3" />
+{result && (
+  <div className="app fade-in">
+    {/* Background Orbs */}
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      <div className="orb orb1" />
+      <div className="orb orb2" />
+      <div className="orb orb3" />
+    </div>
+
+    {/* Header */}
+    <header className="header left-align">
+      <h1 className="title">Pro Kundali Match</h1>
+    </header>
+
+    {/* Birth Info Snapshot */}
+<div className="grid md:grid-cols-2 gap-6 mt-4">
+  {/* Female Birth Info */}
+  <div className="card">
+    <div className="results-header">
+      <Moon style={{ color: '#a78bfa' }} />
+      <h3 className="results-title">Female Birth Information</h3>
+    </div>
+    <div className="birth-info-grid">
+      {[
+        { icon: Sparkles, label: 'Full Name', value: female.fullName || '—' },
+        { icon: Calendar, label: 'Date', value: fmtDate(female.dob) },
+        { icon: Clock, label: 'Time', value: fmtTime(female.tob) },
+        { icon: MapPin, label: 'Place', value: female.place || '—' },
+      ].map((item, i) => {
+        const Icon = item.icon
+        return (
+          <div key={i} className="info-card">
+            <div className="info-label">
+              <Icon />
+              {item.label}
             </div>
-            {/* Header */}
-            <header className="header left-align">
-              <h1 className="title">Pro Kundali Match</h1>
-            </header>
-            {/* Birth Info Snapshot */}
-            <div className="grid md:grid-cols-2 gap-6 mt-4">
-              {/* Female Birth Info */}
-              <div className="card">
-                <div className="results-header">
-                  <Moon style={{ color: '#a78bfa' }} />
-                  <h3 className="results-title">Female Birth Information</h3>
-                </div>
-                <div className="birth-info-grid">
-                  {[
-                    { icon: Sparkles, label: 'Full Name', value: female.fullName || '—' },
-                    { icon: Calendar, label: 'Date', value: fmtDate(female.dob) },
-                    { icon: Clock, label: 'Time', value: fmtTime(female.tob) },
-                    { icon: MapPin, label: 'Place', value: female.place || '—' },
-                  ].map((item, i) => {
-                    const Icon = item.icon
-                    return (
-                      <div key={i} className="info-card">
-                        <div className="info-label">
-                          <Icon />
-                          {item.label}
-                        </div>
-                        <div className="info-value">{item.value}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-              {/* Male Birth Info */}
-              <div className="card">
-                <div className="results-header">
-                  <Sun style={{ color: '#ca8a04' }} />
-                  <h3 className="results-title">Male Birth Information</h3>
-                </div>
-                <div className="birth-info-grid">
-                  {[
-                    { icon: Sparkles, label: 'Full Name', value: male.fullName || '—' },
-                    { icon: Calendar, label: 'Date', value: fmtDate(male.dob) },
-                    { icon: Clock, label: 'Time', value: fmtTime(male.tob) },
-                    { icon: MapPin, label: 'Place', value: male.place || '—' },
-                  ].map((item, i) => {
-                    const Icon = item.icon
-                    return (
-                      <div key={i} className="info-card">
-                        <div className="info-label">
-                          <Icon />
-                          {item.label}
-                        </div>
-                        <div className="info-value">{item.value}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-            {/* Verdict Card */}
-            <div className="card">
-              <div className="results-header">
-                <Sun style={{ color: '#ca8a04' }} />
-                <h3 className="results-title">Ashtakoot Compatibility</h3>
-              </div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-4xl font-bold text-gold">
-                  {Number(result?.total_score ?? 0)}
-                  <span className="text-gray-500 text-xl">/{Number(result?.out_of ?? 36)}</span>
-                </div>
-                <div className="liveBadge">
-                  <div className="pulseDot" /> Score Summary
-                </div>
-              </div>
-              {/* Koot Table */}
-              <div className="table-scroll-container mt-4">
-                <table className="planet-table">
-                  <thead>
-                    <tr>
-                      <th>Kootam</th>
-                      <th>Points</th>
-                      <th>Area of Life</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {KOOTS.map((k) => {
-                      const sec = result?.[k];
-                      const name = k.replace(/_?kootam/i, "").replace(/_/g, " ").trim();
-                      const score = typeof sec?.score === "number" ? sec.score : "—";
-                      const outOf = typeof sec?.out_of === "number" ? sec.out_of : "—";
-                      // Define the meaning map OUTSIDE normalization scope
-                      const meaningMap = {
-                        varna: "Spiritual Compatibility",
-                        vasya: "Mutual Affection / Control",
-                        tara: "Health & Longevity",
-                        yoni: "Sexual Compatibility",
-                        graha_maitri: "Mental Harmony",
-                        gana: "Temperament",
-                        rasi: "Love & Emotion",
-                        nadi: "Health & Genes",
-                      };
-                      // Normalize name to match map keys correctly
-                      const normalizedKey = k
-                        .replace(/_?kootam/i, "")
-                        .trim()
-                        .toLowerCase();
-                      const area = meaningMap[normalizedKey] || "—";
-                      return (
-                        <tr key={k}>
-                          <td className="capitalize font-medium text-gray-700">
-                            {name}
-                          </td>
-                          <td className="font-semibold text-gray-900">
-                            {score} / {outOf}
-                          </td>
-                          <td className="text-gray-600">{area}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {/* Charts Section */}
-            {mounted && (
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
-                {/* Bar Chart */}
-                <div className="card">
-                  <div className="results-header">
-                    <Sun style={{ color: '#d4af37' }} />
-                    <h3 className="results-title">Koot Scores (Bar)</h3>
-                  </div>
-                  {kootData.length > 0 ? (
-                    <div className="flex justify-center">
-                      <BarChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                        <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
-                        <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "#ffffff",
-                            border: "1px solid var(--color-gold)",
-                            color: "#1f2937",
-                            borderRadius: "0.5rem",
-                            boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-                            padding: "0.5rem 0.75rem",
-                          }}
-                          itemStyle={{
-                            color: "#1f2937",
-                            fontWeight: 600,
-                          }}
-                          labelStyle={{
-                            color: "var(--color-gold)",
-                            fontWeight: 700,
-                            marginBottom: "0.25rem",
-                          }}
-                        />
-                        <Bar dataKey="score" fill="var(--color-gold)" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </div>
-                  ) : (
-                    <div className="empty-state">No chart data</div>
-                  )}
-                </div>
-                {/* Line Chart */}
-                <div className="card">
-                  <div className="results-header">
-                    <Moon style={{ color: '#a78bfa' }} />
-                    <h3 className="results-title">Koot Percentage (Line)</h3>
-                  </div>
-                  {kootData.length > 0 ? (
-                    <div className="flex justify-center">
-                      <LineChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
-                        <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
-                        <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "#ffffff",
-                            border: "1px solid var(--color-gold)",
-                            color: "#1f2937",
-                            borderRadius: "0.5rem",
-                            boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-                            padding: "0.5rem 0.75rem",
-                          }}
-                          itemStyle={{
-                            color: "#1f2937",
-                            fontWeight: 600,
-                          }}
-                          labelStyle={{
-                            color: "var(--color-gold)",
-                            fontWeight: 700,
-                            marginBottom: "0.25rem",
-                          }}
-                        />
-                        <Line type="monotone" dataKey="pct" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </div>
-                  ) : (
-                    <div className="empty-state">No chart data</div>
-                  )}
-                </div>
-              </div>
-            )}
-            {/* Female and Male Details */}
-            {(fDetails || mDetails) && (
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
-                {/* Female Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Moon style={{ color: '#a78bfa' }} />
-                    <h3 className="results-title">Female Details</h3>
-                  </div>
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div className="table-scroll-container">
-                    <table className="planet-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength %</th>
-                          <th>Ishta %</th>
-                          <th>Kashta %</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
-                            <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
-                                  </div>
-                                  <div className="progress-label">{p.ishta.toFixed(1)}%</div>
-                                </div>
-                              ) : '—'}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
-                                  </div>
-                                  <div className="progress-label">{p.kashta.toFixed(1)}%</div>
-                                </div>
-                              ) : '—'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Normal Degree</th>
-                          <th>Full Degree</th>
-                          <th>Retro</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.placements || [])
-                          .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
-                          .map((p, i) => (
-                            <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>{p.name}</td>
-                              <td>{p.currentSign || '—'}</td>
-                              <td>{p.house ?? '—'}</td>
-                              <td>
-                                {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
-                              </td>
-                              <td>
-                                {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
-                              </td>
-                              <td>
-                                {p.retro ? (
-                                  <span style={{ color: '#198754' }}>Retro</span>
-                                ) : (
-                                  <span className="retro-badge">Not Retro</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                {/* Male Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Sun style={{ color: '#d4af37' }} />
-                    <h3 className="results-title">Male Details</h3>
-                  </div>
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div className="table-scroll-container">
-                    <table className="planet-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength %</th>
-                          <th>Ishta %</th>
-                          <th>Kashta %</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
-                            <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
-                                  </div>
-                                  <div className="progress-label">{p.ishta.toFixed(1)}%</div>
-                                </div>
-                              ) : '—'}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
-                                  </div>
-                                  <div className="progress-label">{p.kashta.toFixed(1)}%</div>
-                                </div>
-                              ) : '—'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Normal Degree</th>
-                          <th>Full Degree</th>
-                          <th>Retro</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.placements || [])
-                          .filter(p => (p.name || '').toLowerCase() !== 'ascendant')
-                          .map((p, i) => (
-                            <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>{p.name}</td>
-                              <td>{p.currentSign || '—'}</td>
-                              <td>{p.house ?? '—'}</td>
-                              <td>
-                                {typeof p.normDegree === 'number' ? `${p.normDegree.toFixed(2)}°` : '—'}
-                              </td>
-                              <td>
-                                {typeof p.fullDegree === 'number' ? `${p.fullDegree.toFixed(2)}°` : '—'}
-                              </td>
-                              <td>
-                                {p.retro ? (
-                                  <span style={{ color: '#198754' }}>Retro</span>
-                                ) : (
-                                  <span className="retro-badge">Not Retro</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Footer */}
-            <div className="actionBar mt-8">
-              <button className="btn btn-ghost" onClick={() => {
-                  setFemale({ dob: '', tob: '', place: '' });
-                  setMale({ dob: '', tob: '', place: '' });
-                  setFCoords(null);
-                  setMCoords(null);
-                  setFSuggest([]);
-                  setMSuggest([]);
-                  setError('');
-                  setResult(null);
-                  setFDetails(null);
-                  setMDetails(null);
-                }}>
-                <RotateCcw className="w-4 h-4" /> Reset
-              </button>
-              <div className="flex gap-3">
-                <button className="btn btn-primary" onClick={handleDownloadPDF}>
-                  Download PDF
-                </button>
-                <button className="btn btn-primary" onClick={handleShare}>
-                  Share
-                </button>
-              </div>
-            </div>
+            <div className="info-value">{item.value}</div>
           </div>
-        )}
+        )
+      })}
+    </div>
+  </div>
+
+  {/* Male Birth Info */}
+  <div className="card">
+    <div className="results-header">
+      <Sun style={{ color: '#ca8a04' }} />
+      <h3 className="results-title">Male Birth Information</h3>
+    </div>
+    <div className="birth-info-grid">
+      {[
+        { icon: Sparkles, label: 'Full Name', value: male.fullName || '—' },
+        { icon: Calendar, label: 'Date', value: fmtDate(male.dob) },
+        { icon: Clock, label: 'Time', value: fmtTime(male.tob) },
+        { icon: MapPin, label: 'Place', value: male.place || '—' },
+      ].map((item, i) => {
+        const Icon = item.icon
+        return (
+          <div key={i} className="info-card">
+            <div className="info-label">
+              <Icon />
+              {item.label}
+            </div>
+            <div className="info-value">{item.value}</div>
+          </div>
+        )
+      })}
+    </div>
+  </div>
+</div>
+
+
+    {/* Verdict Card */}
+    <div className="card">
+      <div className="results-header">
+        <Sun style={{ color: '#ca8a04' }} />
+        <h3 className="results-title">Ashtakoot Compatibility</h3>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="text-4xl font-bold text-gold">
+          {Number(result?.total_score ?? 0)}
+          <span className="text-gray-500 text-xl">/{Number(result?.out_of ?? 36)}</span>
+        </div>
+        <div className="liveBadge">
+          <div className="pulseDot" /> Score Summary
+        </div>
+      </div>
+
+{/* Koot Table */}
+<div className="table-scroll-container mt-4">
+  <table className="planet-table">
+    <thead>
+      <tr>
+        <th>Kootam</th>
+        <th>Points</th>
+        <th>Area of Life</th>
+      </tr>
+    </thead>
+    <tbody>
+      {KOOTS.map((k) => {
+        const sec = result?.[k];
+        const name = k.replace(/_?kootam/i, "").replace(/_/g, " ").trim();
+        const score = typeof sec?.score === "number" ? sec.score : "—";
+        const outOf = typeof sec?.out_of === "number" ? sec.out_of : "—";
+
+        // Define the meaning map OUTSIDE normalization scope
+        const meaningMap = {
+          varna: "Spiritual Compatibility",
+          vasya: "Mutual Affection / Control",
+          tara: "Health & Longevity",
+          yoni: "Sexual Compatibility",
+          graha_maitri: "Mental Harmony",
+          gana: "Temperament",
+          rasi: "Love & Emotion",
+          nadi: "Health & Genes",
+        };
+
+        // Normalize name to match map keys correctly
+        const normalizedKey = k
+          .replace(/_?kootam/i, "")
+          .trim()
+          .toLowerCase();
+
+        const area = meaningMap[normalizedKey] || "—";
+
+        return (
+          <tr key={k}>
+            <td className="capitalize font-medium text-gray-700">
+              {name}
+            </td>
+            <td className="font-semibold text-gray-900">
+              {score} / {outOf}
+            </td>
+            <td className="text-gray-600">{area}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
+
+
+    </div>
+  {/* Charts Section */}
+    {mounted && (
+      <div className="grid md:grid-cols-2 gap-6 mt-8">
+        {/* Bar Chart */}
+        <div className="card">
+          <div className="results-header">
+            <Sun style={{ color: '#d4af37' }} />
+            <h3 className="results-title">Koot Scores (Bar)</h3>
+          </div>
+          {kootData.length > 0 ? (
+            <div className="flex justify-center">
+              <BarChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                <Tooltip
+  contentStyle={{
+    background: "#ffffff",
+    border: "1px solid var(--color-gold)",
+    color: "#1f2937",
+    borderRadius: "0.5rem",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+    padding: "0.5rem 0.75rem",
+  }}
+  itemStyle={{
+    color: "#1f2937",
+    fontWeight: 600,
+  }}
+  labelStyle={{
+    color: "var(--color-gold)",
+    fontWeight: 700,
+    marginBottom: "0.25rem",
+  }}
+/>
+
+                <Bar dataKey="score" fill="var(--color-gold)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </div>
+          ) : (
+            <div className="empty-state">No chart data</div>
+          )}
+        </div>
+
+        {/* Line Chart */}
+        <div className="card">
+          <div className="results-header">
+            <Moon style={{ color: '#a78bfa' }} />
+            <h3 className="results-title">Koot Percentage (Line)</h3>
+          </div>
+          {kootData.length > 0 ? (
+            <div className="flex justify-center">
+              <LineChart width={400} height={220} data={kootData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} angle={-30} textAnchor="end" height={36} />
+                <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} />
+<Tooltip
+  contentStyle={{
+    background: "#ffffff",
+    border: "1px solid var(--color-gold)",
+    color: "#1f2937",
+    borderRadius: "0.5rem",
+    boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
+    padding: "0.5rem 0.75rem",
+  }}
+  itemStyle={{
+    color: "#1f2937",
+    fontWeight: 600,
+  }}
+  labelStyle={{
+    color: "var(--color-gold)",
+    fontWeight: 700,
+    marginBottom: "0.25rem",
+  }}
+/>
+                <Line type="monotone" dataKey="pct" stroke="#7c3aed" strokeWidth={2} dot={false} />
+              </LineChart>
+            </div>
+          ) : (
+            <div className="empty-state">No chart data</div>
+          )}
+        </div>
+      </div>
+    )}
+    {/* Female and Male Details */}
+{(fDetails || mDetails) && (
+  <div className="grid md:grid-cols-2 gap-6 mt-8">
+    {/* Female Details */}
+    <div className="card">
+      <div className="results-header">
+        <Moon style={{ color: '#a78bfa' }} />
+        <h3 className="results-title">Female Details</h3>
+      </div>
+
+      {/* Shadbala / Ishta-Kashta */}
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Strength</th>
+              <th>Ishta</th>
+              <th>Kashta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(fDetails?.shadbalaRows || []).map((p, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500 }}>
+                  {p.retro ? `${p.name} (Retro)` : p.name}
+                </td>
+                <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
+                <td>
+                  {p.ishta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.ishta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+                <td>
+                  {p.kashta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.kashta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+{/* Planet Placements */}
+<div className="mt-6 table-scroll-container">
+  <table className="planet-table">
+<thead>
+  <tr>
+    <th>Planet</th>
+    <th>Sign</th>
+    <th>House</th>
+    <th>Nakshatra (Pada)</th>
+    <th>Degrees</th>
+  </tr>
+</thead>
+<tbody>
+  {(fDetails?.placements || []).map((p, i) => {
+    const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
+    const degreesDisplay =
+      [
+        typeof p.fullDegree === "number"
+          ? `Full: ${p.fullDegree.toFixed(2)}°`
+          : null,
+        typeof p.normDegree === "number"
+          ? `Norm: ${p.normDegree.toFixed(2)}°`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || "—";
+
+    return (
+      <tr key={i}>
+        <td style={{ fontWeight: 500 }}>
+           {p.retro ? `${p.name} (Retro)` : p.name}
+        </td>
+        <td>{p.currentSign || "—"}</td>
+        <td>{p.house ?? "—"}</td>
+        <td>{nakshatraDisplay}</td>
+        <td>{degreesDisplay}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
+  </table>
+</div>
+    </div>
+
+    {/* Male Details */}
+    <div className="card">
+      <div className="results-header">
+        <Sun style={{ color: '#d4af37' }} />
+        <h3 className="results-title">Male Details</h3>
+      </div>
+
+      {/* Shadbala / Ishta-Kashta */}
+      <div className="table-scroll-container">
+        <table className="planet-table">
+          <thead>
+            <tr>
+              <th>Planet</th>
+              <th>Strength</th>
+              <th>Ishta</th>
+              <th>Kashta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(mDetails?.shadbalaRows || []).map((p, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500 }}>{p.name || '—'}</td>
+                <td>{p.percent ? `${p.percent.toFixed(1)}%` : '—'}</td>
+                <td>
+                  {p.ishta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.ishta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.ishta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+                <td>
+                  {p.kashta != null ? (
+                    <div className="progress-container">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${p.kashta}%` }} />
+                      </div>
+                      <div className="progress-label">{p.kashta.toFixed(1)}%</div>
+                    </div>
+                  ) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+{/* Planet Placements */}
+<div className="mt-6 table-scroll-container">
+  <table className="planet-table">
+<thead>
+  <tr>
+    <th>Planet</th>
+    <th>Sign</th>
+    <th>House</th>
+    <th>Nakshatra (Pada)</th>
+    <th>Degrees</th>
+  </tr>
+</thead>
+<tbody>
+  {(mDetails?.placements || []).map((p, i) => {
+    const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"})`;
+    const degreesDisplay =
+      [
+        typeof p.fullDegree === "number"
+          ? `Full: ${p.fullDegree.toFixed(2)}°`
+          : null,
+        typeof p.normDegree === "number"
+          ? `Norm: ${p.normDegree.toFixed(2)}°`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || "—";
+
+    return (
+      <tr key={i}>
+        <td style={{ fontWeight: 500 }}>
+            {p.retro ? `${p.name} (Retro)` : p.name}
+        </td>
+        <td>{p.currentSign || "—"}</td>
+        <td>{p.house ?? "—"}</td>
+        <td>{nakshatraDisplay}</td>
+        <td>{degreesDisplay}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
+  </table>
+</div>
+    </div>
+  </div>
+)}
+
+
+
+    {/* Footer */}
+    <div className="actionBar mt-8">
+      <button className="btn btn-ghost"><RotateCcw className="w-4 h-4" /> Reset</button>
+      <div className="flex gap-3">
+        <button className="btn btn-primary">Download PDF</button>
+        <button className="btn btn-primary">Share</button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </>
   );
