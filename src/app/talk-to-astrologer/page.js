@@ -39,6 +39,23 @@ export default function TalkToAstrologer() {
   const router = useRouter()
 
   /* --------------------------------------------------------------- */
+  /*  Modal open state for body scroll lock                         */
+  /* --------------------------------------------------------------- */
+  const isAnyModalOpen = isBalanceModalOpen || isReviewModalOpen || !!connectingCallType
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isAnyModalOpen])
+
+  /* --------------------------------------------------------------- */
   /*  Fetch astrologers + pricing + reviews                         */
   /* --------------------------------------------------------------- */
   const fetchAndUpdateAstrologers = async () => {
@@ -145,6 +162,7 @@ export default function TalkToAstrologer() {
       if (!userId) {
         alert('Please log in first.')
         router.push('/auth/user')
+        setLoading(false)
         return
       }
 
@@ -179,6 +197,7 @@ export default function TalkToAstrologer() {
       if (!success) throw new Error('Cannot check astrologer status.')
       if (status === 'offline') throw new Error('Astrologer is offline.')
       if (status === 'busy' && !confirm('Astrologer is busy. Join queue?')) {
+        setConnectingCallType(null)
         setLoading(false)
         return
       }
@@ -239,12 +258,15 @@ export default function TalkToAstrologer() {
           if (sessRes.ok) {
             const { roomName } = await sessRes.json()
             setConnectingCallType(null)
+            setLoading(false)
             router.push(
               type === 'video'
                 ? `/talk-to-astrologer/room/${roomName}`
                 : `/talk-to-astrologer/voice/${roomName}`
             )
           } else {
+            setConnectingCallType(null)
+            setLoading(false)
             alert('Failed to join room.')
           }
         } else if (c?.status === 'rejected') {
@@ -259,6 +281,7 @@ export default function TalkToAstrologer() {
           setTimeout(() => {
             setConnectingCallType(null)
             setCallStatus('connecting')
+            setLoading(false)
           }, 2000)
         }
       }, 2000)
@@ -271,15 +294,14 @@ export default function TalkToAstrologer() {
           body: JSON.stringify({ action: 'cancel-call', callId: call.id }),
         }).catch(() => {})
         setConnectingCallType(null)
-        alert('Astrologer not responding.')
         setLoading(false)
+        alert('Astrologer not responding.')
       }, 60_000)
     } catch (e) {
       console.error(e)
       setConnectingCallType(null)
-      alert(e.message || 'Call failed.')
-    } finally {
       setLoading(false)
+      alert(e.message || 'Call failed.')
     }
   }
 
@@ -290,6 +312,7 @@ export default function TalkToAstrologer() {
   /*  Review helpers                                                 */
   /* --------------------------------------------------------------- */
   const handleOpenReview = (astrologer) => {
+    if (!!connectingCallType) return // Prevent opening during connecting
     const userId = localStorage.getItem('tgs:userId')
     if (!userId) {
       alert('Please log in to leave a review.')
@@ -326,6 +349,7 @@ export default function TalkToAstrologer() {
         onTimeout={() => {
           setConnectingCallType(null)
           setCallStatus('connecting')
+          setLoading(false)
           alert('Connection timed out.')
         }}
       />
@@ -370,6 +394,7 @@ export default function TalkToAstrologer() {
                   placeholder="Search astrologer or specialization..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={!!connectingCallType}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.5rem',
@@ -378,8 +403,11 @@ export default function TalkToAstrologer() {
                     fontSize: '1rem',
                     outline: 'none',
                     transition: 'var(--transition-fast)',
+                    opacity: !!connectingCallType ? 0.5 : 1,
+                    pointerEvents: !!connectingCallType ? 'none' : 'auto',
                   }}
                   onFocus={(e) => {
+                    if (!!connectingCallType) return
                     e.target.style.borderColor = 'var(--color-gold)'
                     e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
                   }}
@@ -405,6 +433,7 @@ export default function TalkToAstrologer() {
                 <select
                   value={filterSpecialization}
                   onChange={(e) => setFilterSpecialization(e.target.value)}
+                  disabled={!!connectingCallType}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.5rem',
@@ -417,8 +446,11 @@ export default function TalkToAstrologer() {
                     backgroundRepeat: 'no-repeat',
                     backgroundSize: '1.2em',
                     outline: 'none',
+                    opacity: !!connectingCallType ? 0.5 : 1,
+                    pointerEvents: !!connectingCallType ? 'none' : 'auto',
                   }}
                   onFocus={(e) => {
+                    if (!!connectingCallType) return
                     e.target.style.borderColor = 'var(--color-gold)'
                     e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
                   }}
@@ -478,6 +510,8 @@ export default function TalkToAstrologer() {
       gap: '1rem',
       gridTemplateColumns: '1fr',
       marginTop: '1.5rem',
+      opacity: !!connectingCallType ? 0.5 : 1,
+      pointerEvents: !!connectingCallType ? 'none' : 'auto',
     }}
   >
  {filteredAstrologers.map((a) => (
@@ -488,15 +522,17 @@ export default function TalkToAstrologer() {
     style={{
       padding: '1.5rem',
       transition: 'var(--transition-smooth)',
-      cursor: 'pointer',
+      cursor: !!connectingCallType ? 'default' : 'pointer',
       minWidth: '22rem',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
       textDecoration: 'none',
       color: 'inherit',
+      pointerEvents: !!connectingCallType ? 'none' : 'auto',
     }}
     onMouseEnter={(e) => {
+      if (!!connectingCallType) return
       e.currentTarget.style.transform = 'translateY(-4px)'
       e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
     }}
@@ -615,6 +651,7 @@ export default function TalkToAstrologer() {
                 e.stopPropagation()
                 handleOpenReview(a)
               }}
+              disabled={!!connectingCallType}
               variant="outline"
               size="sm"
               className="btn btn-outline"
@@ -622,6 +659,7 @@ export default function TalkToAstrologer() {
                 fontSize: '0.75rem',
                 padding: '0.25rem 0.75rem',
                 height: '1.75rem',
+                opacity: !!connectingCallType ? 0.5 : 1,
               }}
             >
               Review
@@ -708,7 +746,7 @@ export default function TalkToAstrologer() {
           e.stopPropagation()
           handleVideoCall(a.id)
         }}
-        disabled={!a.isOnline || loading}
+        disabled={!a.isOnline || loading || !!connectingCallType}
         className="btn btn-primary"
         style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
       >
@@ -726,7 +764,7 @@ export default function TalkToAstrologer() {
           e.stopPropagation()
           handleVoiceCall(a.id)
         }}
-        disabled={!a.isOnline || loading}
+        disabled={!a.isOnline || loading || !!connectingCallType}
         variant="outline"
         className="btn btn-outline"
         style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
@@ -776,6 +814,7 @@ export default function TalkToAstrologer() {
           open={isBalanceModalOpen}
           onClose={() => setIsBalanceModalOpen(false)}
           title="Insufficient Balance"
+          style={{ zIndex: 1000 }}
         >
           <div style={{ textAlign: 'center', padding: '1.5rem' }}>
             <div
@@ -817,6 +856,7 @@ export default function TalkToAstrologer() {
             astrologerId={selectedAstrologer.id}
             astrologerName={selectedAstrologer.name}
             onSubmit={handleSubmitReview}
+            style={{ zIndex: 1000 }}
           />
         )}
       </div>

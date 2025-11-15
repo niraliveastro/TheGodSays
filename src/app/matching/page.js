@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import {
   BarChart,
@@ -13,20 +12,19 @@ import {
 } from "recharts";
 import {Sparkles, Sun, Moon, Orbit, RotateCcw, Calendar, Clock, MapPin, Trash2 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
-
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
-
 /**
  * Tiny UI helpers – pure CSS classes for reusable components.
  * These are simple functional components that render styled divs or spans.
  */
-
 /**
  * ProgressBar Component
- * 
+ *
  * A horizontal progress bar component that displays a percentage value.
  * Clamps value between 0-200%, with color tiers: emerald (>=120%), blue (>=100%), amber (<100%).
- * 
+ *
  * @param {number} [value=0] - The progress value (0-200).
  * @param {string} [color] - Optional custom color class override.
  * @returns {JSX.Element} A div with a filled progress bar.
@@ -35,7 +33,6 @@ const ProgressBar = ({ value = 0, color }) => {
   const v = Math.max(0, Math.min(200, Number(value) || 0));
   const barColor =
     v >= 120 ? "bg-emerald-500" : v >= 100 ? "bg-blue-500" : "bg-amber-500";
-
   return (
     <div className="progress-wrapper">
       <div
@@ -45,13 +42,12 @@ const ProgressBar = ({ value = 0, color }) => {
     </div>
   );
 };
-
 /**
  * Badge Component
- * 
+ *
  * A small, styled badge for displaying status or labels.
  * Supports tone variants: neutral, info, success, warn.
- * 
+ *
  * @param {ReactNode} children - The content inside the badge.
  * @param {string} [tone="neutral"] - The tone variant for styling.
  * @returns {JSX.Element} A span with badge styling.
@@ -65,18 +61,17 @@ const Badge = ({ children, tone = "neutral" }) => {
   };
   return <span className={`badge ${tones[tone] || tones.neutral}`}>{children}</span>;
 };
-
 /* ------------------------------------------------------------------ */
-/*  Main component                                                    */
+/* Main component */
 /* ------------------------------------------------------------------ */
 /**
  * MatchingPage Component
- * 
+ *
  * A comprehensive React component for Vedic astrology match-making (Ashtakoot compatibility).
  * Allows input of birth details for two individuals (female/male), computes compatibility score,
  * displays charts (bar/line for Koot scores), individual details (Shadbala, placements, Dasha),
  * and maintains a local storage-based history of matches.
- * 
+ *
  * Features:
  * - Dual form for female/male birth details (name, DOB, TOB, place) with autocomplete suggestions via Nominatim.
  * - Validation and submission handling with API calls to astrologyAPI for matching and individual calculations.
@@ -85,30 +80,29 @@ const Badge = ({ children, tone = "neutral" }) => {
  * - Matching history with CRUD (create/read/update/delete) via localStorage (max 10 entries).
  * - Error handling, loading states, and reset functionality.
  * - Responsive design with Tailwind-inspired classes and custom CSS.
- * 
+ *
  * Dependencies:
  * - React hooks: useState, useEffect, useRef.
  * - Recharts for data visualization.
  * - Lucide React and React Icons for UI elements.
  * - Custom astrologyAPI, geocodePlace, getTimezoneOffsetHours for backend integration.
- * 
+ *
  * Styling:
  * - Inline <style jsx> for self-contained CSS (Tailwind-like utilities + custom).
  * - Pink/blue themes for female/male sections.
  * - Golden accents for astrological theme.
- * 
+ *
  * API Integrations:
  * - Ashtakoot score via "match-making/ashtakoot-score".
  * - Individual calcs: shadbala/summary, vimsottari/dasa-information, vimsottari/maha-dasas, planets.
  * - Nominatim for place geocoding.
- * 
+ *
  * @returns {JSX.Element} The rendered match-making page.
  */
 export default function MatchingPage() {
   // Form state for female and male individuals
   const [female, setFemale] = useState({ fullName: "", dob: "", tob: "", place: "" });
   const [male, setMale] = useState({ fullName: "", dob: "", tob: "", place: "" });
-
   // Coordinates and suggestions state
   const [fCoords, setFCoords] = useState(null); // Female coordinates {latitude, longitude}
   const [mCoords, setMCoords] = useState(null); // Male coordinates {latitude, longitude}
@@ -116,7 +110,6 @@ export default function MatchingPage() {
   const [mSuggest, setMSuggest] = useState([]); // Male place suggestions array
   const fTimer = useRef(null); // Debounce timer ref for female place search
   const mTimer = useRef(null); // Debounce timer ref for male place search
-
   // Submission and result state
   const [submitting, setSubmitting] = useState(false); // Loading state during submission
   const [error, setError] = useState(""); // Error message string
@@ -124,11 +117,9 @@ export default function MatchingPage() {
   const [fDetails, setFDetails] = useState(null); // Female individual details object
   const [mDetails, setMDetails] = useState(null); // Male individual details object
   const [mounted, setMounted] = useState(false); // Client-side mount flag for charts
-
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
   const [history, setHistory] = useState([]); // Array of history entries
-
   /**
    * Retrieves matching history from localStorage.
    * @returns {array} Array of history objects or empty array on error.
@@ -141,7 +132,6 @@ export default function MatchingPage() {
       return [];
     }
   };
-
   /**
    * Saves a new matching entry to history (unshift, dedupe, limit to 10).
    * @param {object} entry - History entry with female/male details.
@@ -159,7 +149,6 @@ export default function MatchingPage() {
     localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(current));
     setHistory(current);
   };
-
   /**
    * Deletes a specific history item by ID.
    * @param {string|number} id - The ID of the history item to delete.
@@ -169,7 +158,6 @@ export default function MatchingPage() {
     localStorage.setItem(MATCHING_HISTORY_KEY, JSON.stringify(updated));
     setHistory(updated);
   };
-
   /**
    * Clears all matching history from localStorage.
    */
@@ -177,20 +165,16 @@ export default function MatchingPage() {
     localStorage.removeItem(MATCHING_HISTORY_KEY);
     setHistory([]);
   };
-
   // Load history on mount
   useEffect(() => {
     setHistory(getHistory());
   }, []);
-
   const [vw, setVw] = useState(1024); // Viewport width for responsive chart sizing
-
   /* -------------------------------------------------------------- */
-  /*  Lifecycle / resize                                            */
+  /* Lifecycle / resize */
   /* -------------------------------------------------------------- */
   // Set mounted flag for client-side rendering (avoids hydration mismatch for charts)
   useEffect(() => setMounted(true), []);
-
   // Handle window resize for chart dimensions
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -199,9 +183,8 @@ export default function MatchingPage() {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
-
   /* -------------------------------------------------------------- */
-  /*  Helpers                                                       */
+  /* Helpers */
   /* -------------------------------------------------------------- */
   /**
    * Counts filled fields (dob, tob, place) for a person object.
@@ -212,7 +195,6 @@ export default function MatchingPage() {
     [p.dob, p.tob, p.place].filter(Boolean).length;
   const fFilled = countFilled(female); // Female filled count
   const mFilled = countFilled(male); // Male filled count
-
   /**
    * Generic change handler for person form fields.
    * Handles place autocomplete with debounced Nominatim fetch.
@@ -251,7 +233,6 @@ export default function MatchingPage() {
       }, 250);
     }
   };
-
   /**
    * Parses DOB (YYYY-MM-DD) and TOB (HH:MM) into API payload format.
    * @param {string} dob - Date of birth string.
@@ -263,7 +244,6 @@ export default function MatchingPage() {
     const [H, Min, S = 0] = tob.split(":").map(Number);
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
-
   /**
    * Ensures coordinates for a person; geocodes if not provided.
    * @param {object} person - Person with place string.
@@ -275,7 +255,6 @@ export default function MatchingPage() {
     if (!person.place) return null;
     return geocodePlace(person.place);
   };
-
   /**
    * Builds the API payload for matching, including timezone resolution.
    * @returns {Promise<object>} Payload with female/male details and config.
@@ -285,10 +264,8 @@ export default function MatchingPage() {
     const fC = await ensureCoords(female, fCoords);
     const mC = await ensureCoords(male, mCoords);
     if (!fC || !mC) throw new Error("Please pick a valid location for both.");
-
     const fTz = await getTimezoneOffsetHours(fC.latitude, fC.longitude);
     const mTz = await getTimezoneOffsetHours(mC.latitude, mC.longitude);
-
     return {
       female: {
         ...parseDateTime(female.dob, female.tob),
@@ -309,9 +286,8 @@ export default function MatchingPage() {
       },
     };
   };
-
   /* -------------------------------------------------------------- */
-  /*  Submit handler                                                */
+  /* Submit handler */
   /* -------------------------------------------------------------- */
   /**
    * Handles form submission: validates, builds payload, calls APIs for matching and individuals,
@@ -324,7 +300,6 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-
     if (
       !female.fullName || !female.dob || !female.tob || !female.place ||
       !male.fullName || !male.dob || !male.tob || !male.place
@@ -332,7 +307,6 @@ export default function MatchingPage() {
       setError("Please complete all fields for both individuals, including names.");
       return;
     }
-
     setSubmitting(true);
     try {
       const payload = await buildPayload();
@@ -353,7 +327,6 @@ export default function MatchingPage() {
         maleTob: male.tob,
         malePlace: male.place,
       });
-
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
         year: p.year,
@@ -367,27 +340,22 @@ export default function MatchingPage() {
         timezone: p.timezone,
         config: { observation_point: "topocentric", ayanamsha: "lahiri" },
       });
-
       const fPayload = mkSinglePayload(payload.female);
       const mPayload = mkSinglePayload(payload.male);
-
       const endpoints = [
         "shadbala/summary",
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
         "planets",
       ];
-
       const [fCalc, mCalc] = await Promise.all([
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
-
       const safeParse = (v) => {
         try { return typeof v === "string" ? JSON.parse(v) : v; }
         catch { return v; }
       };
-
       /**
        * Parses Shadbala raw response into structured data.
        * @param {any} raw - Raw API response.
@@ -416,7 +384,6 @@ export default function MatchingPage() {
        * @returns {object|null} Parsed planets data.
        */
       const parsePlanets = (raw) => safeParse(safeParse(raw?.output ?? raw));
-
       /**
        * Extracts current Dasha chain (MD > AD > PD) from Vimsottari data.
        * @param {object} v - Vimsottari dasa data.
@@ -453,7 +420,6 @@ export default function MatchingPage() {
           .filter(Boolean)
           .join(" > ");
       };
-
       /**
        * Transforms Shadbala data into rows for display.
        * @param {object} sb - Shadbala data.
@@ -479,7 +445,6 @@ export default function MatchingPage() {
           })
           .sort((a, b) => (Number(b.percent ?? 0) - Number(a.percent ?? 0)));
       };
-
       const SIGN_NAMES = [
         "Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces",
       ];
@@ -525,7 +490,6 @@ export default function MatchingPage() {
           };
         });
       };
-
       /**
        * Builds user details object from calculation results.
        * @param {object} calc - API calculation results.
@@ -545,7 +509,6 @@ export default function MatchingPage() {
           placements: toPlacements(planets),
         };
       };
-
       setFDetails(buildUserDetails(fCalc));
       setMDetails(buildUserDetails(mCalc));
     } catch (err) {
@@ -554,9 +517,192 @@ export default function MatchingPage() {
       setSubmitting(false);
     }
   };
-
   /* -------------------------------------------------------------- */
-  /*  Formatting helpers                                            */
+  /* Sharing and Downloading Functions */
+  /* -------------------------------------------------------------- */
+  /**
+   * Generates a shareable text summary of the matching result.
+   * @returns {string} Formatted text for sharing.
+   */
+  const generateShareText = () => {
+    if (!result) return '';
+    const totalScore = Number(result?.total_score ?? 0);
+    const outOf = Number(result?.out_of ?? 36);
+    const percentage = Math.round((totalScore / outOf) * 100);
+    const femaleName = female.fullName || 'Female';
+    const maleName = male.fullName || 'Male';
+    let text = `Astrology Match Result: ${femaleName} & ${maleName}\n`;
+    text += `Ashtakoot Score: ${totalScore}/${outOf} (${percentage}%)\n\n`;
+    text += 'Koot Breakdown:\n';
+    KOOTS.forEach(k => {
+      const sec = result?.[k];
+      const name = k.replace(/_/g, ' ').replace(/kootam/i, '').trim();
+      const score = typeof sec?.score === "number" ? sec.score : 0;
+      const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
+      text += `${name}: ${score}/${outOfK}\n`;
+    });
+    text += `\nGenerated via Vedic Astrology Match Maker. Share your cosmic connection! 🌟`;
+    return text;
+  };
+
+  /**
+   * Handles sharing the result using Web Share API.
+   */
+  const handleShare = async () => {
+    if (!result) {
+      setError('No result to share.');
+      return;
+    }
+    const shareText = generateShareText();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Astrology Match Result',
+          text: shareText,
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareText);
+        alert('Result copied to clipboard!');
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(shareText);
+      alert('Result copied to clipboard! You can paste it anywhere.');
+    }
+  };
+
+  /**
+   * Generates and downloads a PDF report of the matching result.
+   */
+  const handleDownloadPDF = () => {
+    if (!result) {
+      setError('No result to download.');
+      return;
+    }
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    let yPos = 20;
+
+    // Title
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('Vedic Astrology Match Report', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    // Birth Info
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text('Birth Details:', margin, yPos);
+    yPos += 10;
+    const femaleName = female.fullName || 'Female';
+    const maleName = male.fullName || 'Male';
+    doc.text(`${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${female.place}`, margin, yPos);
+    yPos += 7;
+    doc.text(`${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`, margin, yPos);
+    yPos += 15;
+
+    // Score Summary
+    doc.setFont(undefined, 'bold');
+    doc.text('Ashtakoot Compatibility Score:', margin, yPos);
+    yPos += 7;
+    doc.setFont(undefined, 'normal');
+    const totalScore = Number(result?.total_score ?? 0);
+    const outOf = Number(result?.out_of ?? 36);
+    doc.text(`${totalScore}/${outOf}`, margin, yPos);
+    yPos += 15;
+
+    // Koot Table
+    doc.setFont(undefined, 'bold');
+    doc.text('Koot Breakdown:', margin, yPos);
+    yPos += 10;
+    const kootTableData = KOOTS.map((k) => {
+      const sec = result?.[k];
+      const name = k.replace(/_/g, ' ').replace(/kootam/i, '').trim();
+      const score = typeof sec?.score === "number" ? sec.score : 0;
+      const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
+      const area = {
+        varna: "Spiritual Compatibility",
+        vasya: "Mutual Affection / Control",
+        tara: "Health & Longevity",
+        yoni: "Sexual Compatibility",
+        'graha maitri': "Mental Harmony",
+        gana: "Temperament",
+        rasi: "Love & Emotion",
+        nadi: "Health & Genes",
+      }[name.toLowerCase()] || '—';
+      return [name, `${score}/${outOfK}`, area];
+    });
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Kootam', 'Points', 'Area of Life']],
+      body: kootTableData,
+      theme: 'striped',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [218, 165, 32] },
+      margin: { left: margin, right: margin },
+      columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 30 }, 2: { cellWidth: 100 } }
+    });
+    yPos = doc.lastAutoTable.finalY + 15;
+
+    // Female Details
+    if (fDetails) {
+      doc.setFont(undefined, 'bold');
+      doc.text('Female Details:', margin, yPos);
+      yPos += 10;
+      if (fDetails.currentDasha) {
+        doc.setFont(undefined, 'normal');
+        doc.text(`Current Dasha: ${fDetails.currentDasha}`, margin, yPos);
+        yPos += 7;
+      }
+      // Shadbala Table
+      const fShadData = (fDetails.shadbalaRows || []).map(p => [p.name, p.percent ? `${p.percent.toFixed(1)}%` : '—', p.ishta ? `${p.ishta.toFixed(1)}%` : '—', p.kashta ? `${p.kashta.toFixed(1)}%` : '—']);
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Planet', 'Strength %', 'Ishta %', 'Kashta %']],
+        body: fShadData,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = doc.lastAutoTable.finalY + 10;
+    }
+
+    // Male Details
+    if (mDetails) {
+      doc.setFont(undefined, 'bold');
+      doc.text('Male Details:', margin, yPos);
+      yPos += 10;
+      if (mDetails.currentDasha) {
+        doc.setFont(undefined, 'normal');
+        doc.text(`Current Dasha: ${mDetails.currentDasha}`, margin, yPos);
+        yPos += 7;
+      }
+      // Shadbala Table
+      const mShadData = (mDetails.shadbalaRows || []).map(p => [p.name, p.percent ? `${p.percent.toFixed(1)}%` : '—', p.ishta ? `${p.ishta.toFixed(1)}%` : '—', p.kashta ? `${p.kashta.toFixed(1)}%` : '—']);
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Planet', 'Strength %', 'Ishta %', 'Kashta %']],
+        body: mShadData,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = doc.lastAutoTable.finalY + 10;
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.text('Generated on ' + new Date().toLocaleDateString(), pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+    // Download
+    doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
+  };
+  /* -------------------------------------------------------------- */
+  /* Formatting helpers */
   /* -------------------------------------------------------------- */
   /**
    * Formats ISO date string to readable format (e.g., "November 13, 2025").
@@ -589,7 +735,6 @@ export default function MatchingPage() {
       return hms;
     }
   };
-
   // Koota categories for Ashtakoot
   const KOOTS = [
     "varna_kootam",
@@ -601,7 +746,6 @@ export default function MatchingPage() {
     "rasi_kootam",
     "nadi_kootam",
   ];
-
   /**
    * Transforms result into Koot data array for charts/table.
    * @returns {array} Array of {name, score, outOf, pct} objects.
@@ -615,21 +759,19 @@ export default function MatchingPage() {
         return { name: k.replace(/_/g, " "), score, outOf, pct };
       })
     : [];
-
   // Responsive chart dimensions
   const BAR_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
   const LINE_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
   const BAR_H = Math.round(BAR_W * 0.44);
   const LINE_H = Math.round(LINE_W * 0.44);
-
   /* -------------------------------------------------------------- */
-  /*  Person details component                                      */
+  /* Person details component */
   /* -------------------------------------------------------------- */
   /**
    * PersonDetails Component
-   * 
+   *
    * Renders detailed astrological info for one person (Shadbala, placements, Dasha).
-   * 
+   *
    * @param {string} title - Person title (e.g., "Female").
    * @param {object} d - Details object with currentDasha, shadbalaRows, placements.
    * @returns {JSX.Element} Person details section.
@@ -640,10 +782,8 @@ export default function MatchingPage() {
         <div className="person-title">{title}</div>
         <div className="person-planets">{(d?.placements?.length || 0)} planets</div>
       </div>
-
       <div className="person-dasha-label">Current Dasha</div>
       <div className="person-dasha">{d?.currentDasha || "—"}</div>
-
       <div className="person-grid">
         {/* Shadbala */}
         <div>
@@ -684,7 +824,6 @@ export default function MatchingPage() {
             )}
           </div>
         </div>
-
         {/* Placements */}
         <div>
           <div className="section-title">Planet Placements (D1)</div>
@@ -712,20 +851,18 @@ export default function MatchingPage() {
       </div>
     </section>
   );
-
   /* -------------------------------------------------------------- */
-  /*  Render                                                        */
+  /* Render */
   /* -------------------------------------------------------------- */
   return (
     <>
       {/* ---------------------------------------------------------- */}
-      {/*  INTERNAL CSS (styled-jsx) – completely self-contained    */}
+      {/* INTERNAL CSS (styled-jsx) – completely self-contained */}
       {/* ---------------------------------------------------------- */}
       <style jsx>{`
         h1, h2, h3, h4 { font-family: var(--font-heading); margin-bottom: .75rem; }
-
         /* ------------------------------------------------------ */
-        /*  Form                                                   */
+        /* Form */
         /* ------------------------------------------------------ */
         .form-wrapper {
           background: var(--c-card);
@@ -736,7 +873,6 @@ export default function MatchingPage() {
           max-width: 720px;
           margin: 2rem auto;
         }
-
         .form-grid {
           display: grid;
           gap: 1.5rem;
@@ -745,7 +881,6 @@ export default function MatchingPage() {
         @media (min-width: 768px) {
           .form-grid { grid-template-columns: 1fr 1fr; }
         }
-
         .person-box {
           border: 1px solid var(--c-border);
           border-radius: .75rem;
@@ -753,8 +888,7 @@ export default function MatchingPage() {
           background: #fdfdfd;
         }
         .person-box.female { border-color: #fbcfe8; background: #fdf2f8; }
-        .person-box.male   { border-color: #bfdbfe; background: #eff6ff; }
-
+        .person-box.male { border-color: #bfdbfe; background: #eff6ff; }
         .person-header {
           display: flex;
           justify-content: space-between;
@@ -762,7 +896,6 @@ export default function MatchingPage() {
           margin-bottom: .75rem;
         }
         .person-title { font-weight: 600; font-size: 1.1rem; }
-
         .field {
           display: flex;
           flex-direction: column;
@@ -777,7 +910,6 @@ export default function MatchingPage() {
           font-size: .95rem;
         }
         input:focus { outline: none; border-color: var(--c-primary); }
-
         .suggest-list {
           position: absolute;
           z-index: 20;
@@ -796,25 +928,22 @@ export default function MatchingPage() {
           font-size: .875rem;
         }
         .suggest-item:hover { background: #f1f5f9; }
-
         .btn-group {
           display: flex;
           gap: 0.75rem;
           justify-content: flex-end;
-          flex-wrap: nowrap;           /* Prevent wrapping */
+          flex-wrap: nowrap; /* Prevent wrapping */
           margin-top: 1rem;
         }
-
         .btn {
           border-radius: 0.5rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
-          white-space: nowrap;         /* Prevent text wrap */
-          min-width: 100px;            /* Optional: consistent width */
+          white-space: nowrap; /* Prevent text wrap */
+          min-width: 100px; /* Optional: consistent width */
           text-align: center;
         }
-
         .btn-reset {
           background: transparent;
           border: 1px solid var(--color-gold);
@@ -825,11 +954,9 @@ export default function MatchingPage() {
           border-color: var(--color-gold-dark);
           opacity: 0.8;
         }
-
         .submit-btn:disabled { opacity: .6; cursor: not-allowed; }
-
         /* ------------------------------------------------------ */
-        /*  Results                                                */
+        /* Results */
         /* ------------------------------------------------------ */
         .result-wrapper {
           max-width: 960px;
@@ -840,7 +967,6 @@ export default function MatchingPage() {
           padding: 1.5rem;
           box-shadow: 0 4px 12px rgba(0,0,0,.05);
         }
-
         .verdict {
           text-align: center;
           padding: 1.5rem;
@@ -854,7 +980,6 @@ export default function MatchingPage() {
           color: var(--c-primary);
         }
         .verdict-max { font-size: 1.5rem; color: var(--c-muted); }
-
         .koot-list {
           display: grid;
           gap: .5rem;
@@ -867,7 +992,6 @@ export default function MatchingPage() {
           border-bottom: 1px solid var(--c-border);
         }
         .koot-item:last-child { border-bottom: none; }
-
         .chart-section {
           margin-top: 2rem;
           display: grid;
@@ -883,9 +1007,8 @@ export default function MatchingPage() {
           border-radius: .75rem;
           padding: 1rem;
         }
-
         /* ------------------------------------------------------ */
-        /*  Person details card                                    */
+        /* Person details card */
         /* ------------------------------------------------------ */
         .person-card {
           background: var(--c-card);
@@ -900,9 +1023,7 @@ export default function MatchingPage() {
         .person-dasha { font-weight: 600; margin-bottom: 1rem; }
         .person-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
         @media (min-width: 768px) { .person-grid { grid-template-columns: 1fr 1fr; } }
-
         .section-title { font-weight: 600; margin-bottom: .5rem; color: var(--c-primary); }
-
         .shadbala-list { display: flex; flex-direction: column; gap: .75rem; }
         .shadbala-item {
           border: 1px solid var(--c-border);
@@ -915,7 +1036,6 @@ export default function MatchingPage() {
         .shadbala-sub { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .5rem; }
         .sub-label { font-size: .75rem; color: var(--c-muted); }
         .sub-value { font-size: .75rem; margin-top: .25rem; }
-
         .placement-grid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
         .placement-item {
           border: 1px solid var(--c-border);
@@ -926,11 +1046,9 @@ export default function MatchingPage() {
         .placement-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .25rem; }
         .placement-name { font-weight: 600; }
         .placement-badges { display: flex; flex-wrap: wrap; gap: .25rem; }
-
         .empty { font-size: .875rem; color: var(--c-muted); text-align: center; padding: .5rem; }
-
         /* ------------------------------------------------------ */
-        /*  Progress bar & badge                                   */
+        /* Progress bar & badge */
         /* ------------------------------------------------------ */
         .progress-wrapper {
           height: .5rem;
@@ -947,7 +1065,6 @@ export default function MatchingPage() {
         .bg-blue-500 { background: var(--c-primary); }
         .bg-amber-500 { background: var(--c-warn); }
         .bg-rose-500 { background: var(--c-pink); }
-
         .badge {
           font-size: .6875rem;
           padding: .125rem .375rem;
@@ -955,38 +1072,32 @@ export default function MatchingPage() {
           font-weight: 500;
         }
         .badge-neutral { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
-        .badge-info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .badge-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
         .badge-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
-        .badge-warn    { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
-
+        .badge-warn { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
         /* ------------------------------------------------------ */
-        /*  Misc                                                   */
+        /* Misc */
         /* ------------------------------------------------------ */
         .error { background: #fee2e2; color: var(--c-danger); padding: .75rem; border-radius: .5rem; margin-bottom: 1rem; }
       `}</style>
-
       {/* ---------------------------------------------------------- */}
-      {/*  PAGE CONTENT                                              */}
+      {/* PAGE CONTENT */}
       {/* ---------------------------------------------------------- */}
       <div className="app">
-
         {/* Orbs */}
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <div className="orb orb1" />
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
-
         <header className="header">
-          <IoHeartCircle className='headerIcon' style={{ color: 'white', padding:'0.4rem', width: 36, height: 36, }}  />
+          <IoHeartCircle className='headerIcon' style={{ color: 'white', padding:'0.4rem', width: 36, height: 36, }} />
           <h1 className="title">Match Making</h1>
           <p className="subtitle">
             Enter birth details for both to get Ashtakoot score.
           </p>
         </header>
-
         {error && <div className="error">{error}</div>}
-
         <form
           onSubmit={onSubmit}
           className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-6xl mx-auto"
@@ -1001,7 +1112,6 @@ export default function MatchingPage() {
               <p className="form-subtitle">Enter birth details for both individuals</p>
             </div>
           </div>
-
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">
             {/* ---------- Female ---------- */}
@@ -1010,7 +1120,6 @@ export default function MatchingPage() {
                 <Moon style={{ color: '#a78bfa' }} />
                 <h3 className="results-title">Female Details</h3>
               </div>
-
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
@@ -1027,7 +1136,6 @@ export default function MatchingPage() {
                     className="form-field-input"
                   />
                 </div>
-
                 <div className="form-field">
                   <label className="form-field-label">
                     <Calendar className="w-5 h-5 text-pink-500" />
@@ -1042,7 +1150,6 @@ export default function MatchingPage() {
                   />
                   <p className="form-field-helper">Format: YYYY-MM-DD</p>
                 </div>
-
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
                   <label className="form-field-label">
@@ -1059,7 +1166,6 @@ export default function MatchingPage() {
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
-
                 <div className="form-field relative">
                   <label className="form-field-label">
                     <MapPin className="w-5 h-5 text-pink-500" />
@@ -1095,14 +1201,12 @@ export default function MatchingPage() {
                 </div>
               </div>
             </div>
-
             {/* ---------- Male ---------- */}
             <div className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6">
               <div className="results-header mb-3">
                 <Sun style={{ color: '#ca8a04' }} />
                 <h3 className="results-title">Male Details</h3>
               </div>
-
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
@@ -1119,7 +1223,6 @@ export default function MatchingPage() {
                     className="form-field-input"
                   />
                 </div>
-
                 <div className="form-field">
                   <label className="form-field-label">
                     <Calendar className="w-5 h-5 text-blue-500" />
@@ -1134,7 +1237,6 @@ export default function MatchingPage() {
                   />
                   <p className="form-field-helper">Format: YYYY-MM-DD</p>
                 </div>
-
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
                   <label className="form-field-label">
@@ -1151,7 +1253,6 @@ export default function MatchingPage() {
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
-
                 <div className="form-field relative">
                   <label className="form-field-label">
                     <MapPin className="w-5 h-5 text-blue-500" />
@@ -1188,7 +1289,6 @@ export default function MatchingPage() {
               </div>
             </div>
           </div>
-
           {/* Action Buttons */}
           <div
             style={{
@@ -1218,7 +1318,6 @@ export default function MatchingPage() {
                 )}
               </button>
             </div>
-
             <div className="reset-col col-span-2">
               <button
                 type="reset"
@@ -1241,7 +1340,6 @@ export default function MatchingPage() {
             </div>
           </div>
         </form>
-
         {/* Matching History Table */}
         <section className="results-section" style={{ marginTop: "3rem" }}>
           <div className="card">
@@ -1250,7 +1348,6 @@ export default function MatchingPage() {
               <h3 className="results-title flex items-center gap-2">
                 Matching History
               </h3>
-
               {history.length > 0 && (
                 <button
                   onClick={clearHistory}
@@ -1260,7 +1357,6 @@ export default function MatchingPage() {
                 </button>
               )}
             </div>
-
             {history.length === 0 ? (
               <div className="empty-state">No matching history yet.</div>
             ) : (
@@ -1307,10 +1403,8 @@ export default function MatchingPage() {
             )}
           </div>
         </section>
-
-
         {/* ---------------------------------------------------------- */}
-        {/*  RESULT SECTION                                            */}
+        {/* RESULT SECTION */}
         {/* ---------------------------------------------------------- */}
         {result && (
           <div className="app fade-in">
@@ -1320,12 +1414,10 @@ export default function MatchingPage() {
               <div className="orb orb2" />
               <div className="orb orb3" />
             </div>
-
             {/* Header */}
             <header className="header left-align">
               <h1 className="title">Pro Kundali Match</h1>
             </header>
-
             {/* Birth Info Snapshot */}
             <div className="grid md:grid-cols-2 gap-6 mt-4">
               {/* Female Birth Info */}
@@ -1354,7 +1446,6 @@ export default function MatchingPage() {
                   })}
                 </div>
               </div>
-
               {/* Male Birth Info */}
               <div className="card">
                 <div className="results-header">
@@ -1382,15 +1473,12 @@ export default function MatchingPage() {
                 </div>
               </div>
             </div>
-
-
             {/* Verdict Card */}
             <div className="card">
               <div className="results-header">
                 <Sun style={{ color: '#ca8a04' }} />
                 <h3 className="results-title">Ashtakoot Compatibility</h3>
               </div>
-
               <div className="flex items-center gap-3 mb-6">
                 <div className="text-4xl font-bold text-gold">
                   {Number(result?.total_score ?? 0)}
@@ -1400,7 +1488,6 @@ export default function MatchingPage() {
                   <div className="pulseDot" /> Score Summary
                 </div>
               </div>
-
               {/* Koot Table */}
               <div className="table-scroll-container mt-4">
                 <table className="planet-table">
@@ -1417,7 +1504,6 @@ export default function MatchingPage() {
                       const name = k.replace(/_?kootam/i, "").replace(/_/g, " ").trim();
                       const score = typeof sec?.score === "number" ? sec.score : "—";
                       const outOf = typeof sec?.out_of === "number" ? sec.out_of : "—";
-
                       // Define the meaning map OUTSIDE normalization scope
                       const meaningMap = {
                         varna: "Spiritual Compatibility",
@@ -1429,15 +1515,12 @@ export default function MatchingPage() {
                         rasi: "Love & Emotion",
                         nadi: "Health & Genes",
                       };
-
                       // Normalize name to match map keys correctly
                       const normalizedKey = k
                         .replace(/_?kootam/i, "")
                         .trim()
                         .toLowerCase();
-
                       const area = meaningMap[normalizedKey] || "—";
-
                       return (
                         <tr key={k}>
                           <td className="capitalize font-medium text-gray-700">
@@ -1453,7 +1536,6 @@ export default function MatchingPage() {
                   </tbody>
                 </table>
               </div>
-
             </div>
             {/* Charts Section */}
             {mounted && (
@@ -1489,7 +1571,6 @@ export default function MatchingPage() {
                             marginBottom: "0.25rem",
                           }}
                         />
-
                         <Bar dataKey="score" fill="var(--color-gold)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </div>
@@ -1497,7 +1578,6 @@ export default function MatchingPage() {
                     <div className="empty-state">No chart data</div>
                   )}
                 </div>
-
                 {/* Line Chart */}
                 <div className="card">
                   <div className="results-header">
@@ -1547,7 +1627,6 @@ export default function MatchingPage() {
                     <Moon style={{ color: '#a78bfa' }} />
                     <h3 className="results-title">Female Details</h3>
                   </div>
-
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
                     <table className="planet-table">
@@ -1589,7 +1668,6 @@ export default function MatchingPage() {
                       </tbody>
                     </table>
                   </div>
-
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
                     <table className="planet-table">
@@ -1630,14 +1708,12 @@ export default function MatchingPage() {
                     </table>
                   </div>
                 </div>
-
                 {/* Male Details */}
                 <div className="card">
                   <div className="results-header">
                     <Sun style={{ color: '#d4af37' }} />
                     <h3 className="results-title">Male Details</h3>
                   </div>
-
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
                     <table className="planet-table">
@@ -1679,7 +1755,6 @@ export default function MatchingPage() {
                       </tbody>
                     </table>
                   </div>
-
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
                     <table className="planet-table">
@@ -1722,18 +1797,33 @@ export default function MatchingPage() {
                 </div>
               </div>
             )}
-
             {/* Footer */}
             <div className="actionBar mt-8">
-              <button className="btn btn-ghost"><RotateCcw className="w-4 h-4" /> Reset</button>
+              <button className="btn btn-ghost" onClick={() => {
+                  setFemale({ dob: '', tob: '', place: '' });
+                  setMale({ dob: '', tob: '', place: '' });
+                  setFCoords(null);
+                  setMCoords(null);
+                  setFSuggest([]);
+                  setMSuggest([]);
+                  setError('');
+                  setResult(null);
+                  setFDetails(null);
+                  setMDetails(null);
+                }}>
+                <RotateCcw className="w-4 h-4" /> Reset
+              </button>
               <div className="flex gap-3">
-                <button className="btn btn-primary">Download PDF</button>
-                <button className="btn btn-primary">Share</button>
+                <button className="btn btn-primary" onClick={handleDownloadPDF}>
+                  Download PDF
+                </button>
+                <button className="btn btn-primary" onClick={handleShare}>
+                  Share
+                </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </>
   );

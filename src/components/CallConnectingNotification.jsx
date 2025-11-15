@@ -24,13 +24,10 @@ export default function CallConnectingNotification({ isOpen, type = 'video', onT
           title: 'Call Rejected',
           body: 'The astrologer has declined your call request'
         })
-        // Start closing animation
+        // Start closing animation immediately for rejected state
         setIsClosing(true)
-        // Close modal after animation
-        const timer = setTimeout(() => {
-          onTimeout?.()
-        }, 2000)
-        return () => clearTimeout(timer)
+        // Do not call onTimeout here; let parent handle closing after delay
+        break
       
       case 'connecting':
       default:
@@ -38,9 +35,10 @@ export default function CallConnectingNotification({ isOpen, type = 'video', onT
           title: 'Connecting to Astrologer',
           body: `Please wait while we establish your ${type} call`
         })
+        setIsClosing(false)
     }
 
-    // Handle timeout counter
+    // Handle timeout counter only for connecting
     if (status === 'connecting') {
       const timer = setInterval(() => {
         setTimeoutCounter((prev) => {
@@ -70,16 +68,16 @@ export default function CallConnectingNotification({ isOpen, type = 'video', onT
             </div>
           ) : (
             <>
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center z-10">
                 {type === 'video' ? (
                   <Video className="w-8 h-8 text-indigo-600" />
                 ) : (
                   <Phone className="w-8 h-8 text-indigo-600" />
                 )}
               </div>
-              <div className="w-16 h-16">
-                <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-200 rounded-full animate-pulse"></div>
-                <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-600 rounded-full animate-spin border-t-transparent"></div>
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 border-4 border-indigo-200 rounded-full animate-pulse dark:border-indigo-800"></div>
+                <div className="absolute inset-0 border-4 border-indigo-600 rounded-full animate-spin border-t-transparent dark:border-indigo-400"></div>
               </div>
             </>
           )}
@@ -94,7 +92,7 @@ export default function CallConnectingNotification({ isOpen, type = 'video', onT
             {message.body}
           </p>
           {status === 'connecting' && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Timeout in {timeoutCounter}s
             </p>
           )}
@@ -102,9 +100,9 @@ export default function CallConnectingNotification({ isOpen, type = 'video', onT
 
         {/* Loading Bar */}
         {status === 'connecting' && (
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
             <div
-              className="bg-indigo-600 h-1.5 rounded-full transition-all duration-1000"
+              className="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full transition-all duration-1000"
               style={{ width: `${(timeoutCounter / 60) * 100}%` }}
             />
           </div>
