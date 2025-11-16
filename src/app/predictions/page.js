@@ -13,7 +13,7 @@ import {
   Loader2,
   Cpu,
   RotateCcw,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import styles from "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -43,7 +43,7 @@ export default function PredictionsPage() {
     useState(null);
   const [fullName, setFullName] = useState("");
 
-    // === Prediction History ===
+  // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
 
@@ -82,7 +82,6 @@ export default function PredictionsPage() {
   useEffect(() => {
     setHistory(getHistory());
   }, []);
-
 
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
@@ -204,7 +203,7 @@ export default function PredictionsPage() {
     e.preventDefault();
     setError("");
     setResult(null);
-    
+
     const v = validate();
     if (v) {
       setError(v);
@@ -217,22 +216,22 @@ export default function PredictionsPage() {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country)."
         );
-        const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
-        const tparts = tob.split(":").map((n) => parseInt(n, 10));
-        const [H, Min, S = 0] = tparts;
-        // Automatically determine timezone based on location
-        const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
-        saveToHistory({
-          id: Date.now(),
-          fullName,
-          dob,
-          tob: fmtTime(H, Min, S),
-          place: geo.label || place,
-        });
-        const payload = {
-          year: Y,
-          month: M,
-          date: D,
+      const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
+      const tparts = tob.split(":").map((n) => parseInt(n, 10));
+      const [H, Min, S = 0] = tparts;
+      // Automatically determine timezone based on location
+      const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+      saveToHistory({
+        id: Date.now(),
+        fullName,
+        dob,
+        tob: fmtTime(H, Min, S),
+        place: geo.label || place,
+      });
+      const payload = {
+        year: Y,
+        month: M,
+        date: D,
         hours: H,
         minutes: Min,
         seconds: S,
@@ -551,27 +550,26 @@ export default function PredictionsPage() {
       "Pisces",
     ];
     if (typeof pl === "object" && !Array.isArray(pl)) {
-      return Object.entries(pl)
-        .map(([name, v]) => {
-          const signNum =
-            v.current_sign != null ? Number(v.current_sign) : undefined;
-          const currentSign = signNum
-            ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
-            : v.zodiac_sign_name || v.sign_name || v.sign;
-          return {
-            name,
-            currentSign,
-            house: v.house_number,
-            nakshatra: v.nakshatra_name,
-            pada: v.nakshatra_pada,
-            retro:
-              v.isRetro === "true" ||
-              v.retrograde === true ||
-              v.is_retro === true,
-            fullDegree: v.fullDegree ?? v.longitude,
-            normDegree: v.normDegree,
-          };
-        });
+      return Object.entries(pl).map(([name, v]) => {
+        const signNum =
+          v.current_sign != null ? Number(v.current_sign) : undefined;
+        const currentSign = signNum
+          ? `${SIGN_NAMES[signNum - 1]} (${signNum})`
+          : v.zodiac_sign_name || v.sign_name || v.sign;
+        return {
+          name,
+          currentSign,
+          house: v.house_number,
+          nakshatra: v.nakshatra_name,
+          pada: v.nakshatra_pada,
+          retro:
+            v.isRetro === "true" ||
+            v.retrograde === true ||
+            v.is_retro === true,
+          fullDegree: v.fullDegree ?? v.longitude,
+          normDegree: v.normDegree,
+        };
+      });
     }
     const arr = Array.isArray(pl)
       ? pl
@@ -640,212 +638,207 @@ export default function PredictionsPage() {
               <p className="form-subtitle">Enter your cosmic coordinates</p>
             </div>
           </div>
-{/* ---- Birth Details Section ---- */}
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-  {/* Full Name */}
-<div>
-  <label className="form-field-label flex items-center gap-2 mb-2">
-    <Sparkles className="w-5 h-5 text-gold" />
-    Full Name
-  </label>
-  <input
-    type="text"
-    value={fullName}
-    onChange={(e) => setFullName(e.target.value)}
-    placeholder="Enter your full name"
-    className="form-field-input"
-    required
-  />
-  <p className="form-field-helper">Your full name as per records</p>
-</div>
-
-  {/* Date of Birth */}
-  <div>
-    <label className="form-field-label flex items-center gap-2 mb-2">
-      <Calendar className="w-5 h-5 text-gold" />
-      Date of Birth
-    </label>
-    <input
-      type="date"
-      value={dob}
-      onChange={(e) => setDob(e.target.value)}
-      className="form-field-input"
-      required
-    />
-    <p className="form-field-helper">Format: YYYY-MM-DD</p>
-  </div>
-
-  {/* Time of Birth */}
-  <div>
-    <label className="form-field-label flex items-center gap-2">
-      <Clock className="w-5 h-5 text-gold" />
-      Time
-    </label>
-    <input
-      type="time"
-      value={tob}
-      onChange={(e) => setTob(e.target.value)}
-      step="60"
-      className="form-field-input"
-      required
-    />
-    <p className="form-field-helper">24-hour format</p>
-  </div>
-
-  {/* Place of Birth */}
-  <div>
-    <label className="form-field-label flex items-center gap-2">
-      <MapPin className="w-5 h-5 text-gold" />
-      Place of Birth
-    </label>
-    <div className="flex gap-2 relative">
-      <input
-        placeholder="City, Country"
-        value={place}
-        onChange={(e) => {
-          const q = e.target.value;
-          setPlace(q);
-          setSelectedCoords(null);
-          fetchSuggestions(q);
-        }}
-        className="form-field-input flex-1"
-        autoComplete="off"
-        required
-      />
-      <button
-        type="button"
-        onClick={useMyLocation}
-        disabled={locating}
-        className="place-btn"
-      >
-        {locating ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <MapPin className="w-4 h-4" />
-        )}
-      </button>
-      {suggestions.length > 0 && (
-        <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
-          {suggestions.map((s, i) => (
-            <div
-              key={i}
-              className="suggest-item"
-              onClick={() => {
-                setPlace(s.label);
-                setSelectedCoords(s);
-                setSuggestions([]);
-              }}
-            >
-              {s.label}
+          {/* ---- Birth Details Section ---- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            {/* Full Name */}
+            <div>
+              <label className="form-field-label flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-gold" />
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="form-field-input"
+                required
+              />
+              <p className="form-field-helper">Your full name as per records</p>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-    <p className="form-field-helper">e.g., Mumbai, India</p>
-  </div>
-{/* Action Buttons */}
-<div className="col-span-1 md:col-span-3 tz-row flex gap-4 mt-2">
-  <button
-    type="submit"
-    disabled={submitting}
-    className="btn btn-primary w-full h-[52px]"
-  >
-    {submitting ? (
-      <>
-        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        Calculating…
-      </>
-    ) : (
-      <>
-        <Sparkles className="w-4 h-4 mr-2" />
-        Get Predictions
-      </>
-    )}
-  </button>
 
-  <button
-    type="reset"
-    onClick={() => {
-      setFullName("");
-      setDob("");
-      setTob("");
-      setPlace("");
-      setResult(null);
-      setError("");
-      setSelectedMaha(null);
-    }}
-    className="btn btn-ghost w-full h-[52px]"
-  >
-    <RotateCcw className="w-4 h-4" />
-  </button>
-</div>
+            {/* Date of Birth */}
+            <div>
+              <label className="form-field-label flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-gold" />
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className="form-field-input"
+                required
+              />
+              <p className="form-field-helper">Format: YYYY-MM-DD</p>
+            </div>
 
-</div>
+            {/* Time of Birth */}
+            <div>
+              <label className="form-field-label flex items-center gap-2">
+                <Clock className="w-5 h-5 text-gold" />
+                Time
+              </label>
+              <input
+                type="time"
+                value={tob}
+                onChange={(e) => setTob(e.target.value)}
+                step="60"
+                className="form-field-input"
+                required
+              />
+              <p className="form-field-helper">24-hour format</p>
+            </div>
 
+            {/* Place of Birth */}
+            <div>
+              <label className="form-field-label flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-gold" />
+                Place of Birth
+              </label>
+              <div className="flex gap-2 relative">
+                <input
+                  placeholder="City, Country"
+                  value={place}
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    setPlace(q);
+                    setSelectedCoords(null);
+                    fetchSuggestions(q);
+                  }}
+                  className="form-field-input flex-1"
+                  autoComplete="off"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={useMyLocation}
+                  disabled={locating}
+                  className="place-btn"
+                >
+                  {locating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <MapPin className="w-4 h-4" />
+                  )}
+                </button>
+                {suggestions.length > 0 && (
+                  <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
+                    {suggestions.map((s, i) => (
+                      <div
+                        key={i}
+                        className="suggest-item"
+                        onClick={() => {
+                          setPlace(s.label);
+                          setSelectedCoords(s);
+                          setSuggestions([]);
+                        }}
+                      >
+                        {s.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="form-field-helper">e.g., Mumbai, India</p>
+            </div>
+            {/* Action Buttons */}
+            <div className="col-span-1 md:col-span-3 tz-row flex gap-4 mt-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn btn-primary w-full h-[52px]"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Calculating…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Get Predictions
+                  </>
+                )}
+              </button>
 
-
+              <button
+                type="reset"
+                onClick={() => {
+                  setFullName("");
+                  setDob("");
+                  setTob("");
+                  setPlace("");
+                  setResult(null);
+                  setError("");
+                  setSelectedMaha(null);
+                }}
+                className="btn btn-ghost w-full h-[52px]"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </form>
-                      {/* Prediction History Table */}
-<section className="results-section" style={{ marginTop: "3rem" }}>
-  <div className="card">
-    <div className="results-header">
-      <Sparkles style={{ color: "#ca8a04" }} />
-      <h3 className="results-title flex items-center gap-2">
-        Prediction History
-      </h3>
+        {/* Prediction History Table */}
+        <section className="results-section" style={{ marginTop: "3rem" }}>
+          <div className="card">
+            <div className="results-header">
+              <Sparkles style={{ color: "#ca8a04" }} />
+              <h3 className="results-title flex items-center gap-2">
+                Prediction History
+              </h3>
 
-      {history.length > 0 && (
-        <button
-          onClick={clearHistory}
-          className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
-        >
-          <RotateCcw className="w-4 h-4" /> Clear
-        </button>
-      )}
-    </div>
+              {history.length > 0 && (
+                <button
+                  onClick={clearHistory}
+                  className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+                >
+                  <RotateCcw className="w-4 h-4" /> Clear
+                </button>
+              )}
+            </div>
 
-    {history.length === 0 ? (
-      <div className="empty-state">No prediction history yet.</div>
-    ) : (
-      <div className="table-scroll-container">
-        <table className="planet-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Date of Birth</th>
-              <th>Time of Birth</th>
-              <th>Place of Birth</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((item) => (
-              <tr key={item.id}>
-                <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                  {item.fullName}
-                </td>
-                <td>{item.dob}</td>
-                <td>{item.tob}</td>
-                <td>{item.place}</td>
-                <td>
-                  <button
-                    onClick={() => deleteHistoryItem(item.id)}
-                    className="delete-btn"
-                    aria-label={`Delete ${item.fullName}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-</section>
-
+            {history.length === 0 ? (
+              <div className="empty-state">No prediction history yet.</div>
+            ) : (
+              <div className="table-scroll-container">
+                <table className="planet-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Date of Birth</th>
+                      <th>Time of Birth</th>
+                      <th>Place of Birth</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ fontWeight: 500, color: "#1f2937" }}>
+                          {item.fullName}
+                        </td>
+                        <td>{item.dob}</td>
+                        <td>{item.tob}</td>
+                        <td>{item.place}</td>
+                        <td>
+                          <button
+                            onClick={() => deleteHistoryItem(item.id)}
+                            className="delete-btn"
+                            aria-label={`Delete ${item.fullName}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Results */}
         {result && (
@@ -1221,45 +1214,44 @@ export default function PredictionsPage() {
                   </p>
                 </div>
               ) : (
-<div className="table-scroll-container">
-  <table className="planet-table">
-    <thead>
-      <tr>
-        <th>Antar Dasha Lord</th>
-        <th>Start Date</th>
-        <th>End Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      {antarRows.map((ad, i) => {
-        const startDate = ad.start
-          ? new Date(ad.start).toLocaleDateString("en-GB", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })
-          : "—";
-        const endDate = ad.end
-          ? new Date(ad.end).toLocaleDateString("en-GB", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })
-          : "—";
-        return (
-          <tr key={i}>
-            <td style={{ fontWeight: 500, color: "#1f2937" }}>
-              {ad.lord || "—"}
-            </td>
-            <td>{startDate}</td>
-            <td>{endDate}</td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-</div>
-
+                <div className="table-scroll-container">
+                  <table className="planet-table">
+                    <thead>
+                      <tr>
+                        <th>Antar Dasha Lord</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {antarRows.map((ad, i) => {
+                        const startDate = ad.start
+                          ? new Date(ad.start).toLocaleDateString("en-GB", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—";
+                        const endDate = ad.end
+                          ? new Date(ad.end).toLocaleDateString("en-GB", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—";
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontWeight: 500, color: "#1f2937" }}>
+                              {ad.lord || "—"}
+                            </td>
+                            <td>{startDate}</td>
+                            <td>{endDate}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}

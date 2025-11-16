@@ -1,22 +1,31 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import MonthlyCalendar from '@/components/calendar/MonthlyCalendar';
-import { WEEKDAYS as weekdays, staticMonth as staticSep } from '@/lib/staticCalendarSep2025';
-import astrologyAPI from '@/lib/api';
-import { postSamvatInfo, getRealtimeSamvatInfo } from '@/lib/api';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from "react";
+import MonthlyCalendar from "@/components/calendar/MonthlyCalendar";
+import {
+  WEEKDAYS as weekdays,
+  staticMonth as staticSep,
+} from "@/lib/staticCalendarSep2025";
+import astrologyAPI from "@/lib/api";
+import { postSamvatInfo, getRealtimeSamvatInfo } from "@/lib/api";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // --- Caching Logic (Unchanged) ---
 const monthDataCache = new Map();
 const samvatCache = new Map();
-const DAY_CACHE_NS = 'calendarDayCache_v1';
+const DAY_CACHE_NS = "calendarDayCache_v1";
 
 function readDayCache() {
-  try { return JSON.parse(localStorage.getItem(DAY_CACHE_NS) || '{}') } catch { return {} }
+  try {
+    return JSON.parse(localStorage.getItem(DAY_CACHE_NS) || "{}");
+  } catch {
+    return {};
+  }
 }
 function writeDayCache(obj) {
-  try { localStorage.setItem(DAY_CACHE_NS, JSON.stringify(obj)) } catch {}
+  try {
+    localStorage.setItem(DAY_CACHE_NS, JSON.stringify(obj));
+  } catch {}
 }
 function getDayCacheEntry(key) {
   const all = readDayCache();
@@ -34,11 +43,11 @@ function setDayCacheEntry(key, value) {
 }
 
 function monthLabelFrom(date) {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function weekdayName(date) {
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
+  return date.toLocaleDateString("en-US", { weekday: "long" });
 }
 
 function buildMonthGrid(viewDate) {
@@ -58,16 +67,18 @@ function buildMonthGrid(viewDate) {
         const icons = Array.isArray(cell.icons) ? cell.icons : [];
         if (!icons.length) {
           const weekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
-          if (weekend && cell.monthOffset === 0) icons.push('party');
-          if (cellDate.getDate() === 1 && cell.monthOffset === 0) icons.push('calendar');
-          if (cellDate.getDate() === 15 && cell.monthOffset === 0) icons.push('moon');
-          if (!icons.length) icons.push('prayer');
+          if (weekend && cell.monthOffset === 0) icons.push("party");
+          if (cellDate.getDate() === 1 && cell.monthOffset === 0)
+            icons.push("calendar");
+          if (cellDate.getDate() === 15 && cell.monthOffset === 0)
+            icons.push("moon");
+          if (!icons.length) icons.push("prayer");
         }
         return { ...cell, isToday: isSameDay(cellDate), icons };
       })
     );
 
-    return { monthLabel: 'September 2025', weekStart: 0, rows };
+    return { monthLabel: "September 2025", weekStart: 0, rows };
   }
 
   const firstOfMonth = new Date(year, month, 1);
@@ -102,19 +113,19 @@ function buildMonthGrid(viewDate) {
       const cellDate = new Date(year, month + monthOffset, dateNum);
       const weekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
       const icons = [];
-      if (weekend && monthOffset === 0) icons.push('party');
-      if (cellDate.getDate() === 1 && monthOffset === 0) icons.push('calendar');
-      if (cellDate.getDate() === 15 && monthOffset === 0) icons.push('moon');
-      if (!icons.length) icons.push('prayer');
+      if (weekend && monthOffset === 0) icons.push("party");
+      if (cellDate.getDate() === 1 && monthOffset === 0) icons.push("calendar");
+      if (cellDate.getDate() === 15 && monthOffset === 0) icons.push("moon");
+      if (!icons.length) icons.push("prayer");
 
       row.push({
         date: dateNum,
         monthOffset,
-        tithiBand: '—',
-        sunrise: '—',
-        sunset: '—',
-        line1: '—',
-        line2: '—',
+        tithiBand: "—",
+        sunrise: "—",
+        sunset: "—",
+        line1: "—",
+        line2: "—",
         isFestival: weekend && monthOffset === 0,
         isToday: isSameDay(cellDate),
         icons,
@@ -130,9 +141,9 @@ function buildHeader(viewDate) {
   return {
     selectedBanner: {
       leftTitle: monthLabelFrom(viewDate),
-      leftSubtitle: 'Hindu Calendar',
-      era: 'Vikrama Samvat • Kaliyuga',
-      location: 'Your Location',
+      leftSubtitle: "Hindu Calendar",
+      era: "Vikrama Samvat • Kaliyuga",
+      location: "Your Location",
     },
     rightTitle: String(viewDate.getDate()),
     rightSubtitle1: monthLabelFrom(viewDate),
@@ -149,15 +160,28 @@ export default function CalendarPage() {
   const [samvat, setSamvat] = useState(null);
   const [samvatLoading, setSamvatLoading] = useState(false);
   const [samvatError, setSamvatError] = useState(null);
-  const [samvatRaw, setSamvatRaw] = useState('');
+  const [samvatRaw, setSamvatRaw] = useState("");
 
   const header = useMemo(() => buildHeader(viewDate), [viewDate]);
   const headerWithSamvat = useMemo(() => {
-    const era = samvat ? `Vikrama Samvat ${samvat.number} • ${samvat.yearName}` : header.selectedBanner.era;
+    const era = samvat
+      ? `Vikrama Samvat ${samvat.number} • ${samvat.yearName}`
+      : header.selectedBanner.era;
     const rightExtra = samvat
-      ? `V.S. ${samvat.number || ''}${samvat.yearName ? ` • ${samvat.yearName}` : ''}`.trim()
-      : (samvatLoading ? 'Fetching Samvat…' : (samvatError ? (samvatRaw ? `Samvat? ${samvatRaw}` : 'Samvat unavailable') : header?.selectedBanner?.rightExtra));
-    return { ...header, selectedBanner: { ...header.selectedBanner, era, rightExtra } };
+      ? `V.S. ${samvat.number || ""}${
+          samvat.yearName ? ` • ${samvat.yearName}` : ""
+        }`.trim()
+      : samvatLoading
+      ? "Fetching Samvat…"
+      : samvatError
+      ? samvatRaw
+        ? `Samvat? ${samvatRaw}`
+        : "Samvat unavailable"
+      : header?.selectedBanner?.rightExtra;
+    return {
+      ...header,
+      selectedBanner: { ...header.selectedBanner, era, rightExtra },
+    };
   }, [header, samvat, samvatLoading, samvatError]);
 
   const month = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
@@ -168,7 +192,8 @@ export default function CalendarPage() {
     async function getGeo() {
       try {
         const pos = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error('Geolocation unavailable'));
+          if (!navigator.geolocation)
+            return reject(new Error("Geolocation unavailable"));
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 15000,
@@ -177,7 +202,7 @@ export default function CalendarPage() {
         });
         return { lat: pos.coords.latitude, lon: pos.coords.longitude };
       } catch (_) {
-        return { lat: 28.6139, lon: 77.2090 };
+        return { lat: 28.6139, lon: 77.209 };
       }
     }
 
@@ -196,112 +221,223 @@ export default function CalendarPage() {
         return;
       }
 
-      const map = {}, sun = {}, tithis = {}, tasks = [];
+      const map = {},
+        sun = {},
+        tithis = {},
+        tasks = [];
       for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(y, m, day);
         const payload = {
           year: d.getFullYear(),
           month: d.getMonth() + 1,
           date: d.getDate(),
-          hours: 6, minutes: 0, seconds: 0,
-          latitude: lat, longitude: lon, timezone: tz,
-          config: { observation_point: 'geocentric', ayanamsha: 'lahiri', lunar_month_definition: 'amanta' },
+          hours: 6,
+          minutes: 0,
+          seconds: 0,
+          latitude: lat,
+          longitude: lon,
+          timezone: tz,
+          config: {
+            observation_point: "geocentric",
+            ayanamsha: "lahiri",
+            lunar_month_definition: "amanta",
+          },
         };
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(d.getDate()).padStart(2, "0")}`;
         const locKey = `${lat.toFixed(3)},${lon.toFixed(3)}|${tz}`;
         const dayCacheKey = `${key}|${locKey}`;
         const cachedDay = getDayCacheEntry(dayCacheKey);
         if (cachedDay) {
-          if (cachedDay.nakshatra?.name) map[key] = { name: cachedDay.nakshatra.name };
-          if (cachedDay.tithi?.name) tithis[key] = { name: cachedDay.tithi.name, paksha: cachedDay.tithi.paksha };
-          if (cachedDay.sun) sun[key] = { sunrise: cachedDay.sun.sunrise || '—', sunset: cachedDay.sun.sunset || '—' };
+          if (cachedDay.nakshatra?.name)
+            map[key] = { name: cachedDay.nakshatra.name };
+          if (cachedDay.tithi?.name)
+            tithis[key] = {
+              name: cachedDay.tithi.name,
+              paksha: cachedDay.tithi.paksha,
+            };
+          if (cachedDay.sun)
+            sun[key] = {
+              sunrise: cachedDay.sun.sunrise || "—",
+              sunset: cachedDay.sun.sunset || "—",
+            };
           continue;
         }
 
         tasks.push(
           (async (idx) => {
-            await new Promise(r => setTimeout(r, idx * 120));
+            await new Promise((r) => setTimeout(r, idx * 120));
             try {
               const [nakR, tithiR] = await Promise.allSettled([
-                astrologyAPI.getSingleCalculation('nakshatra-durations', payload),
-                astrologyAPI.getSingleCalculation('tithi-durations', payload),
+                astrologyAPI.getSingleCalculation(
+                  "nakshatra-durations",
+                  payload
+                ),
+                astrologyAPI.getSingleCalculation("tithi-durations", payload),
               ]);
 
               let name = null;
-              if (nakR.status === 'fulfilled') {
+              if (nakR.status === "fulfilled") {
                 let out = nakR.value?.output ?? nakR.value;
-                try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
-                try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
-                const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0);
+                try {
+                  if (typeof out === "string") out = JSON.parse(out);
+                } catch {}
+                try {
+                  if (typeof out === "string") out = JSON.parse(out);
+                } catch {}
+                const target = new Date(
+                  d.getFullYear(),
+                  d.getMonth(),
+                  d.getDate(),
+                  6,
+                  0,
+                  0
+                );
                 const parseWhen = (v) => {
                   if (!v) return null;
                   const raw = String(v);
-                  let normalized = raw.replace(' ', 'T').replace(/\.(\d{1,6})$/, '');
+                  let normalized = raw
+                    .replace(" ", "T")
+                    .replace(/\.(\d{1,6})$/, "");
                   const dt = new Date(normalized);
                   if (!isNaN(dt.getTime())) return dt;
                   const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
                   if (m) {
                     const hh = parseInt(m[1], 10) || 0;
                     const mm = parseInt(m[2], 10) || 0;
-                    const ss = parseInt(m[3] || '0', 10) || 0;
-                    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, ss);
+                    const ss = parseInt(m[3] || "0", 10) || 0;
+                    return new Date(
+                      d.getFullYear(),
+                      d.getMonth(),
+                      d.getDate(),
+                      hh,
+                      mm,
+                      ss
+                    );
                   }
                   return null;
                 };
                 const pickSegmentName = (val) => {
                   if (!val) return null;
-                  const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.values(val) : []);
+                  const list = Array.isArray(val)
+                    ? val
+                    : typeof val === "object"
+                    ? Object.values(val)
+                    : [];
                   if (!Array.isArray(list) || !list.length) return null;
                   for (const seg of list) {
-                    const st = parseWhen(seg?.starts_at || seg?.start_time || seg?.start || seg?.from);
-                    const en = parseWhen(seg?.ends_at || seg?.end_time || seg?.end || seg?.to);
+                    const st = parseWhen(
+                      seg?.starts_at ||
+                        seg?.start_time ||
+                        seg?.start ||
+                        seg?.from
+                    );
+                    const en = parseWhen(
+                      seg?.ends_at || seg?.end_time || seg?.end || seg?.to
+                    );
                     if (st && en && st <= target && target <= en) {
-                      return seg?.name || seg?.nakshatra_name || seg?.nakshatra?.name;
+                      return (
+                        seg?.name || seg?.nakshatra_name || seg?.nakshatra?.name
+                      );
                     }
                   }
                   const first = list[0];
-                  return first?.name || first?.nakshatra_name || first?.nakshatra?.name || null;
+                  return (
+                    first?.name ||
+                    first?.nakshatra_name ||
+                    first?.nakshatra?.name ||
+                    null
+                  );
                 };
-                name = name || out?.name || out?.nakshatra_name || out?.nakshatra?.name;
-                name = name || pickSegmentName(out?.durations || out?.data || out);
+                name =
+                  name ||
+                  out?.name ||
+                  out?.nakshatra_name ||
+                  out?.nakshatra?.name;
+                name =
+                  name || pickSegmentName(out?.durations || out?.data || out);
               }
-              map[key] = name ? { name } : (nakR.status === 'rejected' ? { error: nakR.reason?.message || 'failed' } : {});
+              map[key] = name
+                ? { name }
+                : nakR.status === "rejected"
+                ? { error: nakR.reason?.message || "failed" }
+                : {};
 
-              if (tithiR.status === 'fulfilled') {
+              if (tithiR.status === "fulfilled") {
                 let tout = tithiR.value?.output ?? tithiR.value;
-                try { if (typeof tout === 'string') tout = JSON.parse(tout); } catch {}
-                try { if (typeof tout === 'string') tout = JSON.parse(tout); } catch {}
-                const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0);
+                try {
+                  if (typeof tout === "string") tout = JSON.parse(tout);
+                } catch {}
+                try {
+                  if (typeof tout === "string") tout = JSON.parse(tout);
+                } catch {}
+                const target = new Date(
+                  d.getFullYear(),
+                  d.getMonth(),
+                  d.getDate(),
+                  6,
+                  0,
+                  0
+                );
                 const parseWhenT = (v) => {
                   if (!v) return null;
                   const raw = String(v);
-                  let normalized = raw.replace(' ', 'T').replace(/\.(\d{1,6})$/, '');
+                  let normalized = raw
+                    .replace(" ", "T")
+                    .replace(/\.(\d{1,6})$/, "");
                   const dt = new Date(normalized);
                   if (!isNaN(dt.getTime())) return dt;
                   const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
                   if (m) {
                     const hh = parseInt(m[1], 10) || 0;
                     const mm = parseInt(m[2], 10) || 0;
-                    const ss = parseInt(m[3] || '0', 10) || 0;
-                    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm, ss);
+                    const ss = parseInt(m[3] || "0", 10) || 0;
+                    return new Date(
+                      d.getFullYear(),
+                      d.getMonth(),
+                      d.getDate(),
+                      hh,
+                      mm,
+                      ss
+                    );
                   }
                   return null;
                 };
                 const pickTithi = (val) => {
-                  const list = Array.isArray(val) ? val : (typeof val === 'object' ? Object.values(val) : []);
+                  const list = Array.isArray(val)
+                    ? val
+                    : typeof val === "object"
+                    ? Object.values(val)
+                    : [];
                   for (const seg of list) {
-                    const st = parseWhenT(seg?.starts_at || seg?.start_time || seg?.start || seg?.from);
-                    const en = parseWhenT(seg?.ends_at || seg?.end_time || seg?.end || seg?.to);
+                    const st = parseWhenT(
+                      seg?.starts_at ||
+                        seg?.start_time ||
+                        seg?.start ||
+                        seg?.from
+                    );
+                    const en = parseWhenT(
+                      seg?.ends_at || seg?.end_time || seg?.end || seg?.to
+                    );
                     if (st && en && st <= target && target <= en) {
-                      const nm = seg?.name || seg?.tithi_name || seg?.tithi?.name;
+                      const nm =
+                        seg?.name || seg?.tithi_name || seg?.tithi?.name;
                       const pk = seg?.paksha || seg?.tithi?.paksha;
                       return { name: nm, paksha: pk };
                     }
                   }
                   const first = list[0] || {};
-                  return { name: first?.name || first?.tithi_name || first?.tithi?.name, paksha: first?.paksha || first?.tithi?.paksha };
+                  return {
+                    name:
+                      first?.name || first?.tithi_name || first?.tithi?.name,
+                    paksha: first?.paksha || first?.tithi?.paksha,
+                  };
                 };
-                let tval = tout?.name ? { name: tout.name, paksha: tout?.paksha } : pickTithi(tout?.durations || tout?.data || tout);
+                let tval = tout?.name
+                  ? { name: tout.name, paksha: tout?.paksha }
+                  : pickTithi(tout?.durations || tout?.data || tout);
                 if (tval?.name) tithis[key] = tval;
               }
 
@@ -309,18 +445,37 @@ export default function CalendarPage() {
                 const sunData = await astrologyAPI.getSunMoonData(lat, lon, d);
                 const astro = sunData?.astronomy || {};
                 const fmt = (hhmm) => {
-                  if (!hhmm || hhmm === '-:-') return null;
+                  if (!hhmm || hhmm === "-:-") return null;
                   try {
-                    const [H, M] = String(hhmm).split(':').map(v => parseInt(v, 10));
-                    const local = new Date(d.getFullYear(), d.getMonth(), d.getDate(), H || 0, M || 0, 0);
-                    return local.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(' AM','AM').replace(' PM','PM');
-                  } catch { return hhmm; }
+                    const [H, M] = String(hhmm)
+                      .split(":")
+                      .map((v) => parseInt(v, 10));
+                    const local = new Date(
+                      d.getFullYear(),
+                      d.getMonth(),
+                      d.getDate(),
+                      H || 0,
+                      M || 0,
+                      0
+                    );
+                    return local
+                      .toLocaleString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })
+                      .replace(" AM", "AM")
+                      .replace(" PM", "PM");
+                  } catch {
+                    return hhmm;
+                  }
                 };
                 const sunrise = fmt(astro.sunrise);
                 const sunset = fmt(astro.sunset);
-                if (sunrise || sunset) sun[key] = { sunrise: sunrise || '—', sunset: sunset || '—' };
+                if (sunrise || sunset)
+                  sun[key] = { sunrise: sunrise || "—", sunset: sunset || "—" };
               } catch (_) {
-                sun[key] = { sunrise: '06:00AM', sunset: '06:00PM' };
+                sun[key] = { sunrise: "06:00AM", sunset: "06:00PM" };
               }
 
               setDayCacheEntry(dayCacheKey, {
@@ -329,7 +484,7 @@ export default function CalendarPage() {
                 sun: sun[key] || undefined,
               });
             } catch (e) {
-              if (!map[key]) map[key] = { error: e?.message || 'failed' };
+              if (!map[key]) map[key] = { error: e?.message || "failed" };
             }
           })(day - 1)
         );
@@ -340,11 +495,20 @@ export default function CalendarPage() {
         setNakshatraMap(map);
         setSunMap(sun);
         setTithiMap(tithis);
-        monthDataCache.set(monthKey, { nakshatraMap: map, sunMap: sun, tithiMap: tithis, savedAt: Date.now() });
+        monthDataCache.set(monthKey, {
+          nakshatraMap: map,
+          sunMap: sun,
+          tithiMap: tithis,
+          savedAt: Date.now(),
+        });
         if (monthDataCache.size > 8) {
-          let oldestKey = null, oldestTs = Infinity;
+          let oldestKey = null,
+            oldestTs = Infinity;
           for (const [k, v] of monthDataCache.entries()) {
-            if (v.savedAt < oldestTs) { oldestTs = v.savedAt; oldestKey = k; }
+            if (v.savedAt < oldestTs) {
+              oldestTs = v.savedAt;
+              oldestKey = k;
+            }
           }
           if (oldestKey) monthDataCache.delete(oldestKey);
         }
@@ -352,7 +516,9 @@ export default function CalendarPage() {
     }
 
     fetchAll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [viewDate]);
 
   useEffect(() => {
@@ -363,31 +529,60 @@ export default function CalendarPage() {
     async function getGeo() {
       try {
         const pos = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error('Geolocation unavailable'));
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+          if (!navigator.geolocation)
+            return reject(new Error("Geolocation unavailable"));
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000,
+          });
         });
         return { lat: pos.coords.latitude, lon: pos.coords.longitude };
       } catch (_) {
-        return { lat: 28.6139, lon: 77.2090 };
+        return { lat: 28.6139, lon: 77.209 };
       }
     }
 
     async function parseSamvat(outLike) {
       let out = outLike;
-      try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
-      try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
-      if (out && typeof out === 'object' && out.output) {
+      try {
+        if (typeof out === "string") out = JSON.parse(out);
+      } catch {}
+      try {
+        if (typeof out === "string") out = JSON.parse(out);
+      } catch {}
+      if (out && typeof out === "object" && out.output) {
         out = out.output;
-        try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
-        try { if (typeof out === 'string') out = JSON.parse(out); } catch {}
+        try {
+          if (typeof out === "string") out = JSON.parse(out);
+        } catch {}
+        try {
+          if (typeof out === "string") out = JSON.parse(out);
+        } catch {}
       }
-      let number = out?.vikram_chaitradi_number ?? out?.vikram_chaitradi_name_number ?? out?.vikram_chaitradi?.number ?? out?.vikrama_samvat_number ?? out?.vikram_samvat_number ?? out?.vikrama_samvat?.number;
-      let yearName = out?.vikram_chaitradi_year_name ?? out?.vikram_chaitradi?.year_name ?? out?.vikram_chaitradi_year ?? out?.vikrama_samvat_year_name ?? out?.vikram_samvat_year_name ?? out?.vikrama_samvat?.year_name;
+      let number =
+        out?.vikram_chaitradi_number ??
+        out?.vikram_chaitradi_name_number ??
+        out?.vikram_chaitradi?.number ??
+        out?.vikrama_samvat_number ??
+        out?.vikram_samvat_number ??
+        out?.vikrama_samvat?.number;
+      let yearName =
+        out?.vikram_chaitradi_year_name ??
+        out?.vikram_chaitradi?.year_name ??
+        out?.vikram_chaitradi_year ??
+        out?.vikrama_samvat_year_name ??
+        out?.vikram_samvat_year_name ??
+        out?.vikrama_samvat?.year_name;
 
-      if ((number == null || yearName == null) && typeof outLike === 'string') {
+      if ((number == null || yearName == null) && typeof outLike === "string") {
         const s = outLike;
-        const nMatch = s.match(/\bvikram_chaitradi_(?:number|name_number)\b\s*:\s*(\d{3,4})/i);
-        const yMatch = s.match(/\bvikram_chaitradi_year_name\b\s*:\s*\"?([^\",}]+)\"?/i);
+        const nMatch = s.match(
+          /\bvikram_chaitradi_(?:number|name_number)\b\s*:\s*(\d{3,4})/i
+        );
+        const yMatch = s.match(
+          /\bvikram_chaitradi_year_name\b\s*:\s*\"?([^\",}]+)\"?/i
+        );
         if (nMatch && !number) number = parseInt(nMatch[1], 10);
         if (yMatch && !yearName) yearName = yMatch[1];
       }
@@ -409,12 +604,23 @@ export default function CalendarPage() {
         year: d.getFullYear(),
         month: d.getMonth() + 1,
         date: d.getDate(),
-        hours: 6, minutes: 0, seconds: 0,
-        latitude: lat, longitude: lon, timezone: tz,
-        config: { observation_point: 'topocentric', ayanamsha: 'lahiri', lunar_month_definition: 'amanta' },
+        hours: 6,
+        minutes: 0,
+        seconds: 0,
+        latitude: lat,
+        longitude: lon,
+        timezone: tz,
+        config: {
+          observation_point: "topocentric",
+          ayanamsha: "lahiri",
+          lunar_month_definition: "amanta",
+        },
       };
 
-      const dKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(d.getDate()).padStart(2, "0")}`;
       const samvatKey = `${dKey}|${lat.toFixed(3)},${lon.toFixed(3)}|${tz}`;
       const cached = samvatCache.get(samvatKey);
       if (cached && cached.samvat && !cancelled) {
@@ -431,8 +637,11 @@ export default function CalendarPage() {
         if (!cancelled && (number || yearName)) {
           setSamvat({ number, yearName });
           setSamvatError(null);
-          setSamvatRaw('');
-          samvatCache.set(samvatKey, { samvat: { number, yearName }, savedAt: Date.now() });
+          setSamvatRaw("");
+          samvatCache.set(samvatKey, {
+            samvat: { number, yearName },
+            savedAt: Date.now(),
+          });
           return;
         }
 
@@ -442,33 +651,47 @@ export default function CalendarPage() {
         if (!cancelled && (nR || yR)) {
           setSamvat({ number: nR, yearName: yR });
           setSamvatError(null);
-          setSamvatRaw('');
-          samvatCache.set(samvatKey, { samvat: { number: nR, yearName: yR }, savedAt: Date.now() });
+          setSamvatRaw("");
+          samvatCache.set(samvatKey, {
+            samvat: { number: nR, yearName: yR },
+            savedAt: Date.now(),
+          });
           return;
         }
 
         if (!cancelled) {
           const approx = approxVikramNumber(d);
-          setSamvat({ number: approx, yearName: '' });
-          setSamvatError('approx');
-          const rawStr = typeof parsedRt?.raw === 'string' ? parsedRt.raw : JSON.stringify(parsedRt?.raw || parsed?.raw || '').slice(0, 60);
+          setSamvat({ number: approx, yearName: "" });
+          setSamvatError("approx");
+          const rawStr =
+            typeof parsedRt?.raw === "string"
+              ? parsedRt.raw
+              : JSON.stringify(parsedRt?.raw || parsed?.raw || "").slice(0, 60);
           setSamvatRaw(rawStr);
-          samvatCache.set(samvatKey, { samvat: { number: approx, yearName: '' }, savedAt: Date.now() });
+          samvatCache.set(samvatKey, {
+            samvat: { number: approx, yearName: "" },
+            savedAt: Date.now(),
+          });
         }
       } catch (err) {
         if (!cancelled) {
           const approx = approxVikramNumber(d);
-          setSamvat({ number: approx, yearName: '' });
-          setSamvatError('approx');
-          setSamvatRaw('');
-          samvatCache.set(samvatKey, { samvat: { number: approx, yearName: '' }, savedAt: Date.now() });
+          setSamvat({ number: approx, yearName: "" });
+          setSamvatError("approx");
+          setSamvatRaw("");
+          samvatCache.set(samvatKey, {
+            samvat: { number: approx, yearName: "" },
+            savedAt: Date.now(),
+          });
         }
       }
       if (!cancelled) setSamvatLoading(false);
     }
 
     fetchSamvat();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [viewDate]);
 
   const handlePrev = () => {
@@ -486,13 +709,13 @@ export default function CalendarPage() {
   return (
     <>
       <style jsx>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 
         .pageContainer {
           min-height: 100vh;
           background: #f8f5f0;
           padding: 2rem 1rem;
-          font-family: 'Inter', sans-serif;
+          font-family: "Inter", sans-serif;
         }
         .innerWrapper {
           max-width: 1200px;
@@ -545,25 +768,34 @@ export default function CalendarPage() {
           transform: none;
         }
         .monthTitle {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: "Cormorant Garamond", serif;
           font-size: 1.5rem;
           font-weight: 700;
           color: #7c2d12;
         }
-          .monthlyCalender {
+        .monthlyCalender {
           padding: 1.5rem;
-          marging: 0 auto;}
+          marging: 0 auto;
+        }
       `}</style>
 
       <div className="pageContainer">
         <div className="innerWrapper">
           <div className="calendarWrapper">
             <div className="navContainer">
-              <button className="navButton" onClick={handlePrev} aria-label="Previous month">
+              <button
+                className="navButton"
+                onClick={handlePrev}
+                aria-label="Previous month"
+              >
                 <ChevronLeft style={{ width: 20, height: 20 }} />
               </button>
               <div className="monthTitle">{monthLabelFrom(viewDate)}</div>
-              <button className="navButton" onClick={handleNext} aria-label="Next month">
+              <button
+                className="navButton"
+                onClick={handleNext}
+                aria-label="Next month"
+              >
                 <ChevronRight style={{ width: 20, height: 20 }} />
               </button>
             </div>
@@ -575,7 +807,7 @@ export default function CalendarPage() {
               onNext={handleNext}
               nakshatraMap={nakshatraMap}
               sunMap={sunMap}
-              tithiMap={tithiMap}             
+              tithiMap={tithiMap}
             />
           </div>
         </div>

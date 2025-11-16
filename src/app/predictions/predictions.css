@@ -11,26 +11,26 @@
   flex: 1;
 }
 
-
 .suggest-list {
-          position: absolute;
-          z-index: 20;
-          width: 100%;
-          max-height: 12rem;
-          overflow-y: auto;
-          background: var(--color-cream);
-          border: 1px solid var(--c-border);
-          border-radius: .5rem;
-          margin-top: .25rem;
-          box-shadow: 0 4px 12px rgba(0,0,0,.08);
-        }
-        .suggest-item {
-          padding: .5rem .75rem;
-          cursor: pointer;
-          font-size: .875rem;
-        }
-        .suggest-item:hover { background: #f1f5f9; }
-
+  position: absolute;
+  z-index: 20;
+  width: 100%;
+  max-height: 12rem;
+  overflow-y: auto;
+  background: var(--color-cream);
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+  margin-top: 0.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.suggest-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.suggest-item:hover {
+  background: #f1f5f9;
+}
 
 /* Header icon */
 .headerIcon {
@@ -39,7 +39,6 @@
   width: 36px;
   height: 36px;
 }
-
 
 /* Planet table specific styles */
 .planet-table td:nth-child(7) .retro-badge {
@@ -210,7 +209,11 @@
 .antar-lord-badge {
   width: 2.5rem;
   height: 2.5rem;
-  background: linear-gradient(to bottom right, var(--color-gold)/0.2, var(--color-purple-light));
+  background: linear-gradient(
+    to bottom right,
+    var(--color-gold) / 0.2,
+    var(--color-purple-light)
+  );
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -346,7 +349,7 @@
 @media (min-width: 768px) {
   .tz-row {
     grid-template-columns: repeat(3, 1fr);
-    align-items: end;            /* align bottoms */
+    align-items: end; /* align bottoms */
   }
 }
 
@@ -359,7 +362,7 @@
 /* Nudge the two buttons down by the label’s height so their tops
    start where the select starts (under the label). */
 .align-with-label {
-  margin-top: 2.5rem;            /* tweak 2.25–2.75rem if needed */
+  margin-top: 2.5rem; /* tweak 2.25–2.75rem if needed */
 }
 
 /* Make sure all three controls have the same visual height */
@@ -368,8 +371,8 @@
 .place-btn,
 .tz-row .form-field-input {
   height: 52px;
-  line-height: 52px;             /* helps certain browsers */
-  padding-top: 0;                 /* avoid extra internal height */
+  line-height: 52px; /* helps certain browsers */
+  padding-top: 0; /* avoid extra internal height */
   padding-bottom: 0;
 }
 
@@ -455,7 +458,6 @@
   padding: 1.5rem;
 }
 
-
 .history-empty {
   color: #6b7280;
   text-align: center;
@@ -507,4 +509,3 @@
   color: #dc2626;
   transform: scale(1.1);
 }
-

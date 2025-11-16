@@ -10,7 +10,7 @@ export default function ConnectingNotification({ isOpen, onClose, type = 'video'
       onClose={onClose}
       position="center"
     >
-      <div className="w-[300px] p-6 flex flex-col items-center justify-center space-y-4">
+      <div className="max-w-md p-4 sm:p-6 flex flex-col items-center justify-center space-y-4 mx-auto w-full">
         {/* Loading Spinner */}
         <div className="relative w-12 h-12">
           <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-200 rounded-full animate-pulse"></div>
