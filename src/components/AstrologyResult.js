@@ -5,35 +5,83 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Download, Share } from 'lucide-react'
 
 const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
-  if (!data || !data.output) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <ArrowLeft className="w-5 h-5" />
-            <span>{option.name} - No Data</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">No data available for this calculation.</p>
-            <Button onClick={onNewCalculation} variant="outline">
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
+if (!data) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{option.name} - No Data</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>No data returned from the API.</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ✅ Handles { output: "\"{...}\"" }, direct JSON, and plain strings
+const formatResult = (data) => {
+  if (!data) return null;
+
+  let raw = data;
+
+  // Case 1: API returns { statusCode, output: "..." }
+  if (raw && typeof raw === "object" && "output" in raw) {
+    let out = raw.output;
+
+    // Some endpoints (like Samvat) are double-encoded: "\"{...}\""
+    // Try to unwrap 2 times safely.
+    for (let i = 0; i < 2; i++) {
+      if (typeof out === "string") {
+        const trimmed = out.trim();
+
+        // If it looks like JSON, try parse
+        if (
+          (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+          (trimmed.startsWith("[") && trimmed.endsWith("]"))
+        ) {
+          try {
+            out = JSON.parse(trimmed);
+            continue;
+          } catch {
+            // stop trying if invalid
+            break;
+          }
+        }
+
+        // Otherwise try JSON.parse raw (this handles "\"{...}\"")
+        try {
+          out = JSON.parse(out);
+          continue;
+        } catch {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    return out;
   }
 
-  const formatResult = (data) => {
+  // Case 2: already a plain object (no .output)
+  if (typeof raw === "object") {
+    return raw;
+  }
+
+  // Case 3: API returned JSON string
+  if (typeof raw === "string") {
     try {
-      const parsedData = JSON.parse(data.output)
-      return parsedData
-    } catch (error) {
-      return null
+      return JSON.parse(raw);
+    } catch {
+      return raw; // fallback: show as string
     }
   }
+
+  return null;
+};
+
+
+
 
   const formatValue = (value) => {
     if (typeof value === 'object' && value !== null) {
@@ -139,30 +187,37 @@ const AstrologyResult = ({ option, data, onBack, onNewCalculation }) => {
                   <h4 className="font-semibold text-gray-800 capitalize">
                     {key.replace(/_/g, ' ')}
                   </h4>
-                  <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                    {typeof value}
-                  </span>
                 </div>
                 <div className="text-sm text-gray-700">
-                  {key.includes('time') || key.includes('date') || key.includes('at') ? (
-                    <div className="space-y-1">
-                      {Array.isArray(value) ? (
-                        value.map((item, index) => (
-                          <div key={index} className="font-mono text-xs">
-                            {formatDateTime(item)}
-                          </div>
+                  {(() => {
+                    const isDateField =
+                      key === "timestamp" ||
+                      key.endsWith("_at") ||
+                      key.endsWith("_time") ||
+                      key.endsWith("_date");
+
+                      return (
+                        isDateField ? (
+                        <div className="space-y-1">
+                        {Array.isArray(value) ? (
+                         value.map((item, index) => (
+                        <div key={index} className="font-mono text-xs">
+                          {formatDateTime(item)}
+                        </div>
                         ))
                       ) : (
-                        <div className="font-mono text-xs">
-                          {formatDateTime(value)}
-                        </div>
+                      <div className="font-mono text-xs">
+                        {formatDateTime(value)}
+                      </div>
                       )}
-                    </div>
-                  ) : (
-                    <div className="font-mono text-xs whitespace-pre-wrap">
-                      {formatValue(value)}
-                    </div>
-                  )}
+                        </div>
+                      ) : (
+                     <div className="font-mono text-xs whitespace-pre-wrap">
+                          {formatValue(value)}
+                        </div>
+                      )
+                    );
+                  })()}
                 </div>
               </div>
             ))}

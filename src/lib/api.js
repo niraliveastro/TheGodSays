@@ -15,10 +15,10 @@ const API_ENDPOINTS = {
   'nakshatra-durations': 'nakshatra-durations',
   'yoga-durations': 'yoga-durations',
   'karana-timings': 'karana-timings',
-  'vedic-weekday': 'vedic-weekday',
-  'lunar-month-info': 'lunar-month-info',
-  'ritu-information': 'ritu-information',
-  'samvat-information': 'samvat-information',
+  'vedic-weekday': 'vedicweekday',
+  'lunar-month-info': 'lunarmonthinfo',
+  'ritu-information': 'rituinfo',
+  'samvat-information': 'samvatinfo',
   'aayanam': 'aayanam',
   'hora-timings': 'hora-timings',
   'choghadiya-timings': 'choghadiya-timings',
@@ -276,7 +276,7 @@ export default astrologyAPI
 // --- Client-side helpers for Samvat info ---
 // Posts a payload to our Next.js route `/samvatinfo`
 export async function postSamvatInfo(payload) {
-  const res = await fetch('/samvatinfo', {
+  const res = await fetch('/api/astro/samvatinfo', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
