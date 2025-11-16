@@ -257,7 +257,7 @@ export default function VideoCallRoom() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e3a8a, #6b21a8, #4c1d95)',
+      background: 'var(--color-cream)',
       position: 'relative'
     }}>
       {/* Header */}

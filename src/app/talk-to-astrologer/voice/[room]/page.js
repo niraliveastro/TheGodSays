@@ -320,7 +320,7 @@ export default function VoiceCallRoom() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
+        background: 'var(--color-cream)',
         padding: '2rem 0',
       }}
     >
