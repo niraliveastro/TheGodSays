@@ -1,22 +1,16 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useMemo } from 'react'
-import { 
-  Calculator,
-  User,
-  Calendar,
-  Save,
-  Trash2
-} from 'lucide-react'
-import './numerology.css'
+import { useState, useEffect, useMemo } from "react";
+import { Calculator, User, Calendar, Save, Trash2 } from "lucide-react";
+import "./numerology.css";
 
 /**
  * NumerologyPage Component
- * 
+ *
  * A React component for performing comprehensive numerology calculations based on Pythagorean and Chaldean systems.
  * It computes core numbers (Destiny, Soul Urge, Dream, Power, Life Path, Mulank), composite performance scores,
  * and provides timing analysis. Includes localStorage-based history for up to 10 calculations with comparison table.
- * 
+ *
  * Features:
  * - Real-time calculation on input change using useMemo.
  * - Handles master numbers (11, 22, 33) without reduction.
@@ -24,24 +18,24 @@ import './numerology.css'
  * - History management: save, delete, clear (max 10 entries).
  * - Responsive two-column layout with charts for system understanding.
  * - Validation for required fields before saving.
- * 
+ *
  * Dependencies:
  * - React hooks: useState, useEffect, useMemo.
  * - Lucide React icons for UI elements.
  * - External CSS: './numerology.css' for styling (assumed to define orb animations, cards, etc.).
- * 
+ *
  * Styling Notes:
  * - Golden/orange theme with section-based color coding (yellow for totals, orange/purple/green for cores, etc.).
  * - Progress bars for composite scores.
  * - History table with 12-point comparison columns.
- * 
+ *
  * @returns {JSX.Element} The rendered numerology calculator page.
  */
 export default function NumerologyPage() {
   // Form input states
-  const [fullName, setFullName] = useState('') // User's full birth name for letter-based calculations
-  const [birthDate, setBirthDate] = useState('') // Birth date (YYYY-MM-DD) for Life Path and Mulank
-  const [history, setHistory] = useState([]) // Array of saved calculation history objects
+  const [fullName, setFullName] = useState(""); // User's full birth name for letter-based calculations
+  const [birthDate, setBirthDate] = useState(""); // Birth date (YYYY-MM-DD) for Life Path and Mulank
+  const [history, setHistory] = useState([]); // Array of saved calculation history objects
 
   // Numerology data constants
   /**
@@ -49,49 +43,160 @@ export default function NumerologyPage() {
    * Used for Destiny, Soul Urge, and Dream numbers.
    */
   const PYTHAGOREAN_MAP = {
-    A:1, J:1, S:1, B:2, K:2, T:2, C:3, L:3, U:3, D:4, M:4, V:4,
-    E:5, N:5, W:5, F:6, O:6, X:6, G:7, P:7, Y:7, H:8, Q:8, Z:8, I:9, R:9
-  }
+    A: 1,
+    J: 1,
+    S: 1,
+    B: 2,
+    K: 2,
+    T: 2,
+    C: 3,
+    L: 3,
+    U: 3,
+    D: 4,
+    M: 4,
+    V: 4,
+    E: 5,
+    N: 5,
+    W: 5,
+    F: 6,
+    O: 6,
+    X: 6,
+    G: 7,
+    P: 7,
+    Y: 7,
+    H: 8,
+    Q: 8,
+    Z: 8,
+    I: 9,
+    R: 9,
+  };
 
   /**
    * Chaldean letter-to-number mapping (A=1, B=2, ..., no 9 assignment).
    * Used for outer manifestation and composite scoring.
    */
   const CHALDEAN_MAP = {
-    A:1, I:1, J:1, Q:1, Y:1, B:2, K:2, R:2, C:3, G:3, L:3, S:3,
-    D:4, M:4, T:4, E:5, H:5, N:5, X:5, U:6, V:6, W:6, O:7, Z:7, F:8, P:8
-  }
+    A: 1,
+    I: 1,
+    J: 1,
+    Q: 1,
+    Y: 1,
+    B: 2,
+    K: 2,
+    R: 2,
+    C: 3,
+    G: 3,
+    L: 3,
+    S: 3,
+    D: 4,
+    M: 4,
+    T: 4,
+    E: 5,
+    H: 5,
+    N: 5,
+    X: 5,
+    U: 6,
+    V: 6,
+    W: 6,
+    O: 7,
+    Z: 7,
+    F: 8,
+    P: 8,
+  };
 
   /**
    * Standard vowels for Soul Urge calculation (Y treated contextually).
    */
-  const VOWELS_STANDARD = ['A', 'E', 'I', 'O', 'U']
+  const VOWELS_STANDARD = ["A", "E", "I", "O", "U"];
 
   /**
    * Master numbers that are not reduced further.
    */
-  const MASTER_NUMBERS = [11, 22, 33]
+  const MASTER_NUMBERS = [11, 22, 33];
 
   /**
    * localStorage key for persisting history.
    */
-  const NUMEROLOGY_HISTORY_KEY = 'numerology_history_v2'
+  const NUMEROLOGY_HISTORY_KEY = "numerology_history_v2";
 
   /**
    * Archetype and trait ratings (1-5 stars) for numbers 1-9.
    * Used for composite scoring across Fame, Wealth, Luck, Health, Speed.
    */
   const NUMBER_TRAITS = {
-    1: { archetype: "Pioneer / Leader", Fame: 4, Wealth: 4, Luck: 3, Health: 2, Speed: 5 },
-    2: { archetype: "Diplomat / Peacemaker", Fame: 2, Wealth: 2, Luck: 4, Health: 3, Speed: 2 },
-    3: { archetype: "Creator / Performer", Fame: 5, Wealth: 3, Luck: 4, Health: 2, Speed: 4 },
-    4: { archetype: "Builder / Strategist", Fame: 2, Wealth: 4, Luck: 1, Health: 4, Speed: 1 },
-    5: { archetype: "Opportunist / Explorer", Fame: 4, Wealth: 4, Luck: 5, Health: 1, Speed: 5 },
-    6: { archetype: "Magnet / Healer", Fame: 4, Wealth: 5, Luck: 3, Health: 3, Speed: 3 },
-    7: { archetype: "Mystic / Analyst", Fame: 2, Wealth: 2, Luck: 2, Health: 4, Speed: 1 },
-    8: { archetype: "Power / Executive", Fame: 3, Wealth: 5, Luck: 2, Health: 2, Speed: 2 },
-    9: { archetype: "Warrior / Visionary", Fame: 4, Wealth: 2, Luck: 3, Health: 1, Speed: 3 }
-  }
+    1: {
+      archetype: "Pioneer / Leader",
+      Fame: 4,
+      Wealth: 4,
+      Luck: 3,
+      Health: 2,
+      Speed: 5,
+    },
+    2: {
+      archetype: "Diplomat / Peacemaker",
+      Fame: 2,
+      Wealth: 2,
+      Luck: 4,
+      Health: 3,
+      Speed: 2,
+    },
+    3: {
+      archetype: "Creator / Performer",
+      Fame: 5,
+      Wealth: 3,
+      Luck: 4,
+      Health: 2,
+      Speed: 4,
+    },
+    4: {
+      archetype: "Builder / Strategist",
+      Fame: 2,
+      Wealth: 4,
+      Luck: 1,
+      Health: 4,
+      Speed: 1,
+    },
+    5: {
+      archetype: "Opportunist / Explorer",
+      Fame: 4,
+      Wealth: 4,
+      Luck: 5,
+      Health: 1,
+      Speed: 5,
+    },
+    6: {
+      archetype: "Magnet / Healer",
+      Fame: 4,
+      Wealth: 5,
+      Luck: 3,
+      Health: 3,
+      Speed: 3,
+    },
+    7: {
+      archetype: "Mystic / Analyst",
+      Fame: 2,
+      Wealth: 2,
+      Luck: 2,
+      Health: 4,
+      Speed: 1,
+    },
+    8: {
+      archetype: "Power / Executive",
+      Fame: 3,
+      Wealth: 5,
+      Luck: 2,
+      Health: 2,
+      Speed: 2,
+    },
+    9: {
+      archetype: "Warrior / Visionary",
+      Fame: 4,
+      Wealth: 2,
+      Luck: 3,
+      Health: 1,
+      Speed: 3,
+    },
+  };
 
   /**
    * Timing analysis descriptions based on Life Path number.
@@ -109,8 +214,8 @@ export default function NumerologyPage() {
     9: "Humanitarian Timing. Impact through service to humanity.",
     11: "Master Intuition Timing. Spiritual insights guide success.",
     22: "Master Builder Timing. Large-scale projects and lasting impact.",
-    33: "Master Teacher Timing. Wisdom and guidance for others."
-  }
+    33: "Master Teacher Timing. Wisdom and guidance for others.",
+  };
 
   // Helper functions
   /**
@@ -120,17 +225,20 @@ export default function NumerologyPage() {
    * @returns {number|null} Reduced number or null if invalid input.
    */
   const reduceNumber = (num) => {
-    if (num === null || isNaN(num) || num === 0) return null
-    let current = num
-    if (MASTER_NUMBERS.includes(current)) return current
-    
+    if (num === null || isNaN(num) || num === 0) return null;
+    let current = num;
+    if (MASTER_NUMBERS.includes(current)) return current;
+
     while (current > 9) {
-      let sum = current.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0)
-      if (MASTER_NUMBERS.includes(sum) && sum !== current) return sum
-      current = sum
+      let sum = current
+        .toString()
+        .split("")
+        .reduce((acc, digit) => acc + parseInt(digit), 0);
+      if (MASTER_NUMBERS.includes(sum) && sum !== current) return sum;
+      current = sum;
     }
-    return current
-  }
+    return current;
+  };
 
   /**
    * Determines if a character is a vowel, with special handling for 'Y'.
@@ -141,16 +249,20 @@ export default function NumerologyPage() {
    * @returns {boolean} True if vowel.
    */
   const isVowel = (char, str, index) => {
-    if (VOWELS_STANDARD.includes(char)) return true
-    if (char === 'Y') {
-      const prevVowel = index > 0 ? VOWELS_STANDARD.includes(str[index - 1]) : false
-      const nextVowel = index < str.length - 1 ? VOWELS_STANDARD.includes(str[index + 1]) : false
-      if (!prevVowel && !nextVowel) return true
-      if (index === str.length - 1 && !prevVowel) return true
-      if (index === 0 && !nextVowel) return true
+    if (VOWELS_STANDARD.includes(char)) return true;
+    if (char === "Y") {
+      const prevVowel =
+        index > 0 ? VOWELS_STANDARD.includes(str[index - 1]) : false;
+      const nextVowel =
+        index < str.length - 1
+          ? VOWELS_STANDARD.includes(str[index + 1])
+          : false;
+      if (!prevVowel && !nextVowel) return true;
+      if (index === str.length - 1 && !prevVowel) return true;
+      if (index === 0 && !nextVowel) return true;
     }
-    return false
-  }
+    return false;
+  };
 
   /**
    * Reduces a Life Path component (month/day/year) to single digit or master number.
@@ -158,12 +270,15 @@ export default function NumerologyPage() {
    * @returns {number} Reduced value.
    */
   const reduceLifePathComponent = (n) => {
-    let sum = n
+    let sum = n;
     while (sum > 9 && ![11, 22, 33].includes(sum)) {
-      sum = sum.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0)
+      sum = sum
+        .toString()
+        .split("")
+        .reduce((acc, digit) => acc + parseInt(digit), 0);
     }
-    return sum
-  }
+    return sum;
+  };
 
   /**
    * Calculates Life Path number from birth date.
@@ -172,11 +287,15 @@ export default function NumerologyPage() {
    * @returns {number|null} Life Path number or null if invalid.
    */
   const calculateLifePath = (dateStr) => {
-    if (!dateStr) return null
-    const [year, month, day] = dateStr.split('-').map(v => parseInt(v))
-    if ([year, month, day].some(isNaN)) return null
-    return reduceNumber(reduceLifePathComponent(month) + reduceLifePathComponent(day) + reduceLifePathComponent(year))
-  }
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-").map((v) => parseInt(v));
+    if ([year, month, day].some(isNaN)) return null;
+    return reduceNumber(
+      reduceLifePathComponent(month) +
+        reduceLifePathComponent(day) +
+        reduceLifePathComponent(year)
+    );
+  };
 
   /**
    * Calculates Mulank (day number) from birth date.
@@ -184,11 +303,11 @@ export default function NumerologyPage() {
    * @returns {number|null} Mulank or null if invalid.
    */
   const calculateMulank = (dateStr) => {
-    if (!dateStr) return null
-    const day = parseInt(dateStr.split('-')[2])
-    if (isNaN(day)) return null
-    return reduceLifePathComponent(day)
-  }
+    if (!dateStr) return null;
+    const day = parseInt(dateStr.split("-")[2]);
+    if (isNaN(day)) return null;
+    return reduceLifePathComponent(day);
+  };
 
   /**
    * Computes composite trait scores by averaging Pythagorean and Chaldean ratings.
@@ -198,20 +317,21 @@ export default function NumerologyPage() {
    * @returns {object} Composite scores for Fame, Wealth, etc.
    */
   const getCompositeScores = (pythagorean, chaldean) => {
-    const pythTraits = NUMBER_TRAITS[pythagorean] || {}
-    const chalTraits = NUMBER_TRAITS[chaldean] || {}
-    const metrics = ['Fame', 'Wealth', 'Luck', 'Health', 'Speed']
-    const output = {}
-    
+    const pythTraits = NUMBER_TRAITS[pythagorean] || {};
+    const chalTraits = NUMBER_TRAITS[chaldean] || {};
+    const metrics = ["Fame", "Wealth", "Luck", "Health", "Speed"];
+    const output = {};
+
     for (const metric of metrics) {
-      const average = ((pythTraits[metric] || 0) + (chalTraits[metric] || 0)) / 2
+      const average =
+        ((pythTraits[metric] || 0) + (chalTraits[metric] || 0)) / 2;
       output[metric.toLowerCase()] = {
         stars: average,
-        percent: average * 20
-      }
+        percent: average * 20,
+      };
     }
-    return output
-  }
+    return output;
+  };
 
   // Main calculation function
   /**
@@ -222,50 +342,50 @@ export default function NumerologyPage() {
    * @returns {object|null} Calculation results or null if insufficient data.
    */
   const performCalculation = (rawName, dateStr) => {
-    const name = rawName.trim()
-    const lifePath = calculateLifePath(dateStr)
-    const mulank = calculateMulank(dateStr)
-    
-    if (!name && lifePath === null) return null
+    const name = rawName.trim();
+    const lifePath = calculateLifePath(dateStr);
+    const mulank = calculateMulank(dateStr);
 
-    let pythagoreanTotal = 0
-    let chaldeanTotal = 0
-    let vowelSum = 0
-    let consonantSum = 0
-    let destiny = null
-    let soul = null
-    let dream = null
-    let power = null
-    let composite = null
+    if (!name && lifePath === null) return null;
+
+    let pythagoreanTotal = 0;
+    let chaldeanTotal = 0;
+    let vowelSum = 0;
+    let consonantSum = 0;
+    let destiny = null;
+    let soul = null;
+    let dream = null;
+    let power = null;
+    let composite = null;
 
     if (name) {
-      const cleaned = name.toUpperCase().replace(/[^A-Z]/g, '')
+      const cleaned = name.toUpperCase().replace(/[^A-Z]/g, "");
       for (let i = 0; i < cleaned.length; i++) {
-        const char = cleaned[i]
-        const pythValue = PYTHAGOREAN_MAP[char] || 0
-        const chalValue = CHALDEAN_MAP[char] || 0
-        
-        pythagoreanTotal += pythValue
-        chaldeanTotal += chalValue
-        
+        const char = cleaned[i];
+        const pythValue = PYTHAGOREAN_MAP[char] || 0;
+        const chalValue = CHALDEAN_MAP[char] || 0;
+
+        pythagoreanTotal += pythValue;
+        chaldeanTotal += chalValue;
+
         if (isVowel(char, cleaned, i)) {
-          vowelSum += pythValue
+          vowelSum += pythValue;
         } else {
-          consonantSum += pythValue
+          consonantSum += pythValue;
         }
       }
-      
-      destiny = reduceNumber(pythagoreanTotal)
-      soul = reduceNumber(vowelSum)
-      dream = reduceNumber(consonantSum)
-      
+
+      destiny = reduceNumber(pythagoreanTotal);
+      soul = reduceNumber(vowelSum);
+      dream = reduceNumber(consonantSum);
+
       if (lifePath !== null && destiny !== null) {
-        power = reduceNumber(lifePath + destiny)
+        power = reduceNumber(lifePath + destiny);
       }
-      
-      const chaldeanReduced = reduceNumber(chaldeanTotal)
+
+      const chaldeanReduced = reduceNumber(chaldeanTotal);
       if (destiny !== null && chaldeanReduced !== null) {
-        composite = getCompositeScores(destiny, chaldeanReduced)
+        composite = getCompositeScores(destiny, chaldeanReduced);
       }
     }
 
@@ -283,17 +403,17 @@ export default function NumerologyPage() {
       powerNumber: power,
       lifePath,
       mulank,
-      composite
-    }
-  }
+      composite,
+    };
+  };
 
   // Calculate results whenever inputs change
   /**
    * Memoized results object, recomputed on fullName or birthDate change.
    */
   const results = useMemo(() => {
-    return performCalculation(fullName, birthDate) || {}
-  }, [fullName, birthDate])
+    return performCalculation(fullName, birthDate) || {};
+  }, [fullName, birthDate]);
 
   // History management
   /**
@@ -302,64 +422,74 @@ export default function NumerologyPage() {
    */
   const getHistory = () => {
     try {
-      const stored = localStorage.getItem(NUMEROLOGY_HISTORY_KEY)
-      return stored ? JSON.parse(stored) : []
+      const stored = localStorage.getItem(NUMEROLOGY_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
     } catch (e) {
-      return []
+      return [];
     }
-  }
+  };
 
   /**
    * Saves result to history: dedupes by name+DOB, unshifts, limits to 10.
    * @param {object} result - Calculation result to save.
    */
   const saveToHistory = (result) => {
-    let currentHistory = getHistory()
-    const key = `${result.name.toUpperCase()}-${result.dob}`
-    currentHistory = currentHistory.filter(item => `${item.name.toUpperCase()}-${item.dob}` !== key)
-    currentHistory.unshift(result)
-    if (currentHistory.length > 10) currentHistory = currentHistory.slice(0, 10)
-    localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(currentHistory))
-    setHistory(currentHistory)
-  }
+    let currentHistory = getHistory();
+    const key = `${result.name.toUpperCase()}-${result.dob}`;
+    currentHistory = currentHistory.filter(
+      (item) => `${item.name.toUpperCase()}-${item.dob}` !== key
+    );
+    currentHistory.unshift(result);
+    if (currentHistory.length > 10)
+      currentHistory = currentHistory.slice(0, 10);
+    localStorage.setItem(
+      NUMEROLOGY_HISTORY_KEY,
+      JSON.stringify(currentHistory)
+    );
+    setHistory(currentHistory);
+  };
 
   /**
    * Saves current results to history if valid.
    */
   const saveCurrentResult = () => {
     if (results && results.lifePath !== null && results.destiny !== null) {
-      saveToHistory(results)
+      saveToHistory(results);
     }
-  }
+  };
 
   /**
    * Deletes a history item by ID.
    * @param {number} id - Item ID to delete.
    */
   const deleteHistoryItem = (id) => {
-    const updated = history.filter(item => item.id !== id)
-    localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(updated))
-    setHistory(updated)
-  }
+    const updated = history.filter((item) => item.id !== id);
+    localStorage.setItem(NUMEROLOGY_HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
+  };
 
   /**
    * Clears all history from localStorage.
    */
   const clearHistory = () => {
-    localStorage.removeItem(NUMEROLOGY_HISTORY_KEY)
-    setHistory([])
-  }
+    localStorage.removeItem(NUMEROLOGY_HISTORY_KEY);
+    setHistory([]);
+  };
 
   // Load history on component mount
   useEffect(() => {
-    setHistory(getHistory())
-  }, [])
+    setHistory(getHistory());
+  }, []);
 
   // Check if save button should be enabled
   /**
    * Determines if current results are savable (requires destiny, lifePath, composite).
    */
-  const canSave = results && results.destiny !== null && results.lifePath !== null && results.composite !== null
+  const canSave =
+    results &&
+    results.destiny !== null &&
+    results.lifePath !== null &&
+    results.composite !== null;
 
   // Helper function to render detail rows
   /**
@@ -369,27 +499,34 @@ export default function NumerologyPage() {
    * @returns {JSX.Element|null} Row element or null if no data.
    */
   const renderDetailRow = (label, data) => {
-    if (!data) return null
-    
+    if (!data) return null;
+
     return (
       <div key={label} className="detail-item">
         <span className="detail-label">{label}:</span>
         <div className="progress-bar-container">
-          <div 
-            className="progress-bar-fill" 
-            style={{width: `${data.percent}%`}}
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${data.percent}%` }}
           ></div>
         </div>
         <span className="detail-percent">{data.percent.toFixed(0)}%</span>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="numerology-container">
       <div className="app">
         {/* Orbs */}
-        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+          }}
+        >
           <div className="orb orb1" />
           <div className="orb orb2" />
           <div className="orb orb3" />
@@ -397,11 +534,10 @@ export default function NumerologyPage() {
 
         {/* Header */}
         <header className="header">
-          <h1 className="title">
-            Universal Numerology Analyzer
-          </h1>
+          <h1 className="title">Universal Numerology Analyzer</h1>
           <p className="subtitle">
-            Composite Scoring System: Inner Engine (Pythagorean) × Outer Vehicle (Chaldean)
+            Composite Scoring System: Inner Engine (Pythagorean) × Outer Vehicle
+            (Chaldean)
           </p>
         </header>
 
@@ -418,14 +554,19 @@ export default function NumerologyPage() {
                   </div>
                   <div className="form-header-text">
                     <h3 className="form-header-title">Your Details</h3>
-                    <p className="form-header-subtitle">Enter your information below</p>
+                    <p className="form-header-subtitle">
+                      Enter your information below
+                    </p>
                   </div>
                 </div>
 
                 {/* Full Name Input */}
                 <div className="input-group">
                   <label htmlFor="fullName" className="input-label">
-                    <User className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
+                    <User
+                      className="w-4 h-4 input-label-icon"
+                      style={{ color: "#d4af37" }}
+                    />
                     Full Birth Name
                     <span className="required-badge">*Required</span>
                   </label>
@@ -438,11 +579,14 @@ export default function NumerologyPage() {
                     className="input-field"
                   />
                 </div>
-                
+
                 {/* Date of Birth Input */}
                 <div className="input-group">
                   <label htmlFor="birthDate" className="input-label">
-                    <Calendar className="w-4 h-4 input-label-icon" style={{color: '#d4af37'}} />
+                    <Calendar
+                      className="w-4 h-4 input-label-icon"
+                      style={{ color: "#d4af37" }}
+                    />
                     Date of Birth
                     <span className="required-badge">*Required</span>
                   </label>
@@ -453,9 +597,11 @@ export default function NumerologyPage() {
                     onChange={(e) => setBirthDate(e.target.value)}
                     className="input-field date-input"
                   />
-                  <p className="input-hint">Required for Life Path & Timing analysis</p>
+                  <p className="input-hint">
+                    Required for Life Path & Timing analysis
+                  </p>
                 </div>
-                
+
                 {/* Save Button */}
                 <button
                   onClick={saveCurrentResult}
@@ -465,11 +611,13 @@ export default function NumerologyPage() {
                   <Save className="w-5 h-5" />
                   Save to History
                 </button>
-                
+
                 {/* Info Text */}
                 <div className="info-box">
                   <p className="info-text">
-                    💡 Your calculation will be saved for comparison for comparison<br />
+                    💡 Your calculation will be saved for comparison for
+                    comparison
+                    <br />
                     in the history table below
                   </p>
                 </div>
@@ -493,7 +641,9 @@ export default function NumerologyPage() {
                       </div>
                       <div className="title-group">
                         <h3 className="card-title">Pythagorean Total</h3>
-                        <p className="card-desc">Raw sum and its reduced digit used for Destiny</p>
+                        <p className="card-desc">
+                          Raw sum and its reduced digit used for Destiny
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -501,7 +651,9 @@ export default function NumerologyPage() {
                     <div className="time-row">
                       <span className="time-label">Value</span>
                       <span className="time-value">
-                        {results.pythagoreanTotal ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}` : '-'}
+                        {results.pythagoreanTotal
+                          ? `${results.pythagoreanTotal} = ${results.pythagoreanReduced}`
+                          : "-"}
                       </span>
                     </div>
                   </div>
@@ -514,7 +666,9 @@ export default function NumerologyPage() {
                       </div>
                       <div className="title-group">
                         <h3 className="card-title">Chaldean Total</h3>
-                        <p className="card-desc">Esoteric vibration used in composite scoring</p>
+                        <p className="card-desc">
+                          Esoteric vibration used in composite scoring
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -522,7 +676,9 @@ export default function NumerologyPage() {
                     <div className="time-row">
                       <span className="time-label">Value</span>
                       <span className="time-value">
-                        {results.chaldeanTotal ? `${results.chaldeanTotal} = ${results.chaldeanReduced}` : '-'}
+                        {results.chaldeanTotal
+                          ? `${results.chaldeanTotal} = ${results.chaldeanReduced}`
+                          : "-"}
                       </span>
                     </div>
                   </div>
@@ -548,15 +704,21 @@ export default function NumerologyPage() {
                   </div>
                   <div className="title-group">
                     <h3 className="card-title">Destiny / Expression</h3>
-                    <p className="card-desc">Life purpose, public path (Pythagorean total reduced)</p>
+                    <p className="card-desc">
+                      Life purpose, public path (Pythagorean total reduced)
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.destiny) ? 'master' : ''}`}>
-                    {results.destiny || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.destiny) ? "master" : ""
+                    }`}
+                  >
+                    {results.destiny || "-"}
                   </span>
                 </div>
               </div>
@@ -564,7 +726,7 @@ export default function NumerologyPage() {
                 <span className="period-number">Core Number #1</span>
               </div>
             </div>
-            
+
             <div className="result-card purple">
               <div className="card-header">
                 <div className="header-content">
@@ -580,8 +742,12 @@ export default function NumerologyPage() {
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.soulUrge) ? 'master' : ''}`}>
-                    {results.soulUrge || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.soulUrge) ? "master" : ""
+                    }`}
+                  >
+                    {results.soulUrge || "-"}
                   </span>
                 </div>
               </div>
@@ -589,7 +755,7 @@ export default function NumerologyPage() {
                 <span className="period-number">Core Number #2</span>
               </div>
             </div>
-            
+
             <div className="result-card green">
               <div className="card-header">
                 <div className="header-content">
@@ -598,15 +764,21 @@ export default function NumerologyPage() {
                   </div>
                   <div className="title-group">
                     <h3 className="card-title">Personality / Dream</h3>
-                    <p className="card-desc">Outer impression (Consonants only)</p>
+                    <p className="card-desc">
+                      Outer impression (Consonants only)
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.dream) ? 'master' : ''}`}>
-                    {results.dream || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.dream) ? "master" : ""
+                    }`}
+                  >
+                    {results.dream || "-"}
                   </span>
                 </div>
               </div>
@@ -631,15 +803,23 @@ export default function NumerologyPage() {
                   </div>
                   <div className="title-group">
                     <h3 className="card-title">Power Number</h3>
-                    <p className="card-desc">Activation Frequency (Life Path + Destiny)</p>
+                    <p className="card-desc">
+                      Activation Frequency (Life Path + Destiny)
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.powerNumber) ? 'master' : ''}`}>
-                    {results.powerNumber || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.powerNumber)
+                        ? "master"
+                        : ""
+                    }`}
+                  >
+                    {results.powerNumber || "-"}
                   </span>
                 </div>
               </div>
@@ -647,7 +827,7 @@ export default function NumerologyPage() {
                 <span className="period-number">Core Number #4</span>
               </div>
             </div>
-            
+
             <div className="result-card blue">
               <div className="card-header">
                 <div className="header-content">
@@ -656,15 +836,21 @@ export default function NumerologyPage() {
                   </div>
                   <div className="title-group">
                     <h3 className="card-title">Life Path</h3>
-                    <p className="card-desc">Unchangeable karmic script and timing modifier</p>
+                    <p className="card-desc">
+                      Unchangeable karmic script and timing modifier
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.lifePath) ? 'master' : ''}`}>
-                    {results.lifePath || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.lifePath) ? "master" : ""
+                    }`}
+                  >
+                    {results.lifePath || "-"}
                   </span>
                 </div>
               </div>
@@ -672,7 +858,7 @@ export default function NumerologyPage() {
                 <span className="period-number">Core Number #5</span>
               </div>
             </div>
-            
+
             <div className="result-card red">
               <div className="card-header">
                 <div className="header-content">
@@ -681,15 +867,21 @@ export default function NumerologyPage() {
                   </div>
                   <div className="title-group">
                     <h3 className="card-title">Day Number (Mulank)</h3>
-                    <p className="card-desc">Innate, core daily characteristics</p>
+                    <p className="card-desc">
+                      Innate, core daily characteristics
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="card-body">
                 <div className="time-row">
                   <span className="time-label">Number</span>
-                  <span className={`time-value ${MASTER_NUMBERS.includes(results.mulank) ? 'master' : ''}`}>
-                    {results.mulank || '-'}
+                  <span
+                    className={`time-value ${
+                      MASTER_NUMBERS.includes(results.mulank) ? "master" : ""
+                    }`}
+                  >
+                    {results.mulank || "-"}
                   </span>
                 </div>
               </div>
@@ -706,36 +898,52 @@ export default function NumerologyPage() {
             <h2 className="section-title composite">
               Composite Performance Scoring (Inner Engine × Outer Vehicle)
             </h2>
-            
+
             <div className="composite-card">
               <h3 className="composite-title">Composite Index Summary</h3>
               <p className="composite-subtitle">
-                Pythagorean Engine: <strong>{results.destiny} ({(NUMBER_TRAITS[results.destiny] || {}).archetype || '-'})</strong> |
-                Chaldean Vehicle: <strong>{results.chaldeanReduced} ({(NUMBER_TRAITS[results.chaldeanReduced] || {}).archetype || '-'})</strong>
+                Pythagorean Engine:{" "}
+                <strong>
+                  {results.destiny} (
+                  {(NUMBER_TRAITS[results.destiny] || {}).archetype || "-"})
+                </strong>{" "}
+                | Chaldean Vehicle:{" "}
+                <strong>
+                  {results.chaldeanReduced} (
+                  {(NUMBER_TRAITS[results.chaldeanReduced] || {}).archetype ||
+                    "-"}
+                  )
+                </strong>
               </p>
               <div className="space-y-2 text-sm">
                 {results.composite && (
                   <>
-                    {renderDetailRow('Fame Index', results.composite.fame)}
-                    {renderDetailRow('Wealth Index', results.composite.wealth)}
-                    {renderDetailRow('Luck Index', results.composite.luck)}
-                    {renderDetailRow('Health Index', results.composite.health)}
-                    {renderDetailRow('Speed Index', results.composite.speed)}
+                    {renderDetailRow("Fame Index", results.composite.fame)}
+                    {renderDetailRow("Wealth Index", results.composite.wealth)}
+                    {renderDetailRow("Luck Index", results.composite.luck)}
+                    {renderDetailRow("Health Index", results.composite.health)}
+                    {renderDetailRow("Speed Index", results.composite.speed)}
                   </>
                 )}
               </div>
             </div>
 
             {/* Timing Analysis */}
-            
+
             {results.lifePath !== null && results.powerNumber !== null && (
-              <div className="timing-card" style={{marginTop: '2rem'}}>
-                <h3 className="timing-title">Timing Analysis (Life Path Modifier)</h3>
+              <div className="timing-card" style={{ marginTop: "2rem" }}>
+                <h3 className="timing-title">
+                  Timing Analysis (Life Path Modifier)
+                </h3>
                 <div className="timing-content">
-                  <p>{TIMING_ANALYSIS[results.lifePath] || "General Life Path timing suggests a steady pace of development."}</p>
-                  <p style={{marginTop: '1rem'}}>
-                    Your <strong>Power Number is {results.powerNumber}</strong> {(results.powerNumber === 1 || results.powerNumber === 5) 
-                      ? "(High Activation). This accelerates your Life Path's potential." 
+                  <p>
+                    {TIMING_ANALYSIS[results.lifePath] ||
+                      "General Life Path timing suggests a steady pace of development."}
+                  </p>
+                  <p style={{ marginTop: "1rem" }}>
+                    Your <strong>Power Number is {results.powerNumber}</strong>{" "}
+                    {results.powerNumber === 1 || results.powerNumber === 5
+                      ? "(High Activation). This accelerates your Life Path's potential."
                       : "(Steady Activation). Expect compounding results with patience."}
                   </p>
                 </div>
@@ -747,17 +955,19 @@ export default function NumerologyPage() {
         {/* History */}
         <section className="results-section">
           <div className="history-header">
-            <h2 className="section-title history" style={{border: 'none', padding: 0, margin: 0}}>Calculation History (12-Point Comparison)</h2>
+            <h2
+              className="section-title history"
+              style={{ border: "none", padding: 0, margin: 0 }}
+            >
+              Calculation History (12-Point Comparison)
+            </h2>
             {history.length > 0 && (
-              <button
-                onClick={clearHistory}
-                className="clear-history-btn"
-              >
+              <button onClick={clearHistory} className="clear-history-btn">
                 Clear History
               </button>
             )}
           </div>
-          
+
           <div className="history-card">
             {history.length === 0 ? (
               <p className="history-empty">No calculation history yet.</p>
@@ -784,48 +994,103 @@ export default function NumerologyPage() {
                   </thead>
                   <tbody>
                     {history.map((item) => {
-                      const displayName = item.name.length > 20 ? item.name.slice(0, 17) + '...' : item.name
-                      const displayDob = item.dob ? item.dob.slice(5) : 'N/A'
+                      const displayName =
+                        item.name.length > 20
+                          ? item.name.slice(0, 17) + "..."
+                          : item.name;
+                      const displayDob = item.dob ? item.dob.slice(5) : "N/A";
                       const metrics = item.composite || {
                         fame: { percent: 0 },
                         wealth: { percent: 0 },
                         luck: { percent: 0 },
                         health: { percent: 0 },
-                        speed: { percent: 0 }
-                      }
-                      
+                        speed: { percent: 0 },
+                      };
+
                       return (
                         <tr key={item.id}>
-                          <td title={`${item.name} (${item.dob || 'N/A'})`}>
+                          <td title={`${item.name} (${item.dob || "N/A"})`}>
                             <span className="history-name">{displayName}</span>
                             <span className="history-dob">{displayDob}</span>
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.destiny) ? 'font-bold text-red-600' : ''}>
-                            {item.destiny || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.destiny)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.destiny || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.soulUrge) ? 'font-bold text-red-600' : ''}>
-                            {item.soulUrge || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.soulUrge)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.soulUrge || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.dream) ? 'font-bold text-red-600' : ''}>
-                            {item.dream || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.dream)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.dream || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.powerNumber) ? 'font-bold text-red-600' : ''}>
-                            {item.powerNumber || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.powerNumber)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.powerNumber || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.lifePath) ? 'font-bold text-red-600' : ''}>
-                            {item.lifePath || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.lifePath)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.lifePath || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.mulank) ? 'font-bold text-red-600' : ''}>
-                            {item.mulank || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.mulank)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.mulank || "-"}
                           </td>
-                          <td className={MASTER_NUMBERS.includes(item.chaldeanReduced) ? 'font-bold text-red-600' : ''}>
-                            {item.chaldeanReduced || '-'}
+                          <td
+                            className={
+                              MASTER_NUMBERS.includes(item.chaldeanReduced)
+                                ? "font-bold text-red-600"
+                                : ""
+                            }
+                          >
+                            {item.chaldeanReduced || "-"}
                           </td>
-                          <td className="font-semibold">{metrics.fame.percent.toFixed(0)}%</td>
-                          <td className="font-semibold">{metrics.wealth.percent.toFixed(0)}%</td>
-                          <td className="font-semibold">{metrics.luck.percent.toFixed(0)}%</td>
-                          <td className="font-semibold">{metrics.health.percent.toFixed(0)}%</td>
-                          <td className="font-semibold">{metrics.speed.percent.toFixed(0)}%</td>
+                          <td className="font-semibold">
+                            {metrics.fame.percent.toFixed(0)}%
+                          </td>
+                          <td className="font-semibold">
+                            {metrics.wealth.percent.toFixed(0)}%
+                          </td>
+                          <td className="font-semibold">
+                            {metrics.luck.percent.toFixed(0)}%
+                          </td>
+                          <td className="font-semibold">
+                            {metrics.health.percent.toFixed(0)}%
+                          </td>
+                          <td className="font-semibold">
+                            {metrics.speed.percent.toFixed(0)}%
+                          </td>
                           <td>
                             <button
                               onClick={() => deleteHistoryItem(item.id)}
@@ -836,7 +1101,7 @@ export default function NumerologyPage() {
                             </button>
                           </td>
                         </tr>
-                      )
+                      );
                     })}
                   </tbody>
                 </table>
@@ -851,44 +1116,74 @@ export default function NumerologyPage() {
             Understanding the Core Systems
           </h2>
           <p className="system-charts-description">
-            The <strong>Pythagorean System</strong> (Inner Self) is used for Destiny, Soul Urge, and Dream.
-            The <strong>Chaldean System</strong> (Outer Manifestation) is used for material reality and timing influence.
+            The <strong>Pythagorean System</strong> (Inner Self) is used for
+            Destiny, Soul Urge, and Dream. The <strong>Chaldean System</strong>{" "}
+            (Outer Manifestation) is used for material reality and timing
+            influence.
           </p>
-          
+
           <div className="grid-2">
             <div>
-              <h3 className="chart-title pythagorean">Pythagorean Chart (Inner Self)</h3>
+              <h3 className="chart-title pythagorean">
+                Pythagorean Chart (Inner Self)
+              </h3>
               <div className="chart-table-container">
                 <table className="chart-table pythagorean">
                   <thead>
                     <tr>
-                      {[1,2,3,4,5,6,7,8,9].map(num => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                         <th key={num}>{num}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td>
+                      <td>A</td>
+                      <td>B</td>
+                      <td>C</td>
+                      <td>D</td>
+                      <td>E</td>
+                      <td>F</td>
+                      <td>G</td>
+                      <td>H</td>
+                      <td>I</td>
                     </tr>
                     <tr>
-                      <td>J</td><td>K</td><td>L</td><td>M</td><td>N</td><td>O</td><td>P</td><td>Q</td><td>R</td>
+                      <td>J</td>
+                      <td>K</td>
+                      <td>L</td>
+                      <td>M</td>
+                      <td>N</td>
+                      <td>O</td>
+                      <td>P</td>
+                      <td>Q</td>
+                      <td>R</td>
                     </tr>
                     <tr>
-                      <td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td><td></td>
+                      <td>S</td>
+                      <td>T</td>
+                      <td>U</td>
+                      <td>V</td>
+                      <td>W</td>
+                      <td>X</td>
+                      <td>Y</td>
+                      <td>Z</td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
-            
+
             <div>
-              <h3 className="chart-title chaldean">Chaldean Chart (Outer Manifestation)</h3>
+              <h3 className="chart-title chaldean">
+                Chaldean Chart (Outer Manifestation)
+              </h3>
               <div className="chart-table-container">
                 <table className="chart-table chaldean">
                   <thead>
                     <tr>
-                      {[1,2,3,4,5,6,7,8].map(num => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                         <th key={num}>{num}</th>
                       ))}
                     </tr>
@@ -913,11 +1208,12 @@ export default function NumerologyPage() {
 
         <footer className="numerology-footer">
           <p>
-            12-Point Analysis Summary (history): 1-Destiny, 2-Soul Urge, 3-Dream, 4-Power, 5-Life Path, 
-            6-Mulank, 7-Chaldean Reduced, 8-Fame, 9-Wealth, 10-Luck, 11-Health, 12-Speed.
+            12-Point Analysis Summary (history): 1-Destiny, 2-Soul Urge,
+            3-Dream, 4-Power, 5-Life Path, 6-Mulank, 7-Chaldean Reduced, 8-Fame,
+            9-Wealth, 10-Luck, 11-Health, 12-Speed.
           </p>
         </footer>
       </div>
     </div>
-  )
+  );
 }

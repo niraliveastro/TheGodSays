@@ -2,11 +2,11 @@
 
 /**
  * PricingPage Component
- * 
+ *
  * This is a client-side React component for the astrologer pricing settings page.
  * It handles authentication checks, loading states, and renders the pricing management interface.
  * The page allows astrologers to set their consultation rates for voice and video calls.
- * 
+ *
  * Key Features:
  * - Authentication guard: Redirects unauthenticated users to the login page.
  * - Loading spinner during auth resolution.
@@ -14,15 +14,15 @@
  * - Header with title and descriptive text.
  * - PricingManager component for rate configuration.
  * - Footer note about payment processing.
- * 
+ *
  * Dependencies:
  * - AuthContext: Provides user authentication state.
  * - PricingManager: Child component for managing pricing.
  * - Next.js Router: For programmatic navigation.
- * 
+ *
  * Styling: Uses inline styles for layout and a gradient background.
  * Assumes CSS classes like 'app', 'card', 'title', 'orb' are defined globally.
- * 
+ *
  * @returns {JSX.Element|null} The pricing page UI or null if unauthenticated.
  */
 import { useAuth } from "@/contexts/AuthContext";
@@ -101,7 +101,9 @@ export default function PricingPage() {
         padding: "2rem 0",
       }}
     >
-      <div className="app"> {/* Main app wrapper class */}
+      <div className="app">
+        {" "}
+        {/* Main app wrapper class */}
         {/* Decorative fixed orbs for background animation */}
         <div
           style={{
@@ -111,14 +113,15 @@ export default function PricingPage() {
             pointerEvents: "none", // Allows interaction with underlying content
           }}
         >
-          <div className="orb orb1" /> {/* Assumes CSS classes for orb positioning/animation */}
+          <div className="orb orb1" />{" "}
+          {/* Assumes CSS classes for orb positioning/animation */}
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
-
         {/* Header Section */}
         <header style={{ marginBottom: "2.5rem", textAlign: "center" }}>
-          <h1 className="title">Pricing Settings</h1> {/* Title with assumed styled class */}
+          <h1 className="title">Pricing Settings</h1>{" "}
+          {/* Title with assumed styled class */}
           <p
             style={{
               color: "var(--color-gray-600)", // Muted text color from theme
@@ -131,12 +134,13 @@ export default function PricingPage() {
             see these prices when booking.
           </p>
         </header>
-
         {/* Pricing Configuration Card */}
-        <div className="card" style={{ maxWidth: "800px", margin: "0 auto" }}> {/* Card class with centered max-width */}
-          <PricingManager /> {/* Renders the pricing management form/component */}
+        <div className="card" style={{ maxWidth: "800px", margin: "0 auto" }}>
+          {" "}
+          {/* Card class with centered max-width */}
+          <PricingManager />{" "}
+          {/* Renders the pricing management form/component */}
         </div>
-
         {/* Footer Informational Note */}
         <div
           style={{

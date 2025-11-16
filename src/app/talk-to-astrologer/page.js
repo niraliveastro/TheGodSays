@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Star,
   Video,
@@ -11,58 +11,59 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
-import CallConnectingNotification from '@/components/CallConnectingNotification'
-import Modal from '@/components/Modal'
-import ReviewModal from '@/components/ReviewModal'
-import Link from 'next/link'
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import CallConnectingNotification from "@/components/CallConnectingNotification";
+import Modal from "@/components/Modal";
+import ReviewModal from "@/components/ReviewModal";
+import Link from "next/link";
 
 export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterSpecialization, setFilterSpecialization] = useState('')
-  const [astrologers, setAstrologers] = useState([])
-  const [fetchingAstrologers, setFetchingAstrologers] = useState(true)
-  const [connectingCallType, setConnectingCallType] = useState(null) // 'video' | 'voice' | null
-  const [callStatus, setCallStatus] = useState('connecting')
-  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false)
-  const [balanceMessage, setBalanceMessage] = useState('')
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
-  const [selectedAstrologer, setSelectedAstrologer] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterSpecialization, setFilterSpecialization] = useState("");
+  const [astrologers, setAstrologers] = useState([]);
+  const [fetchingAstrologers, setFetchingAstrologers] = useState(true);
+  const [connectingCallType, setConnectingCallType] = useState(null); // 'video' | 'voice' | null
+  const [callStatus, setCallStatus] = useState("connecting");
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [balanceMessage, setBalanceMessage] = useState("");
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedAstrologer, setSelectedAstrologer] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const router = useRouter()
+  const router = useRouter();
 
   /* --------------------------------------------------------------- */
   /*  Modal open state for body scroll lock                         */
   /* --------------------------------------------------------------- */
-  const isAnyModalOpen = isBalanceModalOpen || isReviewModalOpen || !!connectingCallType
+  const isAnyModalOpen =
+    isBalanceModalOpen || isReviewModalOpen || !!connectingCallType;
 
   useEffect(() => {
     if (isAnyModalOpen) {
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = ''
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isAnyModalOpen])
+      document.body.style.overflow = "";
+    };
+  }, [isAnyModalOpen]);
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologers + pricing + reviews                         */
   /* --------------------------------------------------------------- */
   const fetchAndUpdateAstrologers = async () => {
     try {
-      const snap = await getDocs(collection(db, 'astrologers'))
+      const snap = await getDocs(collection(db, "astrologers"));
       const list = snap.docs.map((doc) => {
-        const d = doc.data()
+        const d = doc.data();
         return {
           id: doc.id,
           name: d.name,
@@ -70,76 +71,83 @@ export default function TalkToAstrologer() {
           rating: d.rating || 0,
           reviews: d.reviews || 0,
           experience: d.experience,
-          languages: d.languages || ['English'],
-          isOnline: d.status === 'online',
+          languages: d.languages || ["English"],
+          isOnline: d.status === "online",
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
-        }
-      })
+        };
+      });
 
       /* ---- Pricing ---- */
       try {
-        const res = await fetch('/api/pricing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get-all-pricing' }),
-        })
-        const data = await res.json()
+        const res = await fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-all-pricing" }),
+        });
+        const data = await res.json();
         if (data.success) {
-          const map = {}
-          data.pricing.forEach((p) => (map[p.astrologerId] = p))
+          const map = {};
+          data.pricing.forEach((p) => (map[p.astrologerId] = p));
           list.forEach((a) => {
-            const p = map[a.id]
+            const p = map[a.id];
             if (p) {
-              a.pricing = p
-              a.perMinuteCharge = p.pricingType === 'per_minute' ? p.finalPrice : null
+              a.pricing = p;
+              a.perMinuteCharge =
+                p.pricingType === "per_minute" ? p.finalPrice : null;
             } else {
-              a.pricing = { pricingType: 'per_minute', finalPrice: 50 }
-              a.perMinuteCharge = 50
+              a.pricing = { pricingType: "per_minute", finalPrice: 50 };
+              a.perMinuteCharge = 50;
             }
-          })
+          });
         }
       } catch (e) {
-        console.error('Pricing fetch error:', e)
+        console.error("Pricing fetch error:", e);
         list.forEach((a) => {
-          a.pricing = { pricingType: 'per_minute', finalPrice: 50 }
-          a.perMinuteCharge = 50
-        })
+          a.pricing = { pricingType: "per_minute", finalPrice: 50 };
+          a.perMinuteCharge = 50;
+        });
       }
 
       /* ---- Reviews & rating recalc ---- */
       const updated = await Promise.all(
         list.map(async (a) => {
           try {
-            const res = await fetch(`/api/reviews?astrologerId=${a.id}`)
+            const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
             if (res.ok) {
-              const { success, reviews } = await res.json()
+              const { success, reviews } = await res.json();
               if (success) {
-                const total = reviews.reduce((s, r) => s + r.rating, 0)
-                const avg = reviews.length ? (total / reviews.length).toFixed(1) : 0
-                return { ...a, rating: parseFloat(avg), reviews: reviews.length }
+                const total = reviews.reduce((s, r) => s + r.rating, 0);
+                const avg = reviews.length
+                  ? (total / reviews.length).toFixed(1)
+                  : 0;
+                return {
+                  ...a,
+                  rating: parseFloat(avg),
+                  reviews: reviews.length,
+                };
               }
             }
           } catch (e) {
-            console.error(`Reviews error for ${a.id}:`, e)
+            console.error(`Reviews error for ${a.id}:`, e);
           }
-          return a
+          return a;
         })
-      )
+      );
 
-      setAstrologers(updated)
+      setAstrologers(updated);
     } catch (e) {
-      console.error('Astrologers fetch error:', e)
+      console.error("Astrologers fetch error:", e);
     } finally {
-      setFetchingAstrologers(false)
+      setFetchingAstrologers(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchAndUpdateAstrologers()
-    const id = setInterval(fetchAndUpdateAstrologers, 30_000)
-    return () => clearInterval(id)
-  }, [])
+    fetchAndUpdateAstrologers();
+    const id = setInterval(fetchAndUpdateAstrologers, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
@@ -147,194 +155,201 @@ export default function TalkToAstrologer() {
   const filteredAstrologers = astrologers.filter((a) => {
     const matchesSearch =
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.specialization.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = !filterSpecialization || a.specialization === filterSpecialization
-    return matchesSearch && matchesFilter
-  })
+      a.specialization.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      !filterSpecialization || a.specialization === filterSpecialization;
+    return matchesSearch && matchesFilter;
+  });
 
   /* --------------------------------------------------------------- */
   /*  Voice / Video call handlers                                    */
   /* --------------------------------------------------------------- */
   const startCall = async (type, astrologerId) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const userId = localStorage.getItem('tgs:userId')
+      const userId = localStorage.getItem("tgs:userId");
       if (!userId) {
-        alert('Please log in first.')
-        router.push('/auth/user')
-        setLoading(false)
-        return
+        alert("Please log in first.");
+        router.push("/auth/user");
+        setLoading(false);
+        return;
       }
 
       /* ---- Balance check ---- */
-      const balRes = await fetch('/api/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const balRes = await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'validate-balance',
+          action: "validate-balance",
           userId,
           astrologerId,
         }),
-      })
+      });
       if (balRes.ok) {
-        const { success, validation } = await balRes.json()
+        const { success, validation } = await balRes.json();
         if (success && !validation.hasBalance) {
           setBalanceMessage(
             `Insufficient balance. Need ₹${validation.minimumRequired}, you have ₹${validation.currentBalance}.`
-          )
-          setIsBalanceModalOpen(true)
-          setLoading(false)
-          return
+          );
+          setIsBalanceModalOpen(true);
+          setLoading(false);
+          return;
         }
       }
 
-      setConnectingCallType(type)
+      setConnectingCallType(type);
 
       /* ---- Availability ---- */
-      const statusRes = await fetch(`/api/astrologer/status?astrologerId=${astrologerId}`)
-      const { success, status } = await statusRes.json()
+      const statusRes = await fetch(
+        `/api/astrologer/status?astrologerId=${astrologerId}`
+      );
+      const { success, status } = await statusRes.json();
 
-      if (!success) throw new Error('Cannot check astrologer status.')
-      if (status === 'offline') throw new Error('Astrologer is offline.')
-      if (status === 'busy' && !confirm('Astrologer is busy. Join queue?')) {
-        setConnectingCallType(null)
-        setLoading(false)
-        return
+      if (!success) throw new Error("Cannot check astrologer status.");
+      if (status === "offline") throw new Error("Astrologer is offline.");
+      if (status === "busy" && !confirm("Astrologer is busy. Join queue?")) {
+        setConnectingCallType(null);
+        setLoading(false);
+        return;
       }
 
       /* ---- Create call ---- */
-      const callRes = await fetch('/api/calls', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const callRes = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'create-call',
+          action: "create-call",
           astrologerId,
           userId,
           callType: type,
         }),
-      })
-      if (!callRes.ok) throw new Error('Failed to create call.')
-      const { call } = await callRes.json()
+      });
+      if (!callRes.ok) throw new Error("Failed to create call.");
+      const { call } = await callRes.json();
 
-      localStorage.setItem('tgs:callId', call.id)
-      localStorage.setItem('tgs:currentCallId', call.id)
-      localStorage.setItem('tgs:astrologerId', astrologerId)
+      localStorage.setItem("tgs:callId", call.id);
+      localStorage.setItem("tgs:currentCallId", call.id);
+      localStorage.setItem("tgs:astrologerId", astrologerId);
 
       /* ---- Init billing ---- */
-      await fetch('/api/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'initialize-call',
+          action: "initialize-call",
           callId: call.id,
           userId,
           astrologerId,
         }),
-      }).catch(() => {})
+      }).catch(() => {});
 
       /* ---- Poll status ---- */
-      let timeoutId
+      let timeoutId;
       const poll = setInterval(async () => {
-        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`)
-        const sData = await sRes.json()
-        const c = sData.calls?.find((c) => c.id === call.id)
+        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`);
+        const sData = await sRes.json();
+        const c = sData.calls?.find((c) => c.id === call.id);
 
-        if (c?.status === 'active') {
-          clearInterval(poll)
-          clearTimeout(timeoutId)
-          const sessRes = await fetch('/api/livekit/create-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        if (c?.status === "active") {
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          const sessRes = await fetch("/api/livekit/create-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               astrologerId,
               userId,
               callId: call.id,
               roomName: c.roomName,
               callType: type,
-              role: 'user',
-              displayName: 'User',
+              role: "user",
+              displayName: "User",
             }),
-          })
+          });
           if (sessRes.ok) {
-            const { roomName } = await sessRes.json()
-            setConnectingCallType(null)
-            setLoading(false)
+            const { roomName } = await sessRes.json();
+            setConnectingCallType(null);
+            setLoading(false);
             router.push(
-              type === 'video'
+              type === "video"
                 ? `/talk-to-astrologer/room/${roomName}`
                 : `/talk-to-astrologer/voice/${roomName}`
-            )
+            );
           } else {
-            setConnectingCallType(null)
-            setLoading(false)
-            alert('Failed to join room.')
+            setConnectingCallType(null);
+            setLoading(false);
+            alert("Failed to join room.");
           }
-        } else if (c?.status === 'rejected') {
-          clearInterval(poll)
-          clearTimeout(timeoutId)
-          await fetch('/api/billing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'cancel-call', callId: call.id }),
-          }).catch(() => {})
-          setCallStatus('rejected')
+        } else if (c?.status === "rejected") {
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          await fetch("/api/billing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "cancel-call", callId: call.id }),
+          }).catch(() => {});
+          setCallStatus("rejected");
           setTimeout(() => {
-            setConnectingCallType(null)
-            setCallStatus('connecting')
-            setLoading(false)
-          }, 2000)
+            setConnectingCallType(null);
+            setCallStatus("connecting");
+            setLoading(false);
+          }, 2000);
         }
-      }, 2000)
+      }, 2000);
 
       timeoutId = setTimeout(() => {
-        clearInterval(poll)
-        fetch('/api/billing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'cancel-call', callId: call.id }),
-        }).catch(() => {})
-        setConnectingCallType(null)
-        setLoading(false)
-        alert('Astrologer not responding.')
-      }, 60_000)
+        clearInterval(poll);
+        fetch("/api/billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cancel-call", callId: call.id }),
+        }).catch(() => {});
+        setConnectingCallType(null);
+        setLoading(false);
+        alert("Astrologer not responding.");
+      }, 60_000);
     } catch (e) {
-      console.error(e)
-      setConnectingCallType(null)
-      setLoading(false)
-      alert(e.message || 'Call failed.')
+      console.error(e);
+      setConnectingCallType(null);
+      setLoading(false);
+      alert(e.message || "Call failed.");
     }
-  }
+  };
 
-  const handleVoiceCall = (id) => startCall('voice', id)
-  const handleVideoCall = (id) => startCall('video', id)
+  const handleVoiceCall = (id) => startCall("voice", id);
+  const handleVideoCall = (id) => startCall("video", id);
 
   /* --------------------------------------------------------------- */
   /*  Review helpers                                                 */
   /* --------------------------------------------------------------- */
   const handleOpenReview = (astrologer) => {
-    if (!!connectingCallType) return // Prevent opening during connecting
-    const userId = localStorage.getItem('tgs:userId')
+    if (!!connectingCallType) return; // Prevent opening during connecting
+    const userId = localStorage.getItem("tgs:userId");
     if (!userId) {
-      alert('Please log in to leave a review.')
-      router.push('/auth/user')
-      return
+      alert("Please log in to leave a review.");
+      router.push("/auth/user");
+      return;
     }
-    setSelectedAstrologer(astrologer)
-    setIsReviewModalOpen(true)
-  }
+    setSelectedAstrologer(astrologer);
+    setIsReviewModalOpen(true);
+  };
 
-  const handleSubmitReview = async ({ astrologerId, userId, rating, comment }) => {
-    const res = await fetch('/api/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  const handleSubmitReview = async ({
+    astrologerId,
+    userId,
+    rating,
+    comment,
+  }) => {
+    const res = await fetch("/api/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ astrologerId, userId, rating, comment }),
-    })
-    if (!res.ok) throw new Error('Failed to submit review')
-    const data = await res.json()
-    if (!data.success) throw new Error(data.message)
-  }
+    });
+    if (!res.ok) throw new Error("Failed to submit review");
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+  };
 
-  
   /* --------------------------------------------------------------- */
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
@@ -347,46 +362,61 @@ export default function TalkToAstrologer() {
         status={callStatus}
         type={connectingCallType}
         onTimeout={() => {
-          setConnectingCallType(null)
-          setCallStatus('connecting')
-          setLoading(false)
-          alert('Connection timed out.')
+          setConnectingCallType(null);
+          setCallStatus("connecting");
+          setLoading(false);
+          alert("Connection timed out.");
         }}
       />
 
-      <div style={{ minHeight: '100vh', background: 'var(--color-gray-50)', padding: '2rem 0' }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-gray-50)",
+          padding: "2rem 0",
+        }}
+      >
         <div className="app">
-                {/* Orbs */}
-        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <div className="orb orb1" />
-          <div className="orb orb2" />
-          <div className="orb orb3" />
-        </div>
+          {/* Orbs */}
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              overflow: "hidden",
+              pointerEvents: "none",
+            }}
+          >
+            <div className="orb orb1" />
+            <div className="orb orb2" />
+            <div className="orb orb3" />
+          </div>
           {/* Header */}
-          <header className='header' style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <h1 className='title'>Talk to Astrologer</h1>
-            <p
-            className='subtitle'
-
-            >
+          <header
+            className="header"
+            style={{ textAlign: "center", marginTop: "3rem" }}
+          >
+            <h1 className="title">Talk to Astrologer</h1>
+            <p className="subtitle">
               Connect instantly with verified astrologers for guidance on love,
               career, health & life.
             </p>
           </header>
 
           {/* Search + Filter */}
-          <div className="card" style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ flex: 1, position: 'relative' }}>
+          <div className="card" style={{ marginTop: "1.5rem" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
+              <div style={{ flex: 1, position: "relative" }}>
                 <Search
                   style={{
-                    position: 'absolute',
-                    left: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: 'var(--color-gold)',
+                    position: "absolute",
+                    left: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "1.25rem",
+                    height: "1.25rem",
+                    color: "var(--color-gold)",
                   }}
                 />
                 <input
@@ -396,38 +426,45 @@ export default function TalkToAstrologer() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   disabled={!!connectingCallType}
                   style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem 0.75rem 2.5rem',
-                    border: '1px solid var(--color-gray-300)',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'var(--transition-fast)',
+                    width: "100%",
+                    padding: "0.75rem 1rem 0.75rem 2.5rem",
+                    border: "1px solid var(--color-gray-300)",
+                    borderRadius: "0.75rem",
+                    fontSize: "1rem",
+                    outline: "none",
+                    transition: "var(--transition-fast)",
                     opacity: !!connectingCallType ? 0.5 : 1,
-                    pointerEvents: !!connectingCallType ? 'none' : 'auto',
+                    pointerEvents: !!connectingCallType ? "none" : "auto",
                   }}
                   onFocus={(e) => {
-                    if (!!connectingCallType) return
-                    e.target.style.borderColor = 'var(--color-gold)'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
+                    if (!!connectingCallType) return;
+                    e.target.style.borderColor = "var(--color-gold)";
+                    e.target.style.boxShadow =
+                      "0 0 0 3px rgba(212, 175, 55, 0.2)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--color-gray-300)'
-                    e.target.style.boxShadow = 'none'
+                    e.target.style.borderColor = "var(--color-gray-300)";
+                    e.target.style.boxShadow = "none";
                   }}
                 />
               </div>
 
-              <div style={{ position: 'relative', width: '100%', maxWidth: '16rem' }}>
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: "16rem",
+                }}
+              >
                 <Filter
                   style={{
-                    position: 'absolute',
-                    left: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: 'var(--color-gold)',
+                    position: "absolute",
+                    left: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "1.25rem",
+                    height: "1.25rem",
+                    color: "var(--color-gold)",
                   }}
                 />
                 <select
@@ -435,28 +472,29 @@ export default function TalkToAstrologer() {
                   onChange={(e) => setFilterSpecialization(e.target.value)}
                   disabled={!!connectingCallType}
                   style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem 0.75rem 2.5rem',
-                    border: '1px solid var(--color-gray-300)',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    appearance: 'none',
+                    width: "100%",
+                    padding: "0.75rem 1rem 0.75rem 2.5rem",
+                    border: "1px solid var(--color-gray-300)",
+                    borderRadius: "0.75rem",
+                    fontSize: "1rem",
+                    appearance: "none",
                     backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.75rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.2em',
-                    outline: 'none',
+                    backgroundPosition: "right 0.75rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.2em",
+                    outline: "none",
                     opacity: !!connectingCallType ? 0.5 : 1,
-                    pointerEvents: !!connectingCallType ? 'none' : 'auto',
+                    pointerEvents: !!connectingCallType ? "none" : "auto",
                   }}
                   onFocus={(e) => {
-                    if (!!connectingCallType) return
-                    e.target.style.borderColor = 'var(--color-gold)'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.2)'
+                    if (!!connectingCallType) return;
+                    e.target.style.borderColor = "var(--color-gold)";
+                    e.target.style.boxShadow =
+                      "0 0 0 3px rgba(212, 175, 55, 0.2)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--color-gray-300)'
-                    e.target.style.boxShadow = 'none'
+                    e.target.style.borderColor = "var(--color-gray-300)";
+                    e.target.style.boxShadow = "none";
                   }}
                 >
                   <option value="">All Specializations</option>
@@ -473,10 +511,10 @@ export default function TalkToAstrologer() {
           {fetchingAstrologers && (
             <div
               style={{
-                display: 'grid',
-                gap: '1.5rem',
-                gridTemplateColumns: 'repeat(3, minmax(16rem, 1fr))',
-                marginTop: '1.5rem',
+                display: "grid",
+                gap: "1.5rem",
+                gridTemplateColumns: "repeat(3, minmax(16rem, 1fr))",
+                marginTop: "1.5rem",
               }}
             >
               {Array.from({ length: 6 }).map((_, i) => (
@@ -484,326 +522,514 @@ export default function TalkToAstrologer() {
                   key={i}
                   className="card"
                   style={{
-                    padding: '1.5rem',
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    padding: "1.5rem",
+                    animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ width: '4rem', height: '4rem', background: 'var(--color-gray-200)', borderRadius: '50%' }} />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "1rem",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "4rem",
+                        height: "4rem",
+                        background: "var(--color-gray-200)",
+                        borderRadius: "50%",
+                      }}
+                    />
                     <div style={{ flex: 1 }}>
-                      <div style={{ height: '1.25rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '8rem', marginBottom: '0.5rem' }} />
-                      <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '6rem' }} />
+                      <div
+                        style={{
+                          height: "1.25rem",
+                          background: "var(--color-gray-200)",
+                          borderRadius: "0.25rem",
+                          width: "8rem",
+                          marginBottom: "0.5rem",
+                        }}
+                      />
+                      <div
+                        style={{
+                          height: "1rem",
+                          background: "var(--color-gray-200)",
+                          borderRadius: "0.25rem",
+                          width: "6rem",
+                        }}
+                      />
                     </div>
                   </div>
-                  <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', marginBottom: '0.5rem' }} />
-                  <div style={{ height: '1rem', background: 'var(--color-gray-200)', borderRadius: '0.25rem', width: '75%' }} />
+                  <div
+                    style={{
+                      height: "1rem",
+                      background: "var(--color-gray-200)",
+                      borderRadius: "0.25rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "1rem",
+                      background: "var(--color-gray-200)",
+                      borderRadius: "0.25rem",
+                      width: "75%",
+                    }}
+                  />
                 </div>
               ))}
             </div>
           )}
 
-{!fetchingAstrologers && filteredAstrologers.length > 0 && (
-  <div
-    className="astrologer-grid"
-    style={{
-      display: 'grid',
-      gap: '1rem',
-      gridTemplateColumns: '1fr',
-      marginTop: '1.5rem',
-      opacity: !!connectingCallType ? 0.5 : 1,
-      pointerEvents: !!connectingCallType ? 'none' : 'auto',
-    }}
-  >
- {filteredAstrologers.map((a) => (
-  <Link
-    href={`/account/astrologer/${a.id}`}
-    key={a.id}
-    className="card group"
-    style={{
-      padding: '1.5rem',
-      transition: 'var(--transition-smooth)',
-      cursor: !!connectingCallType ? 'default' : 'pointer',
-      minWidth: '22rem',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      textDecoration: 'none',
-      color: 'inherit',
-      pointerEvents: !!connectingCallType ? 'none' : 'auto',
-    }}
-    onMouseEnter={(e) => {
-      if (!!connectingCallType) return
-      e.currentTarget.style.transform = 'translateY(-4px)'
-      e.currentTarget.style.boxShadow = 'var(--shadow-xl), var(--shadow-glow)'
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'translateY(0)'
-      e.currentTarget.style.boxShadow = 'var(--shadow-lg), var(--shadow-glow)'
-    }}
-  >
-    {/* Top Row: Avatar + Name + Spec + Experience + Rating + Review */}
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
-      {/* Avatar + Online */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <div
-          style={{
-            width: '4rem',
-            height: '4rem',
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 700,
-            fontSize: '1.25rem',
-          }}
-        >
-          {a.name.split(' ').map((n) => n[0]).join('')}
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-0.25rem',
-            right: '-0.25rem',
-            width: '1.25rem',
-            height: '1.25rem',
-            borderRadius: '50%',
-            border: '2px solid white',
-            background: a.isOnline ? '#10b981' : 'var(--color-gray-400)',
-            animation: a.isOnline ? 'pulse 2s infinite' : 'none',
-          }}
-        />
-      </div>
-
-      {/* Name, Spec, Experience */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                color: 'var(--color-gray-900)',
-                margin: 0,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                fontFamily: 'var(--font-heading)',
-                lineHeight: 1.3,
-              }}
-              title={a.name}
-            >
-              {a.name}
-            </h3>
-            <p
-              style={{
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: 'var(--color-indigo)',
-                margin: '0.125rem 0 0',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                fontFamily: 'var(--font-body)',
-              }}
-              title={a.specialization}
-            >
-              {a.specialization}
-            </p>
-            <p
-              style={{
-                fontSize: '0.75rem',
-                color: 'var(--color-gray-500)',
-                margin: '0.25rem 0 0',
-                fontWeight: 500,
-                fontFamily: 'Courier New, monospace',
-              }}
-            >
-              {a.experience}
-            </p>
-          </div>
-
-          {/* Rating + Review Button */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          {!fetchingAstrologers && filteredAstrologers.length > 0 && (
             <div
+              className="astrologer-grid"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.375rem',
-                background: 'var(--color-amber-50)',
-                color: 'var(--color-amber-700)',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '9999px',
-                fontFamily: 'Courier New, monospace',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <Star style={{ width: '0.875rem', height: '0.875rem', fill: '#f59e0b', color: '#f59e0b' }} />
-              {a.rating} <span style={{ color: 'var(--color-gray-500)', marginLeft: '0.125rem', fontFamily: 'Courier New, monospace', }}>({a.reviews})</span>
-            </div>
-
-            <Button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleOpenReview(a)
-              }}
-              disabled={!!connectingCallType}
-              variant="outline"
-              size="sm"
-              className="btn btn-outline"
-              style={{
-                fontSize: '0.75rem',
-                padding: '0.25rem 0.75rem',
-                height: '1.75rem',
+                display: "grid",
+                gap: "1rem",
+                gridTemplateColumns: "1fr",
+                marginTop: "1.5rem",
                 opacity: !!connectingCallType ? 0.5 : 1,
+                pointerEvents: !!connectingCallType ? "none" : "auto",
               }}
             >
-              Review
-            </Button>
-          </div>
-        </div>
+              {filteredAstrologers.map((a) => (
+                <Link
+                  href={`/account/astrologer/${a.id}`}
+                  key={a.id}
+                  className="card group"
+                  style={{
+                    padding: "1.5rem",
+                    transition: "var(--transition-smooth)",
+                    cursor: !!connectingCallType ? "default" : "pointer",
+                    minWidth: "22rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                    textDecoration: "none",
+                    color: "inherit",
+                    pointerEvents: !!connectingCallType ? "none" : "auto",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!!connectingCallType) return;
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow =
+                      "var(--shadow-xl), var(--shadow-glow)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "var(--shadow-lg), var(--shadow-glow)";
+                  }}
+                >
+                  {/* Top Row: Avatar + Name + Spec + Experience + Rating + Review */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "1rem",
+                      marginBottom: "1rem",
+                      position: "relative",
+                      zIndex: 20,
+                    }}
+                  >
+                    {/* Avatar + Online */}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div
+                        style={{
+                          width: "4rem",
+                          height: "4rem",
+                          background:
+                            "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          fontWeight: 700,
+                          fontSize: "1.25rem",
+                        }}
+                      >
+                        {a.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "-0.25rem",
+                          right: "-0.25rem",
+                          width: "1.25rem",
+                          height: "1.25rem",
+                          borderRadius: "50%",
+                          border: "2px solid white",
+                          background: a.isOnline
+                            ? "#10b981"
+                            : "var(--color-gray-400)",
+                          animation: a.isOnline ? "pulse 2s infinite" : "none",
+                        }}
+                      />
+                    </div>
 
-        {a.verified && (
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              background: 'var(--color-indigo-light)',
-              color: 'var(--color-indigo)',
-              padding: '0.25rem 0.5rem',
-              borderRadius: '9999px',
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              marginTop: '0.5rem',
-            }}
-          >
-            <CheckCircle style={{ width: '0.75rem', height: '0.75rem' }} />
-            Verified
-          </div>
-        )}
-      </div>
-    </div>
+                    {/* Name, Spec, Experience */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "1rem",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3
+                            style={{
+                              fontSize: "1.5rem",
+                              fontWeight: 700,
+                              color: "var(--color-gray-900)",
+                              margin: 0,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              fontFamily: "var(--font-heading)",
+                              lineHeight: 1.3,
+                            }}
+                            title={a.name}
+                          >
+                            {a.name}
+                          </h3>
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                              color: "var(--color-indigo)",
+                              margin: "0.125rem 0 0",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              fontFamily: "var(--font-body)",
+                            }}
+                            title={a.specialization}
+                          >
+                            {a.specialization}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--color-gray-500)",
+                              margin: "0.25rem 0 0",
+                              fontWeight: 500,
+                              fontFamily: "Courier New, monospace",
+                            }}
+                          >
+                            {a.experience}
+                          </p>
+                        </div>
 
-    {/* Rest of content */}
-    {a.perMinuteCharge && (
-      <div style={{ marginBottom: '0.75rem', position: 'relative', zIndex: 20 }}>
-        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#059669', fontFamily: 'Courier New, monospace', }}>
-          ₹{a.perMinuteCharge}/min
-        </span>
-      </div>
-    )}
+                        {/* Rating + Review Button */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.375rem",
+                              background: "var(--color-amber-50)",
+                              color: "var(--color-amber-700)",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "9999px",
+                              fontFamily: "Courier New, monospace",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Star
+                              style={{
+                                width: "0.875rem",
+                                height: "0.875rem",
+                                fill: "#f59e0b",
+                                color: "#f59e0b",
+                              }}
+                            />
+                            {a.rating}{" "}
+                            <span
+                              style={{
+                                color: "var(--color-gray-500)",
+                                marginLeft: "0.125rem",
+                                fontFamily: "Courier New, monospace",
+                              }}
+                            >
+                              ({a.reviews})
+                            </span>
+                          </div>
 
-    <p
-      style={{
-        fontSize: '0.875rem',
-        fontFamily: 'var(--font-body)',
-        color: 'var(--color-gray-600)',
-        marginBottom: '1rem',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
-        position: 'relative',
-        zIndex: 20,
-      }}
-    >
-      {a.bio}
-    </p>
+                          <Button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenReview(a);
+                            }}
+                            disabled={!!connectingCallType}
+                            variant="outline"
+                            size="sm"
+                            className="btn btn-outline"
+                            style={{
+                              fontSize: "0.75rem",
+                              padding: "0.25rem 0.75rem",
+                              height: "1.75rem",
+                              opacity: !!connectingCallType ? 0.5 : 1,
+                            }}
+                          >
+                            Review
+                          </Button>
+                        </div>
+                      </div>
 
-    <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 20 }}>
-      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-gray-600)', marginBottom: '0.5rem' }}>
-        Speaks:
-      </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
-        {a.languages.map((l, i) => (
-          <span
-            key={l + i}
-            style={{
-              padding: '0.25rem 0.625rem',
-              background: 'var(--color-indigo-light)',
-              color: 'var(--color-indigo)',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              borderRadius: '9999px',
-            }}
-          >
-            {l}
-          </span>
-        ))}
-      </div>
-    </div>
+                      {a.verified && (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            background: "var(--color-indigo-light)",
+                            color: "var(--color-indigo)",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "9999px",
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            marginTop: "0.5rem",
+                          }}
+                        >
+                          <CheckCircle
+                            style={{ width: "0.75rem", height: "0.75rem" }}
+                          />
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-    {/* Action buttons – Bottom */}
-    <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto', position: 'relative', zIndex: 30 }}>
-      <Button
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          handleVideoCall(a.id)
-        }}
-        disabled={!a.isOnline || loading || !!connectingCallType}
-        className="btn btn-primary"
-        style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
-      >
-        {loading && connectingCallType === 'video' ? (
-          <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-        ) : (
-          <Video style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
-        )}
-        {a.isOnline ? 'Video Call' : 'Offline'}
-      </Button>
+                  {/* Rest of content */}
+                  {a.perMinuteCharge && (
+                    <div
+                      style={{
+                        marginBottom: "0.75rem",
+                        position: "relative",
+                        zIndex: 20,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "1.125rem",
+                          fontWeight: 700,
+                          color: "#059669",
+                          fontFamily: "Courier New, monospace",
+                        }}
+                      >
+                        ₹{a.perMinuteCharge}/min
+                      </span>
+                    </div>
+                  )}
 
-      <Button
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          handleVoiceCall(a.id)
-        }}
-        disabled={!a.isOnline || loading || !!connectingCallType}
-        variant="outline"
-        className="btn btn-outline"
-        style={{ flex: 1, height: '3rem', padding: '0 1.5rem', fontSize: '1rem' }}
-      >
-        {loading && connectingCallType === 'voice' ? (
-          <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-        ) : (
-          <Phone style={{ width: '1rem', height: '1rem', marginRight: '0.5rem' }} />
-        )}
-        {a.isOnline ? 'Voice Call' : 'Offline'}
-      </Button>
-    </div>
-  </Link>
-))}
-  </div>
-)}
+                  <p
+                    style={{
+                      fontSize: "0.875rem",
+                      fontFamily: "var(--font-body)",
+                      color: "var(--color-gray-600)",
+                      marginBottom: "1rem",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      position: "relative",
+                      zIndex: 20,
+                    }}
+                  >
+                    {a.bio}
+                  </p>
+
+                  <div
+                    style={{
+                      marginBottom: "1rem",
+                      position: "relative",
+                      zIndex: 20,
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        color: "var(--color-gray-600)",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
+                      Speaks:
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.375rem",
+                      }}
+                    >
+                      {a.languages.map((l, i) => (
+                        <span
+                          key={l + i}
+                          style={{
+                            padding: "0.25rem 0.625rem",
+                            background: "var(--color-indigo-light)",
+                            color: "var(--color-indigo)",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            borderRadius: "9999px",
+                          }}
+                        >
+                          {l}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action buttons – Bottom */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      marginTop: "auto",
+                      position: "relative",
+                      zIndex: 30,
+                    }}
+                  >
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleVideoCall(a.id);
+                      }}
+                      disabled={!a.isOnline || loading || !!connectingCallType}
+                      className="btn btn-primary"
+                      style={{
+                        flex: 1,
+                        height: "3rem",
+                        padding: "0 1.5rem",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      {loading && connectingCallType === "video" ? (
+                        <Loader2
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                            animation: "spin 1s linear infinite",
+                            marginRight: "0.5rem",
+                          }}
+                        />
+                      ) : (
+                        <Video
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                            marginRight: "0.5rem",
+                          }}
+                        />
+                      )}
+                      {a.isOnline ? "Video Call" : "Offline"}
+                    </Button>
+
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleVoiceCall(a.id);
+                      }}
+                      disabled={!a.isOnline || loading || !!connectingCallType}
+                      variant="outline"
+                      className="btn btn-outline"
+                      style={{
+                        flex: 1,
+                        height: "3rem",
+                        padding: "0 1.5rem",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      {loading && connectingCallType === "voice" ? (
+                        <Loader2
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                            animation: "spin 1s linear infinite",
+                            marginRight: "0.5rem",
+                          }}
+                        />
+                      ) : (
+                        <Phone
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                            marginRight: "0.5rem",
+                          }}
+                        />
+                      )}
+                      {a.isOnline ? "Voice Call" : "Offline"}
+                    </Button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Empty state */}
           {!fetchingAstrologers && filteredAstrologers.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            <div style={{ textAlign: "center", padding: "4rem 0" }}>
               <div
                 style={{
-                  width: '6rem',
-                  height: '6rem',
-                  background: 'var(--color-gray-100)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1rem auto',
+                  width: "6rem",
+                  height: "6rem",
+                  background: "var(--color-gray-100)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1rem auto",
                 }}
               >
-                <Search style={{ width: '3rem', height: '3rem', color: 'var(--color-gray-400)' }} />
+                <Search
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                    color: "var(--color-gray-400)",
+                  }}
+                />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-700)', marginBottom: '0.5rem' }}>
+              <h3
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
+                  color: "var(--color-gray-700)",
+                  marginBottom: "0.5rem",
+                }}
+              >
                 No Astrologers Found
               </h3>
-              <p style={{ color: 'var(--color-gray-500)', maxWidth: '36rem', margin: '0 auto' }}>
-                Try adjusting your search or filter to find the right astrologer for you.
+              <p
+                style={{
+                  color: "var(--color-gray-500)",
+                  maxWidth: "36rem",
+                  margin: "0 auto",
+                }}
+              >
+                Try adjusting your search or filter to find the right astrologer
+                for you.
               </p>
             </div>
           )}
@@ -816,29 +1042,35 @@ export default function TalkToAstrologer() {
           title="Insufficient Balance"
           style={{ zIndex: 1000 }}
         >
-          <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+          <div style={{ textAlign: "center", padding: "1.5rem" }}>
             <div
               style={{
-                width: '4rem',
-                height: '4rem',
-                background: '#fee2e2',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto',
+                width: "4rem",
+                height: "4rem",
+                background: "#fee2e2",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1rem auto",
               }}
             >
-              <AlertCircle style={{ width: '2rem', height: '2rem', color: '#dc2626' }} />
+              <AlertCircle
+                style={{ width: "2rem", height: "2rem", color: "#dc2626" }}
+              />
             </div>
-            <p style={{ color: 'var(--color-gray-700)', marginBottom: '1.5rem' }}>{balanceMessage}</p>
+            <p
+              style={{ color: "var(--color-gray-700)", marginBottom: "1.5rem" }}
+            >
+              {balanceMessage}
+            </p>
             <button
               onClick={() => {
-                router.push('/wallet')
-                setIsBalanceModalOpen(false)
+                router.push("/wallet");
+                setIsBalanceModalOpen(false);
               }}
               className="btn btn-primary"
-              style={{ padding: '0.75rem 2rem' }}
+              style={{ padding: "0.75rem 2rem" }}
             >
               Recharge Wallet
             </button>
@@ -850,8 +1082,8 @@ export default function TalkToAstrologer() {
           <ReviewModal
             open={isReviewModalOpen}
             onClose={() => {
-              setIsReviewModalOpen(false)
-              setSelectedAstrologer(null)
+              setIsReviewModalOpen(false);
+              setSelectedAstrologer(null);
             }}
             astrologerId={selectedAstrologer.id}
             astrologerName={selectedAstrologer.name}
@@ -862,29 +1094,36 @@ export default function TalkToAstrologer() {
       </div>
 
       {/* Local animations */}
-<style jsx>{`
-  @media (min-width: 640px) {
-    .astrologer-grid {
-      grid-template-columns: repeat(2, 1fr) !important;
-      gap: 1.25rem !important;
-    }
-  }
+      <style jsx>{`
+        @media (min-width: 640px) {
+          .astrologer-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1.25rem !important;
+          }
+        }
 
-  @media (min-width: 1024px) {
-    .astrologer-grid {
-      grid-template-columns: repeat(3, 1fr) !important;
-      gap: 1.5rem !important;
-    }
-  }
+        @media (min-width: 1024px) {
+          .astrologer-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 1.5rem !important;
+          }
+        }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`}</style>
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </>
-  )
+  );
 }

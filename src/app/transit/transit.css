@@ -9,13 +9,12 @@
   margin: 0 auto;
   padding: 2rem 1rem;
   position: relative;
-
 }
 
 /* Animated Gradient Orbs */
 .transit-container::before,
 .transit-container::after {
-  content: '';
+  content: "";
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
@@ -42,7 +41,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
   50% {
@@ -76,7 +76,7 @@
 }
 
 .transit-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-weight: 700;
   background: linear-gradient(135deg, #d4af37, #b8972e);
   /* reduced base size for a more compact header */
@@ -152,7 +152,7 @@
 }
 
 .section-title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -3px;
   left: 50%;
@@ -211,7 +211,8 @@
 
 .transit-card.current {
   border: 2px solid #d4af37 !important;
-  box-shadow: 0 0 0 5px rgba(212, 175, 55, 0.3), 0 16px 40px rgba(212, 175, 55, 0.25) !important;
+  box-shadow: 0 0 0 5px rgba(212, 175, 55, 0.3),
+    0 16px 40px rgba(212, 175, 55, 0.25) !important;
 }
 
 .transit-card.current .accent {
@@ -247,7 +248,7 @@
 }
 
 .titleGroup h3 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
@@ -284,7 +285,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -309,7 +311,7 @@
 }
 
 .infoValue {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-weight: 700;
   color: #111;
   font-size: 0.875rem;
@@ -346,7 +348,7 @@
   font-size: 1rem;
   font-weight: 800;
   color: #d4af37;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
 }
 
 /* ---------- Planet Selector ---------- */
@@ -411,7 +413,7 @@
 }
 
 .upcoming-section-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 1.75rem;
   font-weight: 700;
   text-align: center;
@@ -471,8 +473,6 @@
   margin: 0;
 }
 
-
-
 /* ---------- Countdown Cards ---------- */
 .countdown-grid {
   display: grid;
@@ -498,7 +498,7 @@
 }
 
 .countdown-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -572,7 +572,7 @@
 }
 
 .countdown-timer {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 1.25rem;
   font-weight: 700;
   text-align: center;
@@ -645,7 +645,6 @@
   font-size: 0.95rem;
   font-weight: 700;
 }
-
 
 /* ---------- Transit Table ---------- */
 .transit-table-card {
@@ -861,7 +860,7 @@
   width: 100%;
   overflow-x: auto;
   margin-bottom: 2rem;
-  padding-top: .5rem;
+  padding-top: 0.5rem;
 }
 
 .planet-tabs {

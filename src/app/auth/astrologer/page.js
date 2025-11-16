@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
 /**
  * Astrologer Authentication Module
- * 
+ *
  * This module provides the authentication interface for astrologers in a consultation platform.
  * It supports both email/password login and signup, as well as Google OAuth integration.
  * Upon successful authentication, it creates or verifies an astrologer profile in Firestore
  * and redirects to the dashboard. The form dynamically switches between login and signup modes.
- * 
+ *
  * Key Features:
  * - Toggle between login and signup forms.
  * - Password visibility toggle.
@@ -15,55 +15,55 @@
  * - Google OAuth with automatic profile creation for new astrologers.
  * - Firestore integration for storing astrologer profiles.
  * - Role-based redirection (astrologers only).
- * 
+ *
  * Dependencies:
  * - React (useState)
  * - Next.js (useRouter)
  * - Firebase Firestore (doc, setDoc)
  * - AuthContext: Provides signIn, signUp, signInWithGoogle, loading
  * - Lucide React icons
- * 
+ *
  * Styling: Relies on CSS classes (e.g., .astrologer-auth-page, .form-field-input) defined in external stylesheets.
  * Assumes global CSS for animations, gradients, and responsive design.
- * 
+ *
  * @module AstrologerAuth
  */
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
-import { ArrowLeft, Eye, EyeOff, Sparkles, Star } from 'lucide-react'
-import { doc, setDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft, Eye, EyeOff, Sparkles, Star } from "lucide-react";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 /**
  * AstrologerAuth Component
- * 
+ *
  * The main authentication form for astrologers.
  * Renders a responsive, two-panel layout with promotional content on the left
  * and the auth form on the right. Handles form submission, Google sign-in,
  * and conditional field rendering based on login/signup mode.
- * 
+ *
  * @returns {JSX.Element} The authentication page UI.
  */
 export default function AstrologerAuth() {
   // Form state management
-  const [isLogin, setIsLogin] = useState(true) // Toggle between login (true) and signup (false) modes
-  const [showPassword, setShowPassword] = useState(false) // Toggle password visibility
+  const [isLogin, setIsLogin] = useState(true); // Toggle between login (true) and signup (false) modes
+  const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
   const [formData, setFormData] = useState({
-    email: '', // Email address
-    password: '', // Password
-    name: '', // Full name (signup only)
-    phone: '', // Phone number (signup only)
-    specialization: '', // Astrologer specialization (signup only)
-    experience: '', // Years of experience (signup only)
-    languages: '' // Languages spoken (signup only)
-  })
-  const [error, setError] = useState('') // Form submission error message
+    email: "", // Email address
+    password: "", // Password
+    name: "", // Full name (signup only)
+    phone: "", // Phone number (signup only)
+    specialization: "", // Astrologer specialization (signup only)
+    experience: "", // Years of experience (signup only)
+    languages: "", // Languages spoken (signup only)
+  });
+  const [error, setError] = useState(""); // Form submission error message
 
   // Auth and routing hooks
-  const { signIn, signUp, signInWithGoogle, loading } = useAuth() // Auth context methods and loading state
-  const router = useRouter() // Next.js router for navigation
+  const { signIn, signUp, signInWithGoogle, loading } = useAuth(); // Auth context methods and loading state
+  const router = useRouter(); // Next.js router for navigation
 
   /* ──────  AUTH HANDLERS  ────── */
 
@@ -75,65 +75,66 @@ export default function AstrologerAuth() {
    * @param {Event} e - Form submit event
    */
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('') // Clear previous errors
+    e.preventDefault();
+    setError(""); // Clear previous errors
 
     try {
-      let result
+      let result;
       if (isLogin) {
         // Login flow
-        result = await signIn(formData.email, formData.password)
-        if (result.profile?.collection === 'astrologers') {
-          router.push('/astrologer-dashboard') // Redirect to astrologer dashboard
+        result = await signIn(formData.email, formData.password);
+        if (result.profile?.collection === "astrologers") {
+          router.push("/astrologer-dashboard"); // Redirect to astrologer dashboard
         } else {
-          router.push('/unauthorized') // Redirect if not an astrologer
+          router.push("/unauthorized"); // Redirect if not an astrologer
         }
       } else {
         // Signup flow
         const user = await signUp(formData.email, formData.password, {
-          displayName: formData.name // Set display name in auth profile
-        })
+          displayName: formData.name, // Set display name in auth profile
+        });
 
         // Create astrologer profile in Firestore
-        await setDoc(doc(db, 'astrologers', user.uid), {
+        await setDoc(doc(db, "astrologers", user.uid), {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone || '',
+          phone: formData.phone || "",
           specialization: formData.specialization,
           experience: formData.experience,
-          languages: formData.languages.split(',').map(l => l.trim()), // Parse comma-separated languages
-          role: 'astrologer',
-          status: 'offline',
+          languages: formData.languages.split(",").map((l) => l.trim()), // Parse comma-separated languages
+          role: "astrologer",
+          status: "offline",
           rating: 0,
           reviews: 0,
           verified: false,
           isOnline: false,
           bio: `Expert in ${formData.specialization} with ${formData.experience} of experience.`, // Auto-generate bio
-          createdAt: new Date().toISOString()
-        })
+          createdAt: new Date().toISOString(),
+        });
 
         // Set initial offline status via API
-        await fetch('/api/astrologer/status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/astrologer/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             astrologerId: user.uid,
-            action: 'set-offline'
-          })
-        })
-        
+            action: "set-offline",
+          }),
+        });
+
         // Persist role in localStorage for future redirects
-        try { 
-          if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') 
+        try {
+          if (typeof window !== "undefined")
+            localStorage.setItem("tgs:role", "astrologer");
         } catch (e) {
           // Ignore localStorage errors (e.g., private browsing)
         }
-        router.push('/astrologer-dashboard')
+        router.push("/astrologer-dashboard");
       }
     } catch (err) {
-      setError(err.message) // Display error message
+      setError(err.message); // Display error message
     }
-  }
+  };
 
   /**
    * Handle Google OAuth sign-in.
@@ -142,44 +143,45 @@ export default function AstrologerAuth() {
    */
   const handleGoogleAuth = async () => {
     try {
-      const result = await signInWithGoogle()
-      
+      const result = await signInWithGoogle();
+
       if (!result.profile) {
         // New user: Create default astrologer profile
-        await setDoc(doc(db, 'astrologers', result.user.uid), {
+        await setDoc(doc(db, "astrologers", result.user.uid), {
           name: result.user.displayName,
           email: result.user.email,
-          role: 'astrologer',
-          status: 'offline',
+          role: "astrologer",
+          status: "offline",
           rating: 0,
           reviews: 0,
           verified: false,
           isOnline: false,
-          specialization: 'Vedic Astrology', // Default specialization
-          experience: '1-3 years', // Default experience
-          languages: ['English'], // Default languages
-          bio: 'Experienced astrologer providing guidance and insights.', // Default bio
-          createdAt: new Date().toISOString()
-        })
+          specialization: "Vedic Astrology", // Default specialization
+          experience: "1-3 years", // Default experience
+          languages: ["English"], // Default languages
+          bio: "Experienced astrologer providing guidance and insights.", // Default bio
+          createdAt: new Date().toISOString(),
+        });
         // Persist role in localStorage
-        try { 
-          if (typeof window !== 'undefined') localStorage.setItem('tgs:role', 'astrologer') 
+        try {
+          if (typeof window !== "undefined")
+            localStorage.setItem("tgs:role", "astrologer");
         } catch (e) {
           // Ignore localStorage errors
         }
-        router.push('/astrologer-dashboard')
+        router.push("/astrologer-dashboard");
       } else {
         // Existing user: Redirect based on role
-        if (result.profile.collection === 'astrologers') {
-          router.push('/astrologer-dashboard')
+        if (result.profile.collection === "astrologers") {
+          router.push("/astrologer-dashboard");
         } else {
-          router.push('/unauthorized')
+          router.push("/unauthorized");
         }
       }
     } catch (err) {
-      setError(err.message) // Display error message
+      setError(err.message); // Display error message
     }
-  }
+  };
 
   /* ──────  RENDER  ────── */
 
@@ -204,7 +206,6 @@ export default function AstrologerAuth() {
       <div className="astrologer-auth-container">
         <div className="astrologer-auth-card">
           <div className="accent-line" /> {/* Decorative accent line */}
-
           {/* Grid layout: Promo panel left, form panel right */}
           <div className="astrologer-auth-grid">
             {/* LEFT – Promo Panel – Marketing content to engage users */}
@@ -212,16 +213,17 @@ export default function AstrologerAuth() {
               <div className="promo-icon-badge">
                 <Sparkles /> {/* Icon badge for visual appeal */}
               </div>
-              
+
               <h2 className="promo-title">
-                {isLogin ? 'Welcome Back' : 'Join Our Network'} {/* Dynamic title based on mode */}
+                {isLogin ? "Welcome Back" : "Join Our Network"}{" "}
+                {/* Dynamic title based on mode */}
               </h2>
-              
+
               <p className="promo-subtitle">
-                {isLogin 
-                  ? 'Continue guiding seekers on their cosmic journey'
-                  : 'Share your wisdom and connect with seekers worldwide'
-                } {/* Dynamic subtitle */}
+                {isLogin
+                  ? "Continue guiding seekers on their cosmic journey"
+                  : "Share your wisdom and connect with seekers worldwide"}{" "}
+                {/* Dynamic subtitle */}
               </p>
 
               {/* Feature highlights */}
@@ -252,13 +254,14 @@ export default function AstrologerAuth() {
               {/* Header */}
               <div className="form-panel-header">
                 <h1 className="form-panel-title">
-                  {isLogin ? 'Astrologer Sign In' : 'Create Astrologer Profile'} {/* Dynamic title */}
+                  {isLogin ? "Astrologer Sign In" : "Create Astrologer Profile"}{" "}
+                  {/* Dynamic title */}
                 </h1>
                 <p className="form-panel-subtitle">
-                  {isLogin 
-                    ? 'Access your dashboard and manage sessions'
-                    : 'Join our community of expert astrologers'
-                  } {/* Dynamic subtitle */}
+                  {isLogin
+                    ? "Access your dashboard and manage sessions"
+                    : "Join our community of expert astrologers"}{" "}
+                  {/* Dynamic subtitle */}
                 </p>
               </div>
 
@@ -270,7 +273,11 @@ export default function AstrologerAuth() {
               )}
 
               {/* Form – Handles submission with dynamic fields */}
-              <form onSubmit={handleSubmit} className="astrologer-form" noValidate>
+              <form
+                onSubmit={handleSubmit}
+                className="astrologer-form"
+                noValidate
+              >
                 {/* ==== SIGN-UP ONLY FIELDS ==== – Conditionally rendered */}
                 {!isLogin && (
                   <>
@@ -281,7 +288,9 @@ export default function AstrologerAuth() {
                         type="text"
                         placeholder="Your full name"
                         value={formData.name}
-                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         className="form-field-input"
                         required
                       />
@@ -294,7 +303,9 @@ export default function AstrologerAuth() {
                         type="tel"
                         placeholder="+91 98765 43210"
                         value={formData.phone}
-                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
                         className="form-field-input"
                         required
                       />
@@ -305,7 +316,12 @@ export default function AstrologerAuth() {
                       <label className="form-field-label">Specialization</label>
                       <select
                         value={formData.specialization}
-                        onChange={e => setFormData({ ...formData, specialization: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            specialization: e.target.value,
+                          })
+                        }
                         className="form-field-input"
                         required
                       >
@@ -321,10 +337,17 @@ export default function AstrologerAuth() {
 
                     {/* Experience */}
                     <div className="form-field">
-                      <label className="form-field-label">Years of Experience</label>
+                      <label className="form-field-label">
+                        Years of Experience
+                      </label>
                       <select
                         value={formData.experience}
-                        onChange={e => setFormData({ ...formData, experience: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            experience: e.target.value,
+                          })
+                        }
                         className="form-field-input"
                         required
                       >
@@ -343,11 +366,18 @@ export default function AstrologerAuth() {
                         type="text"
                         placeholder="e.g., Hindi, English, Tamil"
                         value={formData.languages}
-                        onChange={e => setFormData({ ...formData, languages: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            languages: e.target.value,
+                          })
+                        }
                         className="form-field-input"
                         required
                       />
-                      <p className="form-field-helper">Separate multiple languages with commas</p>
+                      <p className="form-field-helper">
+                        Separate multiple languages with commas
+                      </p>
                     </div>
                   </>
                 )}
@@ -360,7 +390,9 @@ export default function AstrologerAuth() {
                     type="email"
                     placeholder="your@email.com"
                     value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="form-field-input"
                     required
                   />
@@ -371,10 +403,12 @@ export default function AstrologerAuth() {
                   <label className="form-field-label">Password</label>
                   <div className="auth-input-wrapper">
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
                       value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                       className="form-field-input password-input"
                       required
                     />
@@ -382,7 +416,9 @@ export default function AstrologerAuth() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="password-toggle"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
@@ -390,18 +426,14 @@ export default function AstrologerAuth() {
                 </div>
 
                 {/* Submit Button – With loading spinner */}
-                <button
-                  type="submit"
-                  className="submit-btn"
-                  disabled={loading}
-                >
+                <button type="submit" className="submit-btn" disabled={loading}>
                   {loading ? (
                     <>
                       <div className="spinner" /> {/* Inline spinner */}
                       <span>Processing...</span>
                     </>
                   ) : (
-                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                    <span>{isLogin ? "Sign In" : "Create Account"}</span>
                   )}
                 </button>
               </form>
@@ -420,7 +452,11 @@ export default function AstrologerAuth() {
                 className="google-btn"
                 type="button"
               >
-                <svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  className="google-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -443,9 +479,15 @@ export default function AstrologerAuth() {
 
               {/* Toggle Login/Signup – Switch between modes */}
               <p className="toggle-text">
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                <button onClick={() => setIsLogin(!isLogin)} className="toggle-link" type="button">
-                  {isLogin ? 'Sign up now' : 'Sign in'}
+                {isLogin
+                  ? "Don't have an account? "
+                  : "Already have an account? "}
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="toggle-link"
+                  type="button"
+                >
+                  {isLogin ? "Sign up now" : "Sign in"}
                 </button>
               </p>
             </div>
@@ -453,5 +495,5 @@ export default function AstrologerAuth() {
         </div>
       </div>
     </div>
-  )
+  );
 }
