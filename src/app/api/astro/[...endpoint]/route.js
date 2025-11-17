@@ -42,6 +42,11 @@ const ALLOWED_ENDPOINTS = [
   "dur-muhurat",
   "varjyam",
   "good-bad-times",
+  "vedicweekday",
+  "lunarmonthinfo",
+  "rituinfo",
+  "samvatinfo",
+  "aayanam",
 ];
 
 export async function POST(request, { params }) {

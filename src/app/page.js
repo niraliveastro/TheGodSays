@@ -715,6 +715,11 @@ export default function Home() {
     setSelectedOption(null);
     setAstrologyResult(null);
     setError(null);
+    setTimeout(() => {
+    document
+      .getElementById("astrology-options")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }, 50);
   };
 
   const handleNewCalculation = () => {
