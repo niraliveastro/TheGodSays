@@ -510,6 +510,7 @@
   transform: scale(1.1);
 }
 /* Layout for form + history side by side */
+/* Layout for form + history side by side */
 .birth-history-layout {
   display: flex;
   flex-direction: column;
@@ -527,15 +528,44 @@
     flex: 0 0 60%;
     max-width: 60%;
     margin-left: 0 !important;
-    margin-right: 0 !important; /* override mx-auto from Tailwind */
+    margin-right: 0 !important; /* override mx-auto */
+    min-width: 0; /* allow it to shrink if table is wide */
   }
 
   .birth-history-layout .history-side {
     flex: 0 0 40%;
     max-width: 40%;
     margin-top: 0 !important;
+    min-width: 0; /* IMPORTANT: prevent flex from expanding the whole row */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Make the history card a flex column so the table area can flex+scroll */
+  .birth-history-layout .history-side .card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* allow inner scroll */
+  }
+
+  /* Scroll only the history table area when content overflows */
+  .birth-history-layout .history-side .table-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto; /* if columns get too wide, scroll horizontally instead of expanding layout */
+    margin-top: 0.5rem;
   }
 }
+
+/* Optional: give clickable rows a visual hover */
+.history-click-row:hover {
+  background: rgba(202, 138, 4, 0.08);
+  transition: background 0.2s ease;
+}
+
+
+
 /* --- Align Place of Birth input and buttons perfectly --- */
 .place-row {
   display: flex;

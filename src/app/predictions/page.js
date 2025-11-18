@@ -26,6 +26,9 @@ export default function PredictionsPage() {
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const suggestTimer = useRef(null);
+  const formRef = useRef(null);
+  const historyCardRef = useRef(null);
+
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -78,6 +81,17 @@ export default function PredictionsPage() {
     localStorage.removeItem(PREDICTION_HISTORY_KEY);
     setHistory([]);
   };
+  const loadFromHistory = (item) => {
+  setFullName(item.fullName || "");
+  setDob(item.dob || "");
+  setTob(item.tob || "");
+  setPlace(item.place || "");
+  setSelectedCoords(null);
+  setSuggestions([]);
+  setError("");
+  setResult(null); // optional: clear old result so user explicitly re-runs
+};
+
 
   useEffect(() => {
     setHistory(getHistory());
@@ -99,6 +113,25 @@ export default function PredictionsPage() {
       return () => clearTimeout(t);
     }
   }, [result]); // placements depends on result; recompute happens right after
+  
+  useEffect(() => {
+  if (!formRef.current || !historyCardRef.current) return;
+
+  const syncHeights = () => {
+    const formHeight = formRef.current?.offsetHeight || 0;
+    if (!formHeight) return;
+    historyCardRef.current.style.height = `${formHeight}px`;
+    historyCardRef.current.style.maxHeight = `${formHeight}px`;
+  };
+
+  syncHeights();
+  window.addEventListener("resize", syncHeights);
+
+  return () => {
+    window.removeEventListener("resize", syncHeights);
+  };
+}, [dob, tob, place, fullName, history.length]);
+
   const getZodiacSign = (signNumber) => {
     const signs = [
       "Aries",
@@ -630,6 +663,7 @@ export default function PredictionsPage() {
   <div className="birth-history-layout">
     {/* ==== FORM ==== */}
     <form
+      ref={formRef}
       onSubmit={onSubmit}
       className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
     >
@@ -642,7 +676,6 @@ export default function PredictionsPage() {
           <p className="form-subtitle">Enter your cosmic coordinates</p>
         </div>
       </div>
-{/* ---- Birth Details Section ---- */}
 {/* ---- Birth Details Section ---- */}
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
   {/* Full Name */}
@@ -810,7 +843,7 @@ export default function PredictionsPage() {
       className="results-section history-side"
       style={{ marginTop: 0 }}
     >
-      <div className="card">
+      <div className="card" ref={historyCardRef}>
         <div className="results-header">
           <Sparkles style={{ color: "#ca8a04" }} />
           <h3 className="results-title flex items-center gap-2">
@@ -841,27 +874,36 @@ export default function PredictionsPage() {
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
-                {history.map((item) => (
-                  <tr key={item.id}>
-                    <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                      {item.fullName}
-                    </td>
-                    <td>{item.dob}</td>
-                    <td>{item.tob}</td>
-                    <td>{item.place}</td>
-                    <td>
-                      <button
-                        onClick={() => deleteHistoryItem(item.id)}
-                        className="delete-btn"
-                        aria-label={`Delete ${item.fullName}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+<tbody>
+  {history.map((item) => (
+    <tr
+      key={item.id}
+      className="history-click-row"
+      onClick={() => loadFromHistory(item)}
+      style={{ cursor: "pointer" }}
+    >
+      <td style={{ fontWeight: 500, color: "#1f2937" }}>
+        {item.fullName}
+      </td>
+      <td>{item.dob}</td>
+      <td>{item.tob}</td>
+      <td>{item.place}</td>
+      <td>
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // don't trigger row click when deleting
+            deleteHistoryItem(item.id);
+          }}
+          className="delete-btn"
+          aria-label={`Delete ${item.fullName}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
             </table>
           </div>
         )}
