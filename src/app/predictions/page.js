@@ -638,147 +638,148 @@ export default function PredictionsPage() {
               <p className="form-subtitle">Enter your cosmic coordinates</p>
             </div>
           </div>
-          {/* ---- Birth Details Section ---- */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-            {/* Full Name */}
-            <div>
-              <label className="form-field-label flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-gold" />
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                className="form-field-input"
-                required
-              />
-              <p className="form-field-helper">Your full name as per records</p>
-            </div>
+{/* ---- Birth Details Section ---- */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+  {/* Full Name */}
+  <div>
+    <label className="form-field-label flex items-center gap-2 mb-2">
+      <Sparkles className="w-5 h-5 text-gold" />
+      Full Name
+    </label>
+    <input
+      type="text"
+      value={fullName}
+      onChange={(e) => setFullName(e.target.value)}
+      placeholder="Enter your full name"
+      className="form-field-input"
+      required
+    />
+    <p className="form-field-helper">Your full name as per records</p>
+  </div>
 
-            {/* Date of Birth */}
-            <div>
-              <label className="form-field-label flex items-center gap-2 mb-2">
-                <Calendar className="w-5 h-5 text-gold" />
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                className="form-field-input"
-                required
-              />
-              <p className="form-field-helper">Format: YYYY-MM-DD</p>
-            </div>
+  {/* Date of Birth */}
+  <div>
+    <label className="form-field-label flex items-center gap-2 mb-2">
+      <Calendar className="w-5 h-5 text-gold" />
+      Date of Birth
+    </label>
+    <input
+      type="date"
+      value={dob}
+      onChange={(e) => setDob(e.target.value)}
+      className="form-field-input"
+      required
+    />
+    <p className="form-field-helper">Format: YYYY-MM-DD</p>
+  </div>
 
-            {/* Time of Birth */}
-            <div>
-              <label className="form-field-label flex items-center gap-2">
-                <Clock className="w-5 h-5 text-gold" />
-                Time
-              </label>
-              <input
-                type="time"
-                value={tob}
-                onChange={(e) => setTob(e.target.value)}
-                step="60"
-                className="form-field-input"
-                required
-              />
-              <p className="form-field-helper">24-hour format</p>
-            </div>
+  {/* Time of Birth */}
+  <div>
+    <label className="form-field-label flex items-center gap-2">
+      <Clock className="w-5 h-5 text-gold" />
+      Time
+    </label>
+    <input
+      type="time"
+      value={tob}
+      onChange={(e) => setTob(e.target.value)}
+      step="60"
+      className="form-field-input"
+      required
+    />
+    <p className="form-field-helper">24-hour format</p>
+  </div>
 
-            {/* Place of Birth */}
-            <div>
-              <label className="form-field-label flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-gold" />
-                Place of Birth
-              </label>
-              <div className="flex gap-2 relative">
-                <input
-                  placeholder="City, Country"
-                  value={place}
-                  onChange={(e) => {
-                    const q = e.target.value;
-                    setPlace(q);
-                    setSelectedCoords(null);
-                    fetchSuggestions(q);
-                  }}
-                  className="form-field-input flex-1"
-                  autoComplete="off"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={useMyLocation}
-                  disabled={locating}
-                  className="place-btn"
-                >
-                  {locating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <MapPin className="w-4 h-4" />
-                  )}
-                </button>
-                {suggestions.length > 0 && (
-                  <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
-                    {suggestions.map((s, i) => (
-                      <div
-                        key={i}
-                        className="suggest-item"
-                        onClick={() => {
-                          setPlace(s.label);
-                          setSelectedCoords(s);
-                          setSuggestions([]);
-                        }}
-                      >
-                        {s.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <p className="form-field-helper">e.g., Mumbai, India</p>
-            </div>
-            {/* Action Buttons */}
-            <div className="col-span-1 md:col-span-3 tz-row flex gap-4 mt-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn btn-primary w-full h-[52px]"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Calculating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Predictions
-                  </>
-                )}
-              </button>
+  {/* Place of Birth (span 2 cols on md+) */}
+  <div className="md:col-span-2">
+    <label className="form-field-label flex items-center gap-2">
+      <MapPin className="w-5 h-5 text-gold" />
+      Place of Birth
+    </label>
+    <div className="flex gap-2 relative">
+      <input
+        placeholder="City, Country"
+        value={place}
+        onChange={(e) => {
+          const q = e.target.value;
+          setPlace(q);
+          setSelectedCoords(null);
+          fetchSuggestions(q);
+        }}
+        className="form-field-input flex-1"
+        autoComplete="off"
+        required
+      />
+      <button
+        type="button"
+        onClick={useMyLocation}
+        disabled={locating}
+        className="place-btn"
+      >
+        {locating ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <MapPin className="w-4 h-4" />
+        )}
+      </button>
+            <button
+        type="submit"
+        disabled={submitting}
+        className="btn btn-primary flex-1 h-[52px] ml-6"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Calculating…
+          </>
+        ) : (
+          <>
+            <Sparkles className="w-4 h-4 mr-2" />
+            Get Predictions
+          </>
+        )}
+      </button>
 
-              <button
-                type="reset"
-                onClick={() => {
-                  setFullName("");
-                  setDob("");
-                  setTob("");
-                  setPlace("");
-                  setResult(null);
-                  setError("");
-                  setSelectedMaha(null);
-                }}
-                className="btn btn-ghost w-full h-[52px]"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
+      <button
+        type="reset"
+        onClick={() => {
+          setFullName("");
+          setDob("");
+          setTob("");
+          setPlace("");
+          setResult(null);
+          setError("");
+          setSelectedMaha(null);
+        }}
+        className="btn btn-ghost h-[52px] px-4"
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
+
+      {suggestions.length > 0 && (
+        <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <div
+              key={i}
+              className="suggest-item"
+              onClick={() => {
+                setPlace(s.label);
+                setSelectedCoords(s);
+                setSuggestions([]);
+              }}
+            >
+              {s.label}
             </div>
-          </div>
+          ))}
+        </div>
+      )}
+    </div>
+    <p className="form-field-helper">e.g., Mumbai, India</p>
+  </div>
+
+
+</div>
+
         </form>
         {/* Prediction History Table */}
         <section className="results-section" style={{ marginTop: "3rem" }}>
