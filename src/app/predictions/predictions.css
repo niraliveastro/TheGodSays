@@ -509,3 +509,65 @@
   color: #dc2626;
   transform: scale(1.1);
 }
+/* Layout for form + history side by side */
+.birth-history-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* On large screens: form 60%, history 40% */
+@media (min-width: 1024px) {
+  .birth-history-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .birth-history-layout form {
+    flex: 0 0 60%;
+    max-width: 60%;
+    margin-left: 0 !important;
+    margin-right: 0 !important; /* override mx-auto from Tailwind */
+  }
+
+  .birth-history-layout .history-side {
+    flex: 0 0 40%;
+    max-width: 40%;
+    margin-top: 0 !important;
+  }
+}
+/* --- Align Place of Birth input and buttons perfectly --- */
+.place-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .place-row {
+    flex-direction: row;
+    align-items: flex-start; /* align tops to account for labels */
+    gap: 1.5rem;
+    padding-bottom: 1.5rem; /* Add padding to prevent helper text cutoff */
+  }
+}
+
+/* Wrapper around the Place input + helper */
+.place-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+/* Push buttons down by label height to align with input field */
+@media (min-width: 768px) {
+  .place-row .btn-primary,
+  .place-row .btn-ghost {
+    margin-top: 2rem; /* matches label height + margin-bottom */
+  }
+}
+
+/* Ensure the helper text is visible */
+.place-helper {
+  margin-top: 0.25rem;
+  display: block;
+}
