@@ -1145,95 +1145,76 @@ export default function PredictionsPage() {
                 </div>
               </div>
             )}
-            {/* Vimshottari Maha Dasha */}
-            <div className="card">
-              <div className="results-header">
-                <Moon style={{ color: "#4f46e5" }} />
-                <h3 className="results-title">Vimshottari Maha Dasha</h3>
-              </div>
-              {mahaRows.length > 0 ? (
-                <div className="table-scroll-container">
-                  <table className="planet-table">
-                    <thead>
-                      <tr>
-                        <th>Planet</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>AI Predictions</th>
-                        <th>MicroAnalysis</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mahaRows.map((row) => {
-                        const startVal = row.start ? new Date(row.start) : null;
-                        const endVal = row.end ? new Date(row.end) : null;
-                        const fmt = (d) =>
-                          d
-                            ? d.toLocaleDateString("en-GB", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })
-                            : "—";
-                        return (
-                          <tr
-                            key={row.key}
-                            onClick={() => openAntarModalFor(row.lord)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {row.lord || "—"}
-                            </td>
-                            <td>{fmt(startVal)}</td>
-                            <td>{fmt(endVal)}</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                style={{
-                                  fontSize: "0.75rem",
-                                  padding: "0.25rem 0.75rem",
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openAiPredictionsFor(row.lord);
-                                }}
-                              >
-                                Predict <Cpu />
-                              </button>
-                            </td>
-                            <td>
-                              <button
-                                type="button"
-                                className="btn btn-ghost"
-                                style={{
-                                  fontSize: "0.75rem",
-                                  padding: "0.25rem 0.75rem",
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openAntarModalFor(row.lord);
-                                }}
-                              >
-                                MicroAnalysis
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <div className="maha-note">
-                    Note: Click a row to show Antar Dasha periods for that Maha
-                    Dasha.
+{/* Vimshottari Maha Dasha */}
+<div className="card">
+  <div className="results-header">
+    <Moon style={{ color: "#4f46e5" }} />
+    <h3 className="results-title">Vimshottari Maha Dasha</h3>
+  </div>
+
+  {mahaRows.length > 0 ? (
+    <div className="timeline-wrapper">
+      <div className="railway-timeline">
+        <div className="railway-line"></div>
+
+        {mahaRows.map((row, i) => {
+          const startDate = new Date(row.start);
+          const endDate = new Date(row.end);
+
+          const start = startDate.toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+          const end = endDate.toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+
+          const now = new Date();
+          const isCurrent = now >= startDate && now <= endDate;
+          const isEven = i % 2 === 0;
+          const isLastItem = i === mahaRows.length - 1;
+
+          return (
+            <div key={row.key} className={`railway-block ${i === 0 ? "first-block" : ""}`}>
+              {/* Start Date Row - only for first item */}
+              {i === 0 && (
+                <div className="railway-date-row">
+                  <div className="railway-dot" />
+                  <div className={`railway-date ${isEven ? "left" : "right"}`}>
+                    {start}
                   </div>
                 </div>
-              ) : (
-                <div className="empty-state">
-                  No Maha Dasha data. Submit the form above.
-                </div>
               )}
+
+              {/* Planet Row - always center */}
+              <div className="railway-planet-row">
+                <div className={`railway-planet`}>
+                  {row.lord}
+                </div>
+              </div>
+
+              {/* End Date Row - alternating right/left */}
+              <div className="railway-date-row">
+                <div className={`railway-dot ${isCurrent ? "current" : ""}`} />
+                <div className={`railway-date ${isEven ? "right" : "left"}`}>
+                  {end}
+                </div>
+              </div>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="empty-state">
+      No Maha Dasha data. Submit the form above.
+    </div>
+  )}
+</div>
+
           </div>
         )}
         {/* Antar Dasha Modal */}
