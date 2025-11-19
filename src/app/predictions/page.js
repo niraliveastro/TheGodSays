@@ -26,6 +26,9 @@ export default function PredictionsPage() {
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const suggestTimer = useRef(null);
+  const formRef = useRef(null);
+  const historyCardRef = useRef(null);
+
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -78,6 +81,17 @@ export default function PredictionsPage() {
     localStorage.removeItem(PREDICTION_HISTORY_KEY);
     setHistory([]);
   };
+  const loadFromHistory = (item) => {
+  setFullName(item.fullName || "");
+  setDob(item.dob || "");
+  setTob(item.tob || "");
+  setPlace(item.place || "");
+  setSelectedCoords(null);
+  setSuggestions([]);
+  setError("");
+  setResult(null); // optional: clear old result so user explicitly re-runs
+};
+
 
   useEffect(() => {
     setHistory(getHistory());
@@ -99,6 +113,25 @@ export default function PredictionsPage() {
       return () => clearTimeout(t);
     }
   }, [result]); // placements depends on result; recompute happens right after
+  
+  useEffect(() => {
+  if (!formRef.current || !historyCardRef.current) return;
+
+  const syncHeights = () => {
+    const formHeight = formRef.current?.offsetHeight || 0;
+    if (!formHeight) return;
+    historyCardRef.current.style.height = `${formHeight}px`;
+    historyCardRef.current.style.maxHeight = `${formHeight}px`;
+  };
+
+  syncHeights();
+  window.addEventListener("resize", syncHeights);
+
+  return () => {
+    window.removeEventListener("resize", syncHeights);
+  };
+}, [dob, tob, place, fullName, history.length]);
+
   const getZodiacSign = (signNumber) => {
     const signs = [
       "Aries",
@@ -618,26 +651,31 @@ export default function PredictionsPage() {
         />
         <h1 className="title">Cosmic Insights</h1>
       </header>
-      <div className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
-            <span>Warning</span> {error}
-          </div>
-        )}
-        {/* ==== FORM ==== */}
-        <form
-          onSubmit={onSubmit}
-          className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
-        >
-          <div className="form-header">
-            <div className="form-header-icon">
-              <Moon className="w-6 h-6 text-gold" />
-            </div>
-            <div className="form-header-text">
-              <h3 className="form-title">Birth Details</h3>
-              <p className="form-subtitle">Enter your cosmic coordinates</p>
-            </div>
-          </div>
+
+<div className="container mx-auto px-4 py-8">
+  {error && (
+    <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+      <span>Warning</span> {error}
+    </div>
+  )}
+
+  {/* === Birth form + History side-by-side === */}
+  <div className="birth-history-layout">
+    {/* ==== FORM ==== */}
+    <form
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
+    >
+      <div className="form-header">
+        <div className="form-header-icon">
+          <Moon className="w-6 h-6 text-gold" />
+        </div>
+        <div className="form-header-text">
+          <h3 className="form-title">Birth Details</h3>
+          <p className="form-subtitle">Enter your cosmic coordinates</p>
+        </div>
+      </div>
 {/* ---- Birth Details Section ---- */}
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
   {/* Full Name */}
@@ -690,42 +728,75 @@ export default function PredictionsPage() {
     <p className="form-field-helper">24-hour format</p>
   </div>
 
-  {/* Place of Birth (span 2 cols on md+) */}
-  <div className="md:col-span-2">
-    <label className="form-field-label flex items-center gap-2">
-      <MapPin className="w-5 h-5 text-gold" />
-      Place of Birth
-    </label>
-    <div className="flex gap-2 relative">
-      <input
-        placeholder="City, Country"
-        value={place}
-        onChange={(e) => {
-          const q = e.target.value;
-          setPlace(q);
-          setSelectedCoords(null);
-          fetchSuggestions(q);
-        }}
-        className="form-field-input flex-1"
-        autoComplete="off"
-        required
-      />
-      <button
-        type="button"
-        onClick={useMyLocation}
-        disabled={locating}
-        className="place-btn"
-      >
-        {locating ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <MapPin className="w-4 h-4" />
+{/* Place + Get Predictions + Reset all in one row */}
+<div className="md:col-span-3">
+  <div className="place-row">
+    {/* Place of Birth */}
+    <div className="flex-1 place-wrapper">
+      <label className="form-field-label flex items-center gap-2 mb-2">
+        <MapPin className="w-5 h-5 text-gold" />
+        Place of Birth
+      </label>
+
+      <div className="relative">
+        <div className="place-input-wrapper">
+          <input
+            placeholder="City, Country"
+            value={place}
+            onChange={(e) => {
+              const q = e.target.value;
+              setPlace(q);
+              setSelectedCoords(null);
+              fetchSuggestions(q);
+            }}
+            className="form-field-input place-input"
+            autoComplete="off"
+            required
+          />
+
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={locating}
+            className="place-btn"
+          >
+            {locating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <MapPin className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+
+        {suggestions.length > 0 && (
+          <div className="suggest-list">
+            {suggestions.map((s, i) => (
+              <div
+                key={i}
+                className="suggest-item"
+                onClick={() => {
+                  setPlace(s.label);
+                  setSelectedCoords(s);
+                  setSuggestions([]);
+                }}
+              >
+                {s.label}
+              </div>
+            ))}
+          </div>
         )}
-      </button>
-            <button
+      </div>
+
+      {/* helper, absolutely positioned -> doesn't affect column height */}
+      <p className="form-field-helper place-helper">e.g., Mumbai, India</p>
+    </div>
+
+    {/* Get Predictions button */}
+    <div className="w-full md:w-48">
+      <button
         type="submit"
         disabled={submitting}
-        className="btn btn-primary flex-1 h-[52px] ml-6"
+        className="btn btn-primary w-full h-[52px]"
       >
         {submitting ? (
           <>
@@ -739,7 +810,10 @@ export default function PredictionsPage() {
           </>
         )}
       </button>
+    </div>
 
+    {/* Reset button */}
+    <div className="w-full md:w-32">
       <button
         type="reset"
         onClick={() => {
@@ -751,95 +825,91 @@ export default function PredictionsPage() {
           setError("");
           setSelectedMaha(null);
         }}
-        className="btn btn-ghost h-[52px] px-4"
+        className="btn btn-ghost w-full h-[52px] px-4"
       >
         <RotateCcw className="w-4 h-4" />
       </button>
-
-      {suggestions.length > 0 && (
-        <div className="suggest-list absolute top-full left-0 right-0 z-30 max-h-48 overflow-y-auto">
-          {suggestions.map((s, i) => (
-            <div
-              key={i}
-              className="suggest-item"
-              onClick={() => {
-                setPlace(s.label);
-                setSelectedCoords(s);
-                setSuggestions([]);
-              }}
-            >
-              {s.label}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
-    <p className="form-field-helper">e.g., Mumbai, India</p>
   </div>
-
+</div>
 
 </div>
 
-        </form>
-        {/* Prediction History Table */}
-        <section className="results-section" style={{ marginTop: "3rem" }}>
-          <div className="card">
-            <div className="results-header">
-              <Sparkles style={{ color: "#ca8a04" }} />
-              <h3 className="results-title flex items-center gap-2">
-                Prediction History
-              </h3>
 
-              {history.length > 0 && (
-                <button
-                  onClick={clearHistory}
-                  className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
-                >
-                  <RotateCcw className="w-4 h-4" /> Clear
-                </button>
-              )}
-            </div>
+    </form>
 
-            {history.length === 0 ? (
-              <div className="empty-state">No prediction history yet.</div>
-            ) : (
-              <div className="table-scroll-container">
-                <table className="planet-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Date of Birth</th>
-                      <th>Time of Birth</th>
-                      <th>Place of Birth</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((item) => (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                          {item.fullName}
-                        </td>
-                        <td>{item.dob}</td>
-                        <td>{item.tob}</td>
-                        <td>{item.place}</td>
-                        <td>
-                          <button
-                            onClick={() => deleteHistoryItem(item.id)}
-                            className="delete-btn"
-                            aria-label={`Delete ${item.fullName}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+    {/* Prediction History to the RIGHT of the form */}
+    <section
+      className="results-section history-side"
+      style={{ marginTop: 0 }}
+    >
+      <div className="card" ref={historyCardRef}>
+        <div className="results-header">
+          <Sparkles style={{ color: "#ca8a04" }} />
+          <h3 className="results-title flex items-center gap-2">
+            Prediction History
+          </h3>
+
+          {history.length > 0 && (
+            <button
+              onClick={clearHistory}
+              className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+            >
+              <RotateCcw className="w-4 h-4" /> Clear
+            </button>
+          )}
+        </div>
+
+        {history.length === 0 ? (
+          <div className="empty-state">No prediction history yet.</div>
+        ) : (
+          <div className="table-scroll-container">
+            <table className="planet-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date of Birth</th>
+                  <th>Time of Birth</th>
+                  <th>Place of Birth</th>
+                  <th></th>
+                </tr>
+              </thead>
+<tbody>
+  {history.map((item) => (
+    <tr
+      key={item.id}
+      className="history-click-row"
+      onClick={() => loadFromHistory(item)}
+      style={{ cursor: "pointer" }}
+    >
+      <td style={{ fontWeight: 500, color: "#1f2937" }}>
+        {item.fullName}
+      </td>
+      <td>{item.dob}</td>
+      <td>{item.tob}</td>
+      <td>{item.place}</td>
+      <td>
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // don't trigger row click when deleting
+            deleteHistoryItem(item.id);
+          }}
+          className="delete-btn"
+          aria-label={`Delete ${item.fullName}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+            </table>
           </div>
-        </section>
+        )}
+      </div>
+    </section>
+  </div>
 
         {/* Results */}
         {result && (
