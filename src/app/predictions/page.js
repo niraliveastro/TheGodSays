@@ -130,7 +130,7 @@ export default function PredictionsPage() {
   return () => {
     window.removeEventListener("resize", syncHeights);
   };
-}, [dob, tob, place, fullName, history.length]);
+}, [dob, tob, place, fullName, suggestions.length, history.length]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -865,49 +865,45 @@ export default function PredictionsPage() {
         {history.length === 0 ? (
           <div className="empty-state">No prediction history yet.</div>
         ) : (
-          <div className="table-scroll-container">
-            <table className="planet-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Date of Birth</th>
-                  <th>Time of Birth</th>
-                  <th>Place of Birth</th>
-                  <th></th>
-                </tr>
-              </thead>
-<tbody>
+<div className="history-list">
   {history.map((item) => (
-    <tr
+    <div
       key={item.id}
-      className="history-click-row"
+      className="history-card-row"
       onClick={() => loadFromHistory(item)}
-      style={{ cursor: "pointer" }}
     >
-      <td style={{ fontWeight: 500, color: "#1f2937" }}>
-        {item.fullName}
-      </td>
-      <td>{item.dob}</td>
-      <td>{item.tob}</td>
-      <td>{item.place}</td>
-      <td>
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // don't trigger row click when deleting
-            deleteHistoryItem(item.id);
-          }}
-          className="delete-btn"
-          aria-label={`Delete ${item.fullName}`}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+      <div className="history-row-text">
+        <div className="h-name">{item.fullName}</div>
+        <div className="h-date">{item.dob}</div>
+        <div className="h-time">{item.tob}</div>
+        <div className="h-place">{item.place}</div>
+      </div>
 
-            </table>
-          </div>
+<div className="history-actions">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      loadFromHistory(item);
+    }}
+    className="use-btn"
+  >
+    Use
+  </button>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      deleteHistoryItem(item.id);
+    }}
+    className="delete-btn"
+  >
+    <Trash2 className="w-4 h-4" />
+  </button>
+</div>
+    </div>
+  ))}
+</div>
+
         )}
       </div>
     </section>
