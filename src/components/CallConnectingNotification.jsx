@@ -51,6 +51,14 @@ export default function CallConnectingNotification({
         setIsClosing(true);
         break;
 
+      case "cancelled":
+        setMessage({
+          title: "Call Cancelled",
+          body: "Your call request has been cancelled",
+        });
+        setIsClosing(true);
+        break;
+
       case "connecting":
       default:
         setMessage({
@@ -104,9 +112,9 @@ export default function CallConnectingNotification({
         <div className="flex flex-col items-center justify-center space-y-6">
           {/* Icon and Spinner */}
           <div className="relative">
-            {status === "rejected" ? (
+            {status === "rejected" || status === "cancelled" ? (
               <div className="w-16 h-16 flex items-center justify-center">
-                <XCircle className="w-16 h-16 text-red-500" />
+                <XCircle className={`w-16 h-16 ${status === "rejected" ? "text-red-500" : "text-orange-500"}`} />
               </div>
             ) : (
               <>
@@ -131,6 +139,8 @@ export default function CallConnectingNotification({
               className={`text-xl font-semibold ${
                 status === "rejected"
                   ? "text-red-600 dark:text-red-500"
+                  : status === "cancelled"
+                  ? "text-orange-600 dark:text-orange-500"
                   : "text-gray-900 dark:text-gray-100"
               }`}
             >

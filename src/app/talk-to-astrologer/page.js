@@ -294,6 +294,13 @@ export default function TalkToAstrologer() {
             setCallStatus("connecting");
             setLoading(false);
           }, 2000);
+        } else if (c?.status === "cancelled") {
+          // Handle cancelled status (when user cancels)
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          setConnectingCallType(null);
+          setCallStatus("connecting");
+          setLoading(false);
         }
       }, 2000);
 
@@ -366,6 +373,38 @@ export default function TalkToAstrologer() {
           setCallStatus("connecting");
           setLoading(false);
           alert("Connection timed out.");
+        }}
+        onCancel={async () => {
+          const callId = localStorage.getItem("tgs:currentCallId");
+          if (callId) {
+            try {
+              // Cancel the call on backend
+              await fetch("/api/calls", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "update-call-status",
+                  callId,
+                  status: "cancelled"
+                })
+              });
+              // Cancel billing
+              await fetch("/api/billing", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "cancel-call", callId })
+              });
+            } catch (error) {
+              console.error("Error cancelling call:", error);
+            }
+            // Clean up local storage
+            localStorage.removeItem("tgs:callId");
+            localStorage.removeItem("tgs:currentCallId");
+            localStorage.removeItem("tgs:astrologerId");
+          }
+          setConnectingCallType(null);
+          setCallStatus("connecting");
+          setLoading(false);
         }}
       />
 
