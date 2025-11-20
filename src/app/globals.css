@@ -2370,3 +2370,97 @@ body {
   color: #dc2626;
   transform: scale(1.1);
 }
+
+.planet-table td {
+  vertical-align: top;
+}
+.planet-table td:first-child,
+.planet-table td:nth-child(2) {
+  width: 40%;
+}
+.match-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.match-row td {
+  flex: 1;
+}
+
+/* The action cell has NO header, but moves right */
+.actions-cell {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto; /* prevents stretching */
+}
+
+/* Make table work normally */
+.match-row {
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  transition: background 0.15s ease;
+}
+
+/* REMOVE row hover effect */
+.match-row:hover {
+  background: white !important;
+}
+
+/* General cell padding */
+.match-row td {
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+}
+
+/* Female + Male = equal widths */
+.match-cell {
+  width: 40%;
+}
+
+/* Use button column */
+.use-cell {
+  width: 10%;
+  text-align: center;
+}
+
+/* Trash icon column */
+.trash-cell {
+  width: 5%;
+  text-align: center;
+}
+
+/* Use Button */
+.use-btn {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d4af37;
+  border-radius: 6px;
+  background: white;
+  color: #b8972e;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.use-btn:hover {
+  background: #fdf6d6;
+  transform: translateY(-1px);
+}
+
+/* Trash Icon Button */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: 0.2s ease;
+}
+
+.delete-btn:hover {
+  color: #dc2626;
+  transform: scale(1.1);
+}

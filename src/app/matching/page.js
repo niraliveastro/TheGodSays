@@ -190,6 +190,34 @@ export default function MatchingPage() {
     localStorage.removeItem(MATCHING_HISTORY_KEY);
     setHistory([]);
   };
+
+  const loadHistoryIntoForm = (item) => {
+  setFemale({
+    fullName: item.femaleName,
+    dob: item.femaleDob,
+    tob: item.femaleTob,
+    place: item.femalePlace,
+  });
+
+  setMale({
+    fullName: item.maleName,
+    dob: item.maleDob,
+    tob: item.maleTob,
+    place: item.malePlace,
+  });
+
+  // Optional: Clear suggestions
+  setFSuggest([]);
+  setMSuggest([]);
+
+  // Optional: Reset coords so user must re-select or re-run
+  setFCoords(null);
+  setMCoords(null);
+
+  // Scroll to top where the form is
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
   // Load history on mount
   useEffect(() => {
     setHistory(getHistory());
@@ -1719,36 +1747,57 @@ export default function MatchingPage() {
                 <table className="planet-table">
                   <thead>
                     <tr>
-                      <th>Female Name</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Place</th>
-                      <th>Male Name</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Place</th>
+                      <th>Female Details</th>
+                      <th>Male Details</th>
+                      <th></th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {history.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.femaleName}</td>
-                        <td>{item.femaleDob}</td>
-                        <td>{item.femaleTob}</td>
-                        <td>{item.femalePlace}</td>
-                        <td>{item.maleName}</td>
-                        <td>{item.maleDob}</td>
-                        <td>{item.maleTob}</td>
-                        <td>{item.malePlace}</td>
-                        <td>
-                          <button
-                            onClick={() => deleteHistoryItem(item.id)}
-                            className="delete-btn"
-                            aria-label={`Delete ${item.femaleName} & ${item.maleName}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                      <tr
+                        className="history-row"
+                        onClick={() => loadHistoryIntoForm(item)}
+                      >
+                        {/* FEMALE CELL */}
+                        <td className="history-cell">
+                          <div className="h-name">{item.femaleName}</div>
+                          <div>{item.femaleDob}</div>
+                          <div>{item.femaleTob}</div>
+                          <div>{item.femalePlace}</div>
+                        </td>
+
+                        {/* MALE CELL */}
+                        <td className="history-cell">
+                          <div className="h-name">{item.maleName}</div>
+                          <div>{item.maleDob}</div>
+                          <div>{item.maleTob}</div>
+                          <div>{item.malePlace}</div>
+                        </td>
+
+                        {/* ACTION BUTTONS FLOAT RIGHT */}
+                        <td className="history-actions-cell">
+                          <div className="history-actions">
+                            <button
+                              className="use-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                loadHistoryIntoForm(item);
+                              }}
+                            >
+                              Use
+                            </button>
+
+                            <button
+                              className="delete-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteHistoryItem(item.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
