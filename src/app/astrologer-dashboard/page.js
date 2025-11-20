@@ -174,6 +174,28 @@ function AstrologerDashboardContent() {
               callsList.push(call);
             }
 
+            // Check for recently cancelled calls and show notification
+            const recentlyCancelled = callsList.find(
+              call => call.status === "cancelled" && 
+              call.cancelledAt && 
+              new Date() - new Date(call.cancelledAt) < 5000 // Within last 5 seconds
+            );
+            
+            if (recentlyCancelled && !incomingCall) {
+              // Show notification that user declined the call
+              if (notificationPermission === "granted") {
+                try {
+                  new Notification("Call Declined", {
+                    body: `${userNames[recentlyCancelled.userId] || "User"} declined the call`,
+                    icon: "/favicon.ico",
+                    tag: "call-declined",
+                  });
+                } catch (e) {
+                  console.log("Browser notification failed:", e);
+                }
+              }
+            }
+
             setCalls(callsList);
             setQueue(queueList);
             if (newIncomingCall) setIncomingCall(newIncomingCall);
@@ -454,6 +476,8 @@ function AstrologerDashboardContent() {
         return "#3b82f6"; // Blue
       case "rejected":
         return "#ef4444"; // Red
+      case "cancelled":
+        return "#f97316"; // Orange
       default:
         return "#6b7280"; // Gray
     }

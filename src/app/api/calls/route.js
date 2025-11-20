@@ -93,6 +93,21 @@ export async function POST(request) {
             callType,
             roomName: updateData.roomName
           })
+        } else if (status === 'cancelled' || status === 'rejected') {
+          // Handle call cancellation/rejection
+          updateData.endTime = new Date()
+          updateData.cancelledAt = new Date()
+          
+          // Update astrologer status back to online if they were busy
+          const callData = callToUpdateDoc.data()
+          if (callData.astrologerId) {
+            const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
+            const astrologerDoc = await astrologerRef.get()
+            if (astrologerDoc.exists && astrologerDoc.data().status === 'busy') {
+              await astrologerRef.update({ status: 'online' })
+              console.log(`Updated astrologer ${callData.astrologerId} status to online after call ${status}`)
+            }
+          }
         }
         
         // Handle call completion and billing finalization
