@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import styles from "./predictions.css";
+import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 export default function PredictionsPage() {
   const [dob, setDob] = useState("");
@@ -738,35 +738,37 @@ export default function PredictionsPage() {
         Place of Birth
       </label>
 
-      <div className="relative">
-        <div className="place-input-wrapper">
-          <input
-            placeholder="City, Country"
-            value={place}
-            onChange={(e) => {
-              const q = e.target.value;
-              setPlace(q);
-              setSelectedCoords(null);
-              fetchSuggestions(q);
-            }}
-            className="form-field-input place-input"
-            autoComplete="off"
-            required
-          />
+<div className="relative">
+<div className="place-input-wrapper">
+  
+  <input
+    placeholder="City, Country"
+    value={place}
+    onChange={(e) => {
+      const q = e.target.value;
+      setPlace(q);
+      setSelectedCoords(null);
+      fetchSuggestions(q);
+    }}
+    className="form-field-input place-input"
+    autoComplete="off"
+    required
+  />
 
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={locating}
-            className="place-btn"
-          >
-            {locating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <MapPin className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+  <button
+    type="button"
+    onClick={useMyLocation}
+    disabled={locating}
+    className="place-btn"
+  >
+    {locating ? (
+      <Loader2 className="w-4 h-4 animate-spin" />
+    ) : (
+      <MapPin className="w-4 h-4" />
+    )}
+  </button>
+</div>
+
 
         {suggestions.length > 0 && (
           <div className="suggest-list">

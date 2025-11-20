@@ -5,6 +5,7 @@
   display: flex;
   gap: 0.5rem;
   position: relative;
+  min-width: 0;
 }
 
 .place-input {
@@ -576,17 +577,30 @@
 @media (min-width: 768px) {
   .place-row {
     flex-direction: row;
-    align-items: flex-start; /* align tops to account for labels */
-    gap: 1.5rem;
-    padding-bottom: 1.5rem; /* Add padding to prevent helper text cutoff */
+    align-items: flex-start;
   }
 }
 
-/* Wrapper around the Place input + helper */
 .place-wrapper {
   position: relative;
   flex: 1;
 }
+/* Fix shrink issue only for the input */
+.place-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 240px; /* Prevent shrinking below this */
+}
+
+.place-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0; /* Allow text truncation */
+}
+
 
 /* Push buttons down by label height to align with input field */
 @media (min-width: 768px) {
@@ -834,4 +848,9 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
+}
+
+.form-field-input::placeholder {
+  font-style: normal !important;
+  color: #4b5563;
 }
