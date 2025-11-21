@@ -5,6 +5,7 @@
   display: flex;
   gap: 0.5rem;
   position: relative;
+  min-width: 0;
 }
 
 .place-input {
@@ -509,7 +510,101 @@
   color: #dc2626;
   transform: scale(1.1);
 }
-/* Layout for form + history side by side */
+/* Container for stacked history rows */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Individual row */
+.history-card-row {
+  cursor: default;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Text area */
+.history-row-text > div {
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+
+.h-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  margin-bottom: 0.4rem;
+}
+
+.delete-btn {
+  margin-left: 1rem;
+  color: #b91c1c;
+  padding: 0.25rem;
+}
+
+/* Make the RIGHT panel scroll internally */
+.history-side .card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scroll only the inner list — not header */
+.history-list {
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  flex: 1;
+}
+
+/* Smooth scroll and hide ugly scrollbar in WebKit */
+.history-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(200, 160, 40, 0.4);
+  border-radius: 4px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Use button */
+.use-btn {
+  background: rgba(202, 138, 4, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(202, 138, 4, 0.4);
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.use-btn:hover {
+  background: rgba(202, 138, 4, 0.22);
+  border-color: rgba(202, 138, 4, 0.6);
+  color: #7a3e0e;
+}
+
+
+/* Delete button stays same */
+
 /* Layout for form + history side by side */
 .birth-history-layout {
   display: flex;
@@ -576,17 +671,30 @@
 @media (min-width: 768px) {
   .place-row {
     flex-direction: row;
-    align-items: flex-start; /* align tops to account for labels */
-    gap: 1.5rem;
-    padding-bottom: 1.5rem; /* Add padding to prevent helper text cutoff */
+    align-items: flex-start;
   }
 }
 
-/* Wrapper around the Place input + helper */
 .place-wrapper {
   position: relative;
   flex: 1;
 }
+/* Fix shrink issue only for the input */
+.place-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 240px; /* Prevent shrinking below this */
+}
+
+.place-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0; /* Allow text truncation */
+}
+
 
 /* Push buttons down by label height to align with input field */
 @media (min-width: 768px) {
@@ -601,40 +709,95 @@
   margin-top: 0.25rem;
   display: block;
 }
+/* === Horizontal Railway Maha Dasha Timeline === */
 
-/* === Vimshottari Maha Dasha Vertical Timeline === */
-
-.timeline-wrapper {
-  margin-top: 1rem;
-  max-height: 28rem;
-  overflow-y: auto;
-  padding-right: 0.25rem;
+.horizontal-railway-container {
+  overflow-x: auto;
+  padding: 1rem 0;
 }
 
-.timeline {
-  position: relative;
+.horizontal-railway-track {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  padding-bottom: 1rem;
+  min-width: max-content;
+}
+
+/* Each equal-width segment */
+.railway-segment {
+  min-width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-/* Container for each Maha Dasha period */
-.timeline-item {
+/* Planet name + Analysis button */
+.planet-header {
   display: flex;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.5); /* slate-400-ish */
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease,
-    background 0.2s ease;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+.planet-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+.analysis-btn {
+  font-size: 0.75rem;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.35rem;
+  color: #7a5c14;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.analysis-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: rgba(212, 175, 55, 0.7);
+}
+
+/* Dates */
+.date-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Bar + dots */
+.segment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.segment-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 140px;
+  position: relative;
+}
+
+.bar-line {
+  flex: 1;
+  height: 4px;
+  background: linear-gradient(to right, #e9c46a, #ca8a04);
+  border-radius: 999px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #ffd77a, #d4af37);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+}
 
 /* ====== RAILWAY STYLE TIMELINE (alternating dates) ====== */
 
@@ -834,4 +997,48 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
+}
+
+.form-field-input::placeholder {
+  font-style: normal !important;
+  color: #4b5563;
+}
+
+.antar-inline-box {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 10px;
+  padding: 1rem;
+  width: 100%;
+}
+
+.antar-loading {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #a16207;
+}
+
+.antar-error {
+  text-align: center;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.antar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.antar-table th {
+  text-align: left;
+  padding-bottom: 6px;
+  color: #8d6b16;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.antar-table td {
+  padding: 4px 0;
+  color: #333;
 }

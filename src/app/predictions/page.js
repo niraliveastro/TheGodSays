@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import styles from "./predictions.css";
+import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 export default function PredictionsPage() {
   const [dob, setDob] = useState("");
@@ -45,7 +45,8 @@ export default function PredictionsPage() {
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] =
     useState(null);
   const [fullName, setFullName] = useState("");
-
+  const [openAntarFor, setOpenAntarFor] = useState(null);
+  const [antarLoadingFor, setAntarLoadingFor] = useState(null);
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
@@ -130,7 +131,7 @@ export default function PredictionsPage() {
   return () => {
     window.removeEventListener("resize", syncHeights);
   };
-}, [dob, tob, place, fullName, history.length]);
+}, [dob, tob, place, fullName, suggestions.length, history.length]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -454,42 +455,43 @@ export default function PredictionsPage() {
       },
     };
   }
-  async function openAntarModalFor(mahaLord) {
-    setSelectedMaha(mahaLord);
-    setAntarOpen(true);
-    setAntarLoading(true);
-    setAntarError("");
-    setAntarRows([]);
-    try {
-      const payload = buildPayloadForApi();
-      if (!payload)
-        throw new Error("Missing input. Please submit the form first.");
-      const res = await astrologyAPI.getSingleCalculation(
-        "vimsottari/maha-dasas-and-antar-dasas",
-        payload
-      );
-      const out =
-        typeof res?.output === "string"
-          ? JSON.parse(res.output)
-          : res?.output || res;
-      const sub =
-        out?.[mahaLord] ||
-        out?.[String(mahaLord).toLowerCase()] ||
-        out?.[String(mahaLord).toUpperCase()] ||
-        {};
-      const rows = Object.entries(sub).map(([k, v]) => ({
-        lord: k,
-        start: v.start_time || v.start,
-        end: v.end_time || v.end,
-      }));
-      rows.sort((a, b) => new Date(a.start) - new Date(b.start));
-      setAntarRows(rows);
-    } catch (e) {
-      setAntarError(e?.message || "Failed to load Antar Dasha.");
-    } finally {
-      setAntarLoading(false);
-    }
+async function openAntarInlineFor(mahaLord) {
+  if (openAntarFor === mahaLord) {
+    setOpenAntarFor(null); // toggle off
+    return;
   }
+
+  setOpenAntarFor(mahaLord);
+  setAntarLoadingFor(mahaLord);
+  setAntarRows([]);
+
+  try {
+    const payload = buildPayloadForApi();
+    if (!payload) throw new Error("Missing input.");
+
+    const res = await astrologyAPI.getSingleCalculation(
+      "vimsottari/maha-dasas-and-antar-dasas",
+      payload
+    );
+
+    const out = typeof res?.output === "string" ? JSON.parse(res.output) : res;
+    const sub = out?.[mahaLord] || {};
+
+    const rows = Object.entries(sub).map(([k, v]) => ({
+      lord: k,
+      start: v.start_time || v.start,
+      end: v.end_time || v.end,
+    }));
+
+    rows.sort((a, b) => new Date(a.start) - new Date(b.start));
+    setAntarRows(rows);
+  } catch (e) {
+    setAntarRows([{ error: e.message }]);
+  } finally {
+    setAntarLoadingFor(null);
+  }
+}
+
   async function openAiPredictionsFor(planetLord) {
     setSelectedPlanetForPredictions(planetLord);
     setPredictionsOpen(true);
@@ -738,35 +740,37 @@ export default function PredictionsPage() {
         Place of Birth
       </label>
 
-      <div className="relative">
-        <div className="place-input-wrapper">
-          <input
-            placeholder="City, Country"
-            value={place}
-            onChange={(e) => {
-              const q = e.target.value;
-              setPlace(q);
-              setSelectedCoords(null);
-              fetchSuggestions(q);
-            }}
-            className="form-field-input place-input"
-            autoComplete="off"
-            required
-          />
+<div className="relative">
+<div className="place-input-wrapper">
+  
+  <input
+    placeholder="City, Country"
+    value={place}
+    onChange={(e) => {
+      const q = e.target.value;
+      setPlace(q);
+      setSelectedCoords(null);
+      fetchSuggestions(q);
+    }}
+    className="form-field-input place-input"
+    autoComplete="off"
+    required
+  />
 
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={locating}
-            className="place-btn"
-          >
-            {locating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <MapPin className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+  <button
+    type="button"
+    onClick={useMyLocation}
+    disabled={locating}
+    className="place-btn"
+  >
+    {locating ? (
+      <Loader2 className="w-4 h-4 animate-spin" />
+    ) : (
+      <MapPin className="w-4 h-4" />
+    )}
+  </button>
+</div>
+
 
         {suggestions.length > 0 && (
           <div className="suggest-list">
@@ -863,49 +867,45 @@ export default function PredictionsPage() {
         {history.length === 0 ? (
           <div className="empty-state">No prediction history yet.</div>
         ) : (
-          <div className="table-scroll-container">
-            <table className="planet-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Date of Birth</th>
-                  <th>Time of Birth</th>
-                  <th>Place of Birth</th>
-                  <th></th>
-                </tr>
-              </thead>
-<tbody>
+<div className="history-list">
   {history.map((item) => (
-    <tr
+    <div
       key={item.id}
-      className="history-click-row"
+      className="history-card-row"
       onClick={() => loadFromHistory(item)}
-      style={{ cursor: "pointer" }}
     >
-      <td style={{ fontWeight: 500, color: "#1f2937" }}>
-        {item.fullName}
-      </td>
-      <td>{item.dob}</td>
-      <td>{item.tob}</td>
-      <td>{item.place}</td>
-      <td>
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // don't trigger row click when deleting
-            deleteHistoryItem(item.id);
-          }}
-          className="delete-btn"
-          aria-label={`Delete ${item.fullName}`}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+      <div className="history-row-text">
+        <div className="h-name">{item.fullName}</div>
+        <div className="h-date">{item.dob}</div>
+        <div className="h-time">{item.tob}</div>
+        <div className="h-place">{item.place}</div>
+      </div>
 
-            </table>
-          </div>
+<div className="history-actions">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      loadFromHistory(item);
+    }}
+    className="use-btn"
+  >
+    Use
+  </button>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      deleteHistoryItem(item.id);
+    }}
+    className="delete-btn"
+  >
+    <Trash2 className="w-4 h-4" />
+  </button>
+</div>
+    </div>
+  ))}
+</div>
+
         )}
       </div>
     </section>
@@ -1152,67 +1152,98 @@ export default function PredictionsPage() {
     <h3 className="results-title">Vimshottari Maha Dasha</h3>
   </div>
 
-  {mahaRows.length > 0 ? (
-    <div className="timeline-wrapper">
-      <div className="railway-timeline">
-        <div className="railway-line"></div>
-
-        {mahaRows.map((row, i) => {
-          const startDate = new Date(row.start);
-          const endDate = new Date(row.end);
-
-          const start = startDate.toLocaleDateString("en-GB", {
-            year: "numeric",
+{mahaRows.length > 0 ? (
+  <>
+    {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
+    <div className="horizontal-railway-container">
+      <div className="horizontal-railway-track">
+        {mahaRows.map((row) => {
+          const start = new Date(row.start).toLocaleDateString("en-GB", {
+            day: "2-digit",
             month: "short",
-            day: "numeric",
-          });
-          const end = endDate.toLocaleDateString("en-GB", {
             year: "numeric",
-            month: "short",
-            day: "numeric",
           });
 
-          const now = new Date();
-          const isCurrent = now >= startDate && now <= endDate;
-          const isEven = i % 2 === 0;
-          const isLastItem = i === mahaRows.length - 1;
+          const end = new Date(row.end).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
 
-          return (
-            <div key={row.key} className={`railway-block ${i === 0 ? "first-block" : ""}`}>
-              {/* Start Date Row - only for first item */}
-              {i === 0 && (
-                <div className="railway-date-row">
-                  <div className="railway-dot" />
-                  <div className={`railway-date ${isEven ? "left" : "right"}`}>
-                    {start}
-                  </div>
-                </div>
-              )}
+return (
+  <div key={row.key} className="railway-segment">
+    <div className="planet-header">
+      <span className="planet-name">{row.lord}</span>
+      <button
+        className="analysis-btn"
+        onClick={() => openAntarInlineFor(row.lord)}
+      >
+        Analysis
+      </button>
+    </div>
 
-              {/* Planet Row - always center */}
-              <div className="railway-planet-row">
-                <div className={`railway-planet`}>
-                  {row.lord}
-                </div>
-              </div>
+    <div className="segment-row">
+      <span className="date-label">{start}</span>
 
-              {/* End Date Row - alternating right/left */}
-              <div className="railway-date-row">
-                <div className={`railway-dot ${isCurrent ? "current" : ""}`} />
-                <div className={`railway-date ${isEven ? "right" : "left"}`}>
-                  {end}
-                </div>
-              </div>
-            </div>
-          );
+      <div className="segment-bar">
+        <div className="dot start-dot"></div>
+        <div className="bar-line"></div>
+        <div className="dot end-dot"></div>
+      </div>
+
+      <span className="date-label">{end}</span>
+    </div>
+
+    {/* === INLINE ANTAR PERIODS === */}
+    {openAntarFor === row.lord && (
+      <div className="antar-inline-box">
+        {antarLoadingFor === row.lord ? (
+          <div className="antar-loading">Loading…</div>
+        ) : antarRows[0]?.error ? (
+          <div className="antar-error">{antarRows[0].error}</div>
+        ) : (
+          <table className="antar-table">
+            <thead>
+              <tr>
+                <th>Antar Lord</th>
+                <th>Start</th>
+                <th>End</th>
+              </tr>
+            </thead>
+            <tbody>
+              {antarRows.map((ad, i) => (
+                <tr key={i}>
+                  <td>{ad.lord}</td>
+                  <td>
+                    {new Date(ad.start).toLocaleDateString("en-GB", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </td>
+                  <td>
+                    {new Date(ad.end).toLocaleDateString("en-GB", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    )}
+  </div>
+);
         })}
       </div>
     </div>
-  ) : (
-    <div className="empty-state">
-      No Maha Dasha data. Submit the form above.
-    </div>
-  )}
+  </>
+) : (
+  <div className="empty-state">No Maha Dasha data. Submit the form above.</div>
+)}
 </div>
 
           </div>
