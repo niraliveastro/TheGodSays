@@ -1042,3 +1042,27 @@
   padding: 4px 0;
   color: #333;
 }
+.history-row-text .address {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;  /* Show only 1 line */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.history-row-text .address.show-full {
+  -webkit-line-clamp: unset;  /* Show full address */
+  white-space: normal;
+}
+.show-more-btn {
+  background: transparent;
+  border: none;
+  color: #ca8a04;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+}
+.show-more-btn:hover {
+  color: #7a5c14;
+}

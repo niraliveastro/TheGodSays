@@ -50,6 +50,15 @@ export default function PredictionsPage() {
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
+  const [isAddressExpanded, setIsAddressExpanded] = useState({});
+
+const toggleAddressVisibility = (id) => {
+  setIsAddressExpanded((prevState) => ({
+    ...prevState,
+    [id]: !prevState[id], // Toggle visibility for specific address
+  }));
+};
+
 
   const getHistory = () => {
     try {
@@ -654,262 +663,282 @@ async function openAntarInlineFor(mahaLord) {
         <h1 className="title">Cosmic Insights</h1>
       </header>
 
-<div className="container mx-auto px-4 py-8">
-  {error && (
-    <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
-      <span>Warning</span> {error}
-    </div>
-  )}
-
-  {/* === Birth form + History side-by-side === */}
-  <div className="birth-history-layout">
-    {/* ==== FORM ==== */}
-    <form
-      ref={formRef}
-      onSubmit={onSubmit}
-      className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
-    >
-      <div className="form-header">
-        <div className="form-header-icon">
-          <Moon className="w-6 h-6 text-gold" />
-        </div>
-        <div className="form-header-text">
-          <h3 className="form-title">Birth Details</h3>
-          <p className="form-subtitle">Enter your cosmic coordinates</p>
-        </div>
-      </div>
-{/* ---- Birth Details Section ---- */}
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-  {/* Full Name */}
-  <div>
-    <label className="form-field-label flex items-center gap-2 mb-2">
-      <Sparkles className="w-5 h-5 text-gold" />
-      Full Name
-    </label>
-    <input
-      type="text"
-      value={fullName}
-      onChange={(e) => setFullName(e.target.value)}
-      placeholder="Enter your full name"
-      className="form-field-input"
-      required
-    />
-    <p className="form-field-helper">Your full name as per records</p>
-  </div>
-
-  {/* Date of Birth */}
-  <div>
-    <label className="form-field-label flex items-center gap-2 mb-2">
-      <Calendar className="w-5 h-5 text-gold" />
-      Date of Birth
-    </label>
-    <input
-      type="date"
-      value={dob}
-      onChange={(e) => setDob(e.target.value)}
-      className="form-field-input"
-      required
-    />
-    <p className="form-field-helper">Format: YYYY-MM-DD</p>
-  </div>
-
-  {/* Time of Birth */}
-  <div>
-    <label className="form-field-label flex items-center gap-2">
-      <Clock className="w-5 h-5 text-gold" />
-      Time
-    </label>
-    <input
-      type="time"
-      value={tob}
-      onChange={(e) => setTob(e.target.value)}
-      step="60"
-      className="form-field-input"
-      required
-    />
-    <p className="form-field-helper">24-hour format</p>
-  </div>
-
-{/* Place + Get Predictions + Reset all in one row */}
-<div className="md:col-span-3">
-  <div className="place-row">
-    {/* Place of Birth */}
-    <div className="flex-1 place-wrapper">
-      <label className="form-field-label flex items-center gap-2 mb-2">
-        <MapPin className="w-5 h-5 text-gold" />
-        Place of Birth
-      </label>
-
-<div className="relative">
-<div className="place-input-wrapper">
-  
-  <input
-    placeholder="City, Country"
-    value={place}
-    onChange={(e) => {
-      const q = e.target.value;
-      setPlace(q);
-      setSelectedCoords(null);
-      fetchSuggestions(q);
-    }}
-    className="form-field-input place-input"
-    autoComplete="off"
-    required
-  />
-
-  <button
-    type="button"
-    onClick={useMyLocation}
-    disabled={locating}
-    className="place-btn"
-  >
-    {locating ? (
-      <Loader2 className="w-4 h-4 animate-spin" />
-    ) : (
-      <MapPin className="w-4 h-4" />
-    )}
-  </button>
-</div>
-
-
-        {suggestions.length > 0 && (
-          <div className="suggest-list">
-            {suggestions.map((s, i) => (
-              <div
-                key={i}
-                className="suggest-item"
-                onClick={() => {
-                  setPlace(s.label);
-                  setSelectedCoords(s);
-                  setSuggestions([]);
-                }}
-              >
-                {s.label}
-              </div>
-            ))}
+      <div className="container mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+            <span>Warning</span> {error}
           </div>
         )}
-      </div>
 
-      {/* helper, absolutely positioned -> doesn't affect column height */}
-      <p className="form-field-helper place-helper">e.g., Mumbai, India</p>
-    </div>
+        {/* === Birth form + History side-by-side === */}
+        <div className="birth-history-layout">
+          {/* ==== FORM ==== */}
+          <form
+            ref={formRef}
+            onSubmit={onSubmit}
+            className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
+          >
+            <div className="form-header">
+              <div className="form-header-icon">
+                <Moon className="w-6 h-6 text-gold" />
+              </div>
+              <div className="form-header-text">
+                <h3 className="form-title">Birth Details</h3>
+                <p className="form-subtitle">Enter your cosmic coordinates</p>
+              </div>
+            </div>
+            {/* ---- Birth Details Section ---- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+              {/* Full Name */}
+              <div>
+                <label className="form-field-label flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-gold" />
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">
+                  Your full name as per records
+                </p>
+              </div>
 
-    {/* Get Predictions button */}
-    <div className="w-full md:w-48">
-      <button
-        type="submit"
-        disabled={submitting}
-        className="btn btn-primary w-full h-[52px]"
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            Calculating…
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Get Predictions
-          </>
-        )}
-      </button>
-    </div>
+              {/* Date of Birth */}
+              <div>
+                <label className="form-field-label flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-gold" />
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">Format: YYYY-MM-DD</p>
+              </div>
 
-    {/* Reset button */}
-    <div className="w-full md:w-32">
-      <button
-        type="reset"
-        onClick={() => {
-          setFullName("");
-          setDob("");
-          setTob("");
-          setPlace("");
-          setResult(null);
-          setError("");
-          setSelectedMaha(null);
-        }}
-        className="btn btn-ghost w-full h-[52px] px-4"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-</div>
+              {/* Time of Birth */}
+              <div>
+                <label className="form-field-label flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-gold" />
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={tob}
+                  onChange={(e) => setTob(e.target.value)}
+                  step="60"
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">24-hour format</p>
+              </div>
 
-</div>
+              {/* Place + Get Predictions + Reset all in one row */}
+              <div className="md:col-span-3">
+                <div className="place-row">
+                  {/* Place of Birth */}
+                  <div className="flex-1 place-wrapper">
+                    <label className="form-field-label flex items-center gap-2 mb-2">
+                      <MapPin className="w-5 h-5 text-gold" />
+                      Place of Birth
+                    </label>
 
+                    <div className="relative">
+                      <div className="place-input-wrapper">
+                        <input
+                          placeholder="City, Country"
+                          value={place}
+                          onChange={(e) => {
+                            const q = e.target.value;
+                            setPlace(q);
+                            setSelectedCoords(null);
+                            fetchSuggestions(q);
+                          }}
+                          className="form-field-input place-input"
+                          autoComplete="off"
+                          required
+                        />
 
-    </form>
+                        <button
+                          type="button"
+                          onClick={useMyLocation}
+                          disabled={locating}
+                          className="place-btn"
+                        >
+                          {locating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <MapPin className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
 
-    {/* Prediction History to the RIGHT of the form */}
-    <section
-      className="results-section history-side"
-      style={{ marginTop: 0 }}
-    >
-      <div className="card" ref={historyCardRef}>
-        <div className="results-header">
-          <Sparkles style={{ color: "#ca8a04" }} />
-          <h3 className="results-title flex items-center gap-2">
-            Prediction History
-          </h3>
+                      {suggestions.length > 0 && (
+                        <div className="suggest-list">
+                          {suggestions.map((s, i) => (
+                            <div
+                              key={i}
+                              className="suggest-item"
+                              onClick={() => {
+                                setPlace(s.label);
+                                setSelectedCoords(s);
+                                setSuggestions([]);
+                              }}
+                            >
+                              {s.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-          {history.length > 0 && (
-            <button
-              onClick={clearHistory}
-              className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
-            >
-              <RotateCcw className="w-4 h-4" /> Clear
-            </button>
-          )}
+                    {/* helper, absolutely positioned -> doesn't affect column height */}
+                    <p className="form-field-helper place-helper">
+                      e.g., Mumbai, India
+                    </p>
+                  </div>
+
+                  {/* Get Predictions button */}
+                  <div className="w-full md:w-48">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="btn btn-primary w-full h-[52px]"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Calculating…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Get Predictions
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Reset button */}
+                  <div className="w-full md:w-32">
+                    <button
+                      type="reset"
+                      onClick={() => {
+                        setFullName("");
+                        setDob("");
+                        setTob("");
+                        setPlace("");
+                        setResult(null);
+                        setError("");
+                        setSelectedMaha(null);
+                      }}
+                      className="btn btn-ghost w-full h-[52px] px-4"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          {/* Prediction History to the RIGHT of the form */}
+          <section
+            className="results-section history-side"
+            style={{ marginTop: 0 }}
+          >
+            <div className="card" ref={historyCardRef}>
+              <div className="results-header">
+                <Sparkles style={{ color: "#ca8a04" }} />
+                <h3 className="results-title flex items-center gap-2">
+                  Prediction History
+                </h3>
+
+                {history.length > 0 && (
+                  <button
+                    onClick={clearHistory}
+                    className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Clear
+                  </button>
+                )}
+              </div>
+
+              {history.length === 0 ? (
+                <div className="empty-state">No prediction history yet.</div>
+              ) : (
+                <div className="history-list">
+                  {history.map((item) => (
+                    <div
+                      key={item.id}
+                      className="history-card-row"
+                      onClick={() => loadFromHistory(item)}
+                    >
+                      <div className="history-row-text">
+                        <div className="h-name">{item.fullName}</div>
+                        <div className="h-date">{item.dob}</div>
+                        <div className="h-time">{item.tob}</div>
+
+                        {/* Address */}
+                        <div className="h-place">
+                          <div
+                            className={`address ${
+                              isAddressExpanded[item.id] ? "show-full" : ""
+                            }`}
+                            title={item.place}
+                          >
+                            {item.place}
+                          </div>
+                          {item.place.length > 50 && ( // Only show "..." for long addresses
+                            <button
+                              className="show-more-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering row click
+                                toggleAddressVisibility(item.id);
+                              }}
+                            >
+                              {isAddressExpanded[item.id] ? "Show Less" : "..."}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="history-actions">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadFromHistory(item);
+                          }}
+                          className="use-btn"
+                        >
+                          Use
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteHistoryItem(item.id);
+                          }}
+                          className="delete-btn"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-
-        {history.length === 0 ? (
-          <div className="empty-state">No prediction history yet.</div>
-        ) : (
-<div className="history-list">
-  {history.map((item) => (
-    <div
-      key={item.id}
-      className="history-card-row"
-      onClick={() => loadFromHistory(item)}
-    >
-      <div className="history-row-text">
-        <div className="h-name">{item.fullName}</div>
-        <div className="h-date">{item.dob}</div>
-        <div className="h-time">{item.tob}</div>
-        <div className="h-place">{item.place}</div>
-      </div>
-
-<div className="history-actions">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      loadFromHistory(item);
-    }}
-    className="use-btn"
-  >
-    Use
-  </button>
-
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      deleteHistoryItem(item.id);
-    }}
-    className="delete-btn"
-  >
-    <Trash2 className="w-4 h-4" />
-  </button>
-</div>
-    </div>
-  ))}
-</div>
-
-        )}
-      </div>
-    </section>
-  </div>
 
         {/* Results */}
         {result && (
@@ -1145,107 +1174,120 @@ async function openAntarInlineFor(mahaLord) {
                 </div>
               </div>
             )}
-{/* Vimshottari Maha Dasha */}
-<div className="card">
-  <div className="results-header">
-    <Moon style={{ color: "#4f46e5" }} />
-    <h3 className="results-title">Vimshottari Maha Dasha</h3>
-  </div>
+            {/* Vimshottari Maha Dasha */}
+            <div className="card">
+              <div className="results-header">
+                <Moon style={{ color: "#4f46e5" }} />
+                <h3 className="results-title">Vimshottari Maha Dasha</h3>
+              </div>
 
-{mahaRows.length > 0 ? (
-  <>
-    {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
-    <div className="horizontal-railway-container">
-      <div className="horizontal-railway-track">
-        {mahaRows.map((row) => {
-          const start = new Date(row.start).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
+              {mahaRows.length > 0 ? (
+                <>
+                  {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
+                  <div className="horizontal-railway-container">
+                    <div className="horizontal-railway-track">
+                      {mahaRows.map((row) => {
+                        const start = new Date(row.start).toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        );
 
-          const end = new Date(row.end).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
+                        const end = new Date(row.end).toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        );
 
-return (
-  <div key={row.key} className="railway-segment">
-    <div className="planet-header">
-      <span className="planet-name">{row.lord}</span>
-      <button
-        className="analysis-btn"
-        onClick={() => openAntarInlineFor(row.lord)}
-      >
-        Analysis
-      </button>
-    </div>
+                        return (
+                          <div key={row.key} className="railway-segment">
+                            <div className="planet-header">
+                              <span className="planet-name">{row.lord}</span>
+                              <button
+                                className="analysis-btn"
+                                onClick={() => openAntarInlineFor(row.lord)}
+                              >
+                                Analysis
+                              </button>
+                            </div>
 
-    <div className="segment-row">
-      <span className="date-label">{start}</span>
+                            <div className="segment-row">
+                              <span className="date-label">{start}</span>
 
-      <div className="segment-bar">
-        <div className="dot start-dot"></div>
-        <div className="bar-line"></div>
-        <div className="dot end-dot"></div>
-      </div>
+                              <div className="segment-bar">
+                                <div className="dot start-dot"></div>
+                                <div className="bar-line"></div>
+                                <div className="dot end-dot"></div>
+                              </div>
 
-      <span className="date-label">{end}</span>
-    </div>
+                              <span className="date-label">{end}</span>
+                            </div>
 
-    {/* === INLINE ANTAR PERIODS === */}
-    {openAntarFor === row.lord && (
-      <div className="antar-inline-box">
-        {antarLoadingFor === row.lord ? (
-          <div className="antar-loading">Loading…</div>
-        ) : antarRows[0]?.error ? (
-          <div className="antar-error">{antarRows[0].error}</div>
-        ) : (
-          <table className="antar-table">
-            <thead>
-              <tr>
-                <th>Antar Lord</th>
-                <th>Start</th>
-                <th>End</th>
-              </tr>
-            </thead>
-            <tbody>
-              {antarRows.map((ad, i) => (
-                <tr key={i}>
-                  <td>{ad.lord}</td>
-                  <td>
-                    {new Date(ad.start).toLocaleDateString("en-GB", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td>
-                    {new Date(ad.end).toLocaleDateString("en-GB", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    )}
-  </div>
-);
-        })}
-      </div>
-    </div>
-  </>
-) : (
-  <div className="empty-state">No Maha Dasha data. Submit the form above.</div>
-)}
-</div>
-
+                            {/* === INLINE ANTAR PERIODS === */}
+                            {openAntarFor === row.lord && (
+                              <div className="antar-inline-box">
+                                {antarLoadingFor === row.lord ? (
+                                  <div className="antar-loading">Loading…</div>
+                                ) : antarRows[0]?.error ? (
+                                  <div className="antar-error">
+                                    {antarRows[0].error}
+                                  </div>
+                                ) : (
+                                  <table className="antar-table">
+                                    <thead>
+                                      <tr>
+                                        <th>Antar Lord</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {antarRows.map((ad, i) => (
+                                        <tr key={i}>
+                                          <td>{ad.lord}</td>
+                                          <td>
+                                            {new Date(
+                                              ad.start
+                                            ).toLocaleDateString("en-GB", {
+                                              year: "numeric",
+                                              month: "short",
+                                              day: "numeric",
+                                            })}
+                                          </td>
+                                          <td>
+                                            {new Date(
+                                              ad.end
+                                            ).toLocaleDateString("en-GB", {
+                                              year: "numeric",
+                                              month: "short",
+                                              day: "numeric",
+                                            })}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="empty-state">
+                  No Maha Dasha data. Submit the form above.
+                </div>
+              )}
+            </div>
           </div>
         )}
         {/* Antar Dasha Modal */}
