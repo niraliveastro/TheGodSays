@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
+import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProfilePage() {
@@ -962,11 +963,10 @@ export default function ProfilePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Place of Birth
             </label>
-            <input
-              type="text"
+            <PlaceAutocomplete
               value={familyForm.place}
-              onChange={(e) =>
-                setFamilyForm({ ...familyForm, place: e.target.value })
+              onChange={(value) =>
+                setFamilyForm({ ...familyForm, place: value })
               }
               placeholder="City, Country"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
