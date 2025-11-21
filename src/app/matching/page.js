@@ -1067,6 +1067,9 @@ export default function MatchingPage() {
           gap: 1.5rem;
           grid-template-columns: 1fr;
         }
+        .form-field input::placeholder {
+          font-style: normal;
+        }
         @media (min-width: 768px) {
           .form-grid {
             grid-template-columns: 1fr 1fr;
