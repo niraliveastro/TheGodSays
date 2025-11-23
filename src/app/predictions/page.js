@@ -29,7 +29,6 @@ export default function PredictionsPage() {
   const suggestTimer = useRef(null);
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
-
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -53,6 +52,8 @@ export default function PredictionsPage() {
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const addressRefs = useRef({});
+  const [isOverflowing, setIsOverflowing] = useState({});
 
 const toggleAddressVisibility = (id) => {
   setIsAddressExpanded((prevState) => ({
@@ -109,6 +110,23 @@ const toggleAddressVisibility = (id) => {
     setHistory(getHistory());
   }, []);
 
+  useEffect(() => {
+    const check = () => {
+      const map = {};
+      history.forEach((item) => {
+        const el = addressRefs.current[item.id];
+        if (el) {
+          map[item.id] = el.scrollHeight > el.clientHeight;
+        }
+      });
+      setIsOverflowing(map);
+    };
+
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [history]);
+
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
   const setPlacementsRef = (el) => {
@@ -126,6 +144,7 @@ const toggleAddressVisibility = (id) => {
     }
   }, [result]); // placements depends on result; recompute happens right after
   
+
   useEffect(() => {
   if (!formRef.current || !historyCardRef.current) return;
 
@@ -900,6 +919,7 @@ async function openAntarInlineFor(mahaLord) {
                         {/* Address */}
                         <div className="h-place">
                           <div
+                            ref={(el) => (addressRefs.current[item.id] = el)}
                             className={`address ${
                               isAddressExpanded[item.id] ? "show-full" : ""
                             }`}
@@ -907,11 +927,12 @@ async function openAntarInlineFor(mahaLord) {
                           >
                             {item.place}
                           </div>
-                          {item.place.length > 50 && ( // Only show "..." for long addresses
+
+                          {isOverflowing[item.id] && (
                             <button
                               className="show-more-btn"
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent triggering row click
+                                e.stopPropagation();
                                 toggleAddressVisibility(item.id);
                               }}
                             >
@@ -1447,7 +1468,12 @@ async function openAntarInlineFor(mahaLord) {
         <div style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
           <Chat pageTitle="Predictions" />
           <div className="mt-4 flex justify-end">
-            <button className="btn btn-primary" onClick={() => setChatOpen(false)}>Close</button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setChatOpen(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       </Modal>

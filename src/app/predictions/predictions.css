@@ -42,6 +42,12 @@
 }
 
 /* Planet table specific styles */
+.planet-table {
+  width: 100%;
+  table-layout: fixed; 
+  border-collapse: collapse;
+}
+
 .planet-table td:nth-child(7) .retro-badge {
   color: #6b7280;
 }
