@@ -22,6 +22,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
+import Chat from "@/components/Chat";
+import Modal from "@/components/Modal";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -1037,8 +1039,19 @@ export default function MatchingPage() {
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
+  const [chatOpen, setChatOpen] = useState(false);
   return (
     <>
+      {/* Chat Modal Trigger and Modal */}
+      <Modal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        title="AI Assistant"
+        position="top-right"
+        topOffset={100}
+      >
+        <Chat pageTitle="Matching" />
+      </Modal>
       {/* ---------------------------------------------------------- */}
       {/* INTERNAL CSS (styled-jsx) – completely self-contained */}
       {/* ---------------------------------------------------------- */}
@@ -1439,7 +1452,7 @@ export default function MatchingPage() {
           className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-6xl mx-auto"
         >
           {/* Header */}
-          <div className="form-header">
+          <div className="form-header" style={{ position: "relative" }}>
             <div className="form-header-icon">
               <Moon className="w-6 h-6 text-gold" />
             </div>
@@ -1449,6 +1462,39 @@ export default function MatchingPage() {
                 Enter birth details for both individuals
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              className="btn btn-primary"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 12,
+                background: "linear-gradient(135deg,#d4af37,#b8972e)",
+                color: "white",
+                border: "1px solid rgba(212,175,55,0.5)",
+                boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
+                transition: "transform .2s ease, box-shadow .2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 12px 28px rgba(212,175,55,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 24px rgba(212,175,55,0.25)";
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Chat with AI
+            </button>
           </div>
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">

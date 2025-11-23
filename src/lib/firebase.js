@@ -17,14 +17,13 @@ const firebaseConfig = {
 let app = null
 // Initialize Firebase for both client and server
 if (typeof window !== 'undefined' || typeof process !== 'undefined') {
-  // Warn if required config is missing
-  if (!firebaseConfig.apiKey) {
-    // eslint-disable-next-line no-console
-    console.warn('Missing NEXT_PUBLIC_FIREBASE_API_KEY. Firebase auth will not work until you set it.')
+  // Check if required config is present
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.warn('Missing Firebase configuration. Please set NEXT_PUBLIC_FIREBASE_* environment variables.')
+  } else {
+    // Avoid re-initializing during HMR
+    app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
   }
-
-  // Avoid re-initializing during HMR
-  app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
 }
 
 // Export auth and db for both client and server

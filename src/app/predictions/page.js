@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useRef, useState, useEffect } from "react";
 import Modal from "@/components/Modal";
+import Chat from "@/components/Chat";
 import {
   Sparkles,
   Calendar,
@@ -51,6 +52,7 @@ export default function PredictionsPage() {
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
+  const [chatOpen, setChatOpen] = useState(false);
 
 const toggleAddressVisibility = (id) => {
   setIsAddressExpanded((prevState) => ({
@@ -678,14 +680,22 @@ async function openAntarInlineFor(mahaLord) {
             onSubmit={onSubmit}
             className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
           >
-            <div className="form-header">
+            <div className="form-header" style={{ alignItems: "center" }}>
               <div className="form-header-icon">
                 <Moon className="w-6 h-6 text-gold" />
               </div>
-              <div className="form-header-text">
+              <div className="form-header-text" style={{ flex: 1 }}>
                 <h3 className="form-title">Birth Details</h3>
                 <p className="form-subtitle">Enter your cosmic coordinates</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setChatOpen(true)}
+                className="btn btn-primary"
+                style={{ height: 40 }}
+              >
+                Chat with AI
+              </button>
             </div>
             {/* ---- Birth Details Section ---- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -1428,6 +1438,19 @@ async function openAntarInlineFor(mahaLord) {
           )}
         </Modal>
       </div>
+      <Modal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        title="Chat with AI"
+        position="center"
+      >
+        <div style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
+          <Chat pageTitle="Predictions" />
+          <div className="mt-4 flex justify-end">
+            <button className="btn btn-primary" onClick={() => setChatOpen(false)}>Close</button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

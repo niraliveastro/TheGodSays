@@ -392,6 +392,7 @@ a:hover {
 .modal-body {
   padding: 24px;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
