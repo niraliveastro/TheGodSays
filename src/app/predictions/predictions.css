@@ -990,6 +990,29 @@
   color: #b8972e;
   transform: scale(1.05);
 }
+/* === TRUE DOWNWARD STAIRCASE TIMELINE === */
+
+.horizontal-railway-track {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  min-width: max-content;
+  align-items: flex-start; /* allow different vertical levels */
+  position: relative;
+  padding-bottom: 2rem;
+}
+
+.railway-segment {
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+
+  /* each next segment goes down */
+  margin-top: calc(var(--i) * 70px);  /* 👈 staircase step height */
+}
 
 .current-tag {
   font-family: "Inter", sans-serif;

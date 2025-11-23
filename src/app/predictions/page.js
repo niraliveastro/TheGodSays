@@ -1217,7 +1217,7 @@ async function openAntarInlineFor(mahaLord) {
                   {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
                   <div className="horizontal-railway-container">
                     <div className="horizontal-railway-track">
-                      {mahaRows.map((row) => {
+                      {mahaRows.map((row, i) => {
                         const start = new Date(row.start).toLocaleDateString(
                           "en-GB",
                           {
@@ -1237,7 +1237,11 @@ async function openAntarInlineFor(mahaLord) {
                         );
 
                         return (
-                          <div key={row.key} className="railway-segment">
+                          <div
+                            key={row.key}
+                            className="railway-segment"
+                            style={{ "--i": i }}
+                          >
                             <div className="planet-header">
                               <span className="planet-name">{row.lord}</span>
                               <button
