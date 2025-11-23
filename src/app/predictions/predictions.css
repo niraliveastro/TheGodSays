@@ -748,6 +748,18 @@
   gap: 2rem;
 }
 
+.birth-history-layout form {
+  font-size: 0.85em; 
+}
+
+/* Inputs inherit font-size, but enforce for safety */
+.birth-history-layout form .form-field-input,
+.birth-history-layout form input,
+.birth-history-layout form select,
+.birth-history-layout form textarea {
+  font-size: 1em; 
+}
+
 /* On large screens: form 60%, history 40% */
 @media (min-width: 1024px) {
   .birth-history-layout {
