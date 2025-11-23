@@ -29,7 +29,6 @@ export default function PredictionsPage() {
   const suggestTimer = useRef(null);
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
-
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -53,6 +52,8 @@ export default function PredictionsPage() {
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const addressRefs = useRef({});
+  const [isOverflowing, setIsOverflowing] = useState({});
 
 const toggleAddressVisibility = (id) => {
   setIsAddressExpanded((prevState) => ({
@@ -109,6 +110,23 @@ const toggleAddressVisibility = (id) => {
     setHistory(getHistory());
   }, []);
 
+  useEffect(() => {
+    const check = () => {
+      const map = {};
+      history.forEach((item) => {
+        const el = addressRefs.current[item.id];
+        if (el) {
+          map[item.id] = el.scrollHeight > el.clientHeight;
+        }
+      });
+      setIsOverflowing(map);
+    };
+
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [history]);
+
   // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
   const setPlacementsRef = (el) => {
@@ -126,6 +144,7 @@ const toggleAddressVisibility = (id) => {
     }
   }, [result]); // placements depends on result; recompute happens right after
   
+
   useEffect(() => {
   if (!formRef.current || !historyCardRef.current) return;
 
@@ -900,6 +919,7 @@ async function openAntarInlineFor(mahaLord) {
                         {/* Address */}
                         <div className="h-place">
                           <div
+                            ref={(el) => (addressRefs.current[item.id] = el)}
                             className={`address ${
                               isAddressExpanded[item.id] ? "show-full" : ""
                             }`}
@@ -907,11 +927,12 @@ async function openAntarInlineFor(mahaLord) {
                           >
                             {item.place}
                           </div>
-                          {item.place.length > 50 && ( // Only show "..." for long addresses
+
+                          {isOverflowing[item.id] && (
                             <button
                               className="show-more-btn"
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent triggering row click
+                                e.stopPropagation();
                                 toggleAddressVisibility(item.id);
                               }}
                             >
@@ -1106,32 +1127,41 @@ async function openAntarInlineFor(mahaLord) {
                                 row.kashta_percent
                             )
                           : null;
-                        const planetDisplay = p.retro
-                          ? `${pname} (Retro)`
-                          : pname;
-                        const degreesDisplay =
-                          [
-                            typeof p.fullDegree === "number"
-                              ? `Full: ${p.fullDegree.toFixed(2)}°`
-                              : null,
-                            typeof p.normDegree === "number"
-                              ? `Norm: ${p.normDegree.toFixed(2)}°`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" ") || "—";
+                        const fullDeg =
+                          typeof p.fullDegree === "number"
+                            ? `Full: ${p.fullDegree.toFixed(2)}°`
+                            : null;
+
+                        const normDeg =
+                          typeof p.normDegree === "number"
+                            ? `Norm: ${p.normDegree.toFixed(2)}°`
+                            : null;            
                         const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                           p.pada ?? "—"
                         })`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {planetDisplay}
+                              <div className="planet-cell">
+                                <span className="planet-main">{pname}</span>
+                                {p.retro && (
+                                  <span className="planet-retro">(Retro)</span>
+                                )}
+                              </div>
                             </td>
                             <td>{p.currentSign || "—"}</td>
                             <td>{p.house ?? "—"}</td>
                             <td>{nakshatraDisplay}</td>
-                            <td>{degreesDisplay}</td>
+                            <td className="degrees-cell">
+                              {fullDeg || normDeg ? (
+                                <div className="degrees-stack">
+                                  {fullDeg && <div>{fullDeg}</div>}
+                                  {normDeg && <div>{normDeg}</div>}
+                                </div>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
                             <td>
                               {pctVal != null ? `${pctVal.toFixed(1)}%` : "—"}
                             </td>
@@ -1196,7 +1226,7 @@ async function openAntarInlineFor(mahaLord) {
                   {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
                   <div className="horizontal-railway-container">
                     <div className="horizontal-railway-track">
-                      {mahaRows.map((row) => {
+                      {mahaRows.map((row, i) => {
                         const start = new Date(row.start).toLocaleDateString(
                           "en-GB",
                           {
@@ -1216,7 +1246,11 @@ async function openAntarInlineFor(mahaLord) {
                         );
 
                         return (
-                          <div key={row.key} className="railway-segment">
+                          <div
+                            key={row.key}
+                            className="railway-segment"
+                            style={{ "--i": i }}
+                          >
                             <div className="planet-header">
                               <span className="planet-name">{row.lord}</span>
                               <button
@@ -1447,7 +1481,12 @@ async function openAntarInlineFor(mahaLord) {
         <div style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
           <Chat pageTitle="Predictions" />
           <div className="mt-4 flex justify-end">
-            <button className="btn btn-primary" onClick={() => setChatOpen(false)}>Close</button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setChatOpen(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       </Modal>
