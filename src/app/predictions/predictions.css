@@ -41,12 +41,142 @@
   height: 36px;
 }
 
-/* Planet table specific styles */
+/* ===============================
+   RESPONSIVE PLANET TABLE FIX
+   =============================== */
+
+/* Wrapper scrolls horizontally instead of crushing columns */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0.75rem;
+  scrollbar-color: rgba(200, 160, 40, 0.4) transparent;
+}
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;  
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(200, 160, 40, 0.4);
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Let columns size naturally, not fixed */
 .planet-table {
   width: 100%;
-  table-layout: fixed; 
   border-collapse: collapse;
+
+  table-layout: auto !important; /* ✅ override fixed */
+  min-width: 880px;             /* ✅ force scroll instead of squish */
 }
+
+/* Prevent ugly wrapping that breaks layout */
+.planet-table th,
+.planet-table td {
+  white-space: nowrap;  /* keeps columns clean */
+  vertical-align: middle;
+}
+/* 1st column: Planet */
+.planet-table th:nth-child(1),
+.planet-table td:nth-child(1) {
+  width: 110px;       
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2nd column: Sign */
+.planet-table th:nth-child(2),
+.planet-table td:nth-child(2) {
+  width: 140px;          
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Allow ONLY Nakshatra column to wrap (long text) */
+.planet-table th:nth-child(4),
+.planet-table td:nth-child(4) {
+  white-space: normal;
+  min-width: 160px;
+}
+
+/* Give more breathing space to heavy columns */
+.planet-table th:nth-child(5),
+.planet-table td:nth-child(5),
+.planet-table th:nth-child(7),
+.planet-table td:nth-child(7),
+.planet-table th:nth-child(8),
+.planet-table td:nth-child(8) {
+  min-width: 120px;
+}
+
+/* Medium screens: reduce padding only (NO font changes) */
+@media (max-width: 900px) {
+  .planet-table th,
+  .planet-table td {
+    padding: 0.6rem 0.6rem;
+  }
+}
+
+/* Small screens: keep readable width, allow scroll */
+@media (max-width: 640px) {
+  .planet-table {
+    min-width: 760px;
+  }
+
+  .planet-table th,
+  .planet-table td {
+    padding: 0.5rem 0.5rem;
+  }
+}
+
+/* Helps flex parents not break horizontal scroll */
+.card {
+  min-width: 0;
+}
+/* Degrees column: allow stacked lines */
+.planet-table th:nth-child(5),
+.planet-table td:nth-child(5) {
+  white-space: normal !important;
+  min-width: 140px;
+}
+
+.degrees-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.2; 
+}
+/* Planet cell layout: name top, retro below */
+.planet-cell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;  /* just spacing, not font */
+}
+
+/* keep normal text */
+.planet-main {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* retro on its own line, never ellipsized */
+.planet-retro {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 
 .planet-table td:nth-child(7) .retro-badge {
   color: #6b7280;

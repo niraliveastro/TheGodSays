@@ -1127,32 +1127,41 @@ async function openAntarInlineFor(mahaLord) {
                                 row.kashta_percent
                             )
                           : null;
-                        const planetDisplay = p.retro
-                          ? `${pname} (Retro)`
-                          : pname;
-                        const degreesDisplay =
-                          [
-                            typeof p.fullDegree === "number"
-                              ? `Full: ${p.fullDegree.toFixed(2)}°`
-                              : null,
-                            typeof p.normDegree === "number"
-                              ? `Norm: ${p.normDegree.toFixed(2)}°`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" ") || "—";
+                        const fullDeg =
+                          typeof p.fullDegree === "number"
+                            ? `Full: ${p.fullDegree.toFixed(2)}°`
+                            : null;
+
+                        const normDeg =
+                          typeof p.normDegree === "number"
+                            ? `Norm: ${p.normDegree.toFixed(2)}°`
+                            : null;            
                         const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                           p.pada ?? "—"
                         })`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {planetDisplay}
+                              <div className="planet-cell">
+                                <span className="planet-main">{pname}</span>
+                                {p.retro && (
+                                  <span className="planet-retro">(Retro)</span>
+                                )}
+                              </div>
                             </td>
                             <td>{p.currentSign || "—"}</td>
                             <td>{p.house ?? "—"}</td>
                             <td>{nakshatraDisplay}</td>
-                            <td>{degreesDisplay}</td>
+                            <td className="degrees-cell">
+                              {fullDeg || normDeg ? (
+                                <div className="degrees-stack">
+                                  {fullDeg && <div>{fullDeg}</div>}
+                                  {normDeg && <div>{normDeg}</div>}
+                                </div>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
                             <td>
                               {pctVal != null ? `${pctVal.toFixed(1)}%` : "—"}
                             </td>
