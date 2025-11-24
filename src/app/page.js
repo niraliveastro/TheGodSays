@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import PanchangCard from "@/components/PanchangCard";
-import TimingsSection from "@/components/TimingsSection";
 import FestivalCard from "@/components/FestivalCard";
 import AstrologyOptionCard from "@/components/AstrologyOptionCard";
 import AstrologyForm from "@/components/AstrologyForm";
@@ -63,6 +62,11 @@ export default function Home() {
   const [astrologyResult, setAstrologyResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // New: top astrologers + testimonials
+  const [onlineAstrologers, setOnlineAstrologers] = useState([]);
+  const [featuredAstrologers, setFeaturedAstrologers] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
 
   const astrologyOptions = [
     {
@@ -129,6 +133,87 @@ export default function Home() {
       fetchRealPanchangData();
     }
   }, [selectedDate, userLocation]);
+
+  // fetch top astrologers + testimonials (light placeholder logic)
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadAstrologers() {
+      try {
+        // If you have a real endpoint, replace these calls.
+        // Using fallback mock arrays so the UI shows data immediately.
+        const res =
+          (astrologyAPI.getTopAstrologers &&
+            (await astrologyAPI.getTopAstrologers())) ||
+          null;
+
+        // If API returned structured data, pick online + featured
+        if (res && res.online && mounted) {
+          setOnlineAstrologers(res.online.slice(0, 10));
+          setFeaturedAstrologers(res.featured ? res.featured.slice(0, 10) : []);
+        } else if (mounted) {
+          // fallback mock list
+          const fallback = [
+            {
+              id: "a1",
+              name: "Pandit R. Sharma",
+              tags: ["Vedic", "Career"],
+              online: true,
+              isFeatured: true,
+              rating: 4.9,
+            },
+            {
+              id: "a2",
+              name: "Smt. L. Gupta",
+              tags: ["Love & Relationships", "KP"],
+              online: false,
+              isFeatured: true,
+              rating: 4.8,
+            },
+            {
+              id: "a3",
+              name: "Astro Rishi",
+              tags: ["Nadi", "Health"],
+              online: true,
+              isFeatured: false,
+              rating: 4.7,
+            },
+            // ...more
+          ];
+          setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 10));
+          setFeaturedAstrologers(
+            fallback.filter((a) => a.isFeatured).slice(0, 10)
+          );
+        }
+      } catch (e) {
+        console.error("Error loading astrologers:", e);
+      }
+    }
+
+    async function loadTestimonials() {
+      // lightweight mock testimonials; replace with real API later
+      const mockT = [
+        {
+          id: "t1",
+          name: "Anita K.",
+          quote: "AI predictions were eerily accurate — 60s and meaningful.",
+        },
+        {
+          id: "t2",
+          name: "Rohit P.",
+          quote: "Spoke to an astrologer instantly and got real guidance.",
+        },
+      ];
+      if (mounted) setTestimonials(mockT);
+    }
+
+    loadAstrologers();
+    loadTestimonials();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Helper function to format time strings
   const formatTime = (timeString) => {
@@ -518,7 +603,8 @@ export default function Home() {
         });
       }
 
-      // Populate Auspicious/Inauspicious times into UI state
+      // Populate Auspicious/Inauspicious times into UI state (we WILL NOT show them on home — only Panchang page)
+      // but still collect them into updatedPanchangData so the Panchang page can read from cache/localStorage
       if (auspiciousData && auspiciousData.results) {
         const map = {
           "rahu-kalam": "rahukalam",
@@ -626,18 +712,7 @@ export default function Home() {
           updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
           updatedPanchangData.sunset !== mockPanchangData.sunset ||
           updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
-          updatedPanchangData.moonset !== mockPanchangData.moonset ||
-          updatedPanchangData.rahukalam !== mockPanchangData.rahukalam ||
-          updatedPanchangData.gulika !== mockPanchangData.gulika ||
-          updatedPanchangData.yamaganda !== mockPanchangData.yamaganda ||
-          updatedPanchangData.abhijitMuhurat !==
-            mockPanchangData.abhijitMuhurat ||
-          updatedPanchangData.brahmaMuhurat !==
-            mockPanchangData.brahmaMuhurat ||
-          updatedPanchangData.amritKaal !== mockPanchangData.amritKaal ||
-          updatedPanchangData.durMuhurat !== mockPanchangData.durMuhurat ||
-          updatedPanchangData.varjyam !== mockPanchangData.varjyam ||
-          updatedPanchangData.goodBadTimes !== mockPanchangData.goodBadTimes
+          updatedPanchangData.moonset !== mockPanchangData.moonset
       );
       const allFailed =
         panchangSettled.status === "rejected" &&
@@ -694,6 +769,8 @@ export default function Home() {
   };
 
   const handleFormSubmit = async (payload) => {
+    // This handler is reused by astrology form(s).
+    // For "AI Prediction" flow we redirect with query/prefill.
     setIsLoading(true);
     setError(null);
 
@@ -716,10 +793,10 @@ export default function Home() {
     setAstrologyResult(null);
     setError(null);
     setTimeout(() => {
-    document
-      .getElementById("astrology-options")
-      ?.scrollIntoView({ behavior: "smooth" });
-  }, 50);
+      document
+        .getElementById("astrology-options")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   const handleNewCalculation = () => {
@@ -727,6 +804,21 @@ export default function Home() {
     setError(null);
   };
 
+  // NEW: AI Prediction quick form submit (redirect with prefill)
+  const handleAIPredictionSubmit = (birthPayload) => {
+    // Build a query string with minimal, safe prefill params
+    // NOTE: don't include sensitive data in URL if you don't want it logged.
+    const qs = new URLSearchParams({
+      name: birthPayload.name || "",
+      date: birthPayload.date || "",
+      time: birthPayload.time || "",
+      place: birthPayload.place || "",
+    }).toString();
+    // Redirect to AI Prediction page (prefill handled there by reading query params or localStorage)
+    window.location.href = `/ai-prediction?${qs}`;
+  };
+
+  // Panchang items (keeps showing core tithi/nakshatra etc)
   const panchangItems = [
     { label: "Tithi", value: panchangData?.tithi || "Loading..." },
     { label: "Nakshatra", value: panchangData?.nakshatra || "Loading..." },
@@ -738,26 +830,8 @@ export default function Home() {
     { label: "Moonset", value: panchangData?.moonset || "Loading..." },
   ];
 
-  const inauspiciousTimings = [
-    { label: "Rahukalam", time: panchangData?.rahukalam || "Loading..." },
-    { label: "Gulika", time: panchangData?.gulika || "Loading..." },
-    { label: "Yamaganda", time: panchangData?.yamaganda || "Loading..." },
-    {
-      label: "Abhijit Muhurat",
-      time: panchangData?.abhijitMuhurat || "Loading...",
-    },
-    {
-      label: "Brahma Muhurat",
-      time: panchangData?.brahmaMuhurat || "Loading...",
-    },
-    { label: "Amrit Kaal", time: panchangData?.amritKaal || "Loading..." },
-    { label: "Dur Muhurat", time: panchangData?.durMuhurat || "Loading..." },
-    { label: "Varjyam", time: panchangData?.varjyam || "Loading..." },
-    {
-      label: "Good & Bad Times",
-      time: panchangData?.goodBadTimes || "Loading...",
-    },
-  ];
+  // HOME: we REMOVE the in-page Auspicious & Inauspicious timings section per your request.
+  // Instead, provide a short link/callout to full Panchang page where timings are shown.
 
   // Show form if option is selected
   if (selectedOption && !astrologyResult) {
@@ -833,66 +907,97 @@ export default function Home() {
                   <span>Trusted Vedic Astrology Platform</span>
                 </div>
 
+                {/* NEW: Updated headline per request */}
                 <h1 className="hero-main-title">
-                  Unlock Your <span className="hero-highlight">Cosmic</span>{" "}
-                  Destiny
+                  Don’t wait for life to break. Fix it with{" "}
+                  <span className="hero-highlight">AI-powered astrology.</span>
                 </h1>
 
+                {/* NEW: Refined subheading */}
                 <p className="hero-description">
-                  Discover personalized Vedic insights, daily Panchang, and
-                  auspicious timings powered by ancient wisdom and modern
-                  precision.
+                  Talk to famous astrologers <strong>or</strong> use our AI
+                  engine trained on NASA ephemeris data and insights from{" "}
+                  <strong>200,000+ real charts.</strong>
                 </p>
 
-                <div className="hero-features-inline">
-                  <div className="hero-pill">
-                    <Sun className="hero-pill-icon" />
-                    <span>Daily Panchang</span>
-                  </div>
-                  <div className="hero-pill">
-                    <Moon className="hero-pill-icon" />
-                    <span>Kundli Analysis</span>
-                  </div>
-                  <div className="hero-pill">
-                    <Star className="hero-pill-icon" />
-                    <span>Live Muhurat</span>
-                  </div>
-                </div>
-
-                <div className="hero-actions">
+                {/* NEW: Pill chips under subheading (Life Insights, Kundali Matching, Panchang Today) */}
+                <div className="hero-features-inline" style={{ marginTop: 8 }}>
                   <button
-                    onClick={() =>
+                    className="hero-pill"
+                    onClick={() => {
+                      // quick link to Life Insights (placeholder)
+                      window.location.href = "/life-insights";
+                    }}
+                  >
+                    Life Insights
+                  </button>
+                  <button
+                    className="hero-pill"
+                    onClick={() => {
+                      window.location.href = "/matching";
+                    }}
+                  >
+                    Kundali Matching
+                  </button>
+                  <button
+                    className="hero-pill"
+                    onClick={() => {
                       document
                         .getElementById("panchang-section")
-                        ?.scrollIntoView({ behavior: "smooth" })
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    Panchang Today
+                  </button>
+                </div>
+
+                {/* NEW: Primary CTAs (two main flows only) */}
+                <div className="hero-actions">
+                  {/* The two new primary CTAs requested */}
+                  <button
+                    onClick={() =>
+                      (window.location.href = "/talk-to-astrologer")
                     }
                     className="hero-btn hero-btn-primary"
                   >
-                    <Calendar className="hero-btn-icon" />
-                    View Today's Panchang
-                  </button>
-                  <button
-                    onClick={() =>
-                      document
-                        .getElementById("astrology-options")
-                        ?.scrollIntoView({ behavior: "smooth" })
-                    }
-                    className="hero-btn hero-btn-secondary"
-                  >
                     <Star className="hero-btn-icon" />
-                    Explore Tools
+                    Talk to an Astrologer
+                  </button>
+
+                  <button
+                    onClick={() => (window.location.href = "/ai-predictions")}
+                    className="hero-btn inline-flex items-center gap-2 px-4 py-3 rounded-md font-semibold shadow-sm
+             bg-transparent border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    type="button"
+                    style={{
+                      background: "transparent",
+                      border: "2px solid #a78bfa",
+                      color: "#5b21b6", // optional: make text match border
+                    }}
+                  >
+                    <Sparkles className="hero-btn-icon" />
+                    Get AI Predictions
                   </button>
                 </div>
 
-                <div className="hero-stats">
+                {/* Subtexts that sit directly below the primary CTAs */}
+                <div className="hero-cta-subtexts">
+                  <p className="cta-subtext">
+                    Instant 1:1 call or chat with a real expert.
+                  </p>
+                  <p className="cta-subtext">Precise insights in 60 seconds.</p>
+                </div>
+
+                {/* Social proof line (updated stats per design) */}
+                <div className="hero-stats" style={{ marginTop: 18 }}>
                   <div className="hero-stat">
                     <div className="hero-stat-number">50K+</div>
                     <div className="hero-stat-label">Daily Users</div>
                   </div>
                   <div className="hero-stat-divider"></div>
                   <div className="hero-stat">
-                    <div className="hero-stat-number">99.9%</div>
-                    <div className="hero-stat-label">Accuracy</div>
+                    <div className="hero-stat-number">98%</div>
+                    <div className="hero-stat-label">User Satisfaction</div>
                   </div>
                   <div className="hero-stat-divider"></div>
                   <div className="hero-stat">
@@ -957,89 +1062,104 @@ export default function Home() {
                       </svg>
                     </div>
                     <div className="zodiac-icon zodiac-icon-5">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <circle cx="12" cy="12" r="8" />
-                        <path d="M12 4v8l4 4" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <circle cx="12" cy="12" r="8" />{" "}
+                        <path d="M12 4v8l4 4" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-6">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M3 12h18 M8 6v12 M12 8v8 M16 10v4" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M3 12h18 M8 6v12 M12 8v8 M16 10v4" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-7">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M3 6h18 M5 6v8a6 6 0 006 6h2a6 6 0 006-6V6" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M3 6h18 M5 6v8a6 6 0 006 6h2a6 6 0 006-6V6" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-8">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M12 2L14 8L20 10L14 12L12 18L10 12L4 10L10 8L12 2Z" />
-                        <path d="M12 18v4" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M12 2L14 8L20 10L14 12L12 18L10 12L4 10L10 8L12 2Z" />{" "}
+                        <path d="M12 18v4" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-9">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M4 12L12 4L20 12 M12 4V20" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M4 12L12 4L20 12 M12 4V20" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-10">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M3 6h6a6 6 0 016 6v6a6 6 0 01-6 6H3" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M3 6h6a6 6 0 016 6v6a6 6 0 01-6 6H3" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-11">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M4 8h16 M4 16h16 M8 4v16 M16 4v16" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M4 8h16 M4 16h16 M8 4v16 M16 4v16" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                     <div className="zodiac-icon zodiac-icon-12">
+                      {" "}
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />
-                      </svg>
-                    </div>
+                        {" "}
+                        <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />{" "}
+                      </svg>{" "}
+                    </div>{" "}
                   </div>
-
                   <div className="hero-info-card hero-info-card-1">
                     <Clock className="hero-info-icon" />
                     <div className="hero-info-content">
@@ -1072,6 +1192,457 @@ export default function Home() {
             </div>
           </header>
           {/* ───────────────────────────── END HERO SECTION ───────────────────────────── */}
+
+          {/* ====== AI PREDICTION FORM SECTION (NEW) ====== */}
+          <section id="ai-prediction-section" className="card mt-12">
+            <div className="form-header p-5">
+              <div className="form-header-icon">
+                <Star />
+              </div>
+              <div className="form-header-text">
+                <h3 className="form-title">
+                  Let AI read your stars in 60 seconds.
+                </h3>
+                <p className="form-subtitle">
+                  Fill in your birth details once. We’ll prefill them on the AI
+                  predictions page and save time for all future readings.
+                </p>
+              </div>
+            </div>
+
+            <div className="form-grid-2col ai-form-grid p-10">
+              {/* Minimal quick form — only name/date/time/place to prefill AI page */}
+              <div className="form-field">
+                <label htmlFor="ai-name">Name</label>
+                <input
+                  id="ai-name"
+                  className="form-field-input"
+                  placeholder="Your name"
+                  aria-label="Your name"
+                />
+                <small className="form-field-helper">
+                  Optional — we’ll personalise results.
+                </small>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="ai-dob">Date of Birth</label>
+                <input
+                  id="ai-dob"
+                  type="date"
+                  className="form-field-input"
+                  aria-label="Date of birth"
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="ai-tob">Time of Birth</label>
+                <input
+                  id="ai-tob"
+                  type="time"
+                  className="form-field-input"
+                  aria-label="Time of birth"
+                />
+                <small className="form-field-helper">
+                  If unknown, pick approx. — AI will adapt.
+                </small>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="ai-place">Place</label>
+                <input
+                  id="ai-place"
+                  className="form-field-input"
+                  placeholder="City, Country"
+                  aria-label="Place of birth"
+                />
+              </div>
+            </div>
+
+            <div className="form-actions ai-form-actions">
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  // hint to user
+                  document.getElementById("ai-name")?.focus();
+                }}
+                aria-label="Auto-fill hint"
+                type="button"
+              >
+                Already used this before? We'll auto-fill what we remember.
+              </button>
+
+              <div className="cta-block">
+                <button
+                  id="ai-predict-btn"
+                  className="btn btn-primary "
+                  onClick={() => {
+                    const payload = {
+                      name: document.getElementById("ai-name")?.value || "",
+                      date: document.getElementById("ai-dob")?.value || "",
+                      time: document.getElementById("ai-tob")?.value || "",
+                      place: document.getElementById("ai-place")?.value || "",
+                    };
+                    handleAIPredictionSubmit(payload);
+                  }}
+                  aria-label="Get AI predictions"
+                  type="button"
+                  style={{ color: "var(-color--gold" }}
+                >
+                  Get AI Predictions — 60s
+                </button>
+                <div className="cta-note">
+                  Predictions under <strong>60 seconds</strong>. We’ll prefill
+                  fields next time.
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ====== Top Astrologers Online / Featured (NEW) ====== */}
+
+          <section className="card mt-12 astrologers-section">
+            <div className="astrologers-header p-5 mx-auto flex flex-col items-center text-center gap-4 sm:flex-col sm:text-center">
+              <div className="astrologers-header-text">
+                <h1 className="astrologers-title font-semibold">
+                  Talk to the right astrologer — right now.
+                </h1>
+                <p className="astrologers-sub">
+                  Handpicked Vedic, KP, and Nadi astrologers. Verified
+                  experience. Real humans, not random “babas”.
+                </p>
+              </div>
+
+              <div className="astrologers-actions flex flex-col sm:flex-row gap-3 sm:gap-4 w-full justify-center">
+                <button
+                  className="btn btn-ghost w-full sm:w-auto text-center"
+                  onClick={() =>
+                    (window.location.href = "/talk-to-astrologers")
+                  }
+                >
+                  View All Astrologers →
+                </button>
+
+                <button
+                  className="btn btn-ghost w-full sm:w-auto text-center"
+                  onClick={() => (window.location.href = "/auth/astrologer")}
+                >
+                  Become an Astrologer →
+                </button>
+              </div>
+            </div>
+
+            <div
+              className="astrologer-grid"
+              role="list"
+              aria-label="Top astrologers list"
+            >
+              {(onlineAstrologers.length > 0
+                ? onlineAstrologers
+                : featuredAstrologers
+              ).map((ast) => (
+                <article
+                  key={ast.id}
+                  className="astrologer-card card"
+                  role="listitem"
+                >
+                  <header className="astrologer-card-top">
+                    <div className="astrologer-meta">
+                      <h4 className="astrologer-name">{ast.name}</h4>
+                      <div className="astrologer-tags">
+                        {ast.tags?.slice(0, 2).map((t, idx) => (
+                          <span key={idx} className="astrologer-tag">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="astrologer-badge">
+                      {ast.online ? (
+                        <div className="liveBadge">
+                          <span className="pulseDot" aria-hidden="true" />{" "}
+                          Online
+                        </div>
+                      ) : ast.isFeatured ? (
+                        <div className="featured-badge">Featured</div>
+                      ) : null}
+                    </div>
+                  </header>
+
+                  <div className="astrologer-card-body">
+                    <div className="astrologer-rating">
+                      ⭐ {ast.rating ?? 4.7}
+                    </div>
+
+                    <div className="astrologer-ctas">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          (window.location.href = `/astrologer/${ast.id}`)
+                        }
+                        aria-label={`View profile of ${ast.name}`}
+                        type="button"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() =>
+                          (window.location.href = `/chat/${ast.id}`)
+                        }
+                        aria-label={`Chat with ${ast.name}`}
+                        type="button"
+                      >
+                        Chat
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* ====== Partner Matching / Loyalty Detector (UPGRADED) ====== */}
+          <section className="mt-12">
+            <div
+              role="region"
+              aria-labelledby="loyalty-title"
+              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center"
+            >
+              {/* Left: icon + copy */}
+              <div className="flex items-start gap-4 md:gap-6 flex-1">
+                <div
+                  className="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-tr from-pink-100 to-rose-50 ring-1 ring-rose-100"
+                  aria-hidden="true"
+                >
+                  {/* simple decorative icon */}
+                  <svg
+                    className="w-8 h-8 text-rose-600"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M12 21s-7-4.35-9-7.5A6 6 0 0112 3a6 6 0 019 10.5C19 16.65 12 21 12 21z" />
+                  </svg>
+                </div>
+
+                <div>
+                  <h3
+                    id="loyalty-title"
+                    className="text-lg md:text-xl font-semibold text-slate-800"
+                  >
+                    Loyalty Detector — quick compatibility check
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    See how your relationship might progress using our
+                    Ashtakoot-based compatibility model. Designed for dating,
+                    serious relationships, and marriage.
+                  </p>
+
+                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold">
+                        ✓
+                      </span>
+                      Quick results — minimal details required
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold">
+                        ★
+                      </span>
+                      Learn the top Koot strengths & weaknesses
+                    </li>
+                  </ul>
+
+                  <p className="mt-3 text-xs text-slate-500">
+                    Already have details saved? The matching page will prefill
+                    them for you.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/matching")}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
+                  aria-label="Check compatibility now — go to matching page"
+                  style={{ backgroundColor: "var(--color-gold)" }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
+                  </svg>
+                  Check Compatibility Now
+                </button>
+              </div>
+            </div>
+          </section>
+
+{/* ====== Testimonials (NEW) (Tailwind) ====== */}
+<section
+  className="mt-12 flex flex-col items-center text-center px-4"
+  aria-labelledby="testimonials-heading"
+>
+  <h3 id="testimonials-heading" className="text-3xl font-semibold">
+    What people say
+  </h3>
+
+  {/* wrapper: horizontal snap on mobile, grid on md+ */}
+  <div className="w-full max-w-6xl mt-6">
+    {/* Mobile: horizontal snap list */}
+    <div
+      role="list"
+      aria-label="User testimonials"
+      className="
+        block md:hidden
+        overflow-x-auto
+        snap-x snap-mandatory
+        -mx-4 px-4
+      "
+    >
+      <div className="flex gap-4 items-start">
+        {testimonials && testimonials.length > 0 ? (
+          testimonials.map((t) => {
+            const initials = (t.name || "U")
+              .split(" ")
+              .slice(0, 2)
+              .map((s) => s[0])
+              .join("")
+              .toUpperCase();
+
+            return (
+              <article
+                key={t.id}
+                role="listitem"
+                className="
+                  snap-center flex-shrink-0
+                  w-[88vw] max-w-xs
+                  card bg-white p-5 rounded-xl shadow-sm mx-auto
+                "
+              >
+                <header className="flex items-center gap-3 justify-center">
+                  <div
+                    aria-hidden="true"
+                    className="
+                      flex items-center justify-center
+                      w-12 h-12 rounded-full font-bold text-white text-base
+                    "
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                    }}
+                  >
+                    {initials}
+                  </div>
+
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {t.name}
+                    </div>
+                    {t.meta && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {t.meta}
+                      </div>
+                    )}
+                  </div>
+                </header>
+
+                <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                  “{t.quote}”
+                </blockquote>
+
+                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                  <div>Verified user</div>
+                  {t.rating && (
+                    <div className="font-medium text-yellow-500">★ {t.rating}</div>
+                  )}
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
+            No testimonials yet.
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* md+ grid view (2 cols on md, 3 on lg) */}
+    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+      {testimonials && testimonials.length > 0 ? (
+        testimonials.map((t) => {
+          const initials = (t.name || "U")
+            .split(" ")
+            .slice(0, 2)
+            .map((s) => s[0])
+            .join("")
+            .toUpperCase();
+
+          return (
+            <article
+              key={t.id}
+              role="listitem"
+              className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
+            >
+              <header className="flex items-center gap-3 justify-start">
+                <div
+                  aria-hidden="true"
+                  className="
+                    flex items-center justify-center
+                    w-12 h-12 rounded-full font-bold text-white text-base
+                  "
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                  }}
+                >
+                  {initials}
+                </div>
+
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {t.name}
+                  </div>
+                  {t.meta && (
+                    <div className="text-xs text-gray-500 truncate">{t.meta}</div>
+                  )}
+                </div>
+              </header>
+
+              <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                “{t.quote}”
+              </blockquote>
+
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                <div>Verified user</div>
+                {t.rating && (
+                  <div className="font-medium text-yellow-500">★ {t.rating}</div>
+                )}
+              </div>
+            </article>
+          );
+        })
+      ) : (
+        <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
+          No testimonials yet.
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
 
           {/* Main content sections wrapper */}
           <div className="content-sections-wrapper">
@@ -1133,34 +1704,51 @@ export default function Home() {
               </div>
             )}
 
-            {/* PANCHANG GRID */}
+            {/* PANCHANG GRID (Auspicious/Inauspicious moved to full Panchang page) */}
             <section className="panchang-section" id="panchang-section">
-              <div className="panchang-header-wrapper">
-                <div className="panchang-date-badge">
-                  <Calendar />
-                  <span>Vedic Calendar</span>
-                </div>
-                <h2 className="section-header">
-                  <Calendar className="section-icon section-icon-blue" />
-                  {selectedDate === new Date().toISOString().split("T")[0]
-                    ? "Today's Panchang"
-                    : `Panchang • ${new Date(selectedDate).toLocaleDateString(
-                        "en-US",
-                        {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        }
-                      )}`}
-                </h2>
-                <p className="panchang-description">
-                  Essential celestial elements for auspicious planning
-                </p>
+              <div className="panchang-date-badge flex items-center justify-center gap-2 mx-auto text-center">
+                <Calendar />
+                <span>Vedic Calendar</span>
               </div>
 
+              <h2
+                className="
+      section-header
+      flex flex-col items-center justify-center
+      text-center mx-auto mt-4
+    "
+              >
+                <Calendar className="section-icon section-icon-blue mb-1" />
+                {selectedDate === new Date().toISOString().split("T")[0]
+                  ? "Today's Panchang"
+                  : `Panchang • ${new Date(selectedDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }
+                    )}`}
+              </h2>
+
+              <p
+                className="
+      panchang-description 
+      text-center 
+      max-w-2xl 
+      mx-auto 
+      mt-2 
+      text-gray-600
+    "
+              >
+                Essential celestial elements for auspicious planning.
+                <br />
+
+              </p>
+
               <div className="panchang-grid-container">
-                <div className="panchang-grid">
+                <div className="panchang-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   {panchangItems.map((item, i) => (
                     <PanchangCard
                       key={i}
@@ -1170,66 +1758,33 @@ export default function Home() {
                   ))}
                 </div>
               </div>
+
+              {/* If festivals exist show highlighted festival */}
+              {panchangData?.festivals?.length > 0 && (
+                <section
+                  className="festival-section-enhanced"
+                  style={{ marginTop: 18 }}
+                >
+                  <div className="festival-content-grid">
+                    <div className="festival-left">
+                      <div className="festival-badge">
+                        <Sparkles className="festival-badge-icon" />
+                        <span>Special Day</span>
+                      </div>
+                      <h2 className="festival-main-title">Today's Festival</h2>
+                      <p className="festival-description">
+                        Celebrating auspicious moments and sacred traditions.
+                      </p>
+                    </div>
+                    <div className="festival-right">
+                      <div className="festival-card-wrapper">
+                        <FestivalCard festival={panchangData?.festivals[0]} />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
             </section>
-
-            {/* AUSPICIOUS / INAUSPICIOUS TIMINGS */}
-            <section className="timings-section">
-              <div className="timings-section-container">
-                <div className="timings-header-wrapper">
-                  <div className="timings-header-left">
-                    <div className="timings-header-badge">
-                      <AlertCircle />
-                      <span>Important Timings</span>
-                    </div>
-                    <h2 className="section-header">
-                      <Clock className="section-icon section-icon-red" />
-                      Auspicious & Inauspicious Periods
-                    </h2>
-                    <p className="timings-description">
-                      Plan your day with precise Vedic time calculations
-                    </p>
-                  </div>
-
-                  <div className="timings-header-right">
-                    <div className="timings-legend">
-                      <span className="timings-legend-dot auspicious"></span>
-                      <span>Auspicious</span>
-                    </div>
-                    <div className="timings-legend">
-                      <span className="timings-legend-dot inauspicious"></span>
-                      <span>Inauspicious</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="timings-content">
-                  <TimingsSection timings={inauspiciousTimings} />
-                </div>
-              </div>
-            </section>
-
-            {/* FESTIVAL HIGHLIGHT */}
-            {panchangData?.festivals.length > 0 && (
-              <section className="festival-section-enhanced">
-                <div className="festival-content-grid">
-                  <div className="festival-left">
-                    <div className="festival-badge">
-                      <Sparkles className="festival-badge-icon" />
-                      <span>Special Day</span>
-                    </div>
-                    <h2 className="festival-main-title">Today's Festival</h2>
-                    <p className="festival-description">
-                      Celebrating auspicious moments and sacred traditions
-                    </p>
-                  </div>
-                  <div className="festival-right">
-                    <div className="festival-card-wrapper">
-                      <FestivalCard festival={panchangData?.festivals[0]} />
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
 
             {/* ASTROLOGY OPTIONS GRID */}
             <section className="astrology-section" id="astrology-options">
@@ -1239,7 +1794,8 @@ export default function Home() {
                   Explore Vedic Calculations
                 </h2>
                 <p className="astrology-subtitle">
-                  Tap any tool to compute detailed astrological insights
+                  For serious astrology lovers. Deep-dive into the math behind
+                  your chart.
                 </p>
               </div>
               <div className="astrology-grid">
