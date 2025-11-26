@@ -2,7 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Wallet as WalletIcon, Plus, History, CreditCard, Loader2 } from 'lucide-react'
+import {
+  Wallet as WalletIcon,
+  Plus,
+  History,
+  CreditCard,
+  Loader2,
+  TicketPercent,
+} from 'lucide-react'
+
+// NEW PROJECT (coupons)
+import { couponDb, couponFunctions } from '@/lib/firebaseCoupons'
+import { doc, getDoc } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
 
 export default function Wallet() {
   const { user, getUserId, userProfile } = useAuth()
@@ -12,13 +24,23 @@ export default function Wallet() {
   const [showRechargeForm, setShowRechargeForm] = useState(false)
   const [rechargeLoading, setRechargeLoading] = useState(false)
 
+  // Coupon states (NEW)
+  const [couponBalance, setCouponBalance] = useState(0)
+  const [showCouponField, setShowCouponField] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [couponStatus, setCouponStatus] = useState(null) // {type,msg}
+  const [couponLoading, setCouponLoading] = useState(false)
+
   const userId = getUserId()
 
   /* ------------------------------------------------------------------ */
-  /*  FETCH WALLET DATA                                                */
+  /*  FETCH WALLET DATA (OLD PROJECT via API)                            */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    if (userId) fetchWalletData()
+    if (userId) {
+      fetchWalletData()
+      fetchCouponBalance()
+    }
   }, [userId])
 
   const fetchWalletData = async () => {
@@ -40,7 +62,82 @@ export default function Wallet() {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  RECHARGE HANDLER (Razorpay) – FIXED: NO TYPES                    */
+  /*  FETCH COUPON BALANCE (NEW PROJECT Firestore)                       */
+  /* ------------------------------------------------------------------ */
+  const fetchCouponBalance = async () => {
+    try {
+      const ref = doc(couponDb, 'wallets', userId)
+      const snap = await getDoc(ref)
+      if (snap.exists()) {
+        const data = snap.data()
+        setCouponBalance(data.couponBalance || 0)
+      } else {
+        setCouponBalance(0)
+      }
+    } catch (e) {
+      console.error('Error fetching coupon balance:', e)
+      setCouponBalance(0)
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  REDEEM COUPON (NEW PROJECT callable function)                      */
+  /* ------------------------------------------------------------------ */
+const handleRedeemCoupon = async () => {
+  if (!couponCode.trim()) {
+    setCouponStatus({ type: "error", msg: "Please enter a coupon code" });
+    return;
+  }
+
+  setCouponLoading(true);
+  setCouponStatus({ type: "loading", msg: "Redeeming…" });
+
+  try {
+    // get OLD-project ID token
+    const idToken = await user.getIdToken();
+
+    const res = await fetch("/api/coupons/redeem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ code: couponCode }),
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      setCouponStatus({
+        type: "success",
+        msg: `Coupon applied! +₹${data.amount}`,
+      });
+      setCouponCode("");
+      await fetchCouponBalance();
+    } else {
+      const map = {
+        NOT_FOUND: "Invalid coupon",
+        INACTIVE: "Coupon inactive",
+        EXPIRED: "Coupon expired",
+        MAXED_OUT: "Coupon limit reached",
+        USED_BY_YOU: "You already used this coupon",
+        BAD_COUPON_AMOUNT: "Coupon not configured correctly",
+      };
+      setCouponStatus({
+        type: "error",
+        msg: map[data.reason] || "Coupon invalid",
+      });
+    }
+  } catch (e) {
+    setCouponStatus({ type: "error", msg: e.message });
+  } finally {
+    setCouponLoading(false);
+  }
+};
+
+
+  /* ------------------------------------------------------------------ */
+  /*  RECHARGE HANDLER (Razorpay) – OLD PROJECT                          */
   /* ------------------------------------------------------------------ */
   const handleRecharge = async () => {
     if (!rechargeAmount || Number(rechargeAmount) <= 0) {
@@ -50,7 +147,6 @@ export default function Wallet() {
 
     setRechargeLoading(true)
     try {
-      // 1. Create order
       const orderRes = await fetch('/api/payments/wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +162,6 @@ export default function Wallet() {
         return
       }
 
-      // 2. Get Razorpay key
       const keyRes = await fetch('/api/payments/config')
       const keyData = await keyRes.json()
       if (!keyData.success) {
@@ -74,7 +169,6 @@ export default function Wallet() {
         return
       }
 
-      // 3. Open Razorpay – FIXED HERE
       const options = {
         key: keyData.key,
         amount: orderData.order.amount,
@@ -83,7 +177,6 @@ export default function Wallet() {
         description: 'Wallet Recharge',
         order_id: orderData.order.id,
         handler: async (resp) => {
-          // 4. Verify payment
           const verifyRes = await fetch('/api/payments/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -108,10 +201,10 @@ export default function Wallet() {
           email: user?.email ?? '',
           name: user?.displayName ?? '',
         },
-        theme: { color: '#d4af37' }, // gold
+        theme: { color: '#d4af37' },
       }
 
-      const rzp = new (window).Razorpay(options)
+      const rzp = new window.Razorpay(options)
       rzp.open()
     } catch (e) {
       alert(`Error: ${e.message}`)
@@ -198,19 +291,99 @@ export default function Wallet() {
           </div>
         </div>
 
-        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '1rem' }}>
+        {/* Real Wallet Balance (old project) */}
+        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '0.5rem' }}>
           {formatCurrency(wallet.balance)}
         </div>
 
-        <button
-          onClick={() => setShowRechargeForm(!showRechargeForm)}
-          className="btn btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-        >
-          <Plus style={{ width: '1rem', height: '1rem' }} />
-          <span>Add Money</span>
-        </button>
+        {/* Coupon Balance (new project) */}
+        <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#4338ca', marginBottom: '1rem' }}>
+          Coupon Balance: {formatCurrency(couponBalance)}
+        </div>
+
+        {/* Actions row */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowRechargeForm(!showRechargeForm)}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <Plus style={{ width: '1rem', height: '1rem' }} />
+            <span>Add Money</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowCouponField(!showCouponField)
+              setCouponStatus(null)
+            }}
+            className="btn btn-outline"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <TicketPercent style={{ width: '1rem', height: '1rem' }} />
+            <span>Redeem Coupon</span>
+          </button>
+        </div>
       </div>
+
+      {/* ---------- COUPON REDEEM FORM ---------- */}
+      {showCouponField && (
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
+            Redeem Coupon
+          </h3>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="Enter coupon code"
+              style={{
+                flex: 1,
+                minWidth: '200px',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid var(--color-gray-300)',
+                borderRadius: '0.5rem',
+                background: 'var(--color-white)',
+                fontSize: '1rem',
+                textTransform: 'uppercase',
+              }}
+            />
+
+            <button
+              onClick={handleRedeemCoupon}
+              disabled={couponLoading}
+              className="btn btn-primary"
+              style={{ minWidth: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              {couponLoading ? (
+                <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
+              ) : (
+                <TicketPercent style={{ width: '1rem', height: '1rem' }} />
+              )}
+              <span>{couponLoading ? 'Redeeming…' : 'Redeem'}</span>
+            </button>
+          </div>
+
+          {couponStatus && (
+            <p
+              style={{
+                marginTop: '0.75rem',
+                fontWeight: 500,
+                color:
+                  couponStatus.type === 'success'
+                    ? '#16a34a'
+                    : couponStatus.type === 'loading'
+                    ? '#6b7280'
+                    : '#dc2626',
+              }}
+            >
+              {couponStatus.msg}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ---------- RECHARGE FORM ---------- */}
       {showRechargeForm && (
