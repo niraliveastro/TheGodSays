@@ -52,6 +52,7 @@ export default function PredictionsPage() {
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
 
@@ -707,14 +708,6 @@ async function openAntarInlineFor(mahaLord) {
                 <h3 className="form-title">Birth Details</h3>
                 <p className="form-subtitle">Enter your cosmic coordinates</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setChatOpen(true)}
-                className="btn btn-primary"
-                style={{ height: 40 }}
-              >
-                Chat with AI
-              </button>
             </div>
             {/* ---- Birth Details Section ---- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -1056,6 +1049,73 @@ async function openAntarInlineFor(mahaLord) {
                 </p>
               </div>
             ) : null}
+
+            {/* AI Astrologer CTA / Chat Window */}
+            <div className="card mt-8 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section">
+              {!chatOpen ? (
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Cpu className="w-6 h-6 text-gold" />
+                      <span className="uppercase tracking-[0.2em] text-[11px] text-gold/80">
+                        AI Astrologer
+                      </span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-semibold text-white mb-1">
+                      Get a Personalized AI Reading
+                    </h3>
+                    <p className="text-sm text-indigo-100/90 max-w-xl">
+                      Let our AI Astrologer interpret your birth chart, dashas and planetary strengths
+                      in simple, practical language tailored just for you.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setChatOpen(true)}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
+                    >
+                      <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      <Sparkles className="w-4 h-4 mr-2 text-amber-800" />
+                      Talk to AI Astrologer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="chat-window-container">
+                  <div className="chat-header">
+                    <div className="flex items-center gap-3">
+                      <Cpu className="w-5 h-5 text-gold" />
+                      <span className="text-white font-semibold">AI Astrologer Chat</span>
+                    </div>
+                    <button
+                      onClick={() => setChatOpen(false)}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="chat-content">
+                    <Chat
+                      pageTitle="Predictions"
+                      initialData={
+                        result
+                          ? {
+                              birth: result.input,
+                              coords: result.coords,
+                              planets: result.planets,
+                              vimsottari: result.vimsottari,
+                              maha: result.maha,
+                              shadbala: result.shadbala,
+                            }
+                          : null
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Planet Placements */}
             {placements.length > 0 ? (
               <div
@@ -1472,24 +1532,37 @@ async function openAntarInlineFor(mahaLord) {
           )}
         </Modal>
       </div>
-      <Modal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        title="Chat with AI"
-        position="center"
-      >
-        <div style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
-          <Chat pageTitle="Predictions" />
-          <div className="mt-4 flex justify-end">
-            <button
-              className="btn btn-primary"
-              onClick={() => setChatOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+      
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-md p-4 z-50">
+        <button 
+          className="btn btn-primary" 
+          onClick={() => {
+            const isFormFilled = fullName && dob && tob && place;
+            if (!isFormFilled) {
+              setError("Please complete all birth details before using the chat.");
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+            if (!result) {
+              document.querySelector('form').requestSubmit();
+              setTimeout(() => {
+                setChatOpen(true);
+                setTimeout(() => {
+                  document.querySelector('.ai-astrologer-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }, 2000);
+            } else {
+              setChatOpen(true);
+              setTimeout(() => {
+                document.querySelector('.ai-astrologer-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }
+          }}
+        >
+          Chat with AI
+        </button>
+      </div>
     </div>
   );
 }

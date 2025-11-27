@@ -1237,3 +1237,56 @@
 .show-more-btn:hover {
   color: #7a5c14;
 }
+
+/* AI Astrologer Chat Window Animations */
+.ai-astrologer-section {
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-window-container {
+  animation: slideInFromRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: right center;
+}
+
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(20%) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.chat-content {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* Smooth fade out animation for CTA content */
+.ai-astrologer-section > div:first-child {
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.ai-astrologer-section.chat-opening > div:first-child {
+  opacity: 0;
+  transform: translateX(-50px) scale(0.95);
+}
