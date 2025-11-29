@@ -446,6 +446,7 @@
 /* Apply only inside the PredictionsPage form */
 .card .form-field-label {
   margin-bottom: 0.5rem; /* same as Tailwind mb-2 */
+  color: var(--color-gold);
 }
 
 .strength-progress {
@@ -512,6 +513,14 @@
   padding-top: 0; /* avoid extra internal height */
   padding-bottom: 0;
 }
+.btn-gold {
+  background: linear-gradient(to right, #fcd34d, #fbbf24, #f59e0b) !important;
+  border-color: rgba(251, 191, 36, 0.7) !important;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.55) !important;
+}
+.btn-gold:hover {
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.8) !important;
+}
 
 /* === Force exact equal height for all form inputs and buttons === */
 .card .form-field-input,
@@ -521,6 +530,7 @@
 .card input[type="number"],
 .card select,
 .card textarea {
+  border-radius: .75rem !important;
   height: 52px !important;
   line-height: 1 !important;
   padding-top: 0 !important;
@@ -538,6 +548,7 @@
   line-height: 52px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  border-radius: .75rem !important;
 }
 
 /* === Fix: Align 'Get Predictions' button perfectly with inputs === */
@@ -864,23 +875,6 @@
   padding: 1rem 0;
 }
 
-.horizontal-railway-track {
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  padding-bottom: 1rem;
-  min-width: max-content;
-}
-
-/* Each equal-width segment */
-.railway-segment {
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 /* Planet name + Analysis button */
 .planet-header {
   display: flex;
@@ -928,7 +922,7 @@
   display: flex;
   align-items: center;
   gap: 0;
-  width: 140px;
+  width: 160px;
   position: relative;
 }
 
@@ -1133,10 +1127,15 @@
   transform: scale(1.05);
 }
 /* === TRUE DOWNWARD STAIRCASE TIMELINE === */
-
+.start-dot,
+.end-dot {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
 .horizontal-railway-track {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 2rem;
   min-width: max-content;
   align-items: flex-start; /* allow different vertical levels */
@@ -1148,12 +1147,32 @@
   min-width: 280px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   position: relative;
+  margin-top: 0 !important;
+  transform: translateX(calc(var(--i) * 145px));
+}
 
-  /* each next segment goes down */
-  margin-top: calc(var(--i) * 70px);  /* 👈 staircase step height */
+.segment-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* ⭐ centers Planet Name + Analysis */
+  gap: 0.5rem;
+}
+@media (max-width: 640px) {
+  .railway-segment {
+    transform: none !important;   /* remove horizontal shift */
+    align-items: center !important;
+  }
+
+  .segment-row {
+    justify-content: center;
+  }
+
+  .horizontal-railway-track {
+    align-items: center !important; /* center everything on mobile */
+  }
 }
 
 .current-tag {
@@ -1289,4 +1308,13 @@
 .ai-astrologer-section.chat-opening > div:first-child {
   opacity: 0;
   transform: translateX(-50px) scale(0.95);
+}
+
+select.form-field-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg fill='none' stroke='%236b7280' stroke-width='2' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1rem;
+  padding-right: 2.2rem !important;
 }
