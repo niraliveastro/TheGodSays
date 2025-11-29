@@ -4,6 +4,7 @@ import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
 import {
   Sparkles,
+  History,
   Calendar,
   Clock,
   MapPin,
@@ -717,7 +718,7 @@ async function openAntarInlineFor(mahaLord) {
               {/* Full Name */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
-                  Full Name
+                  Name
                 </label>
                 <input
                   type="text"
@@ -750,7 +751,7 @@ async function openAntarInlineFor(mahaLord) {
               {/* Time of Birth */}
               <div>
                 <label className="form-field-label flex items-center gap-2">
-                  Time
+                  Time of Birth
                 </label>
                 <input
                   type="time"
@@ -859,7 +860,7 @@ async function openAntarInlineFor(mahaLord) {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="btn btn-primary w-full h-[52px]"
+                      className="btn btn-primary btn-gold w-full h-[52px]"
                     >
                       {submitting ? (
                         <>
@@ -883,7 +884,7 @@ async function openAntarInlineFor(mahaLord) {
           >
             <div className="card" ref={historyCardRef}>
               <div className="results-header">
-                <Sparkles style={{ color: "#ca8a04" }} />
+                <History style={{ color: "#ca8a04" }} />
                 <h3 className="results-title flex items-center gap-2">
                   Prediction History
                 </h3>
@@ -1085,7 +1086,7 @@ async function openAntarInlineFor(mahaLord) {
                       onClick={() => setChatOpen(true)}
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
-                      <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
                       Talk to AI Astrologer
                     </button>
                   </div>
@@ -1288,7 +1289,7 @@ async function openAntarInlineFor(mahaLord) {
             {/* Vimshottari Maha Dasha */}
             <div className="card">
               <div className="results-header">
-                <Moon style={{ color: "#4f46e5" }} />
+                <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Vimshottari Maha Dasha</h3>
               </div>
 
@@ -1547,9 +1548,9 @@ async function openAntarInlineFor(mahaLord) {
       </div>
 
       {/* Floating Chat Button */}
-      <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-md p-4 z-50">
+      <div className="fixed bottom-4 right-4 p-4 z-50">
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-gold"
           onClick={() => {
             const isFormFilled = fullName && dob && tob && place;
             if (!isFormFilled) {

@@ -513,6 +513,14 @@
   padding-top: 0; /* avoid extra internal height */
   padding-bottom: 0;
 }
+.btn-gold {
+  background: linear-gradient(to right, #fcd34d, #fbbf24, #f59e0b) !important;
+  border-color: rgba(251, 191, 36, 0.7) !important;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.55) !important;
+}
+.btn-gold:hover {
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.8) !important;
+}
 
 /* === Force exact equal height for all form inputs and buttons === */
 .card .form-field-input,
@@ -522,6 +530,7 @@
 .card input[type="number"],
 .card select,
 .card textarea {
+  border-radius: .75rem !important;
   height: 52px !important;
   line-height: 1 !important;
   padding-top: 0 !important;
@@ -539,6 +548,7 @@
   line-height: 52px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  border-radius: .75rem !important;
 }
 
 /* === Fix: Align 'Get Predictions' button perfectly with inputs === */
