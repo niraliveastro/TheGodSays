@@ -1306,7 +1306,7 @@ export default function Home() {
                   type="button"
                   style={{ color: "var(-color--gold" }}
                 >
-                  Get AI Predictions — 60s
+                  Get AI Predictions
                 </button>
                 <div className="cta-note">
                   Predictions under <strong>60 seconds</strong>. We’ll prefill

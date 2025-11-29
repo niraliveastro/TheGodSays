@@ -55,6 +55,7 @@ export default function PredictionsPage() {
   const [showNotification, setShowNotification] = useState(false);
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
+  const [gender, setGender] = useState("");
 
 const toggleAddressVisibility = (id) => {
   setIsAddressExpanded((prevState) => ({
@@ -97,6 +98,7 @@ const toggleAddressVisibility = (id) => {
   };
   const loadFromHistory = (item) => {
   setFullName(item.fullName || "");
+  setGender(item.gender || ""); 
   setDob(item.dob || "");
   setTob(item.tob || "");
   setPlace(item.place || "");
@@ -289,6 +291,7 @@ const toggleAddressVisibility = (id) => {
       saveToHistory({
         id: Date.now(),
         fullName,
+        gender,
         dob,
         tob: fmtTime(H, Min, S),
         place: geo.label || place,
@@ -714,7 +717,6 @@ async function openAntarInlineFor(mahaLord) {
               {/* Full Name */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
-                  <Sparkles className="w-5 h-5 text-gold" />
                   Full Name
                 </label>
                 <input
@@ -733,7 +735,6 @@ async function openAntarInlineFor(mahaLord) {
               {/* Date of Birth */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5 text-gold" />
                   Date of Birth
                 </label>
                 <input
@@ -743,13 +744,12 @@ async function openAntarInlineFor(mahaLord) {
                   className="form-field-input"
                   required
                 />
-                <p className="form-field-helper">Format: YYYY-MM-DD</p>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
               </div>
 
               {/* Time of Birth */}
               <div>
                 <label className="form-field-label flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gold" />
                   Time
                 </label>
                 <input
@@ -769,8 +769,7 @@ async function openAntarInlineFor(mahaLord) {
                   {/* Place of Birth */}
                   <div className="flex-1 place-wrapper">
                     <label className="form-field-label flex items-center gap-2 mb-2">
-                      <MapPin className="w-5 h-5 text-gold" />
-                      Place of Birth
+                      Place
                     </label>
 
                     <div className="relative">
@@ -828,7 +827,34 @@ async function openAntarInlineFor(mahaLord) {
                     </p>
                   </div>
 
-                  {/* Get Predictions button */}
+                  {/* Gender Field */}
+                  <div className="w-full md:w-48">
+                    <label className="form-field-label flex items-center gap-2 mb-2">
+                      Gender
+                    </label>
+
+                    <div className="relative">
+                      <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="form-field-input pr-10"
+                        required
+                      >
+                        <option value="" disabled>
+                          Select gender
+                        </option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <p className="form-field-helper">
+                      Personalize chart reading
+                    </p>
+                  </div>
+
+                  {/* Get Predictions button — fixed width, not shrinking */}
                   <div className="w-full md:w-48">
                     <button
                       type="submit"
@@ -841,30 +867,8 @@ async function openAntarInlineFor(mahaLord) {
                           Calculating…
                         </>
                       ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Get Predictions
-                        </>
+                        <>Get Predictions</>
                       )}
-                    </button>
-                  </div>
-
-                  {/* Reset button */}
-                  <div className="w-full md:w-32">
-                    <button
-                      type="reset"
-                      onClick={() => {
-                        setFullName("");
-                        setDob("");
-                        setTob("");
-                        setPlace("");
-                        setResult(null);
-                        setError("");
-                        setSelectedMaha(null);
-                      }}
-                      className="btn btn-ghost w-full h-[52px] px-4"
-                    >
-                      <RotateCcw className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -905,7 +909,10 @@ async function openAntarInlineFor(mahaLord) {
                       onClick={() => loadFromHistory(item)}
                     >
                       <div className="history-row-text">
-                        <div className="h-name">{item.fullName}</div>
+                        <div className="h-name">
+                          {item.fullName}{" "}
+                          {item.gender ? `(${item.gender})` : ""}
+                        </div>
                         <div className="h-date">{item.dob}</div>
                         <div className="h-time">{item.tob}</div>
 
@@ -1055,18 +1062,21 @@ async function openAntarInlineFor(mahaLord) {
               {!chatOpen ? (
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Cpu className="w-6 h-6 text-gold" />
-                      <span className="uppercase tracking-[0.2em] text-[11px] text-gold/80">
-                        AI Astrologer
-                      </span>
+                    <div
+                      className="results-header"
+                      style={{ marginBottom: "1rem" }}
+                    >
+                      <Cpu style={{ color: "#ca8a04" }} />
+                      <h3 className="results-title">AI Astrologer</h3>
                     </div>
-                    <h3 className="text-xl md:text-2xl font-semibold text-white mb-1">
+
+                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
                       Get a Personalized AI Reading
                     </h3>
-                    <p className="text-sm text-indigo-100/90 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas and planetary strengths
-                      in simple, practical language tailored just for you.
+                    <p className="text-sm text-gray-70 max-w-xl">
+                      Let our AI Astrologer interpret your birth chart, dashas
+                      and planetary strengths in simple, practical language
+                      tailored just for you.
                     </p>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-3">
@@ -1076,7 +1086,6 @@ async function openAntarInlineFor(mahaLord) {
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      <Sparkles className="w-4 h-4 mr-2 text-amber-800" />
                       Talk to AI Astrologer
                     </button>
                   </div>
@@ -1086,7 +1095,9 @@ async function openAntarInlineFor(mahaLord) {
                   <div className="chat-header">
                     <div className="flex items-center gap-3">
                       <Cpu className="w-5 h-5 text-gold" />
-                      <span className="text-white font-semibold">AI Astrologer Chat</span>
+                      <span className="text-white font-semibold">
+                        AI Astrologer Chat
+                      </span>
                     </div>
                     <button
                       onClick={() => setChatOpen(false)}
@@ -1125,7 +1136,7 @@ async function openAntarInlineFor(mahaLord) {
                 style={{ scrollMarginTop: "96px" }} // keeps it nicely below your fixed header when scrolled
               >
                 <div className="results-header">
-                  <Orbit style={{ color: "#7c3aed" }} />
+                  <Orbit style={{ color: "#ca8a04" }} />
                   <h3 className="results-title">Planet Placements (D1)</h3>
                 </div>
                 <div className="table-scroll-container">
@@ -1195,7 +1206,7 @@ async function openAntarInlineFor(mahaLord) {
                         const normDeg =
                           typeof p.normDegree === "number"
                             ? `Norm: ${p.normDegree.toFixed(2)}°`
-                            : null;            
+                            : null;
                         const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                           p.pada ?? "—"
                         })`;
@@ -1311,26 +1322,28 @@ async function openAntarInlineFor(mahaLord) {
                             className="railway-segment"
                             style={{ "--i": i }}
                           >
-                            <div className="planet-header">
-                              <span className="planet-name">{row.lord}</span>
-                              <button
-                                className="analysis-btn"
-                                onClick={() => openAntarInlineFor(row.lord)}
-                              >
-                                Analysis
-                              </button>
-                            </div>
-
-                            <div className="segment-row">
-                              <span className="date-label">{start}</span>
-
-                              <div className="segment-bar">
-                                <div className="dot start-dot"></div>
-                                <div className="bar-line"></div>
-                                <div className="dot end-dot"></div>
+                            <div className="segment-inner">
+                              <div className="planet-header">
+                                <span className="planet-name">{row.lord}</span>
+                                <button
+                                  className="analysis-btn"
+                                  onClick={() => openAntarInlineFor(row.lord)}
+                                >
+                                  Analysis
+                                </button>
                               </div>
 
-                              <span className="date-label">{end}</span>
+                              <div className="segment-row">
+                                <span className="date-label">{start}</span>
+
+                                <div className="segment-bar">
+                                  <div className="dot start-dot"></div>
+                                  <div className="bar-line"></div>
+                                  <div className="dot end-dot"></div>
+                                </div>
+
+                                <span className="date-label">{end}</span>
+                              </div>
                             </div>
 
                             {/* === INLINE ANTAR PERIODS === */}
@@ -1532,30 +1545,36 @@ async function openAntarInlineFor(mahaLord) {
           )}
         </Modal>
       </div>
-      
+
       {/* Floating Chat Button */}
       <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-md p-4 z-50">
-        <button 
-          className="btn btn-primary" 
+        <button
+          className="btn btn-primary"
           onClick={() => {
             const isFormFilled = fullName && dob && tob && place;
             if (!isFormFilled) {
-              setError("Please complete all birth details before using the chat.");
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setError(
+                "Please complete all birth details before using the chat."
+              );
+              window.scrollTo({ top: 0, behavior: "smooth" });
               return;
             }
             if (!result) {
-              document.querySelector('form').requestSubmit();
+              document.querySelector("form").requestSubmit();
               setTimeout(() => {
                 setChatOpen(true);
                 setTimeout(() => {
-                  document.querySelector('.ai-astrologer-section')?.scrollIntoView({ behavior: 'smooth' });
+                  document
+                    .querySelector(".ai-astrologer-section")
+                    ?.scrollIntoView({ behavior: "smooth" });
                 }, 100);
               }, 2000);
             } else {
               setChatOpen(true);
               setTimeout(() => {
-                document.querySelector('.ai-astrologer-section')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                  .querySelector(".ai-astrologer-section")
+                  ?.scrollIntoView({ behavior: "smooth" });
               }, 100);
             }
           }}
