@@ -1150,6 +1150,20 @@
   align-items: center;  /* ⭐ centers Planet Name + Analysis */
   gap: 0.5rem;
 }
+@media (max-width: 640px) {
+  .railway-segment {
+    transform: none !important;   /* remove horizontal shift */
+    align-items: center !important;
+  }
+
+  .segment-row {
+    justify-content: center;
+  }
+
+  .horizontal-railway-track {
+    align-items: center !important; /* center everything on mobile */
+  }
+}
 
 .current-tag {
   font-family: "Inter", sans-serif;
