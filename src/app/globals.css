@@ -1106,26 +1106,6 @@ select {
   color: #dc2626;
 }
 
-.progress-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.progress-bar {
-  height: 0.5rem;
-  background: #e5e7eb;
-  border-radius: 9999px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: #2563eb;
-  transition: width 0.3s ease;
-}
-.progress-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
 
 /* -------------------------------------------------
    MAHA DASHA LIST
@@ -2375,10 +2355,62 @@ body {
 .planet-table td {
   vertical-align: top;
 }
-.planet-table td:first-child,
-.planet-table td:nth-child(2) {
-  width: 40%;
+/* Shadbala tables: let Ishta & Kashta breathe */
+.shadbala-table {
+  table-layout: fixed;
+  width: 100%;
 }
+
+/* Planet */
+.shadbala-table td:first-child,
+.shadbala-table th:first-child {
+  width: 18%;
+  white-space: nowrap;
+}
+
+/* Strength */
+.shadbala-table td:nth-child(2),
+.shadbala-table th:nth-child(2) {
+  width: 16%;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Ishta & Kashta – give them the rest */
+.shadbala-table td:nth-child(3),
+.shadbala-table th:nth-child(3),
+.shadbala-table td:nth-child(4),
+.shadbala-table th:nth-child(4) {
+  width: 33%;
+}
+
+/* Make bar + % sit nicely */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #fbbf24;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 .match-row {
   display: flex;
   align-items: center;
