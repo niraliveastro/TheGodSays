@@ -13,6 +13,7 @@ import {
   Trash2,
   Cpu,
   X,
+  LoaderCircle,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import Chat from "@/components/Chat";
@@ -1157,6 +1158,9 @@ export default function MatchingPage() {
         .form-field input::placeholder {
           font-style: normal;
         }
+        .form-field-label {
+          color: var(--color-gold);
+        }
         @media (min-width: 768px) {
           .form-grid {
             grid-template-columns: 1fr 1fr;
@@ -1195,10 +1199,12 @@ export default function MatchingPage() {
         label {
           font-size: 0.875rem;
           font-weight: 500;
+          border-radius: 0.75rem;
           color: var(--c-muted);
         }
         input {
           padding: 0.5rem 0.75rem;
+          line-height: 2.5;
           border: 1px solid var(--c-border);
           border-radius: 0.5rem;
           font-size: 0.95rem;
@@ -1242,6 +1248,19 @@ export default function MatchingPage() {
           white-space: nowrap; /* Prevent text wrap */
           min-width: 100px; /* Optional: consistent width */
           text-align: center;
+        }
+        .btn-gold {
+          background: linear-gradient(
+            to right,
+            #fcd34d,
+            #fbbf24,
+            #f59e0b
+          ) !important;
+          border-color: rgba(251, 191, 36, 0.7) !important;
+          box-shadow: 0 0 20px rgba(250, 204, 21, 0.55) !important;
+        }
+        .btn-gold:hover {
+          box-shadow: 0 0 30px rgba(250, 204, 21, 0.8) !important;
         }
         .btn-reset {
           background: transparent;
@@ -1589,26 +1608,22 @@ export default function MatchingPage() {
                 Enter birth details for both individuals
               </p>
             </div>
-
           </div>
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">
             {/* ---------- Female ---------- */}
             <div className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6">
               <div className="results-header mb-3">
-                <Moon style={{ color: "#a78bfa" }} />
+                <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Female Details</h3>
               </div>
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Sparkles className="w-5 h-5 text-pink-500" />
-                    Full Name
-                  </label>
+                  <label className="form-field-label">Female Name</label>
                   <input
                     type="text"
-                    placeholder="Enter full name"
+                    placeholder="Enter Female name"
                     value={female.fullName}
                     onChange={onChangePerson(
                       setFemale,
@@ -1622,10 +1637,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Calendar className="w-5 h-5 text-pink-500" />
-                    Date of Birth
-                  </label>
+                  <label className="form-field-label">Date of Birth</label>
                   <input
                     type="date"
                     value={female.dob}
@@ -1643,10 +1655,7 @@ export default function MatchingPage() {
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Clock className="w-5 h-5 text-pink-500" />
-                    Time of Birth
-                  </label>
+                  <label className="form-field-label">Time of Birth</label>
                   <input
                     type="time"
                     step="60"
@@ -1664,10 +1673,7 @@ export default function MatchingPage() {
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
-                  <label className="form-field-label">
-                    <MapPin className="w-5 h-5 text-pink-500" />
-                    Place
-                  </label>
+                  <label className="form-field-label">Place</label>
                   <input
                     placeholder="City, Country"
                     value={female.place}
@@ -1713,13 +1719,10 @@ export default function MatchingPage() {
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Sparkles className="w-5 h-5 text-blue-500" />
-                    Full Name
-                  </label>
+                  <label className="form-field-label">Male Name</label>
                   <input
                     type="text"
-                    placeholder="Enter full name"
+                    placeholder="Enter Male name"
                     value={male.fullName}
                     onChange={onChangePerson(
                       setMale,
@@ -1733,10 +1736,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Calendar className="w-5 h-5 text-blue-500" />
-                    Date of Birth
-                  </label>
+                  <label className="form-field-label">Date of Birth</label>
                   <input
                     type="date"
                     value={male.dob}
@@ -1754,10 +1754,7 @@ export default function MatchingPage() {
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                    Time of Birth
-                  </label>
+                  <label className="form-field-label">Time of Birth</label>
                   <input
                     type="time"
                     step="60"
@@ -1775,10 +1772,7 @@ export default function MatchingPage() {
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
-                  <label className="form-field-label">
-                    <MapPin className="w-5 h-5 text-blue-500" />
-                    Place
-                  </label>
+                  <label className="form-field-label">Place</label>
                   <input
                     placeholder="City, Country"
                     value={male.place}
@@ -1830,18 +1824,15 @@ export default function MatchingPage() {
               <button
                 type="submit"
                 disabled={submitting || fFilled < 3 || mFilled < 3}
-                className="btn btn-primary w-full"
+                className="btn btn-primary btn-gold w-full"
               >
                 {submitting ? (
                   <>
-                    <Sparkles className="w-4 h-4 animate-spin mr-2" />
+                    <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
                     Calculating…
                   </>
                 ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Match Score
-                  </>
+                  <>Get Match Score</>
                 )}
               </button>
             </div>
@@ -2063,8 +2054,9 @@ export default function MatchingPage() {
                       Get a Personalized AI Reading
                     </h3>
                     <p className="text-sm text-indigo-100/90 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas and planetary strengths
-                      in simple, practical language tailored just for you.
+                      Let our AI Astrologer interpret your birth chart, dashas
+                      and planetary strengths in simple, practical language
+                      tailored just for you.
                     </p>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-3">
@@ -2074,7 +2066,6 @@ export default function MatchingPage() {
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      <Sparkles className="w-4 h-4 mr-2 text-amber-800" />
                       Talk to AI Astrologer
                     </button>
                   </div>
@@ -2084,7 +2075,9 @@ export default function MatchingPage() {
                   <div className="chat-header">
                     <div className="flex items-center gap-3">
                       <Cpu className="w-5 h-5 text-gold" />
-                      <span className="text-white font-semibold">AI Astrologer Chat</span>
+                      <span className="text-white font-semibold">
+                        AI Astrologer Chat
+                      </span>
                     </div>
                     <button
                       onClick={() => setChatOpen(false)}
@@ -2098,11 +2091,23 @@ export default function MatchingPage() {
                       pageTitle="Matching"
                       initialData={{
                         female: {
-                          input: { name: female.fullName, dob: female.dob, tob: female.tob, place: female.place, coords: fCoords },
+                          input: {
+                            name: female.fullName,
+                            dob: female.dob,
+                            tob: female.tob,
+                            place: female.place,
+                            coords: fCoords,
+                          },
                           details: fDetails,
                         },
                         male: {
-                          input: { name: male.fullName, dob: male.dob, tob: male.tob, place: male.place, coords: mCoords },
+                          input: {
+                            name: male.fullName,
+                            dob: male.dob,
+                            tob: male.tob,
+                            place: male.place,
+                            coords: mCoords,
+                          },
                           details: mDetails,
                         },
                         match: result || null,
@@ -2275,8 +2280,9 @@ export default function MatchingPage() {
                       </thead>
                       <tbody>
                         {(fDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
+                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                            p.pada ?? "—"
+                          })`;
                           const degreesDisplay =
                             [
                               typeof p.fullDegree === "number"
@@ -2385,8 +2391,9 @@ export default function MatchingPage() {
                       </thead>
                       <tbody>
                         {(mDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
+                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                            p.pada ?? "—"
+                          })`;
                           const degreesDisplay =
                             [
                               typeof p.fullDegree === "number"
@@ -2433,17 +2440,15 @@ export default function MatchingPage() {
       </div>
 
       {/* Fixed Chat With AI Button */}
-      <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-md p-4 z-50">
+      <div className="fixed bottom-4 right-4 p-4 z-50">
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-gold"
           onClick={handleChatButtonClick}
           disabled={submitting}
         >
           {submitting ? "Calculating..." : "Chat with AI"}
         </button>
       </div>
-
-
     </>
   );
 }
