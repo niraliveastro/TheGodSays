@@ -664,6 +664,28 @@ async function openAntarInlineFor(mahaLord) {
         };
       });
   }, [result]);
+
+  const chatData = result ? {
+  birth: result.input,
+  coords: result.coords,
+  gender,
+  
+  // Raw data (in case needed)
+  raw: {
+    planets: result.planets,
+    vimsottari: result.vimsottari,
+    maha: result.maha,
+    shadbala: result.shadbala,
+  },
+
+  // Clean & simplified data for the AI (MUCH easier to reason with)
+  placements,     
+  shadbalaRows, 
+  mahaRows,        
+  currentDashaChain, 
+
+} : null;
+
   return (
     <div className="app">
       {/* Orbs */}
@@ -1108,21 +1130,7 @@ async function openAntarInlineFor(mahaLord) {
                     </button>
                   </div>
                   <div className="chat-content">
-                    <Chat
-                      pageTitle="Predictions"
-                      initialData={
-                        result
-                          ? {
-                              birth: result.input,
-                              coords: result.coords,
-                              planets: result.planets,
-                              vimsottari: result.vimsottari,
-                              maha: result.maha,
-                              shadbala: result.shadbala,
-                            }
-                          : null
-                      }
-                    />
+                    <Chat pageTitle="Predictions" initialData={chatData} />
                   </div>
                 </div>
               )}

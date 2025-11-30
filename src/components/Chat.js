@@ -3,6 +3,91 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+function buildContextPrompt(initialData, pageTitle) {
+  // If Matching page AND both charts exist
+  if (pageTitle === "Matching" && initialData?.female && initialData?.male) {
+    return `
+You are an expert Vedic astrologer analyzing a RELATIONSHIP MATCHING session.
+
+Use ONLY the information provided below.
+Do NOT invent missing data.
+
+## Female Details
+${JSON.stringify(initialData.female, null, 2)}
+
+## Male Details
+${JSON.stringify(initialData.male, null, 2)}
+
+## Ashtakoot Compatibility
+${JSON.stringify(initialData.match, null, 2)}
+
+### TASKS
+1. Confirm both charts were received.
+2. Explain compatibility in simple language:
+   - Emotional connection (Rasi)
+   - Mental harmony (Graha Maitri)
+   - Physical/sexual compatibility (Yoni)
+   - Temperament harmony (Gana)
+   - Health/genes (Nadi)
+3. Use planetary strengths, Ishta/Kashta, and Dasha insights where helpful.
+4. Give clear practical relationship guidance.
+5. DO NOT mention gender stereotypes.
+6. DO NOT add any data that isn’t provided.
+
+### FORMATTING RULES
+- Use markdown headers (##, ###).
+- Bullet points for insights.
+- Keep paragraphs short.
+- Highlight key points with **bold**.
+  `;
+  }
+  // Otherwise it's a PERSONAL reading (Predictions page)
+  return `
+You are analyzing a PERSONAL birth chart.
+
+Use ONLY the provided data. Do not assume gender unless explicitly given.
+
+## Birth Details
+${JSON.stringify(initialData.birth, null, 2)}
+
+## Coordinates
+${JSON.stringify(initialData.coords, null, 2)}
+
+## Planet Placements (clean)
+${JSON.stringify(initialData.placements, null, 2)}
+
+## Shadbala Strength (with Ishta/Kashta)
+${JSON.stringify(initialData.shadbalaRows, null, 2)}
+
+## Maha Dasha Timeline
+${JSON.stringify(initialData.mahaRows, null, 2)}
+
+## Running Dasha Chain
+"${initialData.currentDashaChain || "Unknown"}"
+
+---
+
+### Your Tasks
+1. Provide a practical, supportive astrological reading.
+2. Interpret:
+   - D1 placements
+   - strengths & weaknesses (Shadbala)
+   - Ishta vs Kashta influences
+   - Maha Dasha timeline significance
+   - Current running dasha
+3. Avoid compatibility talk (no partner, no matching).
+4. If gender provided, use pronouns respectfully.
+5. Use clean markdown formatting.
+
+### Formatting Rules
+- Use headers for sections (##, ###)
+- Bullet points for lists
+- Keep paragraphs short
+- Only use data provided above
+`;
+}
+
+
 const Chat = ({ pageTitle, initialData = null }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -34,22 +119,7 @@ const Chat = ({ pageTitle, initialData = null }) => {
           },
           body: JSON.stringify({
             // Send as a clear context marker so the backend/assistant can treat it as structured data
-            prompt: `Here is the complete data for the current matching session.
-Data includes:
-1. Female Birth Details & Planetary Info
-2. Male Birth Details & Planetary Info
-3. Ashtakoot Compatibility Score & Breakdown
-
-JSON Data:
-${JSON.stringify(initialData)}
-
-Please analyze this data. When responding, confirm you have received the birth details for ${initialData.female?.input?.name || 'Female'} and ${initialData.male?.input?.name || 'Male'}.
-Provide insights based on their specific planetary positions and the match score.
-FORMATTING INSTRUCTIONS:
-- Use Markdown headers (###) for sections.
-- Use bullet points (-) for lists.
-- Use bold (**text**) for emphasis.
-- Keep the response structured and easy to read.`,
+            prompt: buildContextPrompt(initialData, pageTitle),
             page: pageTitle,
             isContext: true,
           }),
