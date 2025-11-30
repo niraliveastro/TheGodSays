@@ -1564,6 +1564,84 @@ export default function MatchingPage() {
           opacity: 0;
           transform: translateX(-50px) scale(0.95);
         }
+        //* Compact placements table – wider text columns, headers unchanged */
+        .placements-table {
+          table-layout: fixed;
+          width: 100%;
+        }
+
+        /* Don't touch <th> font-size, just a bit of padding */
+        .placements-table th {
+          padding: 0.5rem 0.75rem;
+        }
+
+        /* Make data cells slightly smaller + tighter */
+        .placements-table td {
+          padding: 0.4rem 0.6rem;
+          font-size: 0.8rem;
+        }
+
+        /* Planet */
+        .placements-table th:nth-child(1),
+        .placements-table td:nth-child(1) {
+          width: 20%;
+        }
+
+        /* Sign */
+        .placements-table th:nth-child(2),
+        .placements-table td:nth-child(2) {
+          width: 18%;
+        }
+
+        /* House */
+        .placements-table th:nth-child(3),
+        .placements-table td:nth-child(3) {
+          width: 15%;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        /* Nakshatra (Pada) */
+        .placements-table th:nth-child(4),
+        .placements-table td:nth-child(4) {
+          width: 28%;
+        }
+
+        /* Degrees */
+        .placements-table th:nth-child(5),
+        .placements-table td:nth-child(5) {
+          width: 20%;
+        }
+
+        .deg-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+          line-height: 1.1;
+        }
+
+        .deg-cell div {
+          white-space: nowrap;
+        }
+
+        .deg-norm {
+          opacity: 1;
+          font-size: 0.75rem;
+        }
+
+        .planet-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          line-height: 1.1;
+        }
+
+        .planet-retro {
+          font-size: 0.75rem;
+          color: inherit;
+          text-transform: none;
+          letter-spacing: normal;
+        }
       `}</style>
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
@@ -2208,7 +2286,7 @@ export default function MatchingPage() {
 
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table shadbala-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2220,9 +2298,7 @@ export default function MatchingPage() {
                       <tbody>
                         {(fDetails?.shadbalaRows || []).map((p, i) => (
                           <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>
-                              {p.retro ? `${p.name} (Retro)` : p.name}
-                            </td>
+                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
                             <td>
                               {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
                             </td>
@@ -2268,7 +2344,7 @@ export default function MatchingPage() {
 
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table placements-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2283,27 +2359,38 @@ export default function MatchingPage() {
                           const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                             p.pada ?? "—"
                           })`;
-                          const degreesDisplay =
-                            [
-                              typeof p.fullDegree === "number"
-                                ? `Full: ${p.fullDegree.toFixed(2)}°`
-                                : null,
-                              typeof p.normDegree === "number"
-                                ? `Norm: ${p.normDegree.toFixed(2)}°`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || "—";
 
                           return (
                             <tr key={i}>
                               <td style={{ fontWeight: 500 }}>
-                                {p.retro ? `${p.name} (Retro)` : p.name}
+                                <div className="planet-cell">
+                                  <span>{p.name}</span>
+                                  {p.retro && (
+                                    <span className="planet-retro">
+                                      (Retro)
+                                    </span>
+                                  )}
+                                </div>
                               </td>
+
                               <td>{p.currentSign || "—"}</td>
                               <td>{p.house ?? "—"}</td>
                               <td>{nakshatraDisplay}</td>
-                              <td>{degreesDisplay}</td>
+                              <td>
+                                <div className="deg-cell">
+                                  {typeof p.fullDegree === "number" && (
+                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                  )}
+                                  {typeof p.normDegree === "number" && (
+                                    <div className="deg-norm">
+                                      Norm: {p.normDegree.toFixed(2)}°
+                                    </div>
+                                  )}
+                                  {typeof p.fullDegree !== "number" &&
+                                    typeof p.normDegree !== "number" &&
+                                    "—"}
+                                </div>
+                              </td>
                             </tr>
                           );
                         })}
@@ -2321,7 +2408,7 @@ export default function MatchingPage() {
 
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table shadbala-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2379,7 +2466,7 @@ export default function MatchingPage() {
 
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table placements-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2394,27 +2481,38 @@ export default function MatchingPage() {
                           const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                             p.pada ?? "—"
                           })`;
-                          const degreesDisplay =
-                            [
-                              typeof p.fullDegree === "number"
-                                ? `Full: ${p.fullDegree.toFixed(2)}°`
-                                : null,
-                              typeof p.normDegree === "number"
-                                ? `Norm: ${p.normDegree.toFixed(2)}°`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || "—";
 
                           return (
                             <tr key={i}>
                               <td style={{ fontWeight: 500 }}>
-                                {p.retro ? `${p.name} (Retro)` : p.name}
+                                <div className="planet-cell">
+                                  <span>{p.name}</span>
+                                  {p.retro && (
+                                    <span className="planet-retro">
+                                      (Retro)
+                                    </span>
+                                  )}
+                                </div>
                               </td>
+
                               <td>{p.currentSign || "—"}</td>
                               <td>{p.house ?? "—"}</td>
                               <td>{nakshatraDisplay}</td>
-                              <td>{degreesDisplay}</td>
+                              <td>
+                                <div className="deg-cell">
+                                  {typeof p.fullDegree === "number" && (
+                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                  )}
+                                  {typeof p.normDegree === "number" && (
+                                    <div className="deg-norm">
+                                      Norm: {p.normDegree.toFixed(2)}°
+                                    </div>
+                                  )}
+                                  {typeof p.fullDegree !== "number" &&
+                                    typeof p.normDegree !== "number" &&
+                                    "—"}
+                                </div>
+                              </td>
                             </tr>
                           );
                         })}
@@ -2446,7 +2544,7 @@ export default function MatchingPage() {
           onClick={handleChatButtonClick}
           disabled={submitting}
         >
-          {submitting ? "Calculating..." : "Chat with AI"}
+          Chat with AI
         </button>
       </div>
     </>
