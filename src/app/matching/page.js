@@ -191,6 +191,31 @@ export default function MatchingPage() {
     setHistory([]);
   };
 
+  const resetAllFields = () => {
+    setFemale({
+      fullName: "",
+      dob: "",
+      tob: "",
+      place: "",
+    });
+
+    setMale({
+      fullName: "",
+      dob: "",
+      tob: "",
+      place: "",
+    });
+
+    setFCoords(null);
+    setMCoords(null);
+    setFSuggest([]);
+    setMSuggest([]);
+    setError("");
+    setResult(null);
+    setFDetails(null);
+    setMDetails(null);
+  };
+
   const loadHistoryIntoForm = (item) => {
     setFemale({
       fullName: item.femaleName,
@@ -776,7 +801,7 @@ export default function MatchingPage() {
       const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
       text += `${name}: ${score}/${outOfK}\n`;
     });
-    text += `\nGenerated via Vedic Astrology Match Maker. Share your cosmic connection! 🌟`;
+    text += `\nGenerated via Vedic Astrology Match Maker. Share your cosmic connection!`;
     return text;
   };
 
@@ -1745,8 +1770,8 @@ export default function MatchingPage() {
                       fTimer,
                       "tob"
                     )}
-                    required
                     className="form-field-input"
+                    required
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
@@ -1844,8 +1869,8 @@ export default function MatchingPage() {
                       mTimer,
                       "tob"
                     )}
-                    required
                     className="form-field-input"
+                    required
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
@@ -1917,18 +1942,7 @@ export default function MatchingPage() {
             <div className="reset-col col-span-2">
               <button
                 type="reset"
-                onClick={() => {
-                  setFemale({ dob: "", tob: "", place: "" });
-                  setMale({ dob: "", tob: "", place: "" });
-                  setFCoords(null);
-                  setMCoords(null);
-                  setFSuggest([]);
-                  setMSuggest([]);
-                  setError("");
-                  setResult(null);
-                  setFDetails(null);
-                  setMDetails(null);
-                }}
+                onClick={resetAllFields}
                 className="btn btn-ghost w-full"
               >
                 <RotateCcw className="w-4 h-4" /> Reset
@@ -1956,66 +1970,75 @@ export default function MatchingPage() {
             {history.length === 0 ? (
               <div className="empty-state">No matching history yet.</div>
             ) : (
-              <div className="table-scroll-container">
-                <table className="planet-table">
-                  <thead>
-                    <tr>
-                      <th>Female Details</th>
-                      <th>Male Details</th>
-                      <th></th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((item) => (
-                      <tr
-                        className="history-row"
-                        onClick={() => loadHistoryIntoForm(item)}
-                      >
-                        {/* FEMALE CELL */}
-                        <td className="history-cell">
-                          <div className="h-name">{item.femaleName}</div>
-                          <div>{item.femaleDob}</div>
-                          <div>{item.femaleTob}</div>
-                          <div>{item.femalePlace}</div>
-                        </td>
-
-                        {/* MALE CELL */}
-                        <td className="history-cell">
-                          <div className="h-name">{item.maleName}</div>
-                          <div>{item.maleDob}</div>
-                          <div>{item.maleTob}</div>
-                          <div>{item.malePlace}</div>
-                        </td>
-
-                        {/* ACTION BUTTONS FLOAT RIGHT */}
-                        <td className="history-actions-cell">
-                          <div className="history-actions">
-                            <button
-                              className="use-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                loadHistoryIntoForm(item);
-                              }}
-                            >
-                              Use
-                            </button>
-
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteHistoryItem(item.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="history-cards">
+                {history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="history-card"
+                    onClick={() => loadHistoryIntoForm(item)}
+                  >
+                    <div className="history-card-top">
+                      <div className="history-card-names">
+                        <span className="pill pill-female">
+                          {item.femaleName || "Female"}
+                        </span>
+                        <span className="dot-separator">↔</span>
+                        <span className="pill pill-male">
+                          {item.maleName || "Male"}
+                        </span>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          className="use-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadHistoryIntoForm(item);
+                          }}
+                        >
+                          Use
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteHistoryItem(item.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="history-card-body">
+                      <div className="person-block">
+                        <div className="person-label">Female</div>
+                        <div className="person-meta">
+                          <Calendar className="meta-icon" />
+                          <span>
+                            {item.femaleDob || "-"} · {item.femaleTob || "-"}
+                          </span>
+                        </div>
+                        <div className="person-meta">
+                          <MapPin className="meta-icon" />
+                          <span>{item.femalePlace || "-"}</span>
+                        </div>
+                      </div>
+                      <div className="person-divider" />
+                      <div className="person-block">
+                        <div className="person-label">Male</div>
+                        <div className="person-meta">
+                          <Calendar className="meta-icon" />
+                          <span>
+                            {item.maleDob || "-"} · {item.maleTob || "-"}
+                          </span>
+                        </div>
+                        <div className="person-meta">
+                          <MapPin className="meta-icon" />
+                          <span>{item.malePlace || "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -2525,12 +2548,24 @@ export default function MatchingPage() {
 
             {/* Footer */}
             <div className="actionBar mt-8">
-              <button className="btn btn-ghost">
+              <button className="btn btn-ghost" onClick={resetAllFields}>
                 <RotateCcw className="w-4 h-4" /> Reset
               </button>
               <div className="flex gap-3">
-                <button className="btn btn-primary">Download PDF</button>
-                <button className="btn btn-primary">Share</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleDownloadPDF}
+                  disabled={!result}
+                >
+                  Download PDF
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleShare}
+                  disabled={!result}
+                >
+                  Share
+                </button>
               </div>
             </div>
           </div>
@@ -2547,6 +2582,107 @@ export default function MatchingPage() {
           Chat with AI
         </button>
       </div>
+      <style jsx>{`
+        .history-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 16px;
+        }
+        .history-card {
+          background: linear-gradient(145deg, #fffaf0, #f8f5eb);
+          border: 1px solid #f1e9d2;
+          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.12);
+          border-radius: 16px;
+          padding: 16px;
+          transition: transform 160ms ease, box-shadow 160ms ease;
+          cursor: pointer;
+        }
+        .history-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
+        }
+        .history-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .history-card-names {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .pill {
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          border: 1px solid #f5d276;
+          background: #fff8e6;
+          color: #8b6b15;
+        }
+        .pill-male {
+          background: #e8f1ff;
+          border-color: #c9daf8;
+          color: #1f3b6d;
+        }
+        .dot-separator {
+          color: #c4a13f;
+          font-weight: 700;
+        }
+        .history-card-body {
+          display: flex;
+          gap: 16px;
+          align-items: stretch;
+        }
+        .person-block {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .person-label {
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.04em;
+          color: #9a7a2d;
+          font-weight: 700;
+        }
+        .person-meta {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          color: #4b5563;
+          font-size: 0.95rem;
+          line-height: 1.4;
+        }
+        .meta-icon {
+          width: 16px;
+          height: 16px;
+          color: #d4af37;
+        }
+        .person-divider {
+          width: 1px;
+          background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
+        }
+        .history-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        @media (max-width: 720px) {
+          .history-card-body {
+            flex-direction: column;
+          }
+          .person-divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
+          }
+        }
+      `}</style>
     </>
   );
 }

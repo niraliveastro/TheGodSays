@@ -19,7 +19,7 @@ import {
   Heart as VenusIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 /**
  * MahaDasasPage Component
@@ -345,7 +345,7 @@ export default function MahaDasasPage() {
       isCurrent(d) ? "CURRENT" : "",
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [["Planet", "Start Date", "End Date", "Duration", "Status"]],
       body: tableData,
       startY: y,

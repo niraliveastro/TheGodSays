@@ -360,23 +360,36 @@ export default function CosmicEventTracker() {
         <div className="period-content">
           <p className="period-date-range">{formatDateRange()}</p>
           <div className="period-stats">
-            <div className="stat-item">
-              <Rocket size={18} />
-              <span className="stat-value">{displayedNEOs.length}</span>
-              <span className="stat-label">
-                Object{displayedNEOs.length !== 1 ? "s" : ""} Detected
-              </span>
-            </div>
-            <div className="stat-item">
-              <AlertTriangle size={18} />
-              <span className="stat-value">
-                {
-                  displayedNEOs.filter((neo) => neo.isPotentiallyHazardous)
-                    .length
-                }
-              </span>
-              <span className="stat-label">Potentially Hazardous</span>
-            </div>
+            <button className="stat-chip" type="button">
+              <div className="stat-icon-wrap">
+                <Rocket size={16} />
+              </div>
+              <div className="stat-text">
+                <span className="stat-value">{displayedNEOs.length}</span>
+                <span className="stat-label">
+                  Object{displayedNEOs.length !== 1 ? "s" : ""} Detected
+                </span>
+              </div>
+            </button>
+            <button
+              className={`stat-chip ${hazardousOnly ? "chip-active" : ""}`}
+              type="button"
+              onClick={() => setHazardousOnly(!hazardousOnly)}
+              title="Toggle hazardous-only filter"
+            >
+              <div className="stat-icon-wrap warning">
+                <AlertTriangle size={16} />
+              </div>
+              <div className="stat-text">
+                <span className="stat-value">
+                  {
+                    displayedNEOs.filter((neo) => neo.isPotentiallyHazardous)
+                      .length
+                  }
+                </span>
+                <span className="stat-label">Potentially Hazardous</span>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -401,7 +414,7 @@ export default function CosmicEventTracker() {
           >
             {/* PHA Badge */}
             {neo.isPotentiallyHazardous && (
-              <div className="hazard-badge">
+              <div className="hazard-badge" title="Potentially Hazardous">
                 <AlertTriangle size={14} />
                 <span>Potentially Hazardous</span>
               </div>

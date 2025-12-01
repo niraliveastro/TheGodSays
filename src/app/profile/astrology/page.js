@@ -612,7 +612,7 @@ export default function AstrologerProfilePage() {
                   <Button
                     onClick={toggleOnline}
                     disabled={toggling}
-                    className={isOnline ? "btn btn-success" : "btn btn-outline"}
+                    className={isOnline ? "btn btn-success" : "btn btn-offline"}
                     style={{ flex: 1, height: "3rem", fontSize: "1rem" }}
                   >
                     {toggling ? (
@@ -1311,6 +1311,16 @@ export default function AstrologerProfilePage() {
         }
         .btn-success:hover {
           background: #059669;
+        }
+        .btn-offline {
+          background: #f3f4f6;
+          color: #374151;
+          border: 1px solid #d1d5db;
+        }
+        .btn-offline:hover {
+          background: #e5e7eb;
+          color: #111827;
+          border-color: #cbd5e1;
         }
       `}</style>
     </>
