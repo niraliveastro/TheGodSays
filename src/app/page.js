@@ -140,12 +140,29 @@ export default function Home() {
 
     async function loadAstrologers() {
       try {
-        // If you have a real endpoint, replace these calls.
-        // Using fallback mock arrays so the UI shows data immediately.
-        const res =
-          (astrologyAPI.getTopAstrologers &&
-            (await astrologyAPI.getTopAstrologers())) ||
-          null;
+        // Try fetching real astrologers from our server API first
+        let res = null;
+        try {
+          const r = await fetch('/api/astrologer/top');
+          if (r.ok) {
+            const data = await r.json();
+            if (data && data.success) {
+              res = { online: data.online || [], featured: data.featured || [] };
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch /api/astrologer/top:', err);
+        }
+
+        // Fallback: try astrologyAPI.getTopAstrologers if server API not available
+        if (!res && astrologyAPI.getTopAstrologers) {
+          try {
+            const apiRes = await astrologyAPI.getTopAstrologers();
+            res = apiRes || null;
+          } catch (e) {
+            console.warn('astrologyAPI.getTopAstrologers failed:', e);
+          }
+        }
 
         // If API returned structured data, pick online + featured
         if (res && res.online && mounted) {
@@ -1287,7 +1304,7 @@ export default function Home() {
                   type="button"
                   style={{ color: "var(-color--gold" }}
                 >
-                  Get AI Predictions — 60s
+                  Get AI Predictions
                 </button>
                 <div className="cta-note">
                   Predictions under <strong>60 seconds</strong>. We’ll prefill

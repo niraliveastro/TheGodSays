@@ -79,11 +79,29 @@ export default function AstrologerAuth() {
     setError(""); // Clear previous errors
 
     try {
+      if (!isLogin) {
+        if (!formData.experience) {
+          setError("Please select your experience level.");
+          return;
+        }
+        if (!formData.specialization) {
+          setError("Please choose a specialization.");
+          return;
+        }
+        if (!formData.name || !formData.email || !formData.password) {
+          setError("Please fill all required fields.");
+          return;
+        }
+      }
       let result;
       if (isLogin) {
         // Login flow
         result = await signIn(formData.email, formData.password);
         if (result.profile?.collection === "astrologers") {
+          if (!result.profile.experience) {
+            setError("Your astrologer profile is missing an experience level. Please update your profile before continuing.");
+            return;
+          }
           router.push("/astrologer-dashboard"); // Redirect to astrologer dashboard
         } else {
           router.push("/unauthorized"); // Redirect if not an astrologer

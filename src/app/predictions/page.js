@@ -4,6 +4,7 @@ import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
 import {
   Sparkles,
+  History,
   Calendar,
   Clock,
   MapPin,
@@ -22,7 +23,7 @@ export default function PredictionsPage() {
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
-  // Timezone (UTC offset hours) — default IST 5.5
+  // Timezone (UTC offset hours) - default IST 5.5
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
@@ -52,15 +53,17 @@ export default function PredictionsPage() {
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
+  const [gender, setGender] = useState("");
 
-const toggleAddressVisibility = (id) => {
-  setIsAddressExpanded((prevState) => ({
-    ...prevState,
-    [id]: !prevState[id], // Toggle visibility for specific address
-  }));
-};
+  const toggleAddressVisibility = (id) => {
+    setIsAddressExpanded((prevState) => ({
+      ...prevState,
+      [id]: !prevState[id], // Toggle visibility for specific address
+    }));
+  };
 
 
   const getHistory = () => {
@@ -95,15 +98,16 @@ const toggleAddressVisibility = (id) => {
     setHistory([]);
   };
   const loadFromHistory = (item) => {
-  setFullName(item.fullName || "");
-  setDob(item.dob || "");
-  setTob(item.tob || "");
-  setPlace(item.place || "");
-  setSelectedCoords(null);
-  setSuggestions([]);
-  setError("");
-  setResult(null); // optional: clear old result so user explicitly re-runs
-};
+    setFullName(item.fullName || "");
+    setGender(item.gender || "");
+    setDob(item.dob || "");
+    setTob(item.tob || "");
+    setPlace(item.place || "");
+    setSelectedCoords(null);
+    setSuggestions([]);
+    setError("");
+    setResult(null); // optional: clear old result so user explicitly re-runs
+  };
 
 
   useEffect(() => {
@@ -143,25 +147,25 @@ const toggleAddressVisibility = (id) => {
       return () => clearTimeout(t);
     }
   }, [result]); // placements depends on result; recompute happens right after
-  
+
 
   useEffect(() => {
-  if (!formRef.current || !historyCardRef.current) return;
+    if (!formRef.current || !historyCardRef.current) return;
 
-  const syncHeights = () => {
-    const formHeight = formRef.current?.offsetHeight || 0;
-    if (!formHeight) return;
-    historyCardRef.current.style.height = `${formHeight}px`;
-    historyCardRef.current.style.maxHeight = `${formHeight}px`;
-  };
+    const syncHeights = () => {
+      const formHeight = formRef.current?.offsetHeight || 0;
+      if (!formHeight) return;
+      historyCardRef.current.style.height = `${formHeight}px`;
+      historyCardRef.current.style.maxHeight = `${formHeight}px`;
+    };
 
-  syncHeights();
-  window.addEventListener("resize", syncHeights);
+    syncHeights();
+    window.addEventListener("resize", syncHeights);
 
-  return () => {
-    window.removeEventListener("resize", syncHeights);
-  };
-}, [dob, tob, place, fullName, suggestions.length, history.length]);
+    return () => {
+      window.removeEventListener("resize", syncHeights);
+    };
+  }, [dob, tob, place, fullName, suggestions.length, history.length]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -215,10 +219,38 @@ const toggleAddressVisibility = (id) => {
     }
   }
   function validate() {
-    if (!dob) return "Please enter your Date of Birth.";
-    if (!tob) return "Please enter your Time of Birth.";
-    if (!place.trim()) return "Please enter your Place of Birth.";
-    return "";
+    if (!dob) return { error: "Please enter your Date of Birth." };
+    if (!tob) return { error: "Please enter your Time of Birth." };
+    if (!place.trim()) return { error: "Please enter your Place of Birth." };
+
+    const dobParts = dob.split("-").map((n) => parseInt(n, 10));
+    let Y, M, D;
+    if (dobParts.length === 3 && dobParts[0] > 1900) {
+      [Y, M, D] = dobParts;
+    } else if (dobParts.length === 3) {
+      [D, M, Y] = dobParts;
+    }
+    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+      return { error: "Please enter a valid date (DD-MM-YYYY)." };
+    }
+
+    const tparts = tob.split(":").map((n) => parseInt(n, 10));
+    const [H, Min, S = 0] = tparts;
+    if ([H, Min, S].some((v) => Number.isNaN(v))) {
+      return { error: "Please enter a valid time." };
+    }
+
+    if (
+      selectedCoords &&
+      (!Number.isFinite(selectedCoords.latitude) ||
+        !Number.isFinite(selectedCoords.longitude))
+    ) {
+      return {
+        error: "Saved location is incomplete. Please pick the place again.",
+      };
+    }
+
+    return { parsed: { Y, M, D, H, Min, S } };
   }
   const fmtTime = (h, m, s = 0) =>
     `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
@@ -268,9 +300,9 @@ const toggleAddressVisibility = (id) => {
     setError("");
     setResult(null);
 
-    const v = validate();
-    if (v) {
-      setError(v);
+    const { error: validationError, parsed } = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setSubmitting(true);
@@ -280,14 +312,24 @@ const toggleAddressVisibility = (id) => {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country)."
         );
-      const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
-      const tparts = tob.split(":").map((n) => parseInt(n, 10));
-      const [H, Min, S = 0] = tparts;
+      if (
+        !Number.isFinite(geo.latitude) ||
+        !Number.isFinite(geo.longitude)
+      ) {
+        throw new Error("Location data is incomplete. Please pick the place again.");
+      }
+      const { Y, M, D, H, Min, S } = parsed;
       // Automatically determine timezone based on location
       const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+      if (!Number.isFinite(tz)) {
+        setError("Could not determine timezone for the selected place. Please try another location.");
+        setSubmitting(false);
+        return;
+      }
       saveToHistory({
         id: Date.now(),
         fullName,
+        gender,
         dob,
         tob: fmtTime(H, Min, S),
         place: geo.label || place,
@@ -301,7 +343,8 @@ const toggleAddressVisibility = (id) => {
         seconds: S,
         latitude: geo.latitude,
         longitude: geo.longitude,
-        timezone: tz,
+        timezone: Number.isFinite(tz) ? tz : 0,
+        language: "en",
         config: {
           observation_point: "topocentric",
           ayanamsha: "lahiri",
@@ -329,8 +372,8 @@ const toggleAddressVisibility = (id) => {
         ? typeof westernChartSvgRaw.output === "string"
           ? westernChartSvgRaw.output
           : typeof westernChartSvgRaw === "string"
-          ? westernChartSvgRaw
-          : null
+            ? westernChartSvgRaw
+            : null
         : null;
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
@@ -371,7 +414,7 @@ const toggleAddressVisibility = (id) => {
             altParsed = safeParse(altParsed.output);
           if (altParsed && Object.keys(altParsed).length)
             finalShadbala = altParsed;
-        } catch {}
+        } catch { }
       }
       let planetsParsed = planetsRaw
         ? safeParse(safeParse(planetsRaw.output ?? planetsRaw))
@@ -403,7 +446,7 @@ const toggleAddressVisibility = (id) => {
             altParsed = safeParse(altParsed.output);
           if (altParsed && Object.keys(altParsed).length)
             finalPlanetParsed = altParsed;
-        } catch {}
+        } catch { }
       }
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
@@ -441,15 +484,15 @@ const toggleAddressVisibility = (id) => {
     const ad = Array.isArray(adList[firstMdKey])
       ? adList[firstMdKey][0]
       : Array.isArray(adList)
-      ? adList[0]
-      : null;
+        ? adList[0]
+        : null;
     const pdList = v.pratyantar_list || v.pd || {};
     const firstAdKey = ad?.key || ad?.planet || ad?.name;
     const pd = Array.isArray(pdList[firstAdKey])
       ? pdList[firstAdKey][0]
       : Array.isArray(pdList)
-      ? pdList[0]
-      : null;
+        ? pdList[0]
+        : null;
     return [
       md?.name || md?.planet,
       ad?.name || ad?.planet,
@@ -485,42 +528,42 @@ const toggleAddressVisibility = (id) => {
       },
     };
   }
-async function openAntarInlineFor(mahaLord) {
-  if (openAntarFor === mahaLord) {
-    setOpenAntarFor(null); // toggle off
-    return;
+  async function openAntarInlineFor(mahaLord) {
+    if (openAntarFor === mahaLord) {
+      setOpenAntarFor(null); // toggle off
+      return;
+    }
+
+    setOpenAntarFor(mahaLord);
+    setAntarLoadingFor(mahaLord);
+    setAntarRows([]);
+
+    try {
+      const payload = buildPayloadForApi();
+      if (!payload) throw new Error("Missing input.");
+
+      const res = await astrologyAPI.getSingleCalculation(
+        "vimsottari/maha-dasas-and-antar-dasas",
+        payload
+      );
+
+      const out = typeof res?.output === "string" ? JSON.parse(res.output) : res;
+      const sub = out?.[mahaLord] || {};
+
+      const rows = Object.entries(sub).map(([k, v]) => ({
+        lord: k,
+        start: v.start_time || v.start,
+        end: v.end_time || v.end,
+      }));
+
+      rows.sort((a, b) => new Date(a.start) - new Date(b.start));
+      setAntarRows(rows);
+    } catch (e) {
+      setAntarRows([{ error: e.message }]);
+    } finally {
+      setAntarLoadingFor(null);
+    }
   }
-
-  setOpenAntarFor(mahaLord);
-  setAntarLoadingFor(mahaLord);
-  setAntarRows([]);
-
-  try {
-    const payload = buildPayloadForApi();
-    if (!payload) throw new Error("Missing input.");
-
-    const res = await astrologyAPI.getSingleCalculation(
-      "vimsottari/maha-dasas-and-antar-dasas",
-      payload
-    );
-
-    const out = typeof res?.output === "string" ? JSON.parse(res.output) : res;
-    const sub = out?.[mahaLord] || {};
-
-    const rows = Object.entries(sub).map(([k, v]) => ({
-      lord: k,
-      start: v.start_time || v.start,
-      end: v.end_time || v.end,
-    }));
-
-    rows.sort((a, b) => new Date(a.start) - new Date(b.start));
-    setAntarRows(rows);
-  } catch (e) {
-    setAntarRows([{ error: e.message }]);
-  } finally {
-    setAntarLoadingFor(null);
-  }
-}
 
   async function openAiPredictionsFor(planetLord) {
     setSelectedPlanetForPredictions(planetLord);
@@ -659,6 +702,28 @@ async function openAntarInlineFor(mahaLord) {
         };
       });
   }, [result]);
+
+  const chatData = result ? {
+    birth: result.input,
+    coords: result.coords,
+    gender,
+
+    // Raw data (in case needed)
+    raw: {
+      planets: result.planets,
+      vimsottari: result.vimsottari,
+      maha: result.maha,
+      shadbala: result.shadbala,
+    },
+
+    // Clean & simplified data for the AI (MUCH easier to reason with)
+    placements,
+    shadbalaRows,
+    mahaRows,
+    currentDashaChain,
+
+  } : null;
+
   return (
     <div className="app">
       {/* Orbs */}
@@ -707,22 +772,13 @@ async function openAntarInlineFor(mahaLord) {
                 <h3 className="form-title">Birth Details</h3>
                 <p className="form-subtitle">Enter your cosmic coordinates</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setChatOpen(true)}
-                className="btn btn-primary"
-                style={{ height: 40 }}
-              >
-                Chat with AI
-              </button>
             </div>
             {/* ---- Birth Details Section ---- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
               {/* Full Name */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
-                  <Sparkles className="w-5 h-5 text-gold" />
-                  Full Name
+                  Name
                 </label>
                 <input
                   type="text"
@@ -740,7 +796,6 @@ async function openAntarInlineFor(mahaLord) {
               {/* Date of Birth */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5 text-gold" />
                   Date of Birth
                 </label>
                 <input
@@ -750,14 +805,13 @@ async function openAntarInlineFor(mahaLord) {
                   className="form-field-input"
                   required
                 />
-                <p className="form-field-helper">Format: YYYY-MM-DD</p>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
               </div>
 
               {/* Time of Birth */}
               <div>
                 <label className="form-field-label flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gold" />
-                  Time
+                  Time of Birth
                 </label>
                 <input
                   type="time"
@@ -776,8 +830,7 @@ async function openAntarInlineFor(mahaLord) {
                   {/* Place of Birth */}
                   <div className="flex-1 place-wrapper">
                     <label className="form-field-label flex items-center gap-2 mb-2">
-                      <MapPin className="w-5 h-5 text-gold" />
-                      Place of Birth
+                      Place
                     </label>
 
                     <div className="relative">
@@ -835,43 +888,48 @@ async function openAntarInlineFor(mahaLord) {
                     </p>
                   </div>
 
-                  {/* Get Predictions button */}
+                  {/* Gender Field */}
+                  <div className="w-full md:w-48">
+                    <label className="form-field-label flex items-center gap-2 mb-2">
+                      Gender
+                    </label>
+
+                    <div className="relative">
+                      <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="form-field-input pr-10"
+                        required
+                      >
+                        <option value="" disabled>
+                          Select gender
+                        </option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <p className="form-field-helper">
+                      Personalize chart reading
+                    </p>
+                  </div>
+
+                  {/* Get Predictions button - fixed width, not shrinking */}
                   <div className="w-full md:w-48">
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="btn btn-primary w-full h-[52px]"
+                      className="btn btn-primary btn-gold w-full h-[52px]"
                     >
                       {submitting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Calculating…
+                          Calculating...
                         </>
                       ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Get Predictions
-                        </>
+                        <>Get Predictions</>
                       )}
-                    </button>
-                  </div>
-
-                  {/* Reset button */}
-                  <div className="w-full md:w-32">
-                    <button
-                      type="reset"
-                      onClick={() => {
-                        setFullName("");
-                        setDob("");
-                        setTob("");
-                        setPlace("");
-                        setResult(null);
-                        setError("");
-                        setSelectedMaha(null);
-                      }}
-                      className="btn btn-ghost w-full h-[52px] px-4"
-                    >
-                      <RotateCcw className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -886,7 +944,7 @@ async function openAntarInlineFor(mahaLord) {
           >
             <div className="card" ref={historyCardRef}>
               <div className="results-header">
-                <Sparkles style={{ color: "#ca8a04" }} />
+                <History style={{ color: "#ca8a04" }} />
                 <h3 className="results-title flex items-center gap-2">
                   Prediction History
                 </h3>
@@ -912,7 +970,10 @@ async function openAntarInlineFor(mahaLord) {
                       onClick={() => loadFromHistory(item)}
                     >
                       <div className="history-row-text">
-                        <div className="h-name">{item.fullName}</div>
+                        <div className="h-name">
+                          {item.fullName}{" "}
+                          {item.gender ? `(${item.gender})` : ""}
+                        </div>
                         <div className="h-date">{item.dob}</div>
                         <div className="h-time">{item.tob}</div>
 
@@ -920,9 +981,8 @@ async function openAntarInlineFor(mahaLord) {
                         <div className="h-place">
                           <div
                             ref={(el) => (addressRefs.current[item.id] = el)}
-                            className={`address ${
-                              isAddressExpanded[item.id] ? "show-full" : ""
-                            }`}
+                            className={`address ${isAddressExpanded[item.id] ? "show-full" : ""
+                              }`}
                             title={item.place}
                           >
                             {item.place}
@@ -1029,13 +1089,13 @@ async function openAntarInlineFor(mahaLord) {
                     <Orbit />
                     Running Dasa
                   </div>
-                  <div className="info-value">{currentDashaChain || "—"}</div>
+                  <div className="info-value">{currentDashaChain || "-"}</div>
                 </div>
               </div>
             </div>
             {/* Western Natal Wheel Chart */}
             {result?.westernChartSvg &&
-            result.westernChartSvg.trim().startsWith("<svg") ? (
+              result.westernChartSvg.trim().startsWith("<svg") ? (
               <div
                 className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
                 style={{ maxWidth: "640px", margin: "0 auto" }}
@@ -1056,6 +1116,63 @@ async function openAntarInlineFor(mahaLord) {
                 </p>
               </div>
             ) : null}
+
+            {/* AI Astrologer CTA / Chat Window */}
+            <div className="card mt-8 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section">
+              {!chatOpen ? (
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-1">
+                    <div
+                      className="results-header"
+                      style={{ marginBottom: "1rem" }}
+                    >
+                      <Cpu style={{ color: "#ca8a04" }} />
+                      <h3 className="results-title">AI Astrologer</h3>
+                    </div>
+
+                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
+                      Get a Personalized AI Reading
+                    </h3>
+                    <p className="text-sm text-gray-70 max-w-xl">
+                      Let our AI Astrologer interpret your birth chart, dashas
+                      and planetary strengths in simple, practical language
+                      tailored just for you.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setChatOpen(true)}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
+                    >
+                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      Talk to AI Astrologer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="chat-window-container">
+                  <div className="chat-header">
+                    <div className="flex items-center gap-3">
+                      <Cpu className="w-5 h-5 text-gold" />
+                      <span className="text-white font-semibold">
+                        AI Astrologer Chat
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setChatOpen(false)}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="chat-content">
+                    <Chat pageTitle="Predictions" initialData={chatData} />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Planet Placements */}
             {placements.length > 0 ? (
               <div
@@ -1065,7 +1182,7 @@ async function openAntarInlineFor(mahaLord) {
                 style={{ scrollMarginTop: "96px" }} // keeps it nicely below your fixed header when scrolled
               >
                 <div className="results-header">
-                  <Orbit style={{ color: "#7c3aed" }} />
+                  <Orbit style={{ color: "#ca8a04" }} />
                   <h3 className="results-title">Planet Placements (D1)</h3>
                 </div>
                 <div className="table-scroll-container">
@@ -1104,41 +1221,40 @@ async function openAntarInlineFor(mahaLord) {
                         };
                         const pctVal = row
                           ? parsePct(
-                              row.percent ??
-                                row.percentage ??
-                                row.percentage_strength ??
-                                row.shadbala_percent ??
-                                row.strength_percent
-                            )
+                            row.percent ??
+                            row.percentage ??
+                            row.percentage_strength ??
+                            row.shadbala_percent ??
+                            row.strength_percent
+                          )
                           : null;
                         const ishtaVal = row
                           ? parsePct(
-                              row.ishta ??
-                                row.ishta_phala ??
-                                row.ishta_bala ??
-                                row.ishta_percent
-                            )
+                            row.ishta ??
+                            row.ishta_phala ??
+                            row.ishta_bala ??
+                            row.ishta_percent
+                          )
                           : null;
                         const kashtaVal = row
                           ? parsePct(
-                              row.kashta ??
-                                row.kashta_phala ??
-                                row.kashta_bala ??
-                                row.kashta_percent
-                            )
+                            row.kashta ??
+                            row.kashta_phala ??
+                            row.kashta_bala ??
+                            row.kashta_percent
+                          )
                           : null;
                         const fullDeg =
                           typeof p.fullDegree === "number"
-                            ? `Full: ${p.fullDegree.toFixed(2)}°`
+                            ? `Full: ${p.fullDegree.toFixed(2)}\u00B0`
                             : null;
 
                         const normDeg =
                           typeof p.normDegree === "number"
-                            ? `Norm: ${p.normDegree.toFixed(2)}°`
-                            : null;            
-                        const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
-                          p.pada ?? "—"
-                        })`;
+                            ? `Norm: ${p.normDegree.toFixed(2)}\u00B0`
+                            : null;
+                        const nakshatraDisplay = `${p.nakshatra ?? "-"} (${p.pada ?? "-"
+                          })`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
@@ -1149,8 +1265,8 @@ async function openAntarInlineFor(mahaLord) {
                                 )}
                               </div>
                             </td>
-                            <td>{p.currentSign || "—"}</td>
-                            <td>{p.house ?? "—"}</td>
+                            <td>{p.currentSign || "-"}</td>
+                            <td>{p.house ?? "-"}</td>
                             <td>{nakshatraDisplay}</td>
                             <td className="degrees-cell">
                               {fullDeg || normDeg ? (
@@ -1159,11 +1275,11 @@ async function openAntarInlineFor(mahaLord) {
                                   {normDeg && <div>{normDeg}</div>}
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                             <td>
-                              {pctVal != null ? `${pctVal.toFixed(1)}%` : "—"}
+                              {pctVal != null ? `${pctVal.toFixed(1)}%` : "-"}
                             </td>
                             <td style={{ width: "10rem" }}>
                               {ishtaVal != null ? (
@@ -1179,7 +1295,7 @@ async function openAntarInlineFor(mahaLord) {
                                   </div>
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                             <td style={{ width: "10rem" }}>
@@ -1196,7 +1312,7 @@ async function openAntarInlineFor(mahaLord) {
                                   </div>
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                           </tr>
@@ -1217,7 +1333,7 @@ async function openAntarInlineFor(mahaLord) {
             {/* Vimshottari Maha Dasha */}
             <div className="card">
               <div className="results-header">
-                <Moon style={{ color: "#4f46e5" }} />
+                <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Vimshottari Maha Dasha</h3>
               </div>
 
@@ -1251,33 +1367,35 @@ async function openAntarInlineFor(mahaLord) {
                             className="railway-segment"
                             style={{ "--i": i }}
                           >
-                            <div className="planet-header">
-                              <span className="planet-name">{row.lord}</span>
-                              <button
-                                className="analysis-btn"
-                                onClick={() => openAntarInlineFor(row.lord)}
-                              >
-                                Analysis
-                              </button>
-                            </div>
-
-                            <div className="segment-row">
-                              <span className="date-label">{start}</span>
-
-                              <div className="segment-bar">
-                                <div className="dot start-dot"></div>
-                                <div className="bar-line"></div>
-                                <div className="dot end-dot"></div>
+                            <div className="segment-inner">
+                              <div className="planet-header">
+                                <span className="planet-name">{row.lord}</span>
+                                <button
+                                  className="analysis-btn"
+                                  onClick={() => openAntarInlineFor(row.lord)}
+                                >
+                                  Analysis
+                                </button>
                               </div>
 
-                              <span className="date-label">{end}</span>
+                              <div className="segment-row">
+                                <span className="date-label">{start}</span>
+
+                                <div className="segment-bar">
+                                  <div className="dot start-dot"></div>
+                                  <div className="bar-line"></div>
+                                  <div className="dot end-dot"></div>
+                                </div>
+
+                                <span className="date-label">{end}</span>
+                              </div>
                             </div>
 
                             {/* === INLINE ANTAR PERIODS === */}
                             {openAntarFor === row.lord && (
                               <div className="antar-inline-box">
                                 {antarLoadingFor === row.lord ? (
-                                  <div className="antar-loading">Loading…</div>
+                                  <div className="antar-loading">Loading...</div>
                                 ) : antarRows[0]?.error ? (
                                   <div className="antar-error">
                                     {antarRows[0].error}
@@ -1340,7 +1458,7 @@ async function openAntarInlineFor(mahaLord) {
           onClose={() => setAntarOpen(false)}
           title={
             selectedMaha
-              ? `${selectedMaha} Maha Dasha — Antar Periods`
+              ? `${selectedMaha} Maha Dasha - Antar Periods`
               : "Antar Dasha"
           }
           position="center"
@@ -1396,22 +1514,22 @@ async function openAntarInlineFor(mahaLord) {
                       {antarRows.map((ad, i) => {
                         const startDate = ad.start
                           ? new Date(ad.start).toLocaleDateString("en-GB", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—";
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "-";
                         const endDate = ad.end
                           ? new Date(ad.end).toLocaleDateString("en-GB", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—";
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "-";
                         return (
                           <tr key={i}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {ad.lord || "—"}
+                              {ad.lord || "-"}
                             </td>
                             <td>{startDate}</td>
                             <td>{endDate}</td>
@@ -1431,7 +1549,7 @@ async function openAntarInlineFor(mahaLord) {
           onClose={() => setPredictionsOpen(false)}
           title={
             selectedPlanetForPredictions
-              ? `AI Predictions — ${selectedPlanetForPredictions} Maha Dasha`
+              ? `AI Predictions - ${selectedPlanetForPredictions} Maha Dasha`
               : "AI Predictions"
           }
           position="center"
@@ -1472,24 +1590,43 @@ async function openAntarInlineFor(mahaLord) {
           )}
         </Modal>
       </div>
-      <Modal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        title="Chat with AI"
-        position="center"
-      >
-        <div style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
-          <Chat pageTitle="Predictions" />
-          <div className="mt-4 flex justify-end">
-            <button
-              className="btn btn-primary"
-              onClick={() => setChatOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
+
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-4 right-4 p-4 z-50">
+        <button
+          className="btn btn-primary btn-gold"
+          onClick={() => {
+            const isFormFilled = fullName && dob && tob && place;
+            if (!isFormFilled) {
+              setError(
+                "Please complete all birth details before using the chat."
+              );
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              return;
+            }
+            if (!result) {
+              document.querySelector("form").requestSubmit();
+              setTimeout(() => {
+                setChatOpen(true);
+                setTimeout(() => {
+                  document
+                    .querySelector(".ai-astrologer-section")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              }, 2000);
+            } else {
+              setChatOpen(true);
+              setTimeout(() => {
+                document
+                  .querySelector(".ai-astrologer-section")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }, 100);
+            }
+          }}
+        >
+          Chat with AI
+        </button>
+      </div>
     </div>
   );
 }

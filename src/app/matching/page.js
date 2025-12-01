@@ -1,15 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  LineChart,
-  Line,
-} from "recharts";
+
 import {
   Sparkles,
   Sun,
@@ -20,6 +11,9 @@ import {
   Clock,
   MapPin,
   Trash2,
+  Cpu,
+  X,
+  LoaderCircle,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import Chat from "@/components/Chat";
@@ -140,7 +134,13 @@ export default function MatchingPage() {
   const [result, setResult] = useState(null); // Ashtakoot result object
   const [fDetails, setFDetails] = useState(null); // Female individual details object
   const [mDetails, setMDetails] = useState(null); // Male individual details object
-  const [mounted, setMounted] = useState(false); // Client-side mount flag for charts
+
+  // === Chat State ===
+  const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
+  const [chatData, setChatData] = useState(null); // Data to pass to chat component
+  const chatRef = useRef(null); // Reference to chat section for scrolling
+  const resultsRef = useRef(null); // Reference to results section for auto-scrolling
+
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
   const [history, setHistory] = useState([]); // Array of history entries
@@ -162,13 +162,11 @@ export default function MatchingPage() {
    */
   const saveToHistory = (entry) => {
     let current = getHistory();
-    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${
-      entry.femaleDob
-    }-${entry.maleDob}`;
+    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${entry.femaleDob
+      }-${entry.maleDob}`;
     current = current.filter(
       (it) =>
-        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${
-          it.femaleDob
+        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${it.femaleDob
         }-${it.maleDob}` !== key
     );
     current.unshift(entry);
@@ -193,51 +191,67 @@ export default function MatchingPage() {
     setHistory([]);
   };
 
+  const resetAllFields = () => {
+    setFemale({
+      fullName: "",
+      dob: "",
+      tob: "",
+      place: "",
+    });
+
+    setMale({
+      fullName: "",
+      dob: "",
+      tob: "",
+      place: "",
+    });
+
+    setFCoords(null);
+    setMCoords(null);
+    setFSuggest([]);
+    setMSuggest([]);
+    setError("");
+    setResult(null);
+    setFDetails(null);
+    setMDetails(null);
+  };
+
   const loadHistoryIntoForm = (item) => {
-  setFemale({
-    fullName: item.femaleName,
-    dob: item.femaleDob,
-    tob: item.femaleTob,
-    place: item.femalePlace,
-  });
+    setFemale({
+      fullName: item.femaleName,
+      dob: item.femaleDob,
+      tob: item.femaleTob,
+      place: item.femalePlace,
+    });
 
-  setMale({
-    fullName: item.maleName,
-    dob: item.maleDob,
-    tob: item.maleTob,
-    place: item.malePlace,
-  });
+    setMale({
+      fullName: item.maleName,
+      dob: item.maleDob,
+      tob: item.maleTob,
+      place: item.malePlace,
+    });
 
-  // Optional: Clear suggestions
-  setFSuggest([]);
-  setMSuggest([]);
+    // Optional: Clear suggestions
+    setFSuggest([]);
+    setMSuggest([]);
 
-  // Optional: Reset coords so user must re-select or re-run
-  setFCoords(null);
-  setMCoords(null);
+    // Optional: Reset coords so user must re-select or re-run
+    setFCoords(null);
+    setMCoords(null);
 
-  // Scroll to top where the form is
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
+    // Scroll to top where the form is
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Load history on mount
   useEffect(() => {
     setHistory(getHistory());
   }, []);
-  const [vw, setVw] = useState(1024); // Viewport width for responsive chart sizing
+
   /* -------------------------------------------------------------- */
   /* Lifecycle / resize */
   /* -------------------------------------------------------------- */
-  // Set mounted flag for client-side rendering (avoids hydration mismatch for charts)
-  useEffect(() => setMounted(true), []);
-  // Handle window resize for chart dimensions
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const update = () => setVw(window.innerWidth || 1024);
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+
   /* -------------------------------------------------------------- */
   /* Helpers */
   /* -------------------------------------------------------------- */
@@ -480,15 +494,15 @@ export default function MatchingPage() {
         const ad = Array.isArray(adList[firstMdKey])
           ? adList[firstMdKey][0]
           : Array.isArray(adList)
-          ? adList[0]
-          : null;
+            ? adList[0]
+            : null;
         const pdList = v.pratyantar_list || v.pd || {};
         const firstAdKey = ad?.key || ad?.planet || ad?.name;
         const pd = Array.isArray(pdList[firstAdKey])
           ? pdList[firstAdKey][0]
           : Array.isArray(pdList)
-          ? pdList[0]
-          : null;
+            ? pdList[0]
+            : null;
         return [
           md?.name || md?.planet,
           ad?.name || ad?.planet,
@@ -575,8 +589,8 @@ export default function MatchingPage() {
                 typeof v.fullDegree === "number"
                   ? v.fullDegree
                   : typeof v.longitude === "number"
-                  ? v.longitude
-                  : undefined,
+                    ? v.longitude
+                    : undefined,
               normDegree:
                 typeof v.normDegree === "number" ? v.normDegree : undefined,
             };
@@ -609,8 +623,8 @@ export default function MatchingPage() {
               typeof p.fullDegree === "number"
                 ? p.fullDegree
                 : typeof p.longitude === "number"
-                ? p.longitude
-                : undefined,
+                  ? p.longitude
+                  : undefined,
             normDegree:
               typeof p.normDegree === "number" ? p.normDegree : undefined,
           };
@@ -622,11 +636,11 @@ export default function MatchingPage() {
         const shadbala = parseShadbala(r["shadbala/summary"]);
         const vims = r["vimsottari/dasa-information"]
           ? safeParse(
-              safeParse(
-                r["vimsottari/dasa-information"].output ??
-                  r["vimsottari/dasa-information"]
-              )
+            safeParse(
+              r["vimsottari/dasa-information"].output ??
+              r["vimsottari/dasa-information"]
             )
+          )
           : null;
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
         const planets = parsePlanets(r["planets/extended"]);
@@ -638,11 +652,127 @@ export default function MatchingPage() {
       };
       setFDetails(buildUserDetails(fCalc));
       setMDetails(buildUserDetails(mCalc));
+      
+      // Auto-scroll to results after successful calculation
+      setTimeout(() => {
+        if (resultsRef.current) {
+          resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+      
+      // Return the computed result for callers that await onSubmit
+      return out;
     } catch (err) {
       setError(err?.message || "Failed to compute matching score.");
+      return null;
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /* -------------------------------------------------------------- */
+  /* Chat functionality */
+  /* -------------------------------------------------------------- */
+  /**
+   * Validates if all birth details are filled for both individuals.
+   * @returns {boolean} True if all fields are filled, false otherwise.
+   */
+  const validateBirthDetails = () => {
+    return (
+      female.fullName &&
+      female.dob &&
+      female.tob &&
+      female.place &&
+      male.fullName &&
+      male.dob &&
+      male.tob &&
+      male.place
+    );
+  };
+
+  /**
+   * Handles the Chat With AI button click.
+   * Validates birth details, auto-calculates if needed, and opens chat.
+   */
+  const handleChatButtonClick = async () => {
+    // Check if birth details are filled
+    if (!validateBirthDetails()) {
+      setError(
+        "Please complete all fields for both individuals, including names, before using the chat."
+      );
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // If no result exists, calculate it first
+    if (!result) {
+      // Create a synthetic event to trigger form submission and await the computed result
+      const syntheticEvent = { preventDefault: () => {} };
+      const computed = await onSubmit(syntheticEvent);
+      if (computed) {
+        // result state is set inside onSubmit; prepare chat and open
+        prepareChatData();
+        setChatOpen(true);
+        scrollToChat();
+      }
+    } else {
+      // Result exists, prepare data and open chat
+      prepareChatData();
+      setChatOpen(true);
+      scrollToChat();
+    }
+  };
+
+  /**
+   * Prepares the data to be passed to the Chat component.
+   */
+  const prepareChatData = () => {
+    const data = {
+      female: {
+        input: {
+          name: female.fullName,
+          dob: female.dob,
+          tob: female.tob,
+          place: female.place,
+        },
+        shadbalaRows: fDetails?.shadbalaRows || [],
+        placements: fDetails?.placements || [],
+        currentDasha: fDetails?.currentDasha || null,
+      },
+      male: {
+        input: {
+          name: male.fullName,
+          dob: male.dob,
+          tob: male.tob,
+          place: male.place,
+        },
+        shadbalaRows: mDetails?.shadbalaRows || [],
+        placements: mDetails?.placements || [],
+        currentDasha: mDetails?.currentDasha || null,
+      },
+      matching: {
+        totalScore: result?.total_score || 0,
+        outOf: result?.out_of || 36,
+        breakdown: KOOTS.map((k) => ({
+          name: k,
+          score: result?.[k]?.score || 0,
+          outOf: result?.[k]?.out_of || 0,
+        })),
+      },
+    };
+    setChatData(data);
+  };
+
+  /**
+   * Scrolls to the chat section smoothly.
+   */
+  const scrollToChat = () => {
+    setTimeout(() => {
+      if (chatRef.current) {
+        chatRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 300);
   };
   /* -------------------------------------------------------------- */
   /* Sharing and Downloading Functions */
@@ -671,7 +801,7 @@ export default function MatchingPage() {
       const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
       text += `${name}: ${score}/${outOfK}\n`;
     });
-    text += `\nGenerated via Vedic Astrology Match Maker. Share your cosmic connection! 🌟`;
+    text += `\nGenerated via Vedic Astrology Match Maker. Share your cosmic connection!`;
     return text;
   };
 
@@ -732,8 +862,7 @@ export default function MatchingPage() {
     const femaleName = female.fullName || "Female";
     const maleName = male.fullName || "Male";
     doc.text(
-      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
-        female.place
+      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${female.place
       }`,
       margin,
       yPos
@@ -918,25 +1047,7 @@ export default function MatchingPage() {
     "rasi_kootam",
     "nadi_kootam",
   ];
-  /**
-   * Transforms result into Koot data array for charts/table.
-   * @returns {array} Array of {name, score, outOf, pct} objects.
-   */
-  const kootData = result
-    ? KOOTS.map((k) => {
-        const sec = result?.[k];
-        const score = typeof sec?.score === "number" ? sec.score : 0;
-        const outOf =
-          typeof sec?.out_of === "number" && sec.out_of > 0 ? sec.outOf : 0;
-        const pct = outOf ? Math.round((score / outOf) * 100) : 0;
-        return { name: k.replace(/_/g, " "), score, outOf, pct };
-      })
-    : [];
-  // Responsive chart dimensions
-  const BAR_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
-  const LINE_W = vw < 640 ? 260 : vw < 1024 ? 320 : 380;
-  const BAR_H = Math.round(BAR_W * 0.44);
-  const LINE_H = Math.round(LINE_W * 0.44);
+
   /* -------------------------------------------------------------- */
   /* Person details component */
   /* -------------------------------------------------------------- */
@@ -1039,19 +1150,8 @@ export default function MatchingPage() {
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
-  const [chatOpen, setChatOpen] = useState(false);
   return (
     <>
-      {/* Chat Modal Trigger and Modal */}
-      <Modal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        title="AI Assistant"
-        position="top-right"
-        topOffset={100}
-      >
-        <Chat pageTitle="Matching" />
-      </Modal>
       {/* ---------------------------------------------------------- */}
       {/* INTERNAL CSS (styled-jsx) – completely self-contained */}
       {/* ---------------------------------------------------------- */}
@@ -1082,6 +1182,9 @@ export default function MatchingPage() {
         }
         .form-field input::placeholder {
           font-style: normal;
+        }
+        .form-field-label {
+          color: var(--color-gold);
         }
         @media (min-width: 768px) {
           .form-grid {
@@ -1121,10 +1224,12 @@ export default function MatchingPage() {
         label {
           font-size: 0.875rem;
           font-weight: 500;
+          border-radius: 0.75rem;
           color: var(--c-muted);
         }
         input {
           padding: 0.5rem 0.75rem;
+          line-height: 2.5;
           border: 1px solid var(--c-border);
           border-radius: 0.5rem;
           font-size: 0.95rem;
@@ -1168,6 +1273,19 @@ export default function MatchingPage() {
           white-space: nowrap; /* Prevent text wrap */
           min-width: 100px; /* Optional: consistent width */
           text-align: center;
+        }
+        .btn-gold {
+          background: linear-gradient(
+            to right,
+            #fcd34d,
+            #fbbf24,
+            #f59e0b
+          ) !important;
+          border-color: rgba(251, 191, 36, 0.7) !important;
+          box-shadow: 0 0 20px rgba(250, 204, 21, 0.55) !important;
+        }
+        .btn-gold:hover {
+          box-shadow: 0 0 30px rgba(250, 204, 21, 0.8) !important;
         }
         .btn-reset {
           background: transparent;
@@ -1418,6 +1536,137 @@ export default function MatchingPage() {
           border-radius: 0.5rem;
           margin-bottom: 1rem;
         }
+
+        /* AI Astrologer Chat Window Animations */
+        .ai-astrologer-section {
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chat-window-container {
+          animation: slideInFromRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-origin: right center;
+        }
+
+        @keyframes slideInFromRight {
+          0% {
+            opacity: 0;
+            transform: translateX(100%) scale(0.95);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translateX(20%) scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+
+        .chat-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 1.5rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(8px);
+        }
+
+        .chat-content {
+          padding: 1.5rem;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(12px);
+          border-radius: 0 0 1rem 1rem;
+        }
+
+        /* Smooth fade out animation for CTA content */
+        .ai-astrologer-section > div:first-child {
+          transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+
+        .ai-astrologer-section.chat-opening > div:first-child {
+          opacity: 0;
+          transform: translateX(-50px) scale(0.95);
+        }
+        //* Compact placements table – wider text columns, headers unchanged */
+        .placements-table {
+          table-layout: fixed;
+          width: 100%;
+        }
+
+        /* Don't touch <th> font-size, just a bit of padding */
+        .placements-table th {
+          padding: 0.5rem 0.75rem;
+        }
+
+        /* Make data cells slightly smaller + tighter */
+        .placements-table td {
+          padding: 0.4rem 0.6rem;
+          font-size: 0.8rem;
+        }
+
+        /* Planet */
+        .placements-table th:nth-child(1),
+        .placements-table td:nth-child(1) {
+          width: 20%;
+        }
+
+        /* Sign */
+        .placements-table th:nth-child(2),
+        .placements-table td:nth-child(2) {
+          width: 18%;
+        }
+
+        /* House */
+        .placements-table th:nth-child(3),
+        .placements-table td:nth-child(3) {
+          width: 15%;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        /* Nakshatra (Pada) */
+        .placements-table th:nth-child(4),
+        .placements-table td:nth-child(4) {
+          width: 28%;
+        }
+
+        /* Degrees */
+        .placements-table th:nth-child(5),
+        .placements-table td:nth-child(5) {
+          width: 20%;
+        }
+
+        .deg-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+          line-height: 1.1;
+        }
+
+        .deg-cell div {
+          white-space: nowrap;
+        }
+
+        .deg-norm {
+          opacity: 1;
+          font-size: 0.75rem;
+        }
+
+        .planet-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          line-height: 1.1;
+        }
+
+        .planet-retro {
+          font-size: 0.75rem;
+          color: inherit;
+          text-transform: none;
+          letter-spacing: normal;
+        }
       `}</style>
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
@@ -1462,58 +1711,22 @@ export default function MatchingPage() {
                 Enter birth details for both individuals
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setChatOpen(true)}
-              className="btn btn-primary"
-              style={{
-                position: "absolute",
-                right: 0,
-                top: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 12,
-                background: "linear-gradient(135deg,#d4af37,#b8972e)",
-                color: "white",
-                border: "1px solid rgba(212,175,55,0.5)",
-                boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
-                transition: "transform .2s ease, box-shadow .2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow =
-                  "0 12px 28px rgba(212,175,55,0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 8px 24px rgba(212,175,55,0.25)";
-              }}
-            >
-              <Sparkles className="w-4 h-4" />
-              Chat with AI
-            </button>
           </div>
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">
             {/* ---------- Female ---------- */}
             <div className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6">
               <div className="results-header mb-3">
-                <Moon style={{ color: "#a78bfa" }} />
+                <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Female Details</h3>
               </div>
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Sparkles className="w-5 h-5 text-pink-500" />
-                    Full Name
-                  </label>
+                  <label className="form-field-label">Female Name</label>
                   <input
                     type="text"
-                    placeholder="Enter full name"
+                    placeholder="Enter Female name"
                     value={female.fullName}
                     onChange={onChangePerson(
                       setFemale,
@@ -1527,10 +1740,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Calendar className="w-5 h-5 text-pink-500" />
-                    Date of Birth
-                  </label>
+                  <label className="form-field-label">Date of Birth</label>
                   <input
                     type="date"
                     value={female.dob}
@@ -1548,10 +1758,7 @@ export default function MatchingPage() {
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Clock className="w-5 h-5 text-pink-500" />
-                    Time of Birth
-                  </label>
+                  <label className="form-field-label">Time of Birth</label>
                   <input
                     type="time"
                     step="60"
@@ -1563,16 +1770,13 @@ export default function MatchingPage() {
                       fTimer,
                       "tob"
                     )}
-                    required
                     className="form-field-input"
+                    required
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
-                  <label className="form-field-label">
-                    <MapPin className="w-5 h-5 text-pink-500" />
-                    Place
-                  </label>
+                  <label className="form-field-label">Place</label>
                   <input
                     placeholder="City, Country"
                     value={female.place}
@@ -1618,13 +1822,10 @@ export default function MatchingPage() {
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Sparkles className="w-5 h-5 text-blue-500" />
-                    Full Name
-                  </label>
+                  <label className="form-field-label">Male Name</label>
                   <input
                     type="text"
-                    placeholder="Enter full name"
+                    placeholder="Enter Male name"
                     value={male.fullName}
                     onChange={onChangePerson(
                       setMale,
@@ -1638,10 +1839,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Calendar className="w-5 h-5 text-blue-500" />
-                    Date of Birth
-                  </label>
+                  <label className="form-field-label">Date of Birth</label>
                   <input
                     type="date"
                     value={male.dob}
@@ -1659,10 +1857,7 @@ export default function MatchingPage() {
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                    Time of Birth
-                  </label>
+                  <label className="form-field-label">Time of Birth</label>
                   <input
                     type="time"
                     step="60"
@@ -1674,16 +1869,13 @@ export default function MatchingPage() {
                       mTimer,
                       "tob"
                     )}
-                    required
                     className="form-field-input"
+                    required
                   />
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
-                  <label className="form-field-label">
-                    <MapPin className="w-5 h-5 text-blue-500" />
-                    Place
-                  </label>
+                  <label className="form-field-label">Place</label>
                   <input
                     placeholder="City, Country"
                     value={male.place}
@@ -1735,36 +1927,22 @@ export default function MatchingPage() {
               <button
                 type="submit"
                 disabled={submitting || fFilled < 3 || mFilled < 3}
-                className="btn btn-primary w-full"
+                className="btn btn-primary btn-gold w-full"
               >
                 {submitting ? (
                   <>
-                    <Sparkles className="w-4 h-4 animate-spin mr-2" />
+                    <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
                     Calculating…
                   </>
                 ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Match Score
-                  </>
+                  <>Get Match Score</>
                 )}
               </button>
             </div>
             <div className="reset-col col-span-2">
               <button
                 type="reset"
-                onClick={() => {
-                  setFemale({ dob: "", tob: "", place: "" });
-                  setMale({ dob: "", tob: "", place: "" });
-                  setFCoords(null);
-                  setMCoords(null);
-                  setFSuggest([]);
-                  setMSuggest([]);
-                  setError("");
-                  setResult(null);
-                  setFDetails(null);
-                  setMDetails(null);
-                }}
+                onClick={resetAllFields}
                 className="btn btn-ghost w-full"
               >
                 <RotateCcw className="w-4 h-4" /> Reset
@@ -1792,66 +1970,75 @@ export default function MatchingPage() {
             {history.length === 0 ? (
               <div className="empty-state">No matching history yet.</div>
             ) : (
-              <div className="table-scroll-container">
-                <table className="planet-table">
-                  <thead>
-                    <tr>
-                      <th>Female Details</th>
-                      <th>Male Details</th>
-                      <th></th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((item) => (
-                      <tr
-                        className="history-row"
-                        onClick={() => loadHistoryIntoForm(item)}
-                      >
-                        {/* FEMALE CELL */}
-                        <td className="history-cell">
-                          <div className="h-name">{item.femaleName}</div>
-                          <div>{item.femaleDob}</div>
-                          <div>{item.femaleTob}</div>
-                          <div>{item.femalePlace}</div>
-                        </td>
-
-                        {/* MALE CELL */}
-                        <td className="history-cell">
-                          <div className="h-name">{item.maleName}</div>
-                          <div>{item.maleDob}</div>
-                          <div>{item.maleTob}</div>
-                          <div>{item.malePlace}</div>
-                        </td>
-
-                        {/* ACTION BUTTONS FLOAT RIGHT */}
-                        <td className="history-actions-cell">
-                          <div className="history-actions">
-                            <button
-                              className="use-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                loadHistoryIntoForm(item);
-                              }}
-                            >
-                              Use
-                            </button>
-
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteHistoryItem(item.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="history-cards">
+                {history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="history-card"
+                    onClick={() => loadHistoryIntoForm(item)}
+                  >
+                    <div className="history-card-top">
+                      <div className="history-card-names">
+                        <span className="pill pill-female">
+                          {item.femaleName || "Female"}
+                        </span>
+                        <span className="dot-separator">↔</span>
+                        <span className="pill pill-male">
+                          {item.maleName || "Male"}
+                        </span>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          className="use-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadHistoryIntoForm(item);
+                          }}
+                        >
+                          Use
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteHistoryItem(item.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="history-card-body">
+                      <div className="person-block">
+                        <div className="person-label">Female</div>
+                        <div className="person-meta">
+                          <Calendar className="meta-icon" />
+                          <span>
+                            {item.femaleDob || "-"} · {item.femaleTob || "-"}
+                          </span>
+                        </div>
+                        <div className="person-meta">
+                          <MapPin className="meta-icon" />
+                          <span>{item.femalePlace || "-"}</span>
+                        </div>
+                      </div>
+                      <div className="person-divider" />
+                      <div className="person-block">
+                        <div className="person-label">Male</div>
+                        <div className="person-meta">
+                          <Calendar className="meta-icon" />
+                          <span>
+                            {item.maleDob || "-"} · {item.maleTob || "-"}
+                          </span>
+                        </div>
+                        <div className="person-meta">
+                          <MapPin className="meta-icon" />
+                          <span>{item.malePlace || "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1860,7 +2047,7 @@ export default function MatchingPage() {
         {/* RESULT SECTION */}
         {/* ---------------------------------------------------------- */}
         {result && (
-          <div className="app fade-in">
+          <div ref={resultsRef} className="app fade-in">
             {/* Background Orbs */}
             <div
               style={{
@@ -1953,6 +2140,85 @@ export default function MatchingPage() {
               </div>
             </div>
 
+            {/* AI Astrologer CTA / Chat Window */}
+            <div className="card mt-8 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section">
+              {!chatOpen ? (
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Cpu className="w-6 h-6 text-gold" />
+                      <span className="uppercase tracking-[0.2em] text-[11px] text-gold/80">
+                        AI Astrologer
+                      </span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-semibold text-white mb-1">
+                      Get a Personalized AI Reading
+                    </h3>
+                    <p className="text-sm text-indigo-100/90 max-w-xl">
+                      Let our AI Astrologer interpret your birth chart, dashas
+                      and planetary strengths in simple, practical language
+                      tailored just for you.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setChatOpen(true)}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
+                    >
+                      <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      Talk to AI Astrologer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="chat-window-container">
+                  <div className="chat-header">
+                    <div className="flex items-center gap-3">
+                      <Cpu className="w-5 h-5 text-gold" />
+                      <span className="text-white font-semibold">
+                        AI Astrologer Chat
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setChatOpen(false)}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="chat-content">
+                    <Chat
+                      pageTitle="Matching"
+                      initialData={{
+                        female: {
+                          input: {
+                            name: female.fullName,
+                            dob: female.dob,
+                            tob: female.tob,
+                            place: female.place,
+                            coords: fCoords,
+                          },
+                          details: fDetails,
+                        },
+                        male: {
+                          input: {
+                            name: male.fullName,
+                            dob: male.dob,
+                            tob: male.tob,
+                            place: male.place,
+                            coords: mCoords,
+                          },
+                          details: mDetails,
+                        },
+                        match: result || null,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Verdict Card */}
             <div className="card">
               <div className="results-header">
@@ -2030,124 +2296,7 @@ export default function MatchingPage() {
                 </table>
               </div>
             </div>
-            {/* Charts Section */}
-            {mounted && (
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
-                {/* Bar Chart */}
-                <div className="card">
-                  <div className="results-header">
-                    <Sun style={{ color: "#d4af37" }} />
-                    <h3 className="results-title">Koot Scores (Bar)</h3>
-                  </div>
-                  {kootData.length > 0 ? (
-                    <div className="flex justify-center">
-                      <BarChart
-                        width={400}
-                        height={220}
-                        data={kootData}
-                        margin={{ top: 8, right: 8, left: 0, bottom: 24 }}
-                      >
-                        <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fill: "#64748b", fontSize: 10 }}
-                          angle={-30}
-                          textAnchor="end"
-                          height={36}
-                        />
-                        <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "#ffffff",
-                            border: "1px solid var(--color-gold)",
-                            color: "#1f2937",
-                            borderRadius: "0.5rem",
-                            boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-                            padding: "0.5rem 0.75rem",
-                          }}
-                          itemStyle={{
-                            color: "#1f2937",
-                            fontWeight: 600,
-                          }}
-                          labelStyle={{
-                            color: "var(--color-gold)",
-                            fontWeight: 700,
-                            marginBottom: "0.25rem",
-                          }}
-                        />
 
-                        <Bar
-                          dataKey="score"
-                          fill="var(--color-gold)"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </div>
-                  ) : (
-                    <div className="empty-state">No chart data</div>
-                  )}
-                </div>
-
-                {/* Line Chart */}
-                <div className="card">
-                  <div className="results-header">
-                    <Moon style={{ color: "#a78bfa" }} />
-                    <h3 className="results-title">Koot Percentage (Line)</h3>
-                  </div>
-                  {kootData.length > 0 ? (
-                    <div className="flex justify-center">
-                      <LineChart
-                        width={400}
-                        height={220}
-                        data={kootData}
-                        margin={{ top: 8, right: 8, left: 0, bottom: 24 }}
-                      >
-                        <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fill: "#64748b", fontSize: 10 }}
-                          angle={-30}
-                          textAnchor="end"
-                          height={36}
-                        />
-                        <YAxis
-                          tick={{ fill: "#64748b", fontSize: 10 }}
-                          domain={[0, 100]}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: "#ffffff",
-                            border: "1px solid var(--color-gold)",
-                            color: "#1f2937",
-                            borderRadius: "0.5rem",
-                            boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-                            padding: "0.5rem 0.75rem",
-                          }}
-                          itemStyle={{
-                            color: "#1f2937",
-                            fontWeight: 600,
-                          }}
-                          labelStyle={{
-                            color: "var(--color-gold)",
-                            fontWeight: 700,
-                            marginBottom: "0.25rem",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="pct"
-                          stroke="#7c3aed"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </div>
-                  ) : (
-                    <div className="empty-state">No chart data</div>
-                  )}
-                </div>
-              </div>
-            )}
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
               <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -2160,7 +2309,7 @@ export default function MatchingPage() {
 
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table shadbala-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2172,9 +2321,7 @@ export default function MatchingPage() {
                       <tbody>
                         {(fDetails?.shadbalaRows || []).map((p, i) => (
                           <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>
-                              {p.retro ? `${p.name} (Retro)` : p.name}
-                            </td>
+                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
                             <td>
                               {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
                             </td>
@@ -2220,7 +2367,7 @@ export default function MatchingPage() {
 
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table placements-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2235,27 +2382,38 @@ export default function MatchingPage() {
                           const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                             p.pada ?? "—"
                           })`;
-                          const degreesDisplay =
-                            [
-                              typeof p.fullDegree === "number"
-                                ? `Full: ${p.fullDegree.toFixed(2)}°`
-                                : null,
-                              typeof p.normDegree === "number"
-                                ? `Norm: ${p.normDegree.toFixed(2)}°`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || "—";
 
                           return (
                             <tr key={i}>
                               <td style={{ fontWeight: 500 }}>
-                                {p.retro ? `${p.name} (Retro)` : p.name}
+                                <div className="planet-cell">
+                                  <span>{p.name}</span>
+                                  {p.retro && (
+                                    <span className="planet-retro">
+                                      (Retro)
+                                    </span>
+                                  )}
+                                </div>
                               </td>
+
                               <td>{p.currentSign || "—"}</td>
                               <td>{p.house ?? "—"}</td>
                               <td>{nakshatraDisplay}</td>
-                              <td>{degreesDisplay}</td>
+                              <td>
+                                <div className="deg-cell">
+                                  {typeof p.fullDegree === "number" && (
+                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                  )}
+                                  {typeof p.normDegree === "number" && (
+                                    <div className="deg-norm">
+                                      Norm: {p.normDegree.toFixed(2)}°
+                                    </div>
+                                  )}
+                                  {typeof p.fullDegree !== "number" &&
+                                    typeof p.normDegree !== "number" &&
+                                    "—"}
+                                </div>
+                              </td>
                             </tr>
                           );
                         })}
@@ -2273,7 +2431,7 @@ export default function MatchingPage() {
 
                   {/* Shadbala / Ishta-Kashta */}
                   <div className="table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table shadbala-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2331,7 +2489,7 @@ export default function MatchingPage() {
 
                   {/* Planet Placements */}
                   <div className="mt-6 table-scroll-container">
-                    <table className="planet-table">
+                    <table className="planet-table placements-table">
                       <thead>
                         <tr>
                           <th>Planet</th>
@@ -2346,27 +2504,38 @@ export default function MatchingPage() {
                           const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
                             p.pada ?? "—"
                           })`;
-                          const degreesDisplay =
-                            [
-                              typeof p.fullDegree === "number"
-                                ? `Full: ${p.fullDegree.toFixed(2)}°`
-                                : null,
-                              typeof p.normDegree === "number"
-                                ? `Norm: ${p.normDegree.toFixed(2)}°`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || "—";
 
                           return (
                             <tr key={i}>
                               <td style={{ fontWeight: 500 }}>
-                                {p.retro ? `${p.name} (Retro)` : p.name}
+                                <div className="planet-cell">
+                                  <span>{p.name}</span>
+                                  {p.retro && (
+                                    <span className="planet-retro">
+                                      (Retro)
+                                    </span>
+                                  )}
+                                </div>
                               </td>
+
                               <td>{p.currentSign || "—"}</td>
                               <td>{p.house ?? "—"}</td>
                               <td>{nakshatraDisplay}</td>
-                              <td>{degreesDisplay}</td>
+                              <td>
+                                <div className="deg-cell">
+                                  {typeof p.fullDegree === "number" && (
+                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                  )}
+                                  {typeof p.normDegree === "number" && (
+                                    <div className="deg-norm">
+                                      Norm: {p.normDegree.toFixed(2)}°
+                                    </div>
+                                  )}
+                                  {typeof p.fullDegree !== "number" &&
+                                    typeof p.normDegree !== "number" &&
+                                    "—"}
+                                </div>
+                              </td>
                             </tr>
                           );
                         })}
@@ -2379,17 +2548,141 @@ export default function MatchingPage() {
 
             {/* Footer */}
             <div className="actionBar mt-8">
-              <button className="btn btn-ghost">
+              <button className="btn btn-ghost" onClick={resetAllFields}>
                 <RotateCcw className="w-4 h-4" /> Reset
               </button>
               <div className="flex gap-3">
-                <button className="btn btn-primary">Download PDF</button>
-                <button className="btn btn-primary">Share</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleDownloadPDF}
+                  disabled={!result}
+                >
+                  Download PDF
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleShare}
+                  disabled={!result}
+                >
+                  Share
+                </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Fixed Chat With AI Button */}
+      <div className="fixed bottom-4 right-4 p-4 z-50">
+        <button
+          className="btn btn-primary btn-gold"
+          onClick={handleChatButtonClick}
+          disabled={submitting}
+        >
+          Chat with AI
+        </button>
+      </div>
+      <style jsx>{`
+        .history-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 16px;
+        }
+        .history-card {
+          background: linear-gradient(145deg, #fffaf0, #f8f5eb);
+          border: 1px solid #f1e9d2;
+          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.12);
+          border-radius: 16px;
+          padding: 16px;
+          transition: transform 160ms ease, box-shadow 160ms ease;
+          cursor: pointer;
+        }
+        .history-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
+        }
+        .history-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .history-card-names {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .pill {
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          border: 1px solid #f5d276;
+          background: #fff8e6;
+          color: #8b6b15;
+        }
+        .pill-male {
+          background: #e8f1ff;
+          border-color: #c9daf8;
+          color: #1f3b6d;
+        }
+        .dot-separator {
+          color: #c4a13f;
+          font-weight: 700;
+        }
+        .history-card-body {
+          display: flex;
+          gap: 16px;
+          align-items: stretch;
+        }
+        .person-block {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .person-label {
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.04em;
+          color: #9a7a2d;
+          font-weight: 700;
+        }
+        .person-meta {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          color: #4b5563;
+          font-size: 0.95rem;
+          line-height: 1.4;
+        }
+        .meta-icon {
+          width: 16px;
+          height: 16px;
+          color: #d4af37;
+        }
+        .person-divider {
+          width: 1px;
+          background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
+        }
+        .history-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        @media (max-width: 720px) {
+          .history-card-body {
+            flex-direction: column;
+          }
+          .person-divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
+          }
+        }
+      `}</style>
     </>
   );
 }
