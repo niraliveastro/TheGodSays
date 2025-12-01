@@ -30,8 +30,14 @@ export function validateDate(year, month, date) {
   const y = parseInt(year)
   const m = parseInt(month)
   const d = parseInt(date)
-  
-  if (y < 1900 || y > 2100) throw new Error('Invalid year')
+
+  const currentYear = new Date().getFullYear()
+  const minYear = currentYear - 150 // allow historical birth years
+  const maxYear = currentYear + 10 // keep a small buffer for testing/future dates
+
+  if (y < minYear || y > maxYear) {
+    throw new Error(`Invalid year. Supported range is ${minYear}-${maxYear}.`)
+  }
   if (m < 1 || m > 12) throw new Error('Invalid month')
   if (d < 1 || d > 31) throw new Error('Invalid date')
   

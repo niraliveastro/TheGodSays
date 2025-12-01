@@ -15,6 +15,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import astrologyAPI from "@/lib/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /**
  * HoraTimingsPage Component
@@ -351,6 +353,93 @@ export default function HoraTimingsPage() {
   const night = entries.filter(([k]) => +k > 12).sort((a, b) => +a[0] - +b[0]); // Night horas (13+)
   const dayStart = day[0] ? fmt(day[0][1].starts_at) : "--"; // First day hora start time
   const nightStart = night[0] ? fmt(night[0][1].starts_at) : "--"; // First night hora start time
+
+  const handleDownload = () => {
+    if (!parsed) return;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 16;
+
+    const dayLabel = new Date(selectedDate).toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Hora Timings", pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Date: ${dayLabel}`, pageWidth / 2, y, { align: "center" });
+    y += 6;
+    doc.text(
+      `Location: ${userLocation?.latitude?.toFixed(4) ?? "-"}, ${userLocation?.longitude?.toFixed(4) ?? "-"}`,
+      pageWidth / 2,
+      y,
+      { align: "center" }
+    );
+    y += 10;
+
+    const toTable = (list) =>
+      list.map(([idx, h]) => [
+        idx,
+        h.lord,
+        fmt(h.starts_at),
+        fmt(h.ends_at),
+        h.duration || "",
+      ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Lord", "Start", "End", "Duration"]],
+      body: toTable(day),
+      margin: { left: 12, right: 12 },
+      headStyles: { fillColor: [212, 175, 55], textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 3 },
+      theme: "striped",
+      didDrawPage: (data) => {
+        const newY = data.cursor.y + 10;
+        autoTable(doc, {
+          startY: newY,
+          head: [["#", "Lord", "Start", "End", "Duration"]],
+          body: toTable(night),
+          margin: { left: 12, right: 12 },
+          headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+          styles: { fontSize: 9, cellPadding: 3 },
+          theme: "striped",
+        });
+      },
+    });
+
+    doc.save(`hora-timings-${selectedDate}.pdf`);
+  };
+
+  const handleShare = async () => {
+    if (!parsed) return;
+    const shareText = `Hora Timings for ${selectedDate}\nDay horas: ${day
+      .map(([_, h]) => `${h.lord} (${fmt(h.starts_at)} - ${fmt(h.ends_at)})`)
+      .join("; ")}\nNight horas: ${night
+      .map(([_, h]) => `${h.lord} (${fmt(h.starts_at)} - ${fmt(h.ends_at)})`)
+      .join("; ")}`;
+    const data = { title: "Hora Timings", text: shareText, url: window.location.href };
+    try {
+      if (navigator.share && navigator.canShare(data)) {
+        await navigator.share(data);
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert("Copied hora timings to clipboard");
+      }
+    } catch (_) {
+      alert("Share failed. Copied to clipboard instead.");
+      try {
+        await navigator.clipboard.writeText(shareText);
+      } catch (_) {}
+    }
+  };
 
   return (
     <>
@@ -941,9 +1030,7 @@ export default function HoraTimingsPage() {
           </button>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button
-              onClick={() => {
-                /* TODO: Implement download functionality (e.g., PDF/CSV export) */
-              }}
+              onClick={handleDownload}
               disabled={!horaData}
               className="btn"
             >
@@ -951,9 +1038,7 @@ export default function HoraTimingsPage() {
               Download
             </button>
             <button
-              onClick={() => {
-                /* TODO: Implement share functionality (e.g., social sharing or URL copy) */
-              }}
+              onClick={handleShare}
               disabled={!horaData}
               className="btn"
             >

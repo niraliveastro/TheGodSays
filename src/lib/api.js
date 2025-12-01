@@ -45,6 +45,26 @@ const API_ENDPOINTS = {
   ,'match-making/ashtakoot-score': 'match-making/ashtakoot-score'
 }
 
+async function parseErrorResponse(response) {
+  const fallback = `HTTP error! status: ${response.status}`
+  try {
+    const text = await response.text()
+    if (!text) return fallback
+
+    try {
+      const data = JSON.parse(text)
+      if (data && typeof data === 'object') {
+        return data.error || data.message || fallback
+      }
+      return text
+    } catch {
+      return text
+    }
+  } catch {
+    return fallback
+  }
+}
+
 export const astrologyAPI = {
   async getSingleCalculation(optionId, payload) {
     try {
@@ -103,19 +123,21 @@ const response = await fetch(url, {
           continue
         }
 
+        const errorMessage = await parseErrorResponse(response)
+
         // If 403, API key is invalid - throw specific error
         if (response.status === 403) {
-          lastErr = new Error('API authentication failed (403). Using fallback data.')
+          lastErr = new Error(errorMessage || 'API authentication failed (403). Using fallback data.')
           break
         }
 
         // For 500 errors, don't throw - return error info instead
         if (response.status >= 500) {
-          lastErr = new Error(`Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
+          lastErr = new Error(errorMessage || `Server error (${response.status}). The astrology API service may be temporarily unavailable.`)
           break
         }
 
-        lastErr = new Error(`HTTP error! status: ${response.status}`)
+        lastErr = new Error(errorMessage)
         break
       }
 

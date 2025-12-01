@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function HinduDateCard({
   heading = "Today's Hindu Date",
@@ -13,6 +13,22 @@ export default function HinduDateCard({
   shakaLine = '-',
   rightExtra = '',
 }) {
+  // Preserve last valid values to avoid flicker while data loads
+  const [stableTitle, setStableTitle] = useState(primaryTitle);
+  const [stableTithi, setStableTithi] = useState(tithi);
+
+  useEffect(() => {
+    if (primaryTitle && primaryTitle !== '-') {
+      setStableTitle(primaryTitle);
+    }
+  }, [primaryTitle]);
+
+  useEffect(() => {
+    if (tithi && tithi !== '-') {
+      setStableTithi(tithi);
+    }
+  }, [tithi]);
+
   return (
     <>
       <style jsx>{`
@@ -26,7 +42,7 @@ export default function HinduDateCard({
         }
 
         .hinduCard {
-          width: 320px;
+          width: 340px;
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(12px);
           border: 1px solid rgba(212, 175, 55, 0.3);
@@ -39,20 +55,20 @@ export default function HinduDateCard({
         .cardHeader {
           background: #fefce8;
           padding: 0.75rem 1rem;
-          font-weight: 600;
-          font-size: 0.875rem;
+          font-weight: 700;
+          font-size: 0.95rem;
           color: #7c2d12;
           border-bottom: 1px solid rgba(212, 175, 55, 0.2);
         }
 
         .cardBody {
           background: #ffffff;
-          padding: 1rem;
+          padding: 1.25rem 1.5rem;
         }
 
         .primaryTitle {
           font-family: 'Cormorant Garamond', serif;
-          font-size: 1.5rem;
+          font-size: 1.65rem;
           font-weight: 700;
           color: #7c2d12;
           margin-bottom: 0.5rem;
@@ -67,15 +83,26 @@ export default function HinduDateCard({
           margin-top: -0.5rem;
         }
 
+        .bodyContent {
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          align-items: center;
+          gap: 0.75rem;
+          min-height: 140px;
+        }
+
         .rightCol {
           text-align: right;
-          max-width: 8rem;
+          max-width: 8.5rem;
+          justify-self: end;
         }
 
         .tithi {
-          font-weight: 600;
-          font-size: 0.875rem;
+          font-weight: 700;
+          font-size: 0.95rem;
           color: #374151;
+          line-height: 1.3;
+          word-break: keep-all;
         }
 
         .gregDate {
@@ -96,15 +123,16 @@ export default function HinduDateCard({
         }
 
         .footer {
-          margin-top: 0.75rem;
-          padding-top: 0.5rem;
-          border-top: 1px solid rgba(212, 175, 55, 0.2);
+          margin-top: 0.5rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(212, 175, 55, 0.18);
         }
 
         .footerLine {
-          font-size: 0.8125rem;
-          color: #6b7280;
+          font-size: 0.9rem;
+          color: #374151;
           line-height: 1.4;
+          font-family: 'Inter', sans-serif;
         }
 
         .footerLine strong {
@@ -121,16 +149,20 @@ export default function HinduDateCard({
 
           {/* Main Body */}
           <div className="cardBody">
-            {/* Primary title (Ashvina Shukla …) */}
-            <div className="primaryTitle">{primaryTitle}</div>
+            {/* Primary title */}
+            <div className="primaryTitle">
+              {stableTitle && stableTitle !== '-' ? stableTitle : 'Hindu Date'}
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="bodyContent">
               {/* Huge day number */}
               <div className="dayNumber">{dayNumber}</div>
 
               {/* Right column */}
               <div className="rightCol">
-                <div className="tithi">{tithi}</div>
+                <div className="tithi">
+                  {stableTithi && stableTithi !== '-' ? stableTithi : ''}
+                </div>
                 <div className="gregDate">{gregDate}</div>
                 <div className="weekday">{weekday}</div>
                 {rightExtra && <div className="rightExtra">{rightExtra}</div>}

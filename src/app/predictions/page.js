@@ -23,7 +23,7 @@ export default function PredictionsPage() {
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
-  // Timezone (UTC offset hours) — default IST 5.5
+  // Timezone (UTC offset hours) - default IST 5.5
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
@@ -58,12 +58,12 @@ export default function PredictionsPage() {
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
 
-const toggleAddressVisibility = (id) => {
-  setIsAddressExpanded((prevState) => ({
-    ...prevState,
-    [id]: !prevState[id], // Toggle visibility for specific address
-  }));
-};
+  const toggleAddressVisibility = (id) => {
+    setIsAddressExpanded((prevState) => ({
+      ...prevState,
+      [id]: !prevState[id], // Toggle visibility for specific address
+    }));
+  };
 
 
   const getHistory = () => {
@@ -98,16 +98,16 @@ const toggleAddressVisibility = (id) => {
     setHistory([]);
   };
   const loadFromHistory = (item) => {
-  setFullName(item.fullName || "");
-  setGender(item.gender || ""); 
-  setDob(item.dob || "");
-  setTob(item.tob || "");
-  setPlace(item.place || "");
-  setSelectedCoords(null);
-  setSuggestions([]);
-  setError("");
-  setResult(null); // optional: clear old result so user explicitly re-runs
-};
+    setFullName(item.fullName || "");
+    setGender(item.gender || "");
+    setDob(item.dob || "");
+    setTob(item.tob || "");
+    setPlace(item.place || "");
+    setSelectedCoords(null);
+    setSuggestions([]);
+    setError("");
+    setResult(null); // optional: clear old result so user explicitly re-runs
+  };
 
 
   useEffect(() => {
@@ -147,25 +147,25 @@ const toggleAddressVisibility = (id) => {
       return () => clearTimeout(t);
     }
   }, [result]); // placements depends on result; recompute happens right after
-  
+
 
   useEffect(() => {
-  if (!formRef.current || !historyCardRef.current) return;
+    if (!formRef.current || !historyCardRef.current) return;
 
-  const syncHeights = () => {
-    const formHeight = formRef.current?.offsetHeight || 0;
-    if (!formHeight) return;
-    historyCardRef.current.style.height = `${formHeight}px`;
-    historyCardRef.current.style.maxHeight = `${formHeight}px`;
-  };
+    const syncHeights = () => {
+      const formHeight = formRef.current?.offsetHeight || 0;
+      if (!formHeight) return;
+      historyCardRef.current.style.height = `${formHeight}px`;
+      historyCardRef.current.style.maxHeight = `${formHeight}px`;
+    };
 
-  syncHeights();
-  window.addEventListener("resize", syncHeights);
+    syncHeights();
+    window.addEventListener("resize", syncHeights);
 
-  return () => {
-    window.removeEventListener("resize", syncHeights);
-  };
-}, [dob, tob, place, fullName, suggestions.length, history.length]);
+    return () => {
+      window.removeEventListener("resize", syncHeights);
+    };
+  }, [dob, tob, place, fullName, suggestions.length, history.length]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -219,10 +219,38 @@ const toggleAddressVisibility = (id) => {
     }
   }
   function validate() {
-    if (!dob) return "Please enter your Date of Birth.";
-    if (!tob) return "Please enter your Time of Birth.";
-    if (!place.trim()) return "Please enter your Place of Birth.";
-    return "";
+    if (!dob) return { error: "Please enter your Date of Birth." };
+    if (!tob) return { error: "Please enter your Time of Birth." };
+    if (!place.trim()) return { error: "Please enter your Place of Birth." };
+
+    const dobParts = dob.split("-").map((n) => parseInt(n, 10));
+    let Y, M, D;
+    if (dobParts.length === 3 && dobParts[0] > 1900) {
+      [Y, M, D] = dobParts;
+    } else if (dobParts.length === 3) {
+      [D, M, Y] = dobParts;
+    }
+    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+      return { error: "Please enter a valid date (DD-MM-YYYY)." };
+    }
+
+    const tparts = tob.split(":").map((n) => parseInt(n, 10));
+    const [H, Min, S = 0] = tparts;
+    if ([H, Min, S].some((v) => Number.isNaN(v))) {
+      return { error: "Please enter a valid time." };
+    }
+
+    if (
+      selectedCoords &&
+      (!Number.isFinite(selectedCoords.latitude) ||
+        !Number.isFinite(selectedCoords.longitude))
+    ) {
+      return {
+        error: "Saved location is incomplete. Please pick the place again.",
+      };
+    }
+
+    return { parsed: { Y, M, D, H, Min, S } };
   }
   const fmtTime = (h, m, s = 0) =>
     `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
@@ -272,9 +300,9 @@ const toggleAddressVisibility = (id) => {
     setError("");
     setResult(null);
 
-    const v = validate();
-    if (v) {
-      setError(v);
+    const { error: validationError, parsed } = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setSubmitting(true);
@@ -284,11 +312,20 @@ const toggleAddressVisibility = (id) => {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country)."
         );
-      const [Y, M, D] = dob.split("-").map((n) => parseInt(n, 10));
-      const tparts = tob.split(":").map((n) => parseInt(n, 10));
-      const [H, Min, S = 0] = tparts;
+      if (
+        !Number.isFinite(geo.latitude) ||
+        !Number.isFinite(geo.longitude)
+      ) {
+        throw new Error("Location data is incomplete. Please pick the place again.");
+      }
+      const { Y, M, D, H, Min, S } = parsed;
       // Automatically determine timezone based on location
       const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+      if (!Number.isFinite(tz)) {
+        setError("Could not determine timezone for the selected place. Please try another location.");
+        setSubmitting(false);
+        return;
+      }
       saveToHistory({
         id: Date.now(),
         fullName,
@@ -306,7 +343,8 @@ const toggleAddressVisibility = (id) => {
         seconds: S,
         latitude: geo.latitude,
         longitude: geo.longitude,
-        timezone: tz,
+        timezone: Number.isFinite(tz) ? tz : 0,
+        language: "en",
         config: {
           observation_point: "topocentric",
           ayanamsha: "lahiri",
@@ -334,8 +372,8 @@ const toggleAddressVisibility = (id) => {
         ? typeof westernChartSvgRaw.output === "string"
           ? westernChartSvgRaw.output
           : typeof westernChartSvgRaw === "string"
-          ? westernChartSvgRaw
-          : null
+            ? westernChartSvgRaw
+            : null
         : null;
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
@@ -376,7 +414,7 @@ const toggleAddressVisibility = (id) => {
             altParsed = safeParse(altParsed.output);
           if (altParsed && Object.keys(altParsed).length)
             finalShadbala = altParsed;
-        } catch {}
+        } catch { }
       }
       let planetsParsed = planetsRaw
         ? safeParse(safeParse(planetsRaw.output ?? planetsRaw))
@@ -408,7 +446,7 @@ const toggleAddressVisibility = (id) => {
             altParsed = safeParse(altParsed.output);
           if (altParsed && Object.keys(altParsed).length)
             finalPlanetParsed = altParsed;
-        } catch {}
+        } catch { }
       }
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
@@ -446,15 +484,15 @@ const toggleAddressVisibility = (id) => {
     const ad = Array.isArray(adList[firstMdKey])
       ? adList[firstMdKey][0]
       : Array.isArray(adList)
-      ? adList[0]
-      : null;
+        ? adList[0]
+        : null;
     const pdList = v.pratyantar_list || v.pd || {};
     const firstAdKey = ad?.key || ad?.planet || ad?.name;
     const pd = Array.isArray(pdList[firstAdKey])
       ? pdList[firstAdKey][0]
       : Array.isArray(pdList)
-      ? pdList[0]
-      : null;
+        ? pdList[0]
+        : null;
     return [
       md?.name || md?.planet,
       ad?.name || ad?.planet,
@@ -490,42 +528,42 @@ const toggleAddressVisibility = (id) => {
       },
     };
   }
-async function openAntarInlineFor(mahaLord) {
-  if (openAntarFor === mahaLord) {
-    setOpenAntarFor(null); // toggle off
-    return;
+  async function openAntarInlineFor(mahaLord) {
+    if (openAntarFor === mahaLord) {
+      setOpenAntarFor(null); // toggle off
+      return;
+    }
+
+    setOpenAntarFor(mahaLord);
+    setAntarLoadingFor(mahaLord);
+    setAntarRows([]);
+
+    try {
+      const payload = buildPayloadForApi();
+      if (!payload) throw new Error("Missing input.");
+
+      const res = await astrologyAPI.getSingleCalculation(
+        "vimsottari/maha-dasas-and-antar-dasas",
+        payload
+      );
+
+      const out = typeof res?.output === "string" ? JSON.parse(res.output) : res;
+      const sub = out?.[mahaLord] || {};
+
+      const rows = Object.entries(sub).map(([k, v]) => ({
+        lord: k,
+        start: v.start_time || v.start,
+        end: v.end_time || v.end,
+      }));
+
+      rows.sort((a, b) => new Date(a.start) - new Date(b.start));
+      setAntarRows(rows);
+    } catch (e) {
+      setAntarRows([{ error: e.message }]);
+    } finally {
+      setAntarLoadingFor(null);
+    }
   }
-
-  setOpenAntarFor(mahaLord);
-  setAntarLoadingFor(mahaLord);
-  setAntarRows([]);
-
-  try {
-    const payload = buildPayloadForApi();
-    if (!payload) throw new Error("Missing input.");
-
-    const res = await astrologyAPI.getSingleCalculation(
-      "vimsottari/maha-dasas-and-antar-dasas",
-      payload
-    );
-
-    const out = typeof res?.output === "string" ? JSON.parse(res.output) : res;
-    const sub = out?.[mahaLord] || {};
-
-    const rows = Object.entries(sub).map(([k, v]) => ({
-      lord: k,
-      start: v.start_time || v.start,
-      end: v.end_time || v.end,
-    }));
-
-    rows.sort((a, b) => new Date(a.start) - new Date(b.start));
-    setAntarRows(rows);
-  } catch (e) {
-    setAntarRows([{ error: e.message }]);
-  } finally {
-    setAntarLoadingFor(null);
-  }
-}
 
   async function openAiPredictionsFor(planetLord) {
     setSelectedPlanetForPredictions(planetLord);
@@ -666,25 +704,25 @@ async function openAntarInlineFor(mahaLord) {
   }, [result]);
 
   const chatData = result ? {
-  birth: result.input,
-  coords: result.coords,
-  gender,
-  
-  // Raw data (in case needed)
-  raw: {
-    planets: result.planets,
-    vimsottari: result.vimsottari,
-    maha: result.maha,
-    shadbala: result.shadbala,
-  },
+    birth: result.input,
+    coords: result.coords,
+    gender,
 
-  // Clean & simplified data for the AI (MUCH easier to reason with)
-  placements,     
-  shadbalaRows, 
-  mahaRows,        
-  currentDashaChain, 
+    // Raw data (in case needed)
+    raw: {
+      planets: result.planets,
+      vimsottari: result.vimsottari,
+      maha: result.maha,
+      shadbala: result.shadbala,
+    },
 
-} : null;
+    // Clean & simplified data for the AI (MUCH easier to reason with)
+    placements,
+    shadbalaRows,
+    mahaRows,
+    currentDashaChain,
+
+  } : null;
 
   return (
     <div className="app">
@@ -877,7 +915,7 @@ async function openAntarInlineFor(mahaLord) {
                     </p>
                   </div>
 
-                  {/* Get Predictions button — fixed width, not shrinking */}
+                  {/* Get Predictions button - fixed width, not shrinking */}
                   <div className="w-full md:w-48">
                     <button
                       type="submit"
@@ -887,7 +925,7 @@ async function openAntarInlineFor(mahaLord) {
                       {submitting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Calculating…
+                          Calculating...
                         </>
                       ) : (
                         <>Get Predictions</>
@@ -943,9 +981,8 @@ async function openAntarInlineFor(mahaLord) {
                         <div className="h-place">
                           <div
                             ref={(el) => (addressRefs.current[item.id] = el)}
-                            className={`address ${
-                              isAddressExpanded[item.id] ? "show-full" : ""
-                            }`}
+                            className={`address ${isAddressExpanded[item.id] ? "show-full" : ""
+                              }`}
                             title={item.place}
                           >
                             {item.place}
@@ -1052,13 +1089,13 @@ async function openAntarInlineFor(mahaLord) {
                     <Orbit />
                     Running Dasa
                   </div>
-                  <div className="info-value">{currentDashaChain || "—"}</div>
+                  <div className="info-value">{currentDashaChain || "-"}</div>
                 </div>
               </div>
             </div>
             {/* Western Natal Wheel Chart */}
             {result?.westernChartSvg &&
-            result.westernChartSvg.trim().startsWith("<svg") ? (
+              result.westernChartSvg.trim().startsWith("<svg") ? (
               <div
                 className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
                 style={{ maxWidth: "640px", margin: "0 auto" }}
@@ -1184,41 +1221,40 @@ async function openAntarInlineFor(mahaLord) {
                         };
                         const pctVal = row
                           ? parsePct(
-                              row.percent ??
-                                row.percentage ??
-                                row.percentage_strength ??
-                                row.shadbala_percent ??
-                                row.strength_percent
-                            )
+                            row.percent ??
+                            row.percentage ??
+                            row.percentage_strength ??
+                            row.shadbala_percent ??
+                            row.strength_percent
+                          )
                           : null;
                         const ishtaVal = row
                           ? parsePct(
-                              row.ishta ??
-                                row.ishta_phala ??
-                                row.ishta_bala ??
-                                row.ishta_percent
-                            )
+                            row.ishta ??
+                            row.ishta_phala ??
+                            row.ishta_bala ??
+                            row.ishta_percent
+                          )
                           : null;
                         const kashtaVal = row
                           ? parsePct(
-                              row.kashta ??
-                                row.kashta_phala ??
-                                row.kashta_bala ??
-                                row.kashta_percent
-                            )
+                            row.kashta ??
+                            row.kashta_phala ??
+                            row.kashta_bala ??
+                            row.kashta_percent
+                          )
                           : null;
                         const fullDeg =
                           typeof p.fullDegree === "number"
-                            ? `Full: ${p.fullDegree.toFixed(2)}°`
+                            ? `Full: ${p.fullDegree.toFixed(2)}\u00B0`
                             : null;
 
                         const normDeg =
                           typeof p.normDegree === "number"
-                            ? `Norm: ${p.normDegree.toFixed(2)}°`
+                            ? `Norm: ${p.normDegree.toFixed(2)}\u00B0`
                             : null;
-                        const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
-                          p.pada ?? "—"
-                        })`;
+                        const nakshatraDisplay = `${p.nakshatra ?? "-"} (${p.pada ?? "-"
+                          })`;
                         return (
                           <tr key={p.name}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
@@ -1229,8 +1265,8 @@ async function openAntarInlineFor(mahaLord) {
                                 )}
                               </div>
                             </td>
-                            <td>{p.currentSign || "—"}</td>
-                            <td>{p.house ?? "—"}</td>
+                            <td>{p.currentSign || "-"}</td>
+                            <td>{p.house ?? "-"}</td>
                             <td>{nakshatraDisplay}</td>
                             <td className="degrees-cell">
                               {fullDeg || normDeg ? (
@@ -1239,11 +1275,11 @@ async function openAntarInlineFor(mahaLord) {
                                   {normDeg && <div>{normDeg}</div>}
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                             <td>
-                              {pctVal != null ? `${pctVal.toFixed(1)}%` : "—"}
+                              {pctVal != null ? `${pctVal.toFixed(1)}%` : "-"}
                             </td>
                             <td style={{ width: "10rem" }}>
                               {ishtaVal != null ? (
@@ -1259,7 +1295,7 @@ async function openAntarInlineFor(mahaLord) {
                                   </div>
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                             <td style={{ width: "10rem" }}>
@@ -1276,7 +1312,7 @@ async function openAntarInlineFor(mahaLord) {
                                   </div>
                                 </div>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </td>
                           </tr>
@@ -1359,7 +1395,7 @@ async function openAntarInlineFor(mahaLord) {
                             {openAntarFor === row.lord && (
                               <div className="antar-inline-box">
                                 {antarLoadingFor === row.lord ? (
-                                  <div className="antar-loading">Loading…</div>
+                                  <div className="antar-loading">Loading...</div>
                                 ) : antarRows[0]?.error ? (
                                   <div className="antar-error">
                                     {antarRows[0].error}
@@ -1422,7 +1458,7 @@ async function openAntarInlineFor(mahaLord) {
           onClose={() => setAntarOpen(false)}
           title={
             selectedMaha
-              ? `${selectedMaha} Maha Dasha — Antar Periods`
+              ? `${selectedMaha} Maha Dasha - Antar Periods`
               : "Antar Dasha"
           }
           position="center"
@@ -1478,22 +1514,22 @@ async function openAntarInlineFor(mahaLord) {
                       {antarRows.map((ad, i) => {
                         const startDate = ad.start
                           ? new Date(ad.start).toLocaleDateString("en-GB", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—";
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "-";
                         const endDate = ad.end
                           ? new Date(ad.end).toLocaleDateString("en-GB", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—";
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "-";
                         return (
                           <tr key={i}>
                             <td style={{ fontWeight: 500, color: "#1f2937" }}>
-                              {ad.lord || "—"}
+                              {ad.lord || "-"}
                             </td>
                             <td>{startDate}</td>
                             <td>{endDate}</td>
@@ -1513,7 +1549,7 @@ async function openAntarInlineFor(mahaLord) {
           onClose={() => setPredictionsOpen(false)}
           title={
             selectedPlanetForPredictions
-              ? `AI Predictions — ${selectedPlanetForPredictions} Maha Dasha`
+              ? `AI Predictions - ${selectedPlanetForPredictions} Maha Dasha`
               : "AI Predictions"
           }
           position="center"
