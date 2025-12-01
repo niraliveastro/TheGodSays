@@ -1489,160 +1489,165 @@ export default function Home() {
             </div>
           </section>
 
-{/* ====== Testimonials (NEW) (Tailwind) ====== */}
-<section
-  className="mt-12 flex flex-col items-center text-center px-4"
-  aria-labelledby="testimonials-heading"
->
-  <h3 id="testimonials-heading" className="text-3xl font-semibold">
-    What people say
-  </h3>
+          {/* ====== Testimonials (NEW) (Tailwind) ====== */}
+          <section
+            className="mt-12 flex flex-col items-center text-center px-4"
+            aria-labelledby="testimonials-heading"
+          >
+            <h3 id="testimonials-heading" className="text-3xl font-semibold">
+              What people say
+            </h3>
 
-  {/* wrapper: horizontal snap on mobile, grid on md+ */}
-  <div className="w-full max-w-6xl mt-6">
-    {/* Mobile: horizontal snap list */}
-    <div
-      role="list"
-      aria-label="User testimonials"
-      className="
+            {/* wrapper: horizontal snap on mobile, grid on md+ */}
+            <div className="w-full max-w-6xl mt-6">
+              {/* Mobile: horizontal snap list */}
+              <div
+                role="list"
+                aria-label="User testimonials"
+                className="
         block md:hidden
         overflow-x-auto
         snap-x snap-mandatory
         -mx-4 px-4
       "
-    >
-      <div className="flex gap-4 items-start">
-        {testimonials && testimonials.length > 0 ? (
-          testimonials.map((t) => {
-            const initials = (t.name || "U")
-              .split(" ")
-              .slice(0, 2)
-              .map((s) => s[0])
-              .join("")
-              .toUpperCase();
+              >
+                <div className="flex gap-4 items-start">
+                  {testimonials && testimonials.length > 0 ? (
+                    testimonials.map((t) => {
+                      const initials = (t.name || "U")
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((s) => s[0])
+                        .join("")
+                        .toUpperCase();
 
-            return (
-              <article
-                key={t.id}
-                role="listitem"
-                className="
+                      return (
+                        <article
+                          key={t.id}
+                          role="listitem"
+                          className="
                   snap-center flex-shrink-0
                   w-[88vw] max-w-xs
                   card bg-white p-5 rounded-xl shadow-sm mx-auto
                 "
-              >
-                <header className="flex items-center gap-3 justify-center">
-                  <div
-                    aria-hidden="true"
-                    className="
+                        >
+                          <header className="flex items-center gap-3 justify-center">
+                            <div
+                              aria-hidden="true"
+                              className="
                       flex items-center justify-center
                       w-12 h-12 rounded-full font-bold text-white text-base
                     "
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                    }}
-                  >
-                    {initials}
-                  </div>
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                              }}
+                            >
+                              {initials}
+                            </div>
 
-                  <div className="text-left">
-                    <div className="text-sm font-semibold text-gray-900">
-                      {t.name}
+                            <div className="text-left">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {t.name}
+                              </div>
+                              {t.meta && (
+                                <div className="text-xs text-gray-500 truncate">
+                                  {t.meta}
+                                </div>
+                              )}
+                            </div>
+                          </header>
+
+                          <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                            “{t.quote}”
+                          </blockquote>
+
+                          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                            <div>Verified user</div>
+                            {t.rating && (
+                              <div className="font-medium text-yellow-500">
+                                ★ {t.rating}
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })
+                  ) : (
+                    <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
+                      No testimonials yet.
                     </div>
-                    {t.meta && (
-                      <div className="text-xs text-gray-500 truncate">
-                        {t.meta}
-                      </div>
-                    )}
-                  </div>
-                </header>
-
-                <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                  “{t.quote}”
-                </blockquote>
-
-                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                  <div>Verified user</div>
-                  {t.rating && (
-                    <div className="font-medium text-yellow-500">★ {t.rating}</div>
                   )}
                 </div>
-              </article>
-            );
-          })
-        ) : (
-          <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
-            No testimonials yet.
-          </div>
-        )}
-      </div>
-    </div>
+              </div>
 
-    {/* md+ grid view (2 cols on md, 3 on lg) */}
-    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-      {testimonials && testimonials.length > 0 ? (
-        testimonials.map((t) => {
-          const initials = (t.name || "U")
-            .split(" ")
-            .slice(0, 2)
-            .map((s) => s[0])
-            .join("")
-            .toUpperCase();
+              {/* md+ grid view (2 cols on md, 3 on lg) */}
+              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                {testimonials && testimonials.length > 0 ? (
+                  testimonials.map((t) => {
+                    const initials = (t.name || "U")
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((s) => s[0])
+                      .join("")
+                      .toUpperCase();
 
-          return (
-            <article
-              key={t.id}
-              role="listitem"
-              className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
-            >
-              <header className="flex items-center gap-3 justify-start">
-                <div
-                  aria-hidden="true"
-                  className="
+                    return (
+                      <article
+                        key={t.id}
+                        role="listitem"
+                        className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
+                      >
+                        <header className="flex items-center gap-3 justify-start">
+                          <div
+                            aria-hidden="true"
+                            className="
                     flex items-center justify-center
                     w-12 h-12 rounded-full font-bold text-white text-base
                   "
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                  }}
-                >
-                  {initials}
-                </div>
+                            style={{
+                              background:
+                                "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                            }}
+                          >
+                            {initials}
+                          </div>
 
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900">
-                    {t.name}
+                          <div className="text-left">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {t.name}
+                            </div>
+                            {t.meta && (
+                              <div className="text-xs text-gray-500 truncate">
+                                {t.meta}
+                              </div>
+                            )}
+                          </div>
+                        </header>
+
+                        <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                          “{t.quote}”
+                        </blockquote>
+
+                        <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                          <div>Verified user</div>
+                          {t.rating && (
+                            <div className="font-medium text-yellow-500">
+                              ★ {t.rating}
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })
+                ) : (
+                  <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
+                    No testimonials yet.
                   </div>
-                  {t.meta && (
-                    <div className="text-xs text-gray-500 truncate">{t.meta}</div>
-                  )}
-                </div>
-              </header>
-
-              <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                “{t.quote}”
-              </blockquote>
-
-              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                <div>Verified user</div>
-                {t.rating && (
-                  <div className="font-medium text-yellow-500">★ {t.rating}</div>
                 )}
               </div>
-            </article>
-          );
-        })
-      ) : (
-        <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
-          No testimonials yet.
-        </div>
-      )}
-    </div>
-  </div>
-</section>
-
+            </div>
+          </section>
 
           {/* Main content sections wrapper */}
           <div className="content-sections-wrapper">
@@ -1744,7 +1749,6 @@ export default function Home() {
               >
                 Essential celestial elements for auspicious planning.
                 <br />
-
               </p>
 
               <div className="panchang-grid-container">
