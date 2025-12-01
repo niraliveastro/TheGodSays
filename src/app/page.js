@@ -926,7 +926,7 @@ export default function Home() {
                     className="hero-pill"
                     onClick={() => {
                       // quick link to Life Insights (placeholder)
-                      window.location.href = "/life-insights";
+                      window.location.href = "/predictions";
                     }}
                   >
                     Life Insights
@@ -942,9 +942,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      document
-                        .getElementById("panchang-section")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      window.location.href = "/panchang/calender"
                     }}
                   >
                     Panchang Today
@@ -965,7 +963,7 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() => (window.location.href = "/ai-predictions")}
+                    onClick={() => (window.location.href = "/predictions")}
                     className="hero-btn inline-flex items-center gap-2 px-4 py-3 rounded-md font-semibold shadow-sm
              bg-transparent border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     type="button"
