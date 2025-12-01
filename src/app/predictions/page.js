@@ -345,6 +345,12 @@ export default function PredictionsPage() {
         longitude: geo.longitude,
         timezone: Number.isFinite(tz) ? tz : 0,
         language: "en",
+        config: {
+          observation_point: "topocentric",
+          ayanamsha: "lahiri",
+          house_system: "Placidus",
+          language: "en",
+        },
       };
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
         [
