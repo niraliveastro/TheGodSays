@@ -143,6 +143,31 @@ function AstrologerDashboardContent() {
             for (const doc of snapshot.docs) {
               let call = { id: doc.id, ...doc.data() };
 
+              // CRITICAL: Skip cancelled and rejected calls entirely
+              if (call.status === "cancelled" || call.status === "rejected") {
+                // If this was the current incoming call, clear it immediately
+                if (incomingCall && incomingCall.id === doc.id) {
+                  setIncomingCall(null);
+                  
+                  // Show notification that call was cancelled/rejected
+                  if (notificationPermission === "granted") {
+                    try {
+                      new Notification(
+                        call.status === "cancelled" ? "Call Cancelled" : "Call Declined",
+                        {
+                          body: `${userNames[call.userId] || "User"} ${call.status === "cancelled" ? "cancelled" : "declined"} the call`,
+                          icon: "/favicon.ico",
+                          tag: `call-${call.status}`,
+                        }
+                      );
+                    } catch (e) {
+                      console.log("Browser notification failed:", e);
+                    }
+                  }
+                }
+                continue; // Skip this call entirely
+              }
+
               // For completed calls, fetch billing info if missing
               if (
                 call.status === "completed" &&
@@ -391,9 +416,49 @@ function AstrologerDashboardContent() {
   const handleCallAction = async (callId, action) => {
     try {
       const callRef = doc(db, "calls", callId);
+      
+      // CRITICAL: Check current call status before accepting
+      if (action === "active") {
+        const callSnapshot = await callRef.get();
+        if (!callSnapshot.exists) {
+          alert("Call not found. It may have been cancelled.");
+          setIncomingCall(null);
+          return;
+        }
+        
+        const currentCallData = callSnapshot.data();
+        
+        // Prevent accepting cancelled or rejected calls
+        if (currentCallData.status === "cancelled") {
+          alert("This call was cancelled by the user and cannot be accepted.");
+          setIncomingCall(null);
+          return;
+        }
+        
+        if (currentCallData.status === "rejected") {
+          alert("This call was already rejected and cannot be accepted.");
+          setIncomingCall(null);
+          return;
+        }
+        
+        if (currentCallData.status === "completed") {
+          alert("This call was already completed.");
+          setIncomingCall(null);
+          return;
+        }
+        
+        // Only accept if status is "pending"
+        if (currentCallData.status !== "pending") {
+          alert("This call is no longer available.");
+          setIncomingCall(null);
+          return;
+        }
+      }
+      
       const updateData = { status: action };
       if (action === "active") {
         updateData.roomName = `astro-${astrologerId}-${Date.now()}`;
+        updateData.acceptedAt = new Date().toISOString();
       }
       await updateDoc(callRef, updateData);
 

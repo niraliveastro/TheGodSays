@@ -1403,7 +1403,12 @@ export default function Home() {
             </div>
 
             <div
-              className="astrologer-grid"
+              style={{
+                display: "grid",
+                gap: "1rem",
+                gridTemplateColumns: "1fr",
+                marginTop: "1.5rem",
+              }}
               role="list"
               aria-label="Top astrologers list"
             >
@@ -1411,7 +1416,7 @@ export default function Home() {
                 ? onlineAstrologers
                 : featuredAstrologers
               ).map((ast) => (
-                <article
+                <div
                   key={ast.id}
                   className="card p-5 rounded-2xl shadow-lg hover:shadow-xl transition-all bg-white astrologer-card"
                   role="listitem"
@@ -1578,7 +1583,7 @@ export default function Home() {
                       Review
                     </button>
                   </div>
-                </article>
+                </div>
               ))}
             </div>
           </section>
