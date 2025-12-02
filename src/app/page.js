@@ -143,15 +143,18 @@ export default function Home() {
         // Try fetching real astrologers from our server API first
         let res = null;
         try {
-          const r = await fetch('/api/astrologer/top');
+          const r = await fetch("/api/astrologer/top");
           if (r.ok) {
             const data = await r.json();
             if (data && data.success) {
-              res = { online: data.online || [], featured: data.featured || [] };
+              res = {
+                online: data.online || [],
+                featured: data.featured || [],
+              };
             }
           }
         } catch (err) {
-          console.warn('Failed to fetch /api/astrologer/top:', err);
+          console.warn("Failed to fetch /api/astrologer/top:", err);
         }
 
         // Fallback: try astrologyAPI.getTopAstrologers if server API not available
@@ -160,7 +163,7 @@ export default function Home() {
             const apiRes = await astrologyAPI.getTopAstrologers();
             res = apiRes || null;
           } catch (e) {
-            console.warn('astrologyAPI.getTopAstrologers failed:', e);
+            console.warn("astrologyAPI.getTopAstrologers failed:", e);
           }
         }
 
@@ -959,7 +962,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      window.location.href = "/panchang/calender"
+                      window.location.href = "/panchang/calender";
                     }}
                   >
                     Panchang Today
@@ -1208,109 +1211,161 @@ export default function Home() {
           </header>
           {/* ───────────────────────────── END HERO SECTION ───────────────────────────── */}
 
-          {/* ====== AI PREDICTION FORM SECTION (NEW) ====== */}
-          <section id="ai-prediction-section" className="card mt-12">
-            <div className="form-header p-5">
-              <div className="form-header-icon">
-                <Star />
+          {/* ====== AI PREDICTION FORM SECTION — VISUALLY MATCHES PROVIDED DESIGN ====== */}
+          <section
+            id="ai-prediction-section"
+            className="max-w-4xl mx-auto mt-12 bg-white/90 backdrop-blur-xl rounded-3xl border border-amber-200/30 shadow-xl p-6 md:p-10"
+          >
+            {/* header */}
+            <div className="flex items-start gap-4 mb-6">
+              <div
+                className="flex items-center justify-center w-12 h-12 rounded-xl"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(255,246,230,0.8), rgba(255,247,237,0.6))",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+                }}
+              >
+                <Star className="w-6 h-6 text-amber-500" />
               </div>
-              <div className="form-header-text">
-                <h3 className="form-title">
+
+              <div>
+                <h3 className="text-4xl text-gold">
                   Let AI read your stars in 60 seconds.
                 </h3>
-                <p className="form-subtitle">
+                <p className="text-sm text-slate-600">
                   Fill in your birth details once. We’ll prefill them on the AI
                   predictions page and save time for all future readings.
                 </p>
               </div>
             </div>
 
-            <div className="form-grid-2col ai-form-grid p-10">
-              {/* Minimal quick form — only name/date/time/place to prefill AI page */}
-              <div className="form-field">
-                <label htmlFor="ai-name">Name</label>
+            <form
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              onSubmit={(e) => e.preventDefault()}
+            >
+              {/* Name */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
+                  Name
+                </label>
                 <input
-                  id="ai-name"
-                  className="form-field-input"
-                  placeholder="Your name"
-                  aria-label="Your name"
+                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
+                  placeholder="Enter your full name"
                 />
-                <small className="form-field-helper">
+                <p className="mt-2 text-xs text-slate-500">
                   Optional — we’ll personalise results.
-                </small>
+                </p>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="ai-dob">Date of Birth</label>
+              {/* DOB */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
+                  Date of Birth
+                </label>
                 <input
-                  id="ai-dob"
                   type="date"
-                  className="form-field-input"
-                  aria-label="Date of birth"
+                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
+                  placeholder="dd-mm-yyyy"
                 />
+                <p className="mt-2 text-xs text-slate-500">
+                  Format: DD-MM-YYYY
+                </p>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="ai-tob">Time of Birth</label>
+              {/* Time */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
+                  Time of Birth
+                </label>
                 <input
-                  id="ai-tob"
                   type="time"
-                  className="form-field-input"
-                  aria-label="Time of birth"
+                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
                 />
-                <small className="form-field-helper">
-                  If unknown, pick approx. — AI will adapt.
-                </small>
+                <p className="mt-2 text-xs text-slate-500">24-hour format</p>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="ai-place">Place</label>
-                <input
-                  id="ai-place"
-                  className="form-field-input"
-                  placeholder="City, Country"
-                  aria-label="Place of birth"
-                />
+              {/* Place (col 1 of row 2) */}
+              <div className="md:col-span-1 flex flex-col md:justify-end">
+                {/* label has fixed height to match other labels */}
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
+                  Place
+                </label>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    className="h-12 flex-1 rounded-2xl border border-slate-200 px-4 shadow-sm"
+                    placeholder="City, Country"
+                  />
+
+                  <button
+                    type="button"
+                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center shadow-sm bg-white hover:bg-slate-50"
+                    aria-label="Use my location"
+                  >
+                    <MapPin className="w-5 h-5 text-gold" />
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  e.g., Mumbai, India
+                </p>
               </div>
-            </div>
 
-            <div className="form-actions ai-form-actions">
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  // hint to user
-                  document.getElementById("ai-name")?.focus();
-                }}
-                aria-label="Auto-fill hint"
-                type="button"
-              >
-                Already used this before? We'll auto-fill what we remember.
-              </button>
+              {/* Gender (col 2 of row 2) */}
+              <div className="md:col-span-1 flex flex-col md:justify-end mb-10">
+                <label className="block text-sm font-medium text-amber-600 mb-2 h-5">
+                  Gender (optional)
+                </label>
 
-              <div className="cta-block">
-                <button
-                  id="ai-predict-btn"
-                  className="btn btn-primary "
-                  onClick={() => {
-                    const payload = {
-                      name: document.getElementById("ai-name")?.value || "",
-                      date: document.getElementById("ai-dob")?.value || "",
-                      time: document.getElementById("ai-tob")?.value || "",
-                      place: document.getElementById("ai-place")?.value || "",
-                    };
-                    handleAIPredictionSubmit(payload);
-                  }}
-                  aria-label="Get AI predictions"
-                  type="button"
-                  style={{ color: "var(-color--gold" }}
-                >
-                  Get AI Predictions
-                </button>
-                <div className="cta-note">
-                  Predictions under <strong>60 seconds</strong>. We’ll prefill
-                  fields next time.
+                <div className="h-12 flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="Male"
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm text-slate-700">Male</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="Female"
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm text-slate-700">Female</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="Other"
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm text-slate-700">Other</span>
+                  </label>
                 </div>
               </div>
+
+              {/* CTA (col 3 of row 2) */}
+              <div className="flex flex-col md:justify-end mb-12">
+                <div className="w-full">
+                  <button type="button" className="btn">
+                    Get AI Predictions
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* footer / small note */}
+            <div className="mt-6 text-xs text-slate-500">
+              Predictions under{" "}
+              <strong className="text-slate-700">60 seconds</strong>. We’ll
+              prefill fields next time.
             </div>
           </section>
 
@@ -1319,7 +1374,7 @@ export default function Home() {
           <section className="card mt-12 astrologers-section">
             <div className="astrologers-header p-5 mx-auto flex flex-col items-center text-center gap-4 sm:flex-col sm:text-center">
               <div className="astrologers-header-text">
-                <h1 className="astrologers-title font-semibold">
+                <h1 className="text-gold">
                   Talk to the right astrologer — right now.
                 </h1>
                 <p className="astrologers-sub">
@@ -1358,61 +1413,170 @@ export default function Home() {
               ).map((ast) => (
                 <article
                   key={ast.id}
-                  className="astrologer-card card"
+                  className="card p-5 rounded-2xl shadow-lg hover:shadow-xl transition-all bg-white astrologer-card"
                   role="listitem"
                 >
-                  <header className="astrologer-card-top">
-                    <div className="astrologer-meta">
-                      <h4 className="astrologer-name">{ast.name}</h4>
-                      <div className="astrologer-tags">
-                        {ast.tags?.slice(0, 2).map((t, idx) => (
-                          <span key={idx} className="astrologer-tag">
-                            {t}
-                          </span>
-                        ))}
+                  {/* Top Section */}
+                  <header className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="relative flex-shrink-0">
+                        <div
+                          className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-400 
+                      flex items-center justify-center text-white font-bold text-lg uppercase"
+                          aria-hidden="true"
+                        >
+                          {ast.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
+
+                        {/* Online / Offline Dot */}
+                        <span
+                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white 
+                      ${
+                        ast.online
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-gray-400"
+                      }`}
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                      {/* Name + Spec + Experience */}
+                      <div className="min-w-0">
+                        <h4
+                          className="text-lg font-semibold text-gray-900 truncate"
+                          title={ast.name}
+                        >
+                          {ast.name}
+                        </h4>
+
+                        <p
+                          className="text-sm text-indigo-600 mt-1 truncate"
+                          title={ast.specialization ?? "Astrology"}
+                        >
+                          {ast.specialization ?? "Astrology"}
+                        </p>
+
+                        <p
+                          className="text-xs text-gray-500 mt-1"
+                          title={ast.experience ?? ""}
+                        >
+                          {ast.experience ?? ""}
+                        </p>
+
+                        {/* Small meta row: rating + reviews + price */}
+                        <div className="mt-2 flex items-center gap-3">
+                          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">
+                            ⭐{" "}
+                            <span className="font-medium">
+                              {ast.rating ?? 4.7}
+                            </span>
+                            <span className="text-gray-400 text-xs ml-1">
+                              ({ast.reviews ?? 0})
+                            </span>
+                          </div>
+
+                          {ast.perMinuteCharge && (
+                            <div className="text-green-600 font-mono font-semibold text-sm">
+                              ₹{ast.perMinuteCharge}/min
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="astrologer-badge">
+                    {/* Badge */}
+                    <div className="flex flex-col items-end gap-2">
+                      {ast.verified && (
+                        <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">
+                          ✓ Verified
+                        </div>
+                      )}
+
                       {ast.online ? (
-                        <div className="liveBadge">
-                          <span className="pulseDot" aria-hidden="true" />{" "}
+                        <div className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                          <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
                           Online
                         </div>
                       ) : ast.isFeatured ? (
-                        <div className="featured-badge">Featured</div>
+                        <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
+                          Featured
+                        </div>
                       ) : null}
                     </div>
                   </header>
 
-                  <div className="astrologer-card-body">
-                    <div className="astrologer-rating">
-                      ⭐ {ast.rating ?? 4.7}
-                    </div>
+                  {/* Bio */}
+                  <p
+                    className="mt-4 text-sm text-gray-600 overflow-hidden"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                    title={ast.bio}
+                  >
+                    {ast.bio ??
+                      `Experienced in ${ast.specialization ?? "astrology"}`}
+                  </p>
 
-                    <div className="astrologer-ctas">
-                      <button
-                        className="btn btn-primary"
-                        onClick={() =>
-                          (window.location.href = `/astrologer/${ast.id}`)
-                        }
-                        aria-label={`View profile of ${ast.name}`}
-                        type="button"
-                      >
-                        View
-                      </button>
-
-                      <button
-                        className="btn btn-ghost"
-                        onClick={() =>
-                          (window.location.href = `/chat/${ast.id}`)
-                        }
-                        aria-label={`Chat with ${ast.name}`}
-                        type="button"
-                      >
-                        Chat
-                      </button>
+                  {/* Languages */}
+                  {ast.languages?.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {ast.languages.map((l, i) => (
+                        <span
+                          key={l + i}
+                          className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-semibold"
+                        >
+                          {l}
+                        </span>
+                      ))}
                     </div>
+                  )}
+
+                  {/* Action Row: View / Chat / Review */}
+                  <div className="flex gap-3 mt-5">
+                    <button
+                      className="flex-1 btn btn-primary h-11"
+                      onClick={() =>
+                        (window.location.href = `/astrologer/${ast.id}`)
+                      }
+                      type="button"
+                      aria-label={`View profile of ${ast.name}`}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      className="flex-1 btn btn-ghost h-11 border"
+                      onClick={() => (window.location.href = `/chat/${ast.id}`)}
+                      type="button"
+                      aria-label={`Chat with ${ast.name}`}
+                    >
+                      Chat
+                    </button>
+
+                    <button
+                      className="h-11 px-4 text-sm rounded-md border border-gray-200 bg-white"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        /* expects handleOpenReview to exist in scope */
+                        if (typeof handleOpenReview === "function")
+                          handleOpenReview(ast);
+                        else
+                          alert(
+                            "Open review modal (handleOpenReview not found)"
+                          );
+                      }}
+                      type="button"
+                      aria-label={`Review ${ast.name}`}
+                    >
+                      Review
+                    </button>
                   </div>
                 </article>
               ))}
@@ -1445,11 +1609,8 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3
-                    id="loyalty-title"
-                    className="text-lg md:text-xl font-semibold text-slate-800"
-                  >
-                    Loyalty Detector — quick compatibility check
+                  <h3 id="loyalty-title" className="text-4xl text-gold">
+                    Loyalty Detector
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
                     See how your relationship might progress using our
@@ -1509,158 +1670,179 @@ export default function Home() {
             className="mt-12 flex flex-col items-center text-center px-4"
             aria-labelledby="testimonials-heading"
           >
-            <h3 id="testimonials-heading" className="text-3xl font-semibold">
+            <h3 id="testimonials-heading" className="text-4xl text-gold">
               What people say
             </h3>
 
             {/* wrapper: horizontal snap on mobile, grid on md+ */}
             <div className="w-full max-w-6xl mt-6">
-              {/* Mobile: horizontal snap list */}
-              <div
-                role="list"
-                aria-label="User testimonials"
-                className="
-        block md:hidden
-        overflow-x-auto
-        snap-x snap-mandatory
-        -mx-4 px-4
-      "
-              >
-                <div className="flex gap-4 items-start">
-                  {testimonials && testimonials.length > 0 ? (
-                    testimonials.map((t) => {
-                      const initials = (t.name || "U")
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((s) => s[0])
-                        .join("")
-                        .toUpperCase();
+              {/* Demo fallback testimonials (used when `testimonials` state is empty) */}
+              {/* You can move this array out of render if you prefer it declared once in the component scope */}
+              {(() => {
+                const demoTestimonials = [
+                  {
+                    id: "dt1",
+                    name: "Anita K.",
+                    meta: "Consulted for Career • Mumbai",
+                    quote:
+                      "My astrologer was so accurate it felt like she knew my life.",
+                    rating: 4.9,
+                  },
+                  {
+                    id: "dt2",
+                    name: "Rahul Verma",
+                    meta: "AI Predictions • Bangalore",
+                    quote:
+                      "The AI predictions blew my mind. Clean, fast and deeply insightful.",
+                    rating: 4.8,
+                  },
+                  {
+                    id: "dt3",
+                    name: "Sushmita D.",
+                    meta: "Love & Marriage • Delhi",
+                    quote:
+                      "Guidance that helped me take the right relationship decision.",
+                    rating: 5.0,
+                  },
+                  {
+                    id: "dt4",
+                    name: "Abhishek S.",
+                    meta: "Chat Consultation • Pune",
+                    quote:
+                      "Instant response and detailed explanation. Worth it.",
+                    rating: 4.7,
+                  },
+                ];
 
-                      return (
-                        <article
-                          key={t.id}
-                          role="listitem"
-                          className="
-                  snap-center flex-shrink-0
-                  w-[88vw] max-w-xs
-                  card bg-white p-5 rounded-xl shadow-sm mx-auto
-                "
-                        >
-                          <header className="flex items-center gap-3 justify-center">
-                            <div
-                              aria-hidden="true"
-                              className="
-                      flex items-center justify-center
-                      w-12 h-12 rounded-full font-bold text-white text-base
-                    "
-                              style={{
-                                background:
-                                  "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                              }}
+                const displayTestimonials =
+                  testimonials && testimonials.length > 0
+                    ? testimonials
+                    : demoTestimonials;
+
+                return (
+                  <>
+                    {/* Mobile: horizontal snap list */}
+                    <div
+                      role="list"
+                      aria-label="User testimonials"
+                      className="block md:hidden overflow-x-auto snap-x snap-mandatory -mx-4 px-4"
+                    >
+                      <div className="flex gap-4 items-start">
+                        {displayTestimonials.map((t) => {
+                          const initials = (t.name || "U")
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((s) => s[0])
+                            .join("")
+                            .toUpperCase();
+
+                          return (
+                            <article
+                              key={t.id}
+                              role="listitem"
+                              className="snap-center flex-shrink-0 w-[88vw] max-w-xs card bg-white p-5 rounded-xl shadow-sm mx-auto"
                             >
-                              {initials}
-                            </div>
+                              <header className="flex items-center gap-3 justify-center">
+                                <div
+                                  aria-hidden="true"
+                                  className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-white text-base"
+                                  style={{
+                                    background:
+                                      "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                                  }}
+                                >
+                                  {initials}
+                                </div>
 
-                            <div className="text-left">
-                              <div className="text-sm font-semibold text-gray-900">
-                                {t.name}
+                                <div className="text-left">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {t.name}
+                                  </div>
+                                  {t.meta && (
+                                    <div className="text-xs text-gray-500 truncate">
+                                      {t.meta}
+                                    </div>
+                                  )}
+                                </div>
+                              </header>
+
+                              <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                                “{t.quote}”
+                              </blockquote>
+
+                              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                                <div>Verified user</div>
+                                {t.rating && (
+                                  <div className="font-medium text-yellow-500">
+                                    ★ {t.rating}
+                                  </div>
+                                )}
                               </div>
-                              {t.meta && (
-                                <div className="text-xs text-gray-500 truncate">
-                                  {t.meta}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* md+ grid view (2 cols on md, 3 on lg) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                      {displayTestimonials.map((t) => {
+                        const initials = (t.name || "U")
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((s) => s[0])
+                          .join("")
+                          .toUpperCase();
+
+                        return (
+                          <article
+                            key={t.id}
+                            role="listitem"
+                            className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
+                          >
+                            <header className="flex items-center gap-3 justify-start">
+                              <div
+                                aria-hidden="true"
+                                className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-white text-base"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
+                                }}
+                              >
+                                {initials}
+                              </div>
+
+                              <div className="text-left">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {t.name}
+                                </div>
+                                {t.meta && (
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {t.meta}
+                                  </div>
+                                )}
+                              </div>
+                            </header>
+
+                            <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
+                              “{t.quote}”
+                            </blockquote>
+
+                            <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                              <div>Verified user</div>
+                              {t.rating && (
+                                <div className="font-medium text-yellow-500">
+                                  ★ {t.rating}
                                 </div>
                               )}
                             </div>
-                          </header>
-
-                          <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                            “{t.quote}”
-                          </blockquote>
-
-                          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                            <div>Verified user</div>
-                            {t.rating && (
-                              <div className="font-medium text-yellow-500">
-                                ★ {t.rating}
-                              </div>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    })
-                  ) : (
-                    <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
-                      No testimonials yet.
+                          </article>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* md+ grid view (2 cols on md, 3 on lg) */}
-              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                {testimonials && testimonials.length > 0 ? (
-                  testimonials.map((t) => {
-                    const initials = (t.name || "U")
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((s) => s[0])
-                      .join("")
-                      .toUpperCase();
-
-                    return (
-                      <article
-                        key={t.id}
-                        role="listitem"
-                        className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
-                      >
-                        <header className="flex items-center gap-3 justify-start">
-                          <div
-                            aria-hidden="true"
-                            className="
-                    flex items-center justify-center
-                    w-12 h-12 rounded-full font-bold text-white text-base
-                  "
-                            style={{
-                              background:
-                                "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                            }}
-                          >
-                            {initials}
-                          </div>
-
-                          <div className="text-left">
-                            <div className="text-sm font-semibold text-gray-900">
-                              {t.name}
-                            </div>
-                            {t.meta && (
-                              <div className="text-xs text-gray-500 truncate">
-                                {t.meta}
-                              </div>
-                            )}
-                          </div>
-                        </header>
-
-                        <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                          “{t.quote}”
-                        </blockquote>
-
-                        <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                          <div>Verified user</div>
-                          {t.rating && (
-                            <div className="font-medium text-yellow-500">
-                              ★ {t.rating}
-                            </div>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="flex items-center justify-center w-full p-6 text-sm text-gray-500">
-                    No testimonials yet.
-                  </div>
-                )}
-              </div>
+                  </>
+                );
+              })()}
             </div>
           </section>
 
@@ -1777,32 +1959,6 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-
-              {/* If festivals exist show highlighted festival */}
-              {panchangData?.festivals?.length > 0 && (
-                <section
-                  className="festival-section-enhanced"
-                  style={{ marginTop: 18 }}
-                >
-                  <div className="festival-content-grid">
-                    <div className="festival-left">
-                      <div className="festival-badge">
-                        <Sparkles className="festival-badge-icon" />
-                        <span>Special Day</span>
-                      </div>
-                      <h2 className="festival-main-title">Today's Festival</h2>
-                      <p className="festival-description">
-                        Celebrating auspicious moments and sacred traditions.
-                      </p>
-                    </div>
-                    <div className="festival-right">
-                      <div className="festival-card-wrapper">
-                        <FestivalCard festival={panchangData?.festivals[0]} />
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              )}
             </section>
 
             {/* ASTROLOGY OPTIONS GRID */}
