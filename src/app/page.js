@@ -68,6 +68,19 @@ export default function Home() {
   const [featuredAstrologers, setFeaturedAstrologers] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
 
+  // AI Predictions form state
+  const [formData, setFormData] = useState({
+    name: "",
+    dob: "",
+    tob: "",
+    place: "",
+    gender: "",
+  });
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const locationInputRef = useRef(null);
+
   const astrologyOptions = [
     {
       id: "vedic-weekday",
@@ -769,6 +782,152 @@ export default function Home() {
     }
   };
 
+  // AI Predictions form handlers
+  const handleGetLocation = async () => {
+    setIsGettingLocation(true);
+    try {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Reverse geocode to get location name
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+            );
+            const data = await response.json();
+            
+            const city = data.address.city || data.address.town || data.address.village || "";
+            const country = data.address.country || "";
+            const locationString = [city, country].filter(Boolean).join(", ");
+            
+            setFormData(prev => ({ ...prev, place: locationString }));
+            setShowLocationSuggestions(false);
+          } catch (error) {
+            console.error("Error reverse geocoding:", error);
+            setFormData(prev => ({ ...prev, place: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+          }
+          setIsGettingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Unable to get your location. Please enter it manually.");
+          setIsGettingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } catch (error) {
+      console.error("Error:", error);
+      setIsGettingLocation(false);
+    }
+  };
+
+  const handleLocationSearch = async (query) => {
+    if (!query || query.length < 3) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      const suggestions = data.map(item => ({
+        display_name: item.display_name,
+        city: item.address.city || item.address.town || item.address.village || "",
+        country: item.address.country || "",
+        lat: item.lat,
+        lon: item.lon,
+      }));
+      
+      setLocationSuggestions(suggestions);
+      setShowLocationSuggestions(true);
+    } catch (error) {
+      console.error("Error searching locations:", error);
+    }
+  };
+
+  const handleLocationSelect = (suggestion) => {
+    const locationString = [suggestion.city, suggestion.country].filter(Boolean).join(", ");
+    setFormData(prev => ({ ...prev, place: locationString || suggestion.display_name }));
+    setShowLocationSuggestions(false);
+    setLocationSuggestions([]);
+  };
+
+  const handleAIPredictionsSubmit = () => {
+    // Validate required fields
+    if (!formData.dob) {
+      alert("Please enter your Date of Birth");
+      return;
+    }
+    if (!formData.tob) {
+      alert("Please enter your Time of Birth");
+      return;
+    }
+    if (!formData.place) {
+      alert("Please enter your Place of Birth");
+      return;
+    }
+
+    // Store form data in localStorage for prefilling
+    try {
+      localStorage.setItem("tgs:aiPredictionForm", JSON.stringify(formData));
+    } catch (error) {
+      console.error("Error saving form data:", error);
+    }
+
+    // Navigate to predictions page
+    window.location.href = "/predictions";
+  };
+
+  // Debounce location search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.place && formData.place.length >= 3) {
+        handleLocationSearch(formData.place);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.place]);
+
+  // Load saved form data on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("tgs:aiPredictionForm");
+      if (saved) {
+        const parsedData = JSON.parse(saved);
+        setFormData(parsedData);
+      }
+    } catch (error) {
+      console.error("Error loading saved form data:", error);
+    }
+  }, []);
+
+  // Close location suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (locationInputRef.current && !locationInputRef.current.contains(event.target)) {
+        setShowLocationSuggestions(false);
+      }
+    };
+
+    if (showLocationSuggestions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showLocationSuggestions]);
+
   const handleOptionClick = (optionId) => {
     if (optionId === "tithi-timings") {
       // Redirect to dedicated tithi timings page
@@ -1242,7 +1401,10 @@ export default function Home() {
 
             <form
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAIPredictionsSubmit();
+              }}
             >
               {/* Name */}
               <div className="flex flex-col">
@@ -1252,9 +1414,11 @@ export default function Home() {
                 <input
                   className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
                   placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Optional — we’ll personalise results.
+                  Optional — we'll personalise results.
                 </p>
               </div>
 
@@ -1267,6 +1431,9 @@ export default function Home() {
                   type="date"
                   className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
                   placeholder="dd-mm-yyyy"
+                  value={formData.dob}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                  required
                 />
                 <p className="mt-2 text-xs text-slate-500">
                   Format: DD-MM-YYYY
@@ -1281,41 +1448,17 @@ export default function Home() {
                 <input
                   type="time"
                   className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
+                  value={formData.tob}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
+                  required
                 />
                 <p className="mt-2 text-xs text-slate-500">24-hour format</p>
               </div>
 
-              {/* Place (col 1 of row 2) */}
-              <div className="md:col-span-1 flex flex-col md:justify-end">
-                {/* label has fixed height to match other labels */}
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  Place
-                </label>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    className="h-12 flex-1 rounded-2xl border border-slate-200 px-4 shadow-sm"
-                    placeholder="City, Country"
-                  />
-
-                  <button
-                    type="button"
-                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center shadow-sm bg-white hover:bg-slate-50"
-                    aria-label="Use my location"
-                  >
-                    <MapPin className="w-5 h-5 text-gold" />
-                  </button>
-                </div>
-
-                <p className="mt-2 text-xs text-slate-500">
-                  e.g., Mumbai, India
-                </p>
-              </div>
-
-              {/* Gender (col 2 of row 2) */}
+              {/* Gender (col 1 of row 2) */}
               <div className="md:col-span-1 flex flex-col md:justify-end mb-10">
                 <label className="block text-sm font-medium text-amber-600 mb-2 h-5">
-                  Gender (optional)
+                  Gender
                 </label>
 
                 <div className="h-12 flex items-center gap-6">
@@ -1325,6 +1468,8 @@ export default function Home() {
                       name="gender"
                       value="Male"
                       className="h-4 w-4"
+                      checked={formData.gender === "Male"}
+                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
                     <span className="text-sm text-slate-700">Male</span>
                   </label>
@@ -1335,6 +1480,8 @@ export default function Home() {
                       name="gender"
                       value="Female"
                       className="h-4 w-4"
+                      checked={formData.gender === "Female"}
+                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
                     <span className="text-sm text-slate-700">Female</span>
                   </label>
@@ -1345,16 +1492,85 @@ export default function Home() {
                       name="gender"
                       value="Other"
                       className="h-4 w-4"
+                      checked={formData.gender === "Other"}
+                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
                     <span className="text-sm text-slate-700">Other</span>
                   </label>
                 </div>
               </div>
 
+              {/* Place (col 2 of row 2) */}
+              <div className="md:col-span-1 flex flex-col md:justify-end relative">
+                {/* label has fixed height to match other labels */}
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
+                  Place
+                </label>
+
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      ref={locationInputRef}
+                      className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
+                      placeholder="City, Country"
+                      value={formData.place}
+                      onChange={(e) => setFormData(prev => ({ ...prev, place: e.target.value }))}
+                      onFocus={() => setShowLocationSuggestions(locationSuggestions.length > 0)}
+                      required
+                      autoComplete="off"
+                    />
+                    
+                    {/* Location suggestions dropdown */}
+                    {showLocationSuggestions && locationSuggestions.length > 0 && (
+                      <div
+                        className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto"
+                        style={{ top: "100%" }}
+                      >
+                        {locationSuggestions.map((suggestion, index) => (
+                          <div
+                            key={index}
+                            className="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
+                            onClick={() => handleLocationSelect(suggestion)}
+                          >
+                            <div className="text-sm font-medium text-slate-900">
+                              {suggestion.city || suggestion.display_name.split(",")[0]}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {suggestion.display_name}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center shadow-sm bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Use my location"
+                    onClick={handleGetLocation}
+                    disabled={isGettingLocation}
+                  >
+                    {isGettingLocation ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gold"></div>
+                    ) : (
+                      <MapPin className="w-5 h-5 text-gold" />
+                    )}
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  e.g., Mumbai, India
+                </p>
+              </div>
+
               {/* CTA (col 3 of row 2) */}
               <div className="flex flex-col md:justify-end mb-12">
                 <div className="w-full">
-                  <button type="button" className="btn">
+                  <button 
+                    type="submit" 
+                    className="btn w-full h-12 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
+                  >
                     Get AI Predictions
                   </button>
                 </div>
@@ -1403,6 +1619,7 @@ export default function Home() {
             </div>
 
             <div
+              className="astrologer-grid-home"
               style={{
                 display: "grid",
                 gap: "1rem",
@@ -1418,137 +1635,365 @@ export default function Home() {
               ).map((ast) => (
                 <div
                   key={ast.id}
-                  className="card p-5 rounded-2xl shadow-lg hover:shadow-xl transition-all bg-white astrologer-card"
+                  className="card astrologer-card"
                   role="listitem"
+                  style={{
+                    padding: "1.5rem",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    minWidth: "22rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
+                  }}
                 >
-                  {/* Top Section */}
-                  <header className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0">
-                        <div
-                          className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-400 
-                      flex items-center justify-center text-white font-bold text-lg uppercase"
-                          aria-hidden="true"
-                        >
-                          {ast.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                  {/* Top Row: Avatar + Name + Info */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "1rem",
+                      marginBottom: "1rem",
+                      position: "relative",
+                      zIndex: 20,
+                    }}
+                  >
+                    {/* Avatar + Online Indicator */}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div
+                        style={{
+                          width: "4rem",
+                          height: "4rem",
+                          background:
+                            "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          fontWeight: 700,
+                          fontSize: "1.25rem",
+                        }}
+                      >
+                        {ast.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "-0.25rem",
+                          right: "-0.25rem",
+                          width: "1.25rem",
+                          height: "1.25rem",
+                          borderRadius: "50%",
+                          border: "2px solid white",
+                          background: ast.online || ast.isOnline
+                            ? "#10b981"
+                            : "var(--color-gray-400)",
+                          animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
+                        }}
+                      />
+                    </div>
+
+                    {/* Name, Spec, Experience, Rating */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "1rem",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3
+                            style={{
+                              fontSize: "1.5rem",
+                              fontWeight: 700,
+                              color: "var(--color-gray-900)",
+                              margin: 0,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              fontFamily: "var(--font-heading)",
+                              lineHeight: 1.3,
+                            }}
+                            title={ast.name}
+                          >
+                            {ast.name}
+                          </h3>
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                              color: "var(--color-indigo)",
+                              margin: "0.125rem 0 0",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              fontFamily: "var(--font-body)",
+                            }}
+                            title={ast.specialization ?? "Astrology"}
+                          >
+                            {ast.specialization ?? "Astrology"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--color-gray-500)",
+                              margin: "0.25rem 0 0",
+                              fontWeight: 500,
+                              fontFamily: "Courier New, monospace",
+                            }}
+                          >
+                            {ast.experience ?? "Experienced in astrology"}
+                          </p>
                         </div>
 
-                        {/* Online / Offline Dot */}
-                        <span
-                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white 
-                      ${
-                        ast.online
-                          ? "bg-emerald-500 animate-pulse"
-                          : "bg-gray-400"
-                      }`}
-                          aria-hidden="true"
-                        />
-                      </div>
-
-                      {/* Name + Spec + Experience */}
-                      <div className="min-w-0">
-                        <h4
-                          className="text-lg font-semibold text-gray-900 truncate"
-                          title={ast.name}
+                        {/* Rating Badge */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "0.5rem",
+                          }}
                         >
-                          {ast.name}
-                        </h4>
-
-                        <p
-                          className="text-sm text-indigo-600 mt-1 truncate"
-                          title={ast.specialization ?? "Astrology"}
-                        >
-                          {ast.specialization ?? "Astrology"}
-                        </p>
-
-                        <p
-                          className="text-xs text-gray-500 mt-1"
-                          title={ast.experience ?? ""}
-                        >
-                          {ast.experience ?? ""}
-                        </p>
-
-                        {/* Small meta row: rating + reviews + price */}
-                        <div className="mt-2 flex items-center gap-3">
-                          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">
-                            ⭐{" "}
-                            <span className="font-medium">
-                              {ast.rating ?? 4.7}
-                            </span>
-                            <span className="text-gray-400 text-xs ml-1">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.375rem",
+                              background: "var(--color-amber-50)",
+                              color: "var(--color-amber-700)",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "9999px",
+                              fontFamily: "Courier New, monospace",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Star
+                              style={{
+                                width: "0.875rem",
+                                height: "0.875rem",
+                                fill: "#f59e0b",
+                                color: "#f59e0b",
+                              }}
+                            />
+                            {ast.rating ?? 4.7}{" "}
+                            <span
+                              style={{
+                                color: "var(--color-gray-500)",
+                                marginLeft: "0.125rem",
+                                fontFamily: "Courier New, monospace",
+                              }}
+                            >
                               ({ast.reviews ?? 0})
                             </span>
                           </div>
-
-                          {ast.perMinuteCharge && (
-                            <div className="text-green-600 font-mono font-semibold text-sm">
-                              ₹{ast.perMinuteCharge}/min
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Badge */}
-                    <div className="flex flex-col items-end gap-2">
-                      {ast.verified && (
-                        <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">
-                          ✓ Verified
+                      {/* Status and Verified Badges */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                        {/* Status Badge */}
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            background: (ast.online || ast.isOnline)
+                              ? "#d1fae5" 
+                              : ast.status === "busy" 
+                              ? "#fef3c7" 
+                              : "#f3f4f6",
+                            color: (ast.online || ast.isOnline)
+                              ? "#065f46" 
+                              : ast.status === "busy" 
+                              ? "#92400e" 
+                              : "#6b7280",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "9999px",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            border: `1px solid ${
+                              (ast.online || ast.isOnline)
+                                ? "#6ee7b7" 
+                                : ast.status === "busy" 
+                                ? "#fbbf24" 
+                                : "#d1d5db"
+                            }`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "0.5rem",
+                              height: "0.5rem",
+                              borderRadius: "50%",
+                              background: (ast.online || ast.isOnline)
+                                ? "#10b981" 
+                                : ast.status === "busy" 
+                                ? "#f59e0b" 
+                                : "#9ca3af",
+                              boxShadow: (ast.online || ast.isOnline)
+                                ? "0 0 6px rgba(16, 185, 129, 0.6)" 
+                                : ast.status === "busy" 
+                                ? "0 0 6px rgba(245, 158, 11, 0.6)" 
+                                : "none",
+                              animation: (ast.online || ast.isOnline || ast.status === "busy")
+                                ? "pulse 2s infinite" 
+                                : "none",
+                            }}
+                          />
+                          {(ast.online || ast.isOnline) ? "Online" : ast.status === "busy" ? "Busy" : "Offline"}
                         </div>
-                      )}
 
-                      {ast.online ? (
-                        <div className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                          <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                          Online
-                        </div>
-                      ) : ast.isFeatured ? (
-                        <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
-                          Featured
-                        </div>
-                      ) : null}
+                        {ast.verified && (
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              background: "var(--color-indigo-light)",
+                              color: "var(--color-indigo)",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "9999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                            }}
+                          >
+                            ✓ Verified
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </header>
+                  </div>
+
+                  {/* Price */}
+                  {ast.perMinuteCharge && (
+                    <div
+                      style={{
+                        marginBottom: "0.75rem",
+                        position: "relative",
+                        zIndex: 20,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "1.125rem",
+                          fontWeight: 700,
+                          color: "#059669",
+                          fontFamily: "Courier New, monospace",
+                        }}
+                      >
+                        ₹{ast.perMinuteCharge}/min
+                      </span>
+                    </div>
+                  )}
 
                   {/* Bio */}
                   <p
-                    className="mt-4 text-sm text-gray-600 overflow-hidden"
                     style={{
+                      fontSize: "0.875rem",
+                      fontFamily: "var(--font-body)",
+                      color: "var(--color-gray-600)",
+                      marginBottom: "1rem",
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      position: "relative",
+                      zIndex: 20,
                     }}
-                    title={ast.bio}
                   >
                     {ast.bio ??
-                      `Experienced in ${ast.specialization ?? "astrology"}`}
+                      `Expert in ${ast.specialization ?? "astrology"}`}
                   </p>
 
                   {/* Languages */}
                   {ast.languages?.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {ast.languages.map((l, i) => (
-                        <span
-                          key={l + i}
-                          className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-semibold"
-                        >
-                          {l}
-                        </span>
-                      ))}
+                    <div
+                      style={{
+                        marginBottom: "1rem",
+                        position: "relative",
+                        zIndex: 20,
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          color: "var(--color-gray-600)",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        Speaks:
+                      </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "0.375rem",
+                        }}
+                      >
+                        {ast.languages.map((l, i) => (
+                          <span
+                            key={l + i}
+                            style={{
+                              padding: "0.25rem 0.625rem",
+                              background: "var(--color-indigo-light)",
+                              color: "var(--color-indigo)",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              borderRadius: "9999px",
+                            }}
+                          >
+                            {l}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Action Row: View / Chat / Review */}
-                  <div className="flex gap-3 mt-5">
+                  {/* Action buttons – Bottom */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      marginTop: "auto",
+                      position: "relative",
+                      zIndex: 30,
+                    }}
+                  >
                     <button
-                      className="flex-1 btn btn-primary h-11"
+                      className="btn btn-primary"
                       onClick={() =>
-                        (window.location.href = `/astrologer/${ast.id}`)
+                        (window.location.href = `/account/astrologer/${ast.id}`)
                       }
+                      style={{
+                        flex: 1,
+                        height: "3rem",
+                        padding: "0 1.5rem",
+                        fontSize: "1rem",
+                      }}
                       type="button"
                       aria-label={`View profile of ${ast.name}`}
                     >
@@ -1556,8 +2001,14 @@ export default function Home() {
                     </button>
 
                     <button
-                      className="flex-1 btn btn-ghost h-11 border"
+                      className="btn btn-outline"
                       onClick={() => (window.location.href = `/chat/${ast.id}`)}
+                      style={{
+                        flex: 1,
+                        height: "3rem",
+                        padding: "0 1.5rem",
+                        fontSize: "1rem",
+                      }}
                       type="button"
                       aria-label={`Chat with ${ast.name}`}
                     >
@@ -1565,17 +2016,16 @@ export default function Home() {
                     </button>
 
                     <button
-                      className="h-11 px-4 text-sm rounded-md border border-gray-200 bg-white"
+                      className="btn btn-outline"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        /* expects handleOpenReview to exist in scope */
-                        if (typeof handleOpenReview === "function")
-                          handleOpenReview(ast);
-                        else
-                          alert(
-                            "Open review modal (handleOpenReview not found)"
-                          );
+                        alert("Review feature - please implement review modal");
+                      }}
+                      style={{
+                        height: "3rem",
+                        padding: "0 1rem",
+                        fontSize: "0.875rem",
                       }}
                       type="button"
                       aria-label={`Review ${ast.name}`}

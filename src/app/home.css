@@ -2742,3 +2742,40 @@
   .loyalty-left { min-width:0; }
 }
 
+/* ============================================= */
+/*  ASTROLOGER GRID - RESPONSIVE CARD LAYOUT    */
+/* ============================================= */
+
+/* Main grid container - responsive grid layout */
+.astrologer-grid-home {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1rem !important;
+}
+
+/* Tablet and up - 2 columns */
+@media (min-width: 640px) {
+  .astrologer-grid-home {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.25rem !important;
+  }
+}
+
+/* Desktop - 3 columns */
+@media (min-width: 1024px) {
+  .astrologer-grid-home {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+/* Pulse animation for online indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+

@@ -31,15 +31,23 @@ export function validateDate(year, month, date) {
   const m = parseInt(month)
   const d = parseInt(date)
 
+  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) {
+    throw new Error(`Invalid date values: year=${year}, month=${month}, date=${date}. All must be numbers.`)
+  }
+
   const currentYear = new Date().getFullYear()
   const minYear = currentYear - 150 // allow historical birth years
   const maxYear = currentYear + 10 // keep a small buffer for testing/future dates
 
   if (y < minYear || y > maxYear) {
-    throw new Error(`Invalid year. Supported range is ${minYear}-${maxYear}.`)
+    throw new Error(`Invalid year: ${y}. Supported range is ${minYear}-${maxYear}.`)
   }
-  if (m < 1 || m > 12) throw new Error('Invalid month')
-  if (d < 1 || d > 31) throw new Error('Invalid date')
+  if (m < 1 || m > 12) {
+    throw new Error(`Invalid month: ${m}. Must be between 1 and 12.`)
+  }
+  if (d < 1 || d > 31) {
+    throw new Error(`Invalid date: ${d}. Must be between 1 and 31.`)
+  }
   
   return { year: y, month: m, date: d }
 }
@@ -49,9 +57,19 @@ export function validateTime(hours, minutes, seconds = 0) {
   const m = parseInt(minutes)
   const s = parseInt(seconds)
   
-  if (h < 0 || h > 23) throw new Error('Invalid hours')
-  if (m < 0 || m > 59) throw new Error('Invalid minutes')
-  if (s < 0 || s > 59) throw new Error('Invalid seconds')
+  if (Number.isNaN(h) || Number.isNaN(m) || Number.isNaN(s)) {
+    throw new Error(`Invalid time values: hours=${hours}, minutes=${minutes}, seconds=${seconds}. All must be numbers.`)
+  }
+  
+  if (h < 0 || h > 23) {
+    throw new Error(`Invalid hours: ${h}. Must be between 0 and 23.`)
+  }
+  if (m < 0 || m > 59) {
+    throw new Error(`Invalid minutes: ${m}. Must be between 0 and 59.`)
+  }
+  if (s < 0 || s > 59) {
+    throw new Error(`Invalid seconds: ${s}. Must be between 0 and 59.`)
+  }
   
   return { hours: h, minutes: m, seconds: s }
 }

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   User,
+  Users,
   Menu,
   X,
   Calendar,
@@ -51,7 +52,9 @@ const Navigation = () => {
   const [showPwSignin, setShowPwSignin] = useState(false);
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
-  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+  
+  // Separate dropdown states for each menu
+  const [openDropdown, setOpenDropdown] = useState(null); // 'tools', 'account', or null
 
   // Astrologer-specific navigation items
   const astrologerNavItems = [
@@ -68,6 +71,8 @@ const Navigation = () => {
     {
       href: null,
       label: "Tools",
+      icon: Settings,
+      dropdownId: "tools",
       children: [
         { href: "/numerology", label: "Numerology", icon: Hash },
         { href: "/transit", label: "Planetary Transit", icon: Zap },
@@ -76,7 +81,16 @@ const Navigation = () => {
       ],
     },
     { href: "/wallet", label: "Wallet", icon: Wallet },
-    { href: "/profile/user", label: "My Account", icon: User },
+    {
+      href: null,
+      label: "My Account",
+      icon: User,
+      dropdownId: "account",
+      children: [
+        { href: "/profile/user", label: "My Profile", icon: User },
+        { href: "/profile/family", label: "My Family", icon: Users },
+      ],
+    },
   ];
 
   // When user logs in from the centered auth modal, switch to top-right profile view automatically
@@ -86,18 +100,18 @@ const Navigation = () => {
     }
   }, [user, showProfileModal]);
 
-  // Close more dropdown when mobile menu closes
+  // Close dropdown when mobile menu closes
   useEffect(() => {
     if (!isOpen) {
-      setShowMoreDropdown(false);
+      setOpenDropdown(null);
     }
   }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showMoreDropdown && !event.target.closest("[data-dropdown-container]")) {
-        setShowMoreDropdown(false);
+      if (openDropdown && !event.target.closest("[data-dropdown-container]")) {
+        setOpenDropdown(null);
       }
     };
 
@@ -108,7 +122,7 @@ const Navigation = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [showMoreDropdown]);
+  }, [openDropdown]);
 
   // Determine which nav items to show based on user type
   const navItems = userProfile?.collection === "astrologers" 
@@ -156,6 +170,7 @@ const Navigation = () => {
       console.error("Sign out error:", e);
     }
   }
+
 
   async function handleSignIn(e) {
     e.preventDefault();
@@ -240,27 +255,28 @@ const Navigation = () => {
           <div className="nav-desktop">
             {navItems.map((item) => {
               const Icon = item.icon;
-              // Handle dropdown menu (Tools) - only for users
+              // Handle dropdown menu (Tools, My Account) - only for users
               if (item.children) {
                 const isActive = item.children.some(child => pathname === child.href)
+                const isOpen = openDropdown === item.dropdownId;
                 return (
                   <div 
                     key={item.label} 
                     className="nav-dropdown"
                     data-dropdown-container
-                    onMouseEnter={() => setShowMoreDropdown(true)}
-                    onMouseLeave={() => setShowMoreDropdown(false)}
+                    onMouseEnter={() => setOpenDropdown(item.dropdownId)}
+                    onMouseLeave={() => setOpenDropdown(null)}
                   >
                     <button
                       className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
-                      onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                      onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
                     >
                       {item.icon && <Icon />}
                       <span>{item.label}</span>
-                      <ChevronDown className={`dropdown-icon ${showMoreDropdown ? 'rotated' : ''}`} />
+                      <ChevronDown className={`dropdown-icon ${isOpen ? 'rotated' : ''}`} />
                     </button>
                     
-                    {showMoreDropdown && (
+                    {isOpen && (
                       <>
                         <div className="nav-dropdown-bridge"></div>
                         <div className="nav-dropdown-menu">
@@ -316,26 +332,27 @@ const Navigation = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
 
-                // Handle dropdown menu (Tools) in mobile - only for users
+                // Handle dropdown menu (Tools, My Account) in mobile
                 if (item.children) {
                   const isActive = item.children.some(child => pathname === child.href)
+                  const isOpen = openDropdown === item.dropdownId;
                   return (
                     <div key={item.label} data-dropdown-container>
-                      {/* Tools button */}
+                      {/* Dropdown button */}
                       <button
                         type="button"
                         className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
-                        onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                        onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
                       >
                         <div className="flex items-center">
                           {Icon && <Icon className="mr-2" />}
                           <span>{item.label}</span>
                         </div>
-                        <ChevronDown className={`chevron-icon ${showMoreDropdown ? 'rotated' : ''}`} />
+                        <ChevronDown className={`chevron-icon ${isOpen ? 'rotated' : ''}`} />
                       </button>
                       
                       {/* Expandable children */}
-                      {showMoreDropdown && (
+                      {isOpen && (
                         <div className="nav-mobile-dropdown-content">
                           {item.children.map((child) => {
                             const ChildIcon = child.icon;
@@ -348,7 +365,7 @@ const Navigation = () => {
                                 }`}
                                 onClick={() => {
                                   setIsOpen(false)
-                                  setShowMoreDropdown(false)
+                                  setOpenDropdown(null)
                                 }}
                               >
                                 {ChildIcon && <ChildIcon className="mr-2" />}
