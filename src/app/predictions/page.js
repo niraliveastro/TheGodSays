@@ -53,6 +53,7 @@ export default function PredictionsPage() {
   const [history, setHistory] = useState([]);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
@@ -505,12 +506,44 @@ export default function PredictionsPage() {
     const inp = result?.input;
     const coords = result?.coords;
     if (!inp || !coords) return null;
-    const [Y, M, D] = String(inp.dob || "")
-      .split("-")
-      .map((n) => parseInt(n, 10));
-    const [H, Min, S = 0] = String(inp.tob || "")
-      .split(":")
-      .map((n) => parseInt(n, 10));
+    
+    // Parse DOB - handle both YYYY-MM-DD (from date input) and DD-MM-YYYY (from text input) formats
+    const dobStr = String(inp.dob || "");
+    const dobParts = dobStr.split("-").map((n) => parseInt(n, 10));
+    let Y, M, D;
+    
+    if (dobParts.length === 3) {
+      if (dobParts[0] > 1900) {
+        // YYYY-MM-DD format (standard for HTML5 date inputs)
+        [Y, M, D] = dobParts;
+      } else {
+        // DD-MM-YYYY format (fallback for manual text entry)
+        [D, M, Y] = dobParts;
+      }
+    } else {
+      throw new Error(`Invalid date format: ${dobStr}. Expected YYYY-MM-DD or DD-MM-YYYY`);
+    }
+    
+    // Validate parsed values
+    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+      throw new Error(`Invalid date values from: ${dobStr}`);
+    }
+    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
+    
+    // Parse time
+    const tobStr = String(inp.tob || "");
+    const timeParts = tobStr.split(":").map((n) => parseInt(n, 10));
+    const [H, Min, S = 0] = timeParts;
+    
+    if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
+      throw new Error(`Invalid time format: ${tobStr}. Expected HH:MM or HH:MM:SS`);
+    }
+    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    
     return {
       year: Y,
       month: M,
@@ -704,7 +737,11 @@ export default function PredictionsPage() {
   }, [result]);
 
   const chatData = result ? {
-    birth: result.input,
+    birth: {
+      ...result.input,
+      fullName: fullName, // Include fullName in birth data
+      name: fullName, // Also include as 'name' for compatibility
+    },
     coords: result.coords,
     gender,
 
@@ -747,6 +784,7 @@ export default function PredictionsPage() {
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
         <h1 className="title">Cosmic Insights</h1>
+        <p className="subtitle">Discover your birth chart, planetary positions and life predictions</p>
       </header>
 
       <div className="container mx-auto px-4 py-8">
@@ -805,7 +843,7 @@ export default function PredictionsPage() {
                   className="form-field-input"
                   required
                 />
-                <p className="form-field-helper">Format: DD-MM-YYYY</p>
+                <p className="form-field-helper">Format: YYYY-MM-DD (browser date picker)</p>
               </div>
 
               {/* Time of Birth */}
@@ -824,9 +862,36 @@ export default function PredictionsPage() {
                 <p className="form-field-helper">24-hour format</p>
               </div>
 
-              {/* Place + Get Predictions + Reset all in one row */}
+              {/* Gender + Place + Get Predictions in one row */}
               <div className="md:col-span-3">
                 <div className="place-row">
+                  {/* Gender Field */}
+                  <div className="w-full md:w-48">
+                    <label className="form-field-label flex items-center gap-2 mb-2">
+                      Gender
+                    </label>
+
+                    <div className="relative">
+                      <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="form-field-input pr-10"
+                        required
+                      >
+                        <option value="" disabled>
+                          Select gender
+                        </option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <p className="form-field-helper">
+                      Personalize chart reading
+                    </p>
+                  </div>
+
                   {/* Place of Birth */}
                   <div className="flex-1 place-wrapper">
                     <label className="form-field-label flex items-center gap-2 mb-2">
@@ -885,33 +950,6 @@ export default function PredictionsPage() {
                     {/* helper, absolutely positioned -> doesn't affect column height */}
                     <p className="form-field-helper place-helper">
                       e.g., Mumbai, India
-                    </p>
-                  </div>
-
-                  {/* Gender Field */}
-                  <div className="w-full md:w-48">
-                    <label className="form-field-label flex items-center gap-2 mb-2">
-                      Gender
-                    </label>
-
-                    <div className="relative">
-                      <select
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="form-field-input pr-10"
-                        required
-                      >
-                        <option value="" disabled>
-                          Select gender
-                        </option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    <p className="form-field-helper">
-                      Personalize chart reading
                     </p>
                   </div>
 
@@ -1142,7 +1180,10 @@ export default function PredictionsPage() {
                   <div className="flex-shrink-0 flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setChatOpen(true)}
+                      onClick={() => {
+                        setChatSessionId(prev => prev + 1);
+                        setChatOpen(true);
+                      }}
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
@@ -1152,23 +1193,12 @@ export default function PredictionsPage() {
                 </div>
               ) : (
                 <div className="chat-window-container">
-                  <div className="chat-header">
-                    <div className="flex items-center gap-3">
-                      <Cpu className="w-5 h-5 text-gold" />
-                      <span className="text-white font-semibold">
-                        AI Astrologer Chat
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setChatOpen(false)}
-                      className="text-white/70 hover:text-white transition-colors p-1"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="chat-content">
-                    <Chat pageTitle="Predictions" initialData={chatData} />
-                  </div>
+                  <Chat 
+                    key={`predictions-chat-${chatSessionId}`} 
+                    pageTitle="Predictions" 
+                    initialData={chatData}
+                    onClose={() => setChatOpen(false)}
+                  />
                 </div>
               )}
             </div>
@@ -1591,10 +1621,19 @@ export default function PredictionsPage() {
         </Modal>
       </div>
 
-      {/* Floating Chat Button */}
-      <div className="fixed bottom-4 right-4 p-4 z-50">
-        <button
-          className="btn btn-primary btn-gold"
+      {/* Fixed Chat Assistant Card */}
+      <div className="fixed bottom-6 right-6 z-50" style={{ maxWidth: "320px" }}>
+        <div
+          className="chat-assistant-card"
+          style={{
+            background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+            border: "1px solid rgba(212, 175, 55, 0.3)",
+            borderRadius: "20px",
+            padding: "20px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+          }}
           onClick={() => {
             const isFormFilled = fullName && dob && tob && place;
             if (!isFormFilled) {
@@ -1607,6 +1646,7 @@ export default function PredictionsPage() {
             if (!result) {
               document.querySelector("form").requestSubmit();
               setTimeout(() => {
+                setChatSessionId(prev => prev + 1);
                 setChatOpen(true);
                 setTimeout(() => {
                   document
@@ -1615,6 +1655,7 @@ export default function PredictionsPage() {
                 }, 100);
               }, 2000);
             } else {
+              setChatSessionId(prev => prev + 1);
               setChatOpen(true);
               setTimeout(() => {
                 document
@@ -1623,9 +1664,112 @@ export default function PredictionsPage() {
               }, 100);
             }
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
+          }}
         >
-          Chat with AI
-        </button>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+              }}
+            >
+              <Cpu className="w-6 h-6 text-white" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  color: "#111827",
+                  margin: "0 0 4px 0",
+                  fontFamily: '"Cormorant Garamond", serif',
+                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                AI Astrologer Assistant
+              </h3>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  margin: 0,
+                  lineHeight: "1.5",
+                }}
+              >
+                Get personalized insights about your birth chart, planetary positions, and astrological predictions
+              </p>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingTop: "12px",
+              borderTop: "1px solid rgba(212, 175, 55, 0.15)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: "#10b981",
+                  boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
+                  animation: "pulse 2s infinite",
+                }}
+              />
+              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
+                Online
+              </span>
+            </div>
+            <button
+              style={{
+                background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
+                border: "none",
+                borderRadius: "10px",
+                padding: "8px 16px",
+                color: "#1f2937",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering card click
+              }}
+            >
+              {submitting ? "Loading..." : "Start Chat"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

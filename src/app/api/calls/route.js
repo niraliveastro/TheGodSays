@@ -82,12 +82,49 @@ export async function POST(request) {
           return NextResponse.json({ error: 'Call not found' }, { status: 404 })
         }
 
+        const currentCallData = callToUpdateDoc.data()
+        
+        // CRITICAL: Prevent accepting cancelled or rejected calls
+        if (status === 'active') {
+          if (currentCallData.status === 'cancelled') {
+            return NextResponse.json({ 
+              error: 'Call was cancelled by user',
+              success: false,
+              callStatus: 'cancelled'
+            }, { status: 400 })
+          }
+          
+          if (currentCallData.status === 'rejected') {
+            return NextResponse.json({ 
+              error: 'Call was already rejected',
+              success: false,
+              callStatus: 'rejected'
+            }, { status: 400 })
+          }
+          
+          if (currentCallData.status === 'completed') {
+            return NextResponse.json({ 
+              error: 'Call was already completed',
+              success: false,
+              callStatus: 'completed'
+            }, { status: 400 })
+          }
+          
+          if (currentCallData.status !== 'pending') {
+            return NextResponse.json({ 
+              error: 'Call is not available for acceptance',
+              success: false,
+              callStatus: currentCallData.status
+            }, { status: 400 })
+          }
+        }
+
         const updateData = { status }
         if (status === 'active') {
           // Create a unique room name based on call type
-          const callToUpdateDoc = await callToUpdateRef.get()
-          const callType = callToUpdateDoc.data()?.callType || 'video'
+          const callType = currentCallData.callType || 'video'
           updateData.roomName = `astro-${astrologerId}-${userId}-${Date.now()}-${callType}`
+          updateData.acceptedAt = new Date().toISOString()
           console.log('Creating room for call:', {
             callId,
             callType,
@@ -95,11 +132,13 @@ export async function POST(request) {
           })
         } else if (status === 'cancelled' || status === 'rejected') {
           // Handle call cancellation/rejection
-          updateData.endTime = new Date()
-          updateData.cancelledAt = new Date()
+          const now = new Date()
+          updateData.endTime = now.toISOString()
+          updateData.cancelledAt = now.toISOString()
+          updateData.updatedAt = now.toISOString()
           
           // Update astrologer status back to online if they were busy
-          const callData = callToUpdateDoc.data()
+          const callData = currentCallData
           if (callData.astrologerId) {
             const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
             const astrologerDoc = await astrologerRef.get()

@@ -3,12 +3,33 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { prompt, page } = await req.json();
+    const { conversationHistory, page, isContext } = await req.json();
 
-    // Simple validation
-    if (!prompt || !page) {
-      return NextResponse.json({ error: 'Prompt and page are required' }, { status: 400 });
+    // Validate conversation history
+    if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+      return NextResponse.json({ error: 'Conversation history is required' }, { status: 400 });
     }
+
+    // Validate page
+    if (!page) {
+      return NextResponse.json({ error: 'Page is required' }, { status: 400 });
+    }
+
+    // Ensure we have at least a system message
+    const hasSystemMessage = conversationHistory.some(msg => msg.role === 'system');
+    if (!hasSystemMessage) {
+      // Add default system message if missing
+      conversationHistory.unshift({
+        role: 'system',
+        content: `You are a helpful assistant for the ${page} page.`
+      });
+    }
+
+    // Prepare messages for OpenAI API
+    const messages = conversationHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -18,12 +39,20 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: `You are a helpful assistant for the ${page} page.` },
-          { role: 'user', content: prompt },
-        ],
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', response.status, errorData);
+      return NextResponse.json({ 
+        error: 'Failed to get response from AI service',
+        details: errorData 
+      }, { status: response.status });
+    }
 
     const data = await response.json();
 
@@ -36,6 +65,9 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('Error in chat API:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      message: error.message 
+    }, { status: 500 });
   }
 }

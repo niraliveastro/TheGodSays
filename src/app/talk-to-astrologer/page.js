@@ -72,6 +72,7 @@ export default function TalkToAstrologer() {
           reviews: d.reviews || 0,
           experience: d.experience,
           languages: d.languages || ["English"],
+          status: d.status || "offline", // Store actual status
           isOnline: d.status === "online",
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
@@ -834,27 +835,83 @@ export default function TalkToAstrologer() {
                         </div>
                       </div>
 
-                      {a.verified && (
+                      {/* Status and Verified Badges */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                        {/* Status Badge */}
                         <div
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "0.25rem",
-                            background: "var(--color-indigo-light)",
-                            color: "var(--color-indigo)",
-                            padding: "0.25rem 0.5rem",
+                            gap: "0.35rem",
+                            background: a.status === "online" 
+                              ? "#d1fae5" 
+                              : a.status === "busy" 
+                              ? "#fef3c7" 
+                              : "#f3f4f6",
+                            color: a.status === "online" 
+                              ? "#065f46" 
+                              : a.status === "busy" 
+                              ? "#92400e" 
+                              : "#6b7280",
+                            padding: "0.35rem 0.65rem",
                             borderRadius: "9999px",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            marginTop: "0.5rem",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            border: `1px solid ${
+                              a.status === "online" 
+                                ? "#6ee7b7" 
+                                : a.status === "busy" 
+                                ? "#fbbf24" 
+                                : "#d1d5db"
+                            }`,
                           }}
                         >
-                          <CheckCircle
-                            style={{ width: "0.75rem", height: "0.75rem" }}
+                          <div
+                            style={{
+                              width: "0.5rem",
+                              height: "0.5rem",
+                              borderRadius: "50%",
+                              background: a.status === "online" 
+                                ? "#10b981" 
+                                : a.status === "busy" 
+                                ? "#f59e0b" 
+                                : "#9ca3af",
+                              boxShadow: a.status === "online" 
+                                ? "0 0 6px rgba(16, 185, 129, 0.6)" 
+                                : a.status === "busy" 
+                                ? "0 0 6px rgba(245, 158, 11, 0.6)" 
+                                : "none",
+                              animation: a.status === "online" || a.status === "busy" 
+                                ? "pulse 2s infinite" 
+                                : "none",
+                            }}
                           />
-                          Verified
+                          {a.status === "online" ? "Online" : a.status === "busy" ? "Busy" : "Offline"}
                         </div>
-                      )}
+
+                        {a.verified && (
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              background: "var(--color-indigo-light)",
+                              color: "var(--color-indigo)",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "9999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                            }}
+                          >
+                            <CheckCircle
+                              style={{ width: "0.75rem", height: "0.75rem" }}
+                            />
+                            Verified
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
