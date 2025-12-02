@@ -788,6 +788,7 @@ export default function Home() {
     try {
       if (!navigator.geolocation) {
         alert("Geolocation is not supported by your browser");
+        setIsGettingLocation(false);
         return;
       }
 
@@ -1704,7 +1705,7 @@ export default function Home() {
                           background: ast.online || ast.isOnline
                             ? "#10b981"
                             : "var(--color-gray-400)",
-                          animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
+                          animation: (ast.online || ast.isOnline) ? "pulse-opacity 2s infinite" : "none",
                         }}
                       />
                     </div>

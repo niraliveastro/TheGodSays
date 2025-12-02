@@ -319,7 +319,20 @@ export default function FamilyMemberPredictions({ member, onClose }) {
       const { hours: H, minutes: Min, seconds: S } = parseTimeString(member.time);
       
       const geo = await geocodePlace(member.place);
+      
+      // Validate geocoding result
+      if (!geo) {
+        throw new Error("Unable to find location for Antar Dasha calculation.");
+      }
+      if (!Number.isFinite(geo.latitude) || !Number.isFinite(geo.longitude)) {
+        throw new Error("Location data is incomplete.");
+      }
+      
       const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+      
+      if (!Number.isFinite(tz)) {
+        throw new Error("Could not determine timezone.");
+      }
 
       const payload = {
         year: Y,

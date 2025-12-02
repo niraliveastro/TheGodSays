@@ -2769,8 +2769,8 @@
   }
 }
 
-/* Pulse animation for online indicators */
-@keyframes pulse {
+/* Pulse opacity animation for online indicators */
+@keyframes pulse-opacity {
   0%, 100% {
     opacity: 1;
   }
