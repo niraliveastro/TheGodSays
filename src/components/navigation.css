@@ -32,12 +32,24 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  text-decoration: none;
+  text-decoration: none !important;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .nav-logo-wrapper:hover {
+  text-decoration: none !important;
   transform: translateY(-2px);
+}
+
+.nav-logo-wrapper:focus {
+  outline: none;
+  text-decoration: none !important;
+}
+
+.nav-logo-wrapper:active,
+.nav-logo-wrapper:visited {
+  text-decoration: none !important;
 }
 
 .nav-logo-icon {
@@ -71,6 +83,14 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-family: 'Cormorant Garamond', Georgia, serif;
+  transition: all 0.3s ease;
+}
+
+.nav-logo-wrapper:hover .nav-logo-text {
+  background: linear-gradient(135deg, #b8972e, #d4af37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Desktop Navigation */

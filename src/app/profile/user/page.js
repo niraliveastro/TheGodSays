@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
+import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -999,124 +1000,16 @@ export default function ProfilePage() {
         </div>
       </Modal>
 
-      {/* AI Predictions Modal */}
-      <Modal
-        open={showPredictions}
-        onClose={() => {
-          setShowPredictions(false);
-          setSelectedMember(null);
-        }}
-        title={`AI Predictions for ${selectedMember?.name || ""}`}
-      >
-        <div style={{ padding: "1.5rem" }}>
-          {selectedMember && (
-            <>
-              <div className="mb-6 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Birth Details
-                </h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p>
-                    📅 Date: {new Date(selectedMember.dob).toLocaleDateString()}
-                  </p>
-                  <p>🕐 Time: {selectedMember.time}</p>
-                  <p>📍 Place: {selectedMember.place}</p>
-                  <p>👤 Relation: {selectedMember.relation}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-amber-600" />
-                    <h4 className="font-semibold text-gray-900">
-                      Daily Horoscope
-                    </h4>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    Your day looks promising with positive energy surrounding
-                    you. Focus on personal growth and meaningful connections.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
-                    <h4 className="font-semibold text-gray-900">
-                      Career Insights
-                    </h4>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    Professional opportunities are on the horizon. Stay focused
-                    and maintain your determination.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-pink-600" />
-                    <h4 className="font-semibold text-gray-900">
-                      Love & Relationships
-                    </h4>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    Harmony and understanding will strengthen your
-                    relationships. Communication is key today.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-green-600" />
-                    <h4 className="font-semibold text-gray-900">
-                      Health & Wellness
-                    </h4>
-                  </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    Your energy levels are good. Maintain a balanced routine and
-                    stay hydrated.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
-                <h4 className="font-semibold text-gray-900 mb-3 text-center">
-                  Lucky Elements
-                </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-1">Lucky Number</p>
-                    <p className="font-bold text-purple-600 text-xl">7</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-1">Lucky Color</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-6 h-6 bg-blue-500 rounded-full"></div>
-                      <p className="font-bold text-purple-600">Blue</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-1">Lucky Day</p>
-                    <p className="font-bold text-purple-600">Wednesday</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-1">Lucky Stone</p>
-                    <p className="font-bold text-purple-600">Sapphire</p>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => alert("Connecting to astrologer...")}
-                className="btn btn-primary w-full mt-6"
-                style={{ height: "3rem", fontSize: "1rem" }}
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Consult Astrologer for Detailed Reading
-              </Button>
-            </>
-          )}
-        </div>
-      </Modal>
+      {/* AI Predictions - Full Featured Modal */}
+      {showPredictions && selectedMember && (
+        <FamilyMemberPredictions
+          member={selectedMember}
+          onClose={() => {
+            setShowPredictions(false);
+            setSelectedMember(null);
+          }}
+        />
+      )}
 
       {/* Local Animations & Styles */}
       <style jsx>{`
