@@ -841,9 +841,9 @@ export default function Home() {
       const data = await response.json();
       
       const suggestions = data.map(item => ({
-        display_name: item.display_name,
-        city: item.address.city || item.address.town || item.address.village || "",
-        country: item.address.country || "",
+        display_name: item.display_name || "",
+        city: item.address?.city || item.address?.town || item.address?.village || "",
+        country: item.address?.country || "",
         lat: item.lat,
         lon: item.lon,
       }));
@@ -1534,10 +1534,10 @@ export default function Home() {
                             onClick={() => handleLocationSelect(suggestion)}
                           >
                             <div className="text-sm font-medium text-slate-900">
-                              {suggestion.city || suggestion.display_name.split(",")[0]}
+                              {suggestion.city || suggestion.display_name?.split(",")[0] || "Unknown Location"}
                             </div>
                             <div className="text-xs text-slate-500">
-                              {suggestion.display_name}
+                              {suggestion.display_name || "No address available"}
                             </div>
                           </div>
                         ))}
