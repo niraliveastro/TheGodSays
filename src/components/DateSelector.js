@@ -216,32 +216,6 @@ export default function DateSelector(props) {
           </Button>
         </div>
       )}
-
-      {/* ==== ACTIVE / PENDING DISPLAY ==== */}
-      {(userLocation || pendingLocation) && (
-        <div className="location-status">
-          <MapPin className="status-icon" />
-          <div className="status-text">
-            <p className="status-main">
-              {pendingLocation ? (
-                <>
-                  <strong>Selected:</strong>{' '}
-                  {pendingLocation.displayName ??
-                    `${pendingLocation.latitude.toFixed(4)}, ${pendingLocation.longitude.toFixed(4)}`}
-                </>
-              ) : (
-                <>
-                  <strong>Active:</strong>{' '}
-                  {userLocation?.latitude.toFixed(4)}, {userLocation?.longitude.toFixed(4)}
-                </>
-              )}
-            </p>
-            <p className="status-sub">
-              Sun &amp; Moon timings calculated for this location
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

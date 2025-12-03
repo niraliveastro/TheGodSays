@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "./globals-responsive.css";
 
 import { Providers } from "./providers";
 import PWAInstaller from "@/components/PWAInstaller";
@@ -13,13 +14,18 @@ export const metadata = {
   title: "Panchang - TheGodSays",
   description: "Your daily Panchang and personalized astrological insights",
   manifest: "/manifest.json",
-  themeColor: "#1e40af",
-  viewport:
-    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  themeColor: "#d4af37",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: "cover"
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Panchang",
+    statusBarStyle: "black-translucent",
+    title: "TheGodSays",
   },
 };
 

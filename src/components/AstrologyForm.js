@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Calendar, MapPin, Clock, Settings, ArrowLeft } from 'lucide-react'
+import { Calendar, MapPin, Clock, Settings, ArrowLeft, Navigation } from 'lucide-react'
 
 const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
   const [formData, setFormData] = useState({
@@ -22,6 +22,7 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
   })
 
   const [errors, setErrors] = useState({})
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -36,6 +37,49 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
         ...prev,
         [name]: ''
       }))
+    }
+  }
+
+  const handleGetLocation = async () => {
+    setIsGettingLocation(true)
+    try {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser')
+        setIsGettingLocation(false)
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setFormData(prev => ({
+            ...prev,
+            latitude: latitude.toFixed(7),
+            longitude: longitude.toFixed(7),
+            timezone: -new Date().getTimezoneOffset() / 60
+          }))
+          // Clear location errors
+          setErrors(prev => ({
+            ...prev,
+            latitude: '',
+            longitude: ''
+          }))
+          setIsGettingLocation(false)
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+          alert('Unable to retrieve your location. Please enter manually.')
+          setIsGettingLocation(false)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      )
+    } catch (error) {
+      console.error('Location error:', error)
+      setIsGettingLocation(false)
     }
   }
 
@@ -94,207 +138,264 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center space-x-3">
+    <div className="max-w-5xl mx-auto">
+      {/* Header Card */}
+      <div className="bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg mb-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onBack}
-            className="flex items-center space-x-2"
+            className="w-fit flex items-center gap-2 px-4 py-2 rounded-lg border-gray-300 hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>Back to Tools</span>
           </Button>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5" />
-            <span>{option.name}</span>
-          </CardTitle>
+          
+          <div className="flex items-center gap-4 flex-1">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-100 to-indigo-50 flex items-center justify-center ring-1 ring-blue-100">
+              <Calendar className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                {option.name}
+              </h1>
+              <p className="text-sm text-slate-600 mt-1">{option.description}</p>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-gray-600 mt-2">{option.description}</p>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      </div>
+
+      {/* Form Card */}
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
           {/* Date and Time Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span>Date & Time</span>
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Year
-                </label>
-                <Input
-                  name="year"
-                  type="number"
-                  value={formData.year}
-                  onChange={handleInputChange}
-                  className={errors.year ? 'border-red-500' : ''}
-                />
-                {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
+          <div className="bg-gradient-to-br from-blue-50/30 to-transparent rounded-xl p-6 border border-blue-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-blue-600" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Month
-                </label>
-                <Input
-                  name="month"
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={formData.month}
-                  onChange={handleInputChange}
-                  className={errors.month ? 'border-red-500' : ''}
-                />
-                {errors.month && <p className="text-red-500 text-xs mt-1">{errors.month}</p>}
+              <h3 className="text-xl font-semibold text-gray-800">
+                Date & Time
+              </h3>
+            </div>
+            
+            {/* Date Fields */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Date</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Year
+                  </label>
+                  <Input
+                    name="year"
+                    type="number"
+                    value={formData.year}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.year ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.year && <p className="text-red-500 text-xs mt-1.5">{errors.year}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Month (1-12)
+                  </label>
+                  <Input
+                    name="month"
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={formData.month}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.month ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.month && <p className="text-red-500 text-xs mt-1.5">{errors.month}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Day (1-31)
+                  </label>
+                  <Input
+                    name="date"
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.date && <p className="text-red-500 text-xs mt-1.5">{errors.date}</p>}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <Input
-                  name="date"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  className={errors.date ? 'border-red-500' : ''}
-                />
-                {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hours (0-23)
-                </label>
-                <Input
-                  name="hours"
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={formData.hours}
-                  onChange={handleInputChange}
-                  className={errors.hours ? 'border-red-500' : ''}
-                />
-                {errors.hours && <p className="text-red-500 text-xs mt-1">{errors.hours}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Minutes (0-59)
-                </label>
-                <Input
-                  name="minutes"
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={formData.minutes}
-                  onChange={handleInputChange}
-                  className={errors.minutes ? 'border-red-500' : ''}
-                />
-                {errors.minutes && <p className="text-red-500 text-xs mt-1">{errors.minutes}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Seconds (0-59)
-                </label>
-                <Input
-                  name="seconds"
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={formData.seconds}
-                  onChange={handleInputChange}
-                  className={errors.seconds ? 'border-red-500' : ''}
-                />
-                {errors.seconds && <p className="text-red-500 text-xs mt-1">{errors.seconds}</p>}
+            </div>
+
+            {/* Time Fields */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Time</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hours (0-23)
+                  </label>
+                  <Input
+                    name="hours"
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={formData.hours}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.hours ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.hours && <p className="text-red-500 text-xs mt-1.5">{errors.hours}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Minutes (0-59)
+                  </label>
+                  <Input
+                    name="minutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={formData.minutes}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.minutes ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.minutes && <p className="text-red-500 text-xs mt-1.5">{errors.minutes}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Seconds (0-59)
+                  </label>
+                  <Input
+                    name="seconds"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={formData.seconds}
+                    onChange={handleInputChange}
+                    className={`h-11 rounded-lg ${errors.seconds ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {errors.seconds && <p className="text-red-500 text-xs mt-1.5">{errors.seconds}</p>}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Location Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-              <MapPin className="w-4 h-4" />
-              <span>Location</span>
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="bg-gradient-to-br from-green-50/30 to-transparent rounded-xl p-6 border border-green-100">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Location
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={isGettingLocation}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-green-200 text-green-700 font-medium hover:bg-green-50 hover:border-green-300 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow"
+              >
+                {isGettingLocation ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Getting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-4 h-4" />
+                    <span>My Location</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Latitude
                 </label>
                 <Input
                   name="latitude"
                   type="number"
                   step="any"
-                  placeholder="e.g., 1.4433887"
+                  placeholder="e.g., 28.6139"
                   value={formData.latitude}
                   onChange={handleInputChange}
-                  className={errors.latitude ? 'border-red-500' : ''}
+                  className={`h-11 rounded-lg ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+                {errors.latitude && <p className="text-red-500 text-xs mt-1.5">{errors.latitude}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Longitude
                 </label>
                 <Input
                   name="longitude"
                   type="number"
                   step="any"
-                  placeholder="e.g., 103.8325013"
+                  placeholder="e.g., 77.2090"
                   value={formData.longitude}
                   onChange={handleInputChange}
-                  className={errors.longitude ? 'border-red-500' : ''}
+                  className={`h-11 rounded-lg ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {errors.longitude && <p className="text-red-500 text-xs mt-1">{errors.longitude}</p>}
+                {errors.longitude && <p className="text-red-500 text-xs mt-1.5">{errors.longitude}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Timezone
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Timezone (Hours)
                 </label>
                 <Input
                   name="timezone"
                   type="number"
-                  placeholder="e.g., 8"
+                  step="0.5"
+                  placeholder="e.g., 5.5"
                   value={formData.timezone}
                   onChange={handleInputChange}
+                  className="h-11 rounded-lg border-gray-300"
                 />
+                <p className="text-xs text-gray-500 mt-1.5">Offset from UTC</p>
               </div>
             </div>
           </div>
 
           {/* Configuration Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>Configuration</span>
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gradient-to-br from-purple-50/30 to-transparent rounded-xl p-6 border border-purple-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Settings className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">
+                Configuration
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Observation Point
                 </label>
                 <select
                   name="observation_point"
                   value={formData.observation_point}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none transition-all bg-white"
                 >
                   <option value="geocentric">Geocentric</option>
                   <option value="topocentric">Topocentric</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Ayanamsha
                 </label>
                 <select
                   name="ayanamsha"
                   value={formData.ayanamsha}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold outline-none transition-all bg-white"
                 >
                   <option value="lahiri">Lahiri</option>
                   <option value="sayana">Sayana</option>
@@ -303,16 +404,30 @@ const AstrologyForm = ({ option, onSubmit, onBack, isLoading }) => {
             </div>
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Calculating...' : `Calculate ${option.name}`}
-          </Button>
+          {/* Submit Button */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-14 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{ backgroundColor: 'var(--color-gold)' }}
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Calculating...</span>
+                </>
+              ) : (
+                <>
+                  <Calendar className="w-5 h-5" />
+                  <span>Calculate {option.name}</span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

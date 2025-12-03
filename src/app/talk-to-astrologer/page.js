@@ -410,11 +410,7 @@ export default function TalkToAstrologer() {
       />
 
       <div
-        style={{
-          minHeight: "100vh",
-          background: "var(--color-gray-50)",
-          padding: "2rem 0",
-        }}
+        className="min-h-screen bg-gray-50 py-4 md:py-8 px-4 md:px-6 lg:px-8"
       >
         <div className="app">
           {/* Orbs */}
@@ -547,15 +543,10 @@ export default function TalkToAstrologer() {
             </div>
           </div>
 
-          {/* Loading skeletons – 2 per row */}
+          {/* Loading skeletons – Responsive grid */}
           {fetchingAstrologers && (
             <div
-              style={{
-                display: "grid",
-                gap: "1.5rem",
-                gridTemplateColumns: "repeat(3, minmax(16rem, 1fr))",
-                marginTop: "1.5rem",
-              }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"
             >
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
@@ -625,12 +616,8 @@ export default function TalkToAstrologer() {
 
           {!fetchingAstrologers && filteredAstrologers.length > 0 && (
             <div
-              className="astrologer-grid"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
               style={{
-                display: "grid",
-                gap: "1rem",
-                gridTemplateColumns: "1fr",
-                marginTop: "1.5rem",
                 opacity: !!connectingCallType ? 0.5 : 1,
                 pointerEvents: !!connectingCallType ? "none" : "auto",
               }}
@@ -644,7 +631,6 @@ export default function TalkToAstrologer() {
                     padding: "1.5rem",
                     transition: "var(--transition-smooth)",
                     cursor: !!connectingCallType ? "default" : "pointer",
-                    minWidth: "22rem",
                     display: "flex",
                     flexDirection: "column",
                     position: "relative",

@@ -111,9 +111,63 @@ export default function PredictionsPage() {
   };
 
 
+  // Track if we should auto-submit
+  const shouldAutoSubmit = useRef(false);
+
   useEffect(() => {
     setHistory(getHistory());
+
+    // Load data from landing page form if available
+    try {
+      const savedData = localStorage.getItem("tgs:aiPredictionForm");
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        
+        // Populate form fields
+        if (parsedData.name) setFullName(parsedData.name);
+        if (parsedData.gender) setGender(parsedData.gender);
+        if (parsedData.dob) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD format for the date input
+          const parts = parsedData.dob.split("-");
+          if (parts.length === 3) {
+            const [day, month, year] = parts;
+            setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+          }
+        }
+        if (parsedData.tob) setTob(parsedData.tob);
+        if (parsedData.place) setPlace(parsedData.place);
+
+        // Set flag to auto-submit if all required fields are present
+        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender) {
+          shouldAutoSubmit.current = true;
+        }
+
+        // Clear the saved data so it doesn't auto-fill again next time
+        localStorage.removeItem("tgs:aiPredictionForm");
+      }
+    } catch (error) {
+      console.error("Error loading saved form data:", error);
+    }
   }, []);
+
+  // Auto-submit effect - runs after form fields are populated
+  useEffect(() => {
+    if (shouldAutoSubmit.current && dob && tob && place && gender && !submitting && !result) {
+      shouldAutoSubmit.current = false; // Reset flag
+      
+      // Trigger form submission after a short delay to ensure all state is updated
+      const timer = setTimeout(() => {
+        const form = document.querySelector('form');
+        if (form) {
+          // Create and dispatch a submit event
+          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+          form.dispatchEvent(submitEvent);
+        }
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [dob, tob, place, gender, submitting, result]);
 
   useEffect(() => {
     const check = () => {

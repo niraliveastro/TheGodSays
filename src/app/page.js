@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PanchangCard from "@/components/PanchangCard";
 import FestivalCard from "@/components/FestivalCard";
@@ -19,8 +20,14 @@ import {
   Clock,
   Star,
   AlertCircle,
+  Video,
+  Phone,
 } from "lucide-react";
 import "./home.css";
+import ReviewModal from "@/components/ReviewModal";
+import CallConnectingNotification from "@/components/CallConnectingNotification";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 // Simple in-memory cache for home panchang fetches (reset on reload)
 const homePanchangCache = new Map(); // key => { data, savedAt }
@@ -45,6 +52,7 @@ const writeHomeCache = (key, value) => {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [panchangData, setPanchangData] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
 
@@ -67,6 +75,12 @@ export default function Home() {
   const [onlineAstrologers, setOnlineAstrologers] = useState([]);
   const [featuredAstrologers, setFeaturedAstrologers] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [fetchingAstrologers, setFetchingAstrologers] = useState(true);
+
+  // Call state
+  const [connectingCallType, setConnectingCallType] = useState(null);
+  const [callStatus, setCallStatus] = useState("connecting");
+  const [loading, setLoading] = useState(false);
 
   // AI Predictions form state
   const [formData, setFormData] = useState({
@@ -80,6 +94,79 @@ export default function Home() {
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const locationInputRef = useRef(null);
+  const hasInteractedWithLocation = useRef(false);
+
+  // Review modal state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedAstrologerForReview, setSelectedAstrologerForReview] = useState(null);
+
+  // Fetch astrologers from Firebase with real status
+  const fetchAndUpdateAstrologers = async () => {
+    try {
+      const snap = await getDocs(collection(db, "astrologers"));
+      const list = snap.docs.map((doc) => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          name: d.name,
+          specialization: d.specialization,
+          rating: d.rating || 0,
+          reviews: d.reviews || 0,
+          experience: d.experience,
+          languages: d.languages || ["English"],
+          status: d.status || "offline",
+          isOnline: d.status === "online",
+          online: d.status === "online",
+          bio: d.bio || `Expert in ${d.specialization}`,
+          verified: d.verified || false,
+        };
+      });
+
+      /* ---- Pricing ---- */
+      try {
+        const res = await fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-all-pricing" }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const map = {};
+          data.pricing.forEach((p) => (map[p.astrologerId] = p));
+          list.forEach((a) => {
+            const p = map[a.id];
+            if (p) {
+              a.pricing = p;
+              a.perMinuteCharge =
+                p.pricingType === "per_minute" ? p.finalPrice : null;
+            } else {
+              a.pricing = { pricingType: "per_minute", finalPrice: 50 };
+              a.perMinuteCharge = 50;
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching pricing:", e);
+      }
+
+      const online = list.filter((a) => a.status === "online");
+      const featured = list.slice(0, 6);
+
+      setOnlineAstrologers(online);
+      setFeaturedAstrologers(featured);
+    } catch (error) {
+      console.error("Error fetching astrologers:", error);
+    } finally {
+      setFetchingAstrologers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAndUpdateAstrologers();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchAndUpdateAstrologers, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const astrologyOptions = [
     {
@@ -890,9 +977,17 @@ export default function Home() {
 
   // Debounce location search
   useEffect(() => {
+    // Don't search on initial load when data is restored from localStorage
+    if (!hasInteractedWithLocation.current) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (formData.place && formData.place.length >= 3) {
         handleLocationSearch(formData.place);
+      } else {
+        setLocationSuggestions([]);
+        setShowLocationSuggestions(false);
       }
     }, 500);
 
@@ -998,6 +1093,186 @@ export default function Home() {
     window.location.href = `/ai-prediction?${qs}`;
   };
 
+  // Review Modal Handlers
+  const handleOpenReview = (astrologer) => {
+    if (!!connectingCallType) return;
+    const userId = localStorage.getItem("tgs:userId");
+    if (!userId) {
+      alert("Please log in to leave a review.");
+      router.push("/auth/user");
+      return;
+    }
+    setSelectedAstrologerForReview(astrologer);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!res.ok) throw new Error("Failed to submit review");
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Review submitted successfully!");
+        setIsReviewModalOpen(false);
+        // Refresh astrologer data
+        fetchAndUpdateAstrologers();
+      } else {
+        throw new Error(data.error || "Failed to submit review");
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      alert("Failed to submit review. Please try again.");
+    }
+  };
+
+  // Call functionality
+  const startCall = async (type, astrologerId) => {
+    if (!!connectingCallType) return;
+    setLoading(true);
+
+    try {
+      const userId = localStorage.getItem("tgs:userId");
+      if (!userId) {
+        alert("Please log in to make a call.");
+        router.push("/auth/user");
+        setLoading(false);
+        return;
+      }
+
+      setConnectingCallType(type);
+
+      /* ---- Check astrologer status ---- */
+      const statusRes = await fetch(
+        `/api/astrologer/status?astrologerId=${astrologerId}`
+      );
+      const { success, status } = await statusRes.json();
+
+      if (!success) throw new Error("Cannot check astrologer status.");
+      if (status === "offline") throw new Error("Astrologer is offline.");
+      if (status === "busy" && !confirm("Astrologer is busy. Join queue?")) {
+        setConnectingCallType(null);
+        setLoading(false);
+        return;
+      }
+
+      /* ---- Create call ---- */
+      const callRes = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create-call",
+          astrologerId,
+          userId,
+          callType: type,
+        }),
+      });
+      if (!callRes.ok) throw new Error("Failed to create call.");
+      const { call } = await callRes.json();
+
+      localStorage.setItem("tgs:callId", call.id);
+      localStorage.setItem("tgs:currentCallId", call.id);
+      localStorage.setItem("tgs:astrologerId", astrologerId);
+
+      /* ---- Initialize billing ---- */
+      await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "initialize-call",
+          callId: call.id,
+          userId,
+          astrologerId,
+        }),
+      }).catch(() => {});
+
+      /* ---- Poll for call status ---- */
+      let timeoutId;
+      const poll = setInterval(async () => {
+        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`);
+        const sData = await sRes.json();
+        const c = sData.calls?.find((c) => c.id === call.id);
+
+        if (c?.status === "active") {
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          const sessRes = await fetch("/api/livekit/create-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              astrologerId,
+              userId,
+              callId: call.id,
+              roomName: c.roomName,
+              callType: type,
+              role: "user",
+              displayName: "User",
+            }),
+          });
+          if (sessRes.ok) {
+            const { roomName } = await sessRes.json();
+            setConnectingCallType(null);
+            setLoading(false);
+            router.push(
+              type === "video"
+                ? `/talk-to-astrologer/room/${roomName}`
+                : `/talk-to-astrologer/voice/${roomName}`
+            );
+          } else {
+            setConnectingCallType(null);
+            setLoading(false);
+            alert("Failed to join room.");
+          }
+        } else if (c?.status === "rejected") {
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          await fetch("/api/billing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "cancel-call", callId: call.id }),
+          }).catch(() => {});
+          setCallStatus("rejected");
+          setTimeout(() => {
+            setConnectingCallType(null);
+            setCallStatus("connecting");
+            setLoading(false);
+          }, 2000);
+        } else if (c?.status === "cancelled") {
+          clearInterval(poll);
+          clearTimeout(timeoutId);
+          setConnectingCallType(null);
+          setCallStatus("connecting");
+          setLoading(false);
+        }
+      }, 2000);
+
+      timeoutId = setTimeout(() => {
+        clearInterval(poll);
+        fetch("/api/billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cancel-call", callId: call.id }),
+        }).catch(() => {});
+        setConnectingCallType(null);
+        setLoading(false);
+        alert("Astrologer not responding.");
+      }, 60_000);
+    } catch (e) {
+      console.error(e);
+      setConnectingCallType(null);
+      setLoading(false);
+      alert(e.message || "Call failed.");
+    }
+  };
+
+  const handleVideoCall = (id) => startCall("video", id);
+  const handleVoiceCall = (id) => startCall("voice", id);
+
   // Panchang items (keeps showing core tithi/nakshatra etc)
   const panchangItems = [
     { label: "Tithi", value: panchangData?.tithi || "Loading..." },
@@ -1089,15 +1364,14 @@ export default function Home() {
 
                 {/* NEW: Updated headline per request */}
                 <h1 className="hero-main-title">
-                  Don’t wait for life to break. Fix it with{" "}
-                  <span className="hero-highlight">AI-powered astrology.</span>
+                  Navigate Life's Challenges with{" "}
+                  <span className="hero-highlight">Ancient Wisdom & Modern AI</span>
                 </h1>
 
                 {/* NEW: Refined subheading */}
                 <p className="hero-description">
-                  Talk to famous astrologers <strong>or</strong> use our AI
-                  engine trained on NASA ephemeris data and insights from{" "}
-                  <strong>200,000+ real charts.</strong>
+                  Get instant astrological insights through <strong>expert astrologers</strong> or our{" "}
+                  <strong>AI-powered predictions</strong> trained on 200,000+ real charts & NASA ephemeris data.
                 </p>
 
                 {/* NEW: Pill chips under subheading (Life Insights, Kundali Matching, Panchang Today) */}
@@ -1371,6 +1645,125 @@ export default function Home() {
           </header>
           {/* ───────────────────────────── END HERO SECTION ───────────────────────────── */}
 
+          {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
+          <section className="max-w-7xl mx-auto mt-16 px-4">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl text-gold font-bold mb-3">What Can We Help You With?</h2>
+              <p className="text-slate-600 text-lg">Choose your path to cosmic clarity</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Service Card 1: Talk to Astrologer */}
+              <div 
+                className="card bg-gradient-to-br from-white to-purple-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-purple-100"
+                onClick={() => window.location.href = "/talk-to-astrologer"}
+              >
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Star className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Talk to Expert</h3>
+                  <p className="text-sm text-gray-600">Connect with verified astrologers via call or chat</p>
+                  <div className="mt-2 text-xs text-purple-600 font-semibold">1:1 Consultation →</div>
+                </div>
+              </div>
+
+              {/* Service Card 2: AI Predictions */}
+              <div 
+                className="card bg-gradient-to-br from-white to-amber-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-amber-100"
+                onClick={() => document.getElementById('ai-prediction-section')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">AI Predictions</h3>
+                  <p className="text-sm text-gray-600">Instant insights powered by advanced algorithms</p>
+                  <div className="mt-2 text-xs text-amber-600 font-semibold">60 Second Results →</div>
+                </div>
+              </div>
+
+              {/* Service Card 3: Compatibility Check */}
+              <div 
+                className="card bg-gradient-to-br from-white to-rose-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-rose-100"
+                onClick={() => window.location.href = "/matching"}
+              >
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 21s-7-4.35-9-7.5A6 6 0 0112 3a6 6 0 019 10.5C19 16.65 12 21 12 21z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Love Match</h3>
+                  <p className="text-sm text-gray-600">Check relationship compatibility with Kundali matching</p>
+                  <div className="mt-2 text-xs text-rose-600 font-semibold">Find Compatibility →</div>
+                </div>
+              </div>
+
+              {/* Service Card 4: Daily Panchang */}
+              <div 
+                className="card bg-gradient-to-br from-white to-blue-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-blue-100"
+                onClick={() => document.getElementById('panchang-section')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Calendar className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Daily Panchang</h3>
+                  <p className="text-sm text-gray-600">Today's auspicious timings & celestial events</p>
+                  <div className="mt-2 text-xs text-blue-600 font-semibold">View Today →</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ====== HOW IT WORKS SECTION ====== */}
+          <section className="max-w-6xl mx-auto mt-20 px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl text-gold font-bold mb-3">How It Works</h2>
+              <p className="text-slate-600 text-lg">Simple, fast, and accurate — in just 3 steps</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Step 1 */}
+              <div className="relative">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                    1
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Share Your Details</h3>
+                  <p className="text-gray-600">Enter your birth date, time, and place — we'll handle the rest</p>
+                </div>
+                {/* Connector Arrow (hidden on mobile) */}
+                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-purple-300 to-amber-300"></div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="relative">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                    2
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Choose Your Path</h3>
+                  <p className="text-gray-600">Talk to an expert astrologer or get instant AI predictions</p>
+                </div>
+                {/* Connector Arrow (hidden on mobile) */}
+                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-emerald-300"></div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="relative">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                    3
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Get Insights</h3>
+                  <p className="text-gray-600">Receive personalized guidance for life, career, love & more</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ====== AI PREDICTION FORM SECTION — VISUALLY MATCHES PROVIDED DESIGN ====== */}
           <section
             id="ai-prediction-section"
@@ -1391,11 +1784,11 @@ export default function Home() {
 
               <div>
                 <h3 className="text-4xl text-gold">
-                  Let AI read your stars in 60 seconds.
+                  Quick Start: Get Your Free AI Reading
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Fill in your birth details once. We’ll prefill them on the AI
-                  predictions page and save time for all future readings.
+                  Enter your birth details below to receive instant personalized predictions.
+                  Your information will be saved for future readings.
                 </p>
               </div>
             </div>
@@ -1515,8 +1908,14 @@ export default function Home() {
                       className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
                       placeholder="City, Country"
                       value={formData.place}
-                      onChange={(e) => setFormData(prev => ({ ...prev, place: e.target.value }))}
-                      onFocus={() => setShowLocationSuggestions(locationSuggestions.length > 0)}
+                      onChange={(e) => {
+                        hasInteractedWithLocation.current = true;
+                        setFormData(prev => ({ ...prev, place: e.target.value }));
+                      }}
+                      onFocus={() => {
+                        hasInteractedWithLocation.current = true;
+                        setShowLocationSuggestions(locationSuggestions.length > 0);
+                      }}
                       required
                       autoComplete="off"
                     />
@@ -1589,51 +1988,82 @@ export default function Home() {
           {/* ====== Top Astrologers Online / Featured (NEW) ====== */}
 
           <section className="card mt-12 astrologers-section">
-            <div className="astrologers-header p-5 mx-auto flex flex-col items-center text-center gap-4 sm:flex-col sm:text-center">
-              <div className="astrologers-header-text">
-                <h1 className="text-gold">
-                  Talk to the right astrologer — right now.
-                </h1>
-                <p className="astrologers-sub">
-                  Handpicked Vedic, KP, and Nadi astrologers. Verified
-                  experience. Real humans, not random “babas”.
-                </p>
+            <div className="astrologers-header p-6 mx-auto flex flex-col items-center text-center gap-6">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-100 to-yellow-50 flex items-center justify-center ring-1 ring-amber-100">
+                  <Star className="w-6 h-6 text-amber-600" />
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Connect with Top Verified Astrologers
+                </h2>
               </div>
 
-              <div className="astrologers-actions flex flex-col sm:flex-row gap-3 sm:gap-4 w-full justify-center">
+              <p className="text-slate-600 text-base md:text-lg max-w-3xl">
+                Expert guidance from certified Vedic, KP, and Nadi astrologers.
+                <strong className="text-slate-800"> Available 24/7</strong> for instant calls or chat consultations.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">
                 <button
-                  className="btn btn-ghost w-full sm:w-auto text-center"
-                  onClick={() =>
-                    (window.location.href = "/talk-to-astrologers")
-                  }
+                  onClick={() => (window.location.href = "/talk-to-astrologer")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
+                  style={{ backgroundColor: 'var(--color-gold)' }}
                 >
-                  View All Astrologers →
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span>View All Astrologers</span>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
                 </button>
 
                 <button
-                  className="btn btn-ghost w-full sm:w-auto text-center"
                   onClick={() => (window.location.href = "/auth/astrologer")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
                 >
-                  Become an Astrologer →
+                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                  <span>Become an Astrologer</span>
+                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
                 </button>
               </div>
             </div>
 
-            <div
-              className="astrologer-grid-home"
-              style={{
-                display: "grid",
-                gap: "1rem",
-                gridTemplateColumns: "1fr",
-                marginTop: "1.5rem",
-              }}
-              role="list"
-              aria-label="Top astrologers list"
-            >
-              {(onlineAstrologers.length > 0
-                ? onlineAstrologers
-                : featuredAstrologers
-              ).map((ast) => (
+            {fetchingAstrologers ? (
+              <div style={{ textAlign: "center", padding: "3rem 0" }}>
+                <div
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                    border: "3px solid rgba(212, 175, 55, 0.3)",
+                    borderTopColor: "#d4af37",
+                    borderRadius: "50%",
+                    margin: "0 auto 1rem",
+                    animation: "spin 1s linear infinite",
+                  }}
+                ></div>
+                <p style={{ color: "#6b7280" }}>Loading astrologers...</p>
+              </div>
+            ) : (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
+                role="list"
+                aria-label="Top astrologers list"
+              >
+                {(onlineAstrologers.length > 0
+                  ? onlineAstrologers
+                  : featuredAstrologers
+                ).map((ast) => (
                 <div
                   key={ast.id}
                   className="card astrologer-card"
@@ -1642,7 +2072,6 @@ export default function Home() {
                     padding: "1.5rem",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
-                    minWidth: "22rem",
                     display: "flex",
                     flexDirection: "column",
                     position: "relative",
@@ -1705,7 +2134,7 @@ export default function Home() {
                           background: ast.online || ast.isOnline
                             ? "#10b981"
                             : "var(--color-gray-400)",
-                          animation: (ast.online || ast.isOnline) ? "pulse-opacity 2s infinite" : "none",
+                          animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
                         }}
                       />
                     </div>
@@ -1765,7 +2194,7 @@ export default function Home() {
                           </p>
                         </div>
 
-                        {/* Rating Badge */}
+                        {/* Rating Badge + Review Button */}
                         <div
                           style={{
                             display: "flex",
@@ -1808,6 +2237,27 @@ export default function Home() {
                               ({ast.reviews ?? 0})
                             </span>
                           </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenReview(ast);
+                            }}
+                            style={{
+                              fontSize: "0.75rem",
+                              padding: "0.25rem 0.75rem",
+                              height: "1.75rem",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "0.375rem",
+                              background: "white",
+                              color: "#374151",
+                              cursor: "pointer",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Review
+                          </button>
                         </div>
                       </div>
 
@@ -1916,7 +2366,7 @@ export default function Home() {
                       fontSize: "0.875rem",
                       fontFamily: "var(--font-body)",
                       color: "var(--color-gray-600)",
-                      marginBottom: "1rem",
+                      marginBottom: "0.75rem",
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: "vertical",
@@ -1933,7 +2383,7 @@ export default function Home() {
                   {ast.languages?.length > 0 && (
                     <div
                       style={{
-                        marginBottom: "1rem",
+                        marginBottom: "0.75rem",
                         position: "relative",
                         zIndex: 20,
                       }}
@@ -1974,11 +2424,10 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Action buttons – Bottom */}
+                  {/* Action button – Bottom */}
                   <div
                     style={{
                       display: "flex",
-                      gap: "0.75rem",
                       marginTop: "auto",
                       position: "relative",
                       zIndex: 30,
@@ -1986,57 +2435,45 @@ export default function Home() {
                   >
                     <button
                       className="btn btn-primary"
-                      onClick={() =>
-                        (window.location.href = `/account/astrologer/${ast.id}`)
-                      }
-                      style={{
-                        flex: 1,
-                        height: "3rem",
-                        padding: "0 1.5rem",
-                        fontSize: "1rem",
-                      }}
-                      type="button"
-                      aria-label={`View profile of ${ast.name}`}
-                    >
-                      View
-                    </button>
-
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => (window.location.href = `/chat/${ast.id}`)}
-                      style={{
-                        flex: 1,
-                        height: "3rem",
-                        padding: "0 1.5rem",
-                        fontSize: "1rem",
-                      }}
-                      type="button"
-                      aria-label={`Chat with ${ast.name}`}
-                    >
-                      Chat
-                    </button>
-
-                    <button
-                      className="btn btn-outline"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        alert("Review feature - please implement review modal");
+                        window.location.href = `/account/astrologer/${ast.id}`;
                       }}
                       style={{
+                        width: "100%",
                         height: "3rem",
-                        padding: "0 1rem",
-                        fontSize: "0.875rem",
+                        padding: "0 1.5rem",
+                        fontSize: "1rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.5rem",
+                        fontWeight: 600,
                       }}
                       type="button"
-                      aria-label={`Review ${ast.name}`}
+                      aria-label={`Connect with ${ast.name}`}
                     >
-                      Review
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      Connect with {ast.name.split(" ")[0]}
                     </button>
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </section>
 
           {/* ====== Partner Matching / Loyalty Detector (UPGRADED) ====== */}
@@ -2066,12 +2503,11 @@ export default function Home() {
 
                 <div>
                   <h3 id="loyalty-title" className="text-4xl text-gold">
-                    Loyalty Detector
+                    Relationship Compatibility Checker
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
-                    See how your relationship might progress using our
-                    Ashtakoot-based compatibility model. Designed for dating,
-                    serious relationships, and marriage.
+                    Discover your relationship compatibility using traditional Vedic Kundali matching.
+                    Perfect for dating, engagements, or marriage planning.
                   </p>
 
                   <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
@@ -2121,216 +2557,8 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ====== Testimonials (NEW) (Tailwind) ====== */}
-          <section
-            className="mt-12 flex flex-col items-center text-center px-4"
-            aria-labelledby="testimonials-heading"
-          >
-            <h3 id="testimonials-heading" className="text-4xl text-gold">
-              What people say
-            </h3>
-
-            {/* wrapper: horizontal snap on mobile, grid on md+ */}
-            <div className="w-full max-w-6xl mt-6">
-              {/* Demo fallback testimonials (used when `testimonials` state is empty) */}
-              {/* You can move this array out of render if you prefer it declared once in the component scope */}
-              {(() => {
-                const demoTestimonials = [
-                  {
-                    id: "dt1",
-                    name: "Anita K.",
-                    meta: "Consulted for Career • Mumbai",
-                    quote:
-                      "My astrologer was so accurate it felt like she knew my life.",
-                    rating: 4.9,
-                  },
-                  {
-                    id: "dt2",
-                    name: "Rahul Verma",
-                    meta: "AI Predictions • Bangalore",
-                    quote:
-                      "The AI predictions blew my mind. Clean, fast and deeply insightful.",
-                    rating: 4.8,
-                  },
-                  {
-                    id: "dt3",
-                    name: "Sushmita D.",
-                    meta: "Love & Marriage • Delhi",
-                    quote:
-                      "Guidance that helped me take the right relationship decision.",
-                    rating: 5.0,
-                  },
-                  {
-                    id: "dt4",
-                    name: "Abhishek S.",
-                    meta: "Chat Consultation • Pune",
-                    quote:
-                      "Instant response and detailed explanation. Worth it.",
-                    rating: 4.7,
-                  },
-                ];
-
-                const displayTestimonials =
-                  testimonials && testimonials.length > 0
-                    ? testimonials
-                    : demoTestimonials;
-
-                return (
-                  <>
-                    {/* Mobile: horizontal snap list */}
-                    <div
-                      role="list"
-                      aria-label="User testimonials"
-                      className="block md:hidden overflow-x-auto snap-x snap-mandatory -mx-4 px-4"
-                    >
-                      <div className="flex gap-4 items-start">
-                        {displayTestimonials.map((t) => {
-                          const initials = (t.name || "U")
-                            .split(" ")
-                            .slice(0, 2)
-                            .map((s) => s[0])
-                            .join("")
-                            .toUpperCase();
-
-                          return (
-                            <article
-                              key={t.id}
-                              role="listitem"
-                              className="snap-center flex-shrink-0 w-[88vw] max-w-xs card bg-white p-5 rounded-xl shadow-sm mx-auto"
-                            >
-                              <header className="flex items-center gap-3 justify-center">
-                                <div
-                                  aria-hidden="true"
-                                  className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-white text-base"
-                                  style={{
-                                    background:
-                                      "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                                  }}
-                                >
-                                  {initials}
-                                </div>
-
-                                <div className="text-left">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {t.name}
-                                  </div>
-                                  {t.meta && (
-                                    <div className="text-xs text-gray-500 truncate">
-                                      {t.meta}
-                                    </div>
-                                  )}
-                                </div>
-                              </header>
-
-                              <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                                “{t.quote}”
-                              </blockquote>
-
-                              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                                <div>Verified user</div>
-                                {t.rating && (
-                                  <div className="font-medium text-yellow-500">
-                                    ★ {t.rating}
-                                  </div>
-                                )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* md+ grid view (2 cols on md, 3 on lg) */}
-                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                      {displayTestimonials.map((t) => {
-                        const initials = (t.name || "U")
-                          .split(" ")
-                          .slice(0, 2)
-                          .map((s) => s[0])
-                          .join("")
-                          .toUpperCase();
-
-                        return (
-                          <article
-                            key={t.id}
-                            role="listitem"
-                            className="card bg-white p-5 rounded-xl shadow-sm mx-auto"
-                          >
-                            <header className="flex items-center gap-3 justify-start">
-                              <div
-                                aria-hidden="true"
-                                className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-white text-base"
-                                style={{
-                                  background:
-                                    "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95))",
-                                }}
-                              >
-                                {initials}
-                              </div>
-
-                              <div className="text-left">
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {t.name}
-                                </div>
-                                {t.meta && (
-                                  <div className="text-xs text-gray-500 truncate">
-                                    {t.meta}
-                                  </div>
-                                )}
-                              </div>
-                            </header>
-
-                            <blockquote className="mt-4 text-sm italic text-gray-700 text-left">
-                              “{t.quote}”
-                            </blockquote>
-
-                            <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                              <div>Verified user</div>
-                              {t.rating && (
-                                <div className="font-medium text-yellow-500">
-                                  ★ {t.rating}
-                                </div>
-                              )}
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </section>
-
           {/* Main content sections wrapper */}
           <div className="content-sections-wrapper">
-            {/* DATE & LOCATION CARD */}
-            <div className="date-location-card">
-              <DateSelector
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                userLocation={userLocation}
-                onLocationChange={setUserLocation}
-                pendingLocation={pendingLocation}
-                onPendingLocationChange={setPendingLocation}
-              />
-              {pendingLocation && (
-                <button
-                  onClick={() => {
-                    setUserLocation({
-                      latitude: pendingLocation.latitude,
-                      longitude: pendingLocation.longitude,
-                    });
-                    setPendingLocation(null);
-                  }}
-                  className="apply-location-btn"
-                >
-                  <MapPin />
-                  Apply Selected Location
-                </button>
-              )}
-            </div>
-
             {/* LOADING STATE */}
             {isLoadingPanchang && (
               <div className="loading-container">
@@ -2344,99 +2572,120 @@ export default function Home() {
               </div>
             )}
 
-            {/* STATUS BANNERS */}
-            {panchangError && (
-              <div className="status-banner status-banner-error">
-                <p className="status-banner-text">{panchangError}</p>
-              </div>
-            )}
-
-            {!isLoadingPanchang && !panchangError && userLocation && (
-              <div className="status-banner status-banner-success">
-                <p className="status-banner-text">
-                  Real-time Panchang loaded for your location
-                </p>
-                <p className="status-banner-subtext">
-                  Powered by Vedic API • Sun/Moon via IPGeolocation
-                </p>
-              </div>
-            )}
-
             {/* PANCHANG GRID (Auspicious/Inauspicious moved to full Panchang page) */}
-            <section className="panchang-section" id="panchang-section">
-              <div className="panchang-date-badge flex items-center justify-center gap-2 mx-auto text-center">
-                <Calendar />
-                <span>Vedic Calendar</span>
-              </div>
-
-              <h2
-                className="
-      section-header
-      flex flex-col items-center justify-center
-      text-center mx-auto mt-4
-    "
+            <section className="mt-12" id="panchang-section">
+              <div
+                role="region"
+                aria-labelledby="panchang-title"
+                className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg"
               >
-                <Calendar className="section-icon section-icon-blue mb-1" />
-                {selectedDate === new Date().toISOString().split("T")[0]
-                  ? "Today's Panchang"
-                  : `Panchang • ${new Date(selectedDate).toLocaleDateString(
-                      "en-US",
-                      {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }
-                    )}`}
-              </h2>
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row gap-6 items-center mb-8">
+                  {/* Left: icon + copy */}
+                  <div className="flex items-start gap-4 md:gap-6 flex-1">
+                    <div
+                      className="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-tr from-blue-100 to-indigo-50 ring-1 ring-blue-100"
+                      aria-hidden="true"
+                    >
+                      <Calendar className="w-8 h-8 text-blue-600" />
+                    </div>
 
-              <p
-                className="
-      panchang-description 
-      text-center 
-      max-w-2xl 
-      mx-auto 
-      mt-2 
-      text-gray-600
-    "
-              >
-                Essential celestial elements for auspicious planning.
-                <br />
-              </p>
+                    <div className="flex-1">
+                      <h3 id="panchang-title" className="text-4xl text-gold">
+                        {selectedDate === new Date().toISOString().split("T")[0]
+                          ? "Today's Panchang"
+                          : `Panchang for ${new Date(selectedDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "long",
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              }
+                            )}`}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-600">
+                        View today's auspicious timings, planetary positions, and muhurat for important activities.
+                        Updated daily based on Vedic calculations.
+                      </p>
 
-              <div className="panchang-grid-container">
-                <div className="panchang-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                  {panchangItems.map((item, i) => (
-                    <PanchangCard
-                      key={i}
-                      label={item.label}
-                      value={item.value}
-                    />
-                  ))}
+                      {/* Date Selector */}
+                      <div className="mt-4 inline-flex items-center gap-3 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 px-5 py-2.5 rounded-full border border-gold/30 shadow-sm">
+                        <Calendar className="w-4 h-4 text-gold" />
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="bg-transparent border-none outline-none text-center text-sm font-medium text-gray-700 cursor-pointer hover:text-gold transition-colors"
+                          style={{ colorScheme: 'light' }}
+                        />
+                      </div>
+
+                      <p className="mt-3 text-xs text-slate-500">
+                        Select any date to view its complete Panchang details.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: CTA */}
+                  <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
+                    <button
+                      type="button"
+                      onClick={() => (window.location.href = "/panchang")}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
+                      aria-label="View full Panchang details"
+                      style={{ backgroundColor: "var(--color-gold)" }}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      View Full Panchang
+                    </button>
+                  </div>
+                </div>
+
+                {/* Panchang Details Cards - All cards inside the same container */}
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    {panchangItems.map((item, i) => (
+                      <PanchangCard
+                        key={i}
+                        label={item.label}
+                        value={item.value}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* ASTROLOGY OPTIONS GRID */}
-            <section className="astrology-section" id="astrology-options">
-              <div className="astrology-header">
-                <h2 className="astrology-title">
-                  <Star />
-                  Explore Vedic Calculations
-                </h2>
-                <p className="astrology-subtitle">
-                  For serious astrology lovers. Deep-dive into the math behind
-                  your chart.
-                </p>
-              </div>
-              <div className="astrology-grid">
-                {astrologyOptions.map((option) => (
-                  <AstrologyOptionCard
-                    key={option.id}
-                    option={option}
-                    onClick={handleOptionClick}
-                  />
-                ))}
+            <section className="mt-12" id="astrology-options">
+              <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-100 to-indigo-50 flex items-center justify-center ring-1 ring-purple-100">
+                      <Star className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <h2 className="text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                      Advanced Vedic Tools
+                    </h2>
+                  </div>
+                  <p className="text-slate-600 text-lg max-w-3xl mx-auto">
+                    Precise calculations for serious astrology enthusiasts. 
+                    Explore detailed planetary positions, transit timings, and more.
+                  </p>
+                </div>
+
+                {/* Tools Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {astrologyOptions.map((option) => (
+                    <AstrologyOptionCard
+                      key={option.id}
+                      option={option}
+                      onClick={handleOptionClick}
+                    />
+                  ))}
+                </div>
               </div>
             </section>
           </div>
@@ -2444,11 +2693,10 @@ export default function Home() {
           {/* FOOTER */}
           <footer className="home-footer">
             <p>
-              Made with <span className="text-red-500">❤️</span> by{" "}
-              <span className="footer-brand">TheGodSays Team</span>
+              Made with ✨ by <span className="footer-brand">TheGodSays Team</span> - <span className="text-gold font-semibold">Spacenos</span>
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Vedic wisdom meets modern precision
+              🌟 Vedic wisdom meets modern precision
             </p>
           </footer>
         </main>
@@ -2481,6 +2729,50 @@ export default function Home() {
             />
           </div>
         </div>
+      )}
+
+      {/* REVIEW MODAL */}
+      {isReviewModalOpen && selectedAstrologerForReview && (
+        <ReviewModal
+          open={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedAstrologerForReview(null);
+          }}
+          astrologerId={selectedAstrologerForReview.id}
+          astrologerName={selectedAstrologerForReview.name}
+          onSubmit={handleSubmitReview}
+        />
+      )}
+
+      {/* CALL CONNECTING NOTIFICATION */}
+      {connectingCallType && (
+        <CallConnectingNotification
+          callType={connectingCallType}
+          status={callStatus}
+          onCancel={async () => {
+            const callId = localStorage.getItem("tgs:currentCallId");
+            if (callId) {
+              await fetch("/api/billing", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "cancel-call", callId }),
+              }).catch(() => {});
+              
+              await fetch("/api/calls", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  callId,
+                  status: "cancelled",
+                }),
+              }).catch(() => {});
+            }
+            setConnectingCallType(null);
+            setCallStatus("connecting");
+            setLoading(false);
+          }}
+        />
       )}
     </>
   );
