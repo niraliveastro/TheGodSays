@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+// Mark this route as dynamic (not prerendered at build time)
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { astrologerId } = await request.json();
