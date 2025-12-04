@@ -28,6 +28,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Download,
   Share,
@@ -55,6 +56,7 @@ import astrologyAPI from "@/lib/api";
  * @returns {JSX.Element} The Choghadiya timings page UI.
  */
 export default function ChoghadiyaTimingsPage() {
+  const { t } = useTranslation();
   // State management for data, loading, errors, and UI
   const [choghadiyaData, setChoghadiyaData] = useState(null); // Raw API response data
   const [isLoading, setIsLoading] = useState(false); // Loading state during API fetch

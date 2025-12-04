@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { conversationHistory, page, isContext } = await req.json();
+    const { conversationHistory, page, isContext, language } = await req.json();
 
     // Validate conversation history
     if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
@@ -18,11 +18,20 @@ export async function POST(req) {
     // Ensure we have at least a system message
     const hasSystemMessage = conversationHistory.some(msg => msg.role === 'system');
     if (!hasSystemMessage) {
-      // Add default system message if missing
+      // Add default system message if missing - with language support
+      const systemMessage = language === 'hi'
+        ? `आप ${page} पृष्ठ के लिए एक सहायक हैं। कृपया सभी उत्तर हिंदी में दें।`
+        : `You are a helpful assistant for the ${page} page.`;
       conversationHistory.unshift({
         role: 'system',
-        content: `You are a helpful assistant for the ${page} page.`
+        content: systemMessage
       });
+    } else if (language === 'hi') {
+      // If system message exists but language is Hindi, append Hindi instruction
+      const firstSystemMsg = conversationHistory.find(msg => msg.role === 'system');
+      if (firstSystemMsg && !firstSystemMsg.content.includes('हिंदी')) {
+        firstSystemMsg.content += '\n\nIMPORTANT: Please respond in Hindi (हिंदी में उत्तर दें). The user has selected Hindi as their preferred language.';
+      }
     }
 
     // Prepare messages for OpenAI API

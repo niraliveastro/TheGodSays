@@ -21,8 +21,10 @@ import {
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function AstrologerProfilePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, userProfile, signOut } = useAuth();
 

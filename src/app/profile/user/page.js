@@ -21,9 +21,11 @@ import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, signOut } = useAuth();
 

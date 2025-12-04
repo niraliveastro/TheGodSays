@@ -31,6 +31,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import { nasaAPI } from "@/lib/nasaAPI";
 import {
   Sparkles,

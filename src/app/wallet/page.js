@@ -1,11 +1,13 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import Wallet from "@/components/Wallet";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function WalletPage() {
+  const { t } = useTranslation();
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
@@ -43,7 +45,7 @@ export default function WalletPage() {
             }}
           ></div>
           <p style={{ color: "var(--color-gray-600)", fontSize: "1rem" }}>
-            Loading your wallet...
+            {t.messages.loading}
           </p>
         </div>
       </div>
@@ -84,10 +86,9 @@ export default function WalletPage() {
 
         {/* Wallet Header */}
         <header className="header">
-          <h1 className="title">My Wallet</h1>
+          <h1 className="title">{t.wallet.title}</h1>
           <p className="subtitle">
-            Manage your earnings, view transaction history, and withdraw funds
-            securely.
+            {t.wallet.subtitle}
           </p>
         </header>
 

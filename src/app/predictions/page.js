@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useRef, useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
 import {
@@ -20,6 +21,7 @@ import {
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 export default function PredictionsPage() {
+  const { t } = useTranslation();
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
@@ -111,9 +113,63 @@ export default function PredictionsPage() {
   };
 
 
+  // Track if we should auto-submit
+  const shouldAutoSubmit = useRef(false);
+
   useEffect(() => {
     setHistory(getHistory());
+
+    // Load data from landing page form if available
+    try {
+      const savedData = localStorage.getItem("tgs:aiPredictionForm");
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        
+        // Populate form fields
+        if (parsedData.name) setFullName(parsedData.name);
+        if (parsedData.gender) setGender(parsedData.gender);
+        if (parsedData.dob) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD format for the date input
+          const parts = parsedData.dob.split("-");
+          if (parts.length === 3) {
+            const [day, month, year] = parts;
+            setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+          }
+        }
+        if (parsedData.tob) setTob(parsedData.tob);
+        if (parsedData.place) setPlace(parsedData.place);
+
+        // Set flag to auto-submit if all required fields are present
+        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender) {
+          shouldAutoSubmit.current = true;
+        }
+
+        // Clear the saved data so it doesn't auto-fill again next time
+        localStorage.removeItem("tgs:aiPredictionForm");
+      }
+    } catch (error) {
+      console.error("Error loading saved form data:", error);
+    }
   }, []);
+
+  // Auto-submit effect - runs after form fields are populated
+  useEffect(() => {
+    if (shouldAutoSubmit.current && dob && tob && place && gender && !submitting && !result) {
+      shouldAutoSubmit.current = false; // Reset flag
+      
+      // Trigger form submission after a short delay to ensure all state is updated
+      const timer = setTimeout(() => {
+        const form = document.querySelector('form');
+        if (form) {
+          // Create and dispatch a submit event
+          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+          form.dispatchEvent(submitEvent);
+        }
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [dob, tob, place, gender, submitting, result]);
 
   useEffect(() => {
     const check = () => {
@@ -783,8 +839,8 @@ export default function PredictionsPage() {
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
-        <h1 className="title">Cosmic Insights</h1>
-        <p className="subtitle">Discover your birth chart, planetary positions and life predictions</p>
+        <h1 className="title">{t.predictions.title}</h1>
+        <p className="subtitle">{t.predictions.subtitle}</p>
       </header>
 
       <div className="container mx-auto px-4 py-8">
@@ -807,8 +863,8 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
-                <h3 className="form-title">Birth Details</h3>
-                <p className="form-subtitle">Enter your cosmic coordinates</p>
+                <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
             </div>
             {/* ---- Birth Details Section ---- */}
@@ -984,7 +1040,7 @@ export default function PredictionsPage() {
               <div className="results-header">
                 <History style={{ color: "#ca8a04" }} />
                 <h3 className="results-title flex items-center gap-2">
-                  Prediction History
+                  {t.predictions.predictionHistory}
                 </h3>
 
                 {history.length > 0 && (
@@ -1089,7 +1145,7 @@ export default function PredictionsPage() {
                 <div className="info-card">
                   <div className="info-label">
                     <Calendar />
-                    Birth Details
+                    {t.predictions.enterDetails}
                   </div>
                   <div
                     className="info-value"
@@ -1118,7 +1174,7 @@ export default function PredictionsPage() {
                 <div className="info-card">
                   <div className="info-label">
                     <MapPin />
-                    Place
+                    {t.predictions.place}
                   </div>
                   <div className="info-value">{result.input.place}</div>
                 </div>

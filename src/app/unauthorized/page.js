@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ShieldX, ArrowLeft } from "lucide-react";
 
 export default function Unauthorized() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (

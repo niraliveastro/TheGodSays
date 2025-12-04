@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 import {
   Sparkles,
@@ -108,6 +109,8 @@ const Badge = ({ children, tone = "neutral" }) => {
  * @returns {JSX.Element} The rendered match-making page.
  */
 export default function MatchingPage() {
+  const { t } = useTranslation();
+  
   // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
@@ -1744,9 +1747,9 @@ export default function MatchingPage() {
             className="headerIcon"
             style={{ color: "white", padding: "0.4rem", width: 36, height: 36 }}
           />
-          <h1 className="title">Match Making</h1>
+          <h1 className="title">{t.matching.title}</h1>
           <p className="subtitle">
-            Enter birth details for both to get Ashtakoot score.
+            {t.matching.subtitle}
           </p>
         </header>
         {error && <div className="error">{error}</div>}
@@ -1760,9 +1763,9 @@ export default function MatchingPage() {
               <Moon className="w-6 h-6 text-gold" />
             </div>
             <div className="form-header-text">
-              <h3 className="form-title">Birth Details</h3>
+              <h3 className="form-title">{t.matching.birthDetails}</h3>
               <p className="form-subtitle">
-                Enter birth details for both individuals
+                {t.matching.enterBothDetails}
               </p>
             </div>
           </div>
@@ -1772,15 +1775,15 @@ export default function MatchingPage() {
             <div className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6">
               <div className="results-header mb-3">
                 <Moon style={{ color: "#ca8a04" }} />
-                <h3 className="results-title">Female Details</h3>
+                <h3 className="results-title">{t.matching.femaleDetails}</h3>
               </div>
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">Female Name</label>
+                  <label className="form-field-label">{t.matching.femaleName}</label>
                   <input
                     type="text"
-                    placeholder="Enter Female name"
+                    placeholder={t.matching.enterFemaleName}
                     value={female.fullName}
                     onChange={onChangePerson(
                       setFemale,
@@ -1794,7 +1797,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">Date of Birth</label>
+                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
                   <input
                     type="date"
                     value={female.dob}
@@ -1808,11 +1811,11 @@ export default function MatchingPage() {
                     required
                     className="form-field-input"
                   />
-                  <p className="form-field-helper">Format: YYYY-MM-DD</p>
+                  <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">Time of Birth</label>
+                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
                   <input
                     type="time"
                     step="60"
@@ -1871,15 +1874,15 @@ export default function MatchingPage() {
             <div className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6">
               <div className="results-header mb-3">
                 <Sun style={{ color: "#ca8a04" }} />
-                <h3 className="results-title">Male Details</h3>
+                <h3 className="results-title">{t.matching.maleDetails}</h3>
               </div>
               <div className="form-grid-2col">
                 {/* Row 1: Full Name + Date */}
                 <div className="form-field">
-                  <label className="form-field-label">Male Name</label>
+                  <label className="form-field-label">{t.matching.maleName}</label>
                   <input
                     type="text"
-                    placeholder="Enter Male name"
+                    placeholder={t.matching.enterMaleName}
                     value={male.fullName}
                     onChange={onChangePerson(
                       setMale,
@@ -1893,7 +1896,7 @@ export default function MatchingPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">Date of Birth</label>
+                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
                   <input
                     type="date"
                     value={male.dob}
@@ -1907,11 +1910,11 @@ export default function MatchingPage() {
                     required
                     className="form-field-input"
                   />
-                  <p className="form-field-helper">Format: YYYY-MM-DD</p>
+                  <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
-                  <label className="form-field-label">Time of Birth</label>
+                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
                   <input
                     type="time"
                     step="60"
@@ -2347,7 +2350,7 @@ export default function MatchingPage() {
                 <div className="card">
                   <div className="results-header">
                     <Moon style={{ color: "#a78bfa" }} />
-                    <h3 className="results-title">Female Details</h3>
+                    <h3 className="results-title">{t.matching.femaleDetails}</h3>
                   </div>
 
                   {/* Shadbala / Ishta-Kashta */}
@@ -2469,7 +2472,7 @@ export default function MatchingPage() {
                 <div className="card">
                   <div className="results-header">
                     <Sun style={{ color: "#d4af37" }} />
-                    <h3 className="results-title">Male Details</h3>
+                    <h3 className="results-title">{t.matching.maleDetails}</h3>
                   </div>
 
                   {/* Shadbala / Ishta-Kashta */}
@@ -2668,7 +2671,7 @@ export default function MatchingPage() {
                   backgroundClip: "text",
                 }}
               >
-                AI Astrologer Assistant
+                {t.chat.aiAstrologerAssistant}
               </h3>
               <p
                 style={{
@@ -2678,7 +2681,7 @@ export default function MatchingPage() {
                   lineHeight: "1.5",
                 }}
               >
-                Get instant answers about your compatibility, planetary influences, and astrological insights
+                {t.chat.getInstantAnswers}
               </p>
             </div>
           </div>
@@ -2703,7 +2706,7 @@ export default function MatchingPage() {
                 }}
               />
               <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                Online
+                {t.chat.online}
               </span>
             </div>
             <button
@@ -2729,7 +2732,7 @@ export default function MatchingPage() {
               }}
               disabled={submitting}
             >
-              {submitting ? "Loading..." : "Start Chat"}
+              {submitting ? t.messages.loading : t.chat.startChat}
             </button>
           </div>
         </div>

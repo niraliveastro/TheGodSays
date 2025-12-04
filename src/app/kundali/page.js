@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import astrologyAPI from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 /**
  * Helper arrays for form options
@@ -73,6 +74,8 @@ const months = [
  * @returns {JSX.Element} The rendered Kundali generation page.
  */
 export default function KundaliPage() {
+  const { t } = useTranslation();
+  
   /**
    * Form state object holding all user inputs.
    * @type {object}
@@ -128,9 +131,9 @@ export default function KundaliPage() {
    */
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Please enter your name";
-    if (!form.place.trim()) e.place = "Please enter place of birth";
-    if (!form.birthDate) e.birthDate = "Please select your birth date";
+    if (!form.name.trim()) e.name = t.validation.enterName;
+    if (!form.place.trim()) e.place = t.validation.selectLocation;
+    if (!form.birthDate) e.birthDate = t.validation.invalidDate;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -296,7 +299,7 @@ export default function KundaliPage() {
     } catch (err) {
       console.error("Kundali generation error:", err);
       setGenError(
-        err.message || "Failed to generate Kundali. Please try again."
+        err.message || t.kundali.error
       );
     } finally {
       setSubmitting(false);
@@ -1161,9 +1164,9 @@ export default function KundaliPage() {
           <div className="headerIcon">
             <ShieldCheck style={{ width: 36, height: 36, color: "#fff" }} />
           </div>
-          <h1 className="title">Janam Kundali</h1>
+          <h1 className="title">{t.kundali.subtitle}</h1>
           <p className="subtitle">
-            Enter birth details to generate your Vedic chart
+            {t.kundali.description}
           </p>
         </header>
 
@@ -1172,30 +1175,34 @@ export default function KundaliPage() {
           <div className="cardHeader">
             <div className="cardTitle">
               <ShieldCheck style={{ width: 20, height: 20 }} />
-              Birth Details
+              {t.profile.birthDetails}
             </div>
           </div>
           <div className="cardBody">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name Input */}
               <div>
-                <label>Name</label>
+                <label>{t.kundali.name}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
-                  placeholder="Your full name"
+                  placeholder={t.kundali.namePlaceholder}
                 />
                 {errors.name && <p className="error">{errors.name}</p>}
               </div>
 
               {/* Gender Radio Buttons */}
               <div>
-                <label>Gender</label>
+                <label>{t.kundali.gender}</label>
                 <div style={{ display: "flex", gap: "1.5rem" }}>
-                  {["male", "female", "other"].map((g) => (
+                  {[
+                    { value: "male", label: t.kundali.male },
+                    { value: "female", label: t.kundali.female },
+                    { value: "other", label: t.kundali.other }
+                  ].map((g) => (
                     <label
-                      key={g}
+                      key={g.value}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1206,10 +1213,10 @@ export default function KundaliPage() {
                       <input
                         type="radio"
                         name="gender"
-                        checked={form.gender === g}
-                        onChange={() => setField("gender", g)}
+                        checked={form.gender === g.value}
+                        onChange={() => setField("gender", g.value)}
                       />
-                      <span style={{ textTransform: "capitalize" }}>{g}</span>
+                      <span>{g.label}</span>
                     </label>
                   ))}
                 </div>
@@ -1217,7 +1224,7 @@ export default function KundaliPage() {
 
               {/* Birth Date Input with Calendar */}
               <div style={{ position: "relative" }} ref={calendarRef}>
-                <label>Birth Date</label>
+                <label>{t.kundali.birthDate}</label>
 
                 {/* Input + Calendar Button */}
                 <div
@@ -1372,7 +1379,7 @@ export default function KundaliPage() {
 
               {/* Place Input with Suggestions */}
               <div style={{ position: "relative" }}>
-                <label>Place of Birth</label>
+                <label>{t.kundali.place}</label>
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
@@ -1424,7 +1431,7 @@ export default function KundaliPage() {
 
               {/* Language Selector */}
               <div>
-                <label>Language</label>
+                <label>{t.kundali.language}</label>
                 <select
                   value={form.language}
                   onChange={(e) => setField("language", e.target.value)}
@@ -1450,7 +1457,7 @@ export default function KundaliPage() {
                 className="btn"
                 style={{ background: "#d4af37", color: "#fff", border: "none" }}
               >
-                {submitting ? <>Processing…</> : "Get Kundali"}
+                {submitting ? <>{t.messages.processing}</> : t.kundali.generate}
               </button>
 
               {/* Generation Error Display */}
@@ -1474,7 +1481,7 @@ export default function KundaliPage() {
             {/* Note on Timezone Handling */}
             <div className="note">
               <Globe style={{ width: 16, height: 16 }} />
-              Time & date are converted to UTC for accurate calculations.
+              {t.common.loading === "Loading..." ? "Time & date are converted to UTC for accurate calculations." : "समय और तिथि सटीक गणना के लिए UTC में परिवर्तित की जाती हैं।"}
             </div>
           </div>
         </div>
@@ -1483,7 +1490,7 @@ export default function KundaliPage() {
         {svgOutput && (
           <div className="card" style={{ marginTop: "2rem" }}>
             <div className="cardHeader">
-              <div className="cardTitle">Your Kundali</div>
+              <div className="cardTitle">{t.kundali.title}</div>
             </div>
             <div className="cardBody">
               <div
@@ -1516,7 +1523,7 @@ export default function KundaliPage() {
                 }}
               >
                 <Download style={{ width: 18, height: 18 }} />
-                Download SVG
+                {t.kundali.download}
               </button>
             </div>
           </div>
