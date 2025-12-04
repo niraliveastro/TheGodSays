@@ -32,6 +32,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
