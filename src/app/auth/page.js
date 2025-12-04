@@ -27,6 +27,7 @@
 
 import { useRouter } from "next/navigation";
 import { User, Star, ArrowRight, Sparkles } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import styles from "./auth.module.css";
 
 /**
@@ -39,6 +40,7 @@ import styles from "./auth.module.css";
  * @returns {JSX.Element} The authentication landing page UI.
  */
 export default function AuthLanding() {
+  const { t } = useTranslation();
   const router = useRouter(); // Next.js router for programmatic navigation
 
   // Main render: Landing page layout

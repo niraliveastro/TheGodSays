@@ -19,8 +19,11 @@ import CallConnectingNotification from "@/components/CallConnectingNotification"
 import Modal from "@/components/Modal";
 import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function TalkToAstrologer() {
+  const { t } = useTranslation();
+  
   /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
@@ -431,10 +434,9 @@ export default function TalkToAstrologer() {
             className="header"
             style={{ textAlign: "center", marginTop: "3rem" }}
           >
-            <h1 className="title">Talk to Astrologer</h1>
+            <h1 className="title">{t.talkToAstrologer.title}</h1>
             <p className="subtitle">
-              Connect instantly with verified astrologers for guidance on love,
-              career, health & life.
+              {t.talkToAstrologer.subtitle}
             </p>
           </header>
 

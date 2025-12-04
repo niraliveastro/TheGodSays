@@ -31,6 +31,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Phone,
   PhoneOff,

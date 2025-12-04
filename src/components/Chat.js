@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from '@/hooks/useTranslation';
 
-function buildContextPrompt(initialData, pageTitle) {
+function buildContextPrompt(initialData, pageTitle, language = 'en') {
   // If Matching page AND both charts exist
   if (pageTitle === "Matching" && initialData?.female && initialData?.male) {
     const female = initialData.female;
@@ -589,11 +590,14 @@ For ALL questions, follow these principles:
 
 **Remember**: You are a PROFESSIONAL VEDIC ASTROLOGER. Your responses should reflect deep astrological knowledge, detailed analysis, and practical wisdom - just like a real Pandit or Jyotishi would provide.
 
-Remember: You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. Use it to provide accurate, specific answers to all questions.`;
+Remember: You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. Use it to provide accurate, specific answers to all questions.
+
+${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selected HINDI as their preferred language. You MUST respond in Hindi (हिंदी). All your responses, explanations, and analysis should be ENTIRELY in Hindi. Use proper Hindi astrological terms like ग्रह (planets), राशि (signs), नक्षत्र (nakshatras), दशा (dasha), भाव (houses), कुंडली (kundali), etc. Write as a professional Hindi-speaking Jyotishi would communicate.` : ''}`;
 }
 
 
 const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
+  const { t, language } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -618,7 +622,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
 
   useEffect(() => {
     // Add a default message when the component mounts
-    setMessages([{ text: `Welcome to the ${pageTitle} AI chat! How can I help you today?`, isUser: false }]);
+    const welcomeMsg = language === 'hi' 
+      ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
+      : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+    setMessages([{ text: welcomeMsg, isUser: false }]);
     // Reset system context when page title changes
     setSystemContext(null);
   }, [pageTitle]);
@@ -633,19 +640,25 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
     contextSentRef.current = true;
 
     const sendContext = async () => {
-      // Build the context prompt
-      const contextPrompt = buildContextPrompt(initialData, pageTitle);
+      // Build the context prompt with language
+      const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
       // Store it for use in subsequent messages
       setSystemContext(contextPrompt);
 
       // show a short assistant message to indicate data was provided
-      setMessages((m) => [...m, { text: 'Providing your chart data to the AI assistant...', isUser: false }]);
+      const providingMsg = language === 'hi' 
+        ? 'AI सहायक को आपका चार्ट डेटा प्रदान किया जा रहा है...'
+        : 'Providing your chart data to the AI assistant...';
+      setMessages((m) => [...m, { text: providingMsg, isUser: false }]);
       setIsLoading(true);
       try {
         // Build conversation history for initial context
+        const userPrompt = language === 'hi'
+          ? 'कृपया प्रदान किए गए चार्ट डेटा का विश्लेषण करें और मुझे एक व्यापक विवरण दें। कृपया हिंदी में जवाब दें।'
+          : 'Please analyze the provided chart data and give me a comprehensive reading.';
         const conversationHistory = [
           { role: 'system', content: contextPrompt },
-          { role: 'user', content: 'Please analyze the provided chart data and give me a comprehensive reading.' },
+          { role: 'user', content: userPrompt },
         ];
 
         const response = await fetch('/api/chat', {
@@ -657,6 +670,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             conversationHistory,
             page: pageTitle,
             isContext: true,
+            language: language,
           }),
         });
 
@@ -667,11 +681,17 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         const data = await response.json();
 
         // Display the assistant's response
-        const assistantText = data?.response || 'Chart data received by the assistant.';
+        const fallbackMsg = language === 'hi' 
+          ? 'सहायक द्वारा चार्ट डेटा प्राप्त किया गया।'
+          : 'Chart data received by the assistant.';
+        const assistantText = data?.response || fallbackMsg;
         setMessages((m) => [...m, { text: assistantText, isUser: false }]);
       } catch (error) {
         console.error('Error sending initial context to chat:', error);
-        setMessages((m) => [...m, { text: 'Failed to provide chart data to the AI.', isUser: false }]);
+        const errorMsg = language === 'hi'
+          ? 'AI को चार्ट डेटा प्रदान करने में विफल।'
+          : 'Failed to provide chart data to the AI.';
+        setMessages((m) => [...m, { text: errorMsg, isUser: false }]);
       } finally {
         setIsLoading(false);
       }
@@ -704,9 +724,12 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         conversationHistory.push({ role: 'system', content: systemContext });
       } else {
         // Fallback system message if no context yet
+        const systemMsg = language === 'hi'
+          ? `आप ${pageTitle} पृष्ठ के लिए एक सहायक हैं। कृपया हिंदी में जवाब दें।`
+          : `You are a helpful assistant for the ${pageTitle} page.`;
         conversationHistory.push({ 
           role: 'system', 
-          content: `You are a helpful assistant for the ${pageTitle} page.` 
+          content: systemMsg
         });
       }
 
@@ -744,7 +767,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         },
         body: JSON.stringify({ 
           conversationHistory,
-          page: pageTitle 
+          page: pageTitle,
+          language: language // Pass the current language to the API
         }),
       });
 
@@ -756,7 +780,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
       setMessages([...newMessages, { text: data.response, isUser: false }]);
     } catch (error) {
       console.error('Error fetching chat response:', error);
-      setMessages([...newMessages, { text: 'Sorry, something went wrong. Please try again.', isUser: false }]);
+      const errorMsg = language === 'hi'
+        ? 'क्षमा करें, कुछ गलत हो गया। कृपया पुनः प्रयास करें।'
+        : 'Sorry, something went wrong. Please try again.';
+      setMessages([...newMessages, { text: errorMsg, isUser: false }]);
     } finally {
       setIsLoading(false);
     }

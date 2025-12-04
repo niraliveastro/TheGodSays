@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
 import astrologyAPI from "@/lib/api";
 
 export default function TithiTimingsPage() {
+  const { t } = useTranslation();
   const [tithiData, setTithiData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);

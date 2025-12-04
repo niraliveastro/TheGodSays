@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Download,
   Share,

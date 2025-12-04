@@ -17,8 +17,10 @@ import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function FamilyPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);

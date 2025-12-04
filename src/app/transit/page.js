@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import "./transit.css";
 import { upcomingTransits as FIVE_YEARS } from "./transitData";
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Calculator, User, Calendar, Save, Trash2 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import "./numerology.css";
 
 /**
@@ -32,6 +33,8 @@ import "./numerology.css";
  * @returns {JSX.Element} The rendered numerology calculator page.
  */
 export default function NumerologyPage() {
+  const { t } = useTranslation();
+  
   // Form input states
   const [fullName, setFullName] = useState(""); // User's full birth name for letter-based calculations
   const [birthDate, setBirthDate] = useState(""); // Birth date (YYYY-MM-DD) for Life Path and Mulank
@@ -534,10 +537,9 @@ export default function NumerologyPage() {
 
         {/* Header */}
         <header className="header">
-          <h1 className="title">Universal Numerology Analyzer</h1>
+          <h1 className="title">{t.numerology.title}</h1>
           <p className="subtitle">
-            Composite Scoring System: Inner Engine (Pythagorean) × Outer Vehicle
-            (Chaldean)
+            {t.numerology.subtitle}
           </p>
         </header>
 
@@ -553,9 +555,9 @@ export default function NumerologyPage() {
                     <Calculator className="w-7 h-7 text-white" />
                   </div>
                   <div className="form-header-text">
-                    <h3 className="form-header-title">Your Details</h3>
+                    <h3 className="form-header-title">{t.profile.personalInfo}</h3>
                     <p className="form-header-subtitle">
-                      Enter your information below
+                      {t.numerology.description}
                     </p>
                   </div>
                 </div>
@@ -567,13 +569,13 @@ export default function NumerologyPage() {
                       className="w-4 h-4 input-label-icon"
                       style={{ color: "#d4af37" }}
                     />
-                    Full Birth Name
-                    <span className="required-badge">*Required</span>
+                    {t.numerology.fullName}
+                    <span className="required-badge">*{t.validation.required}</span>
                   </label>
                   <input
                     id="fullName"
                     type="text"
-                    placeholder="e.g., Emily Ann Brown"
+                    placeholder={t.numerology.namePlaceholder}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="input-field"
@@ -587,8 +589,8 @@ export default function NumerologyPage() {
                       className="w-4 h-4 input-label-icon"
                       style={{ color: "#d4af37" }}
                     />
-                    Date of Birth
-                    <span className="required-badge">*Required</span>
+                    {t.numerology.birthDate}
+                    <span className="required-badge">*{t.validation.required}</span>
                   </label>
                   <input
                     id="birthDate"
@@ -609,7 +611,7 @@ export default function NumerologyPage() {
                   className="save-button"
                 >
                   <Save className="w-5 h-5" />
-                  Save to History
+                  {t.numerology.saveHistory}
                 </button>
 
                 {/* Info Text */}
@@ -963,7 +965,7 @@ export default function NumerologyPage() {
             </h2>
             {history.length > 0 && (
               <button onClick={clearHistory} className="clear-history-btn">
-                Clear History
+                {t.numerology.clearHistory}
               </button>
             )}
           </div>

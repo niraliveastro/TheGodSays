@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useRef, useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
 import {
@@ -20,6 +21,7 @@ import {
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 export default function PredictionsPage() {
+  const { t } = useTranslation();
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
@@ -837,8 +839,8 @@ export default function PredictionsPage() {
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
-        <h1 className="title">Cosmic Insights</h1>
-        <p className="subtitle">Discover your birth chart, planetary positions and life predictions</p>
+        <h1 className="title">{t.predictions.title}</h1>
+        <p className="subtitle">{t.predictions.subtitle}</p>
       </header>
 
       <div className="container mx-auto px-4 py-8">
@@ -861,8 +863,8 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
-                <h3 className="form-title">Birth Details</h3>
-                <p className="form-subtitle">Enter your cosmic coordinates</p>
+                <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
             </div>
             {/* ---- Birth Details Section ---- */}
@@ -1038,7 +1040,7 @@ export default function PredictionsPage() {
               <div className="results-header">
                 <History style={{ color: "#ca8a04" }} />
                 <h3 className="results-title flex items-center gap-2">
-                  Prediction History
+                  {t.predictions.predictionHistory}
                 </h3>
 
                 {history.length > 0 && (
@@ -1143,7 +1145,7 @@ export default function PredictionsPage() {
                 <div className="info-card">
                   <div className="info-label">
                     <Calendar />
-                    Birth Details
+                    {t.predictions.enterDetails}
                   </div>
                   <div
                     className="info-value"
@@ -1172,7 +1174,7 @@ export default function PredictionsPage() {
                 <div className="info-card">
                   <div className="info-label">
                     <MapPin />
-                    Place
+                    {t.predictions.place}
                   </div>
                   <div className="info-value">{result.input.place}</div>
                 </div>

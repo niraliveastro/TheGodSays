@@ -95,6 +95,19 @@
   background-clip: text;
 }
 
+/* Language Switcher Mobile */
+.nav-language-mobile {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .nav-language-mobile {
+    display: none;
+  }
+}
+
 /* Desktop Navigation */
 .nav-desktop {
   display: none;

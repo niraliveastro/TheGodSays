@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Download,
   Share,
@@ -46,6 +47,8 @@ import autoTable from "jspdf-autotable";
  * @returns {JSX.Element} The rendered Hora Timings page.
  */
 export default function HoraTimingsPage() {
+  const { t } = useTranslation();
+  
   // State management
   const [horaData, setHoraData] = useState(null); // Raw API response for hora timings
   const [isLoading, setIsLoading] = useState(false); // Loading indicator for API calls

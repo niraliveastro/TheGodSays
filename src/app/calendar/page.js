@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import MonthlyCalendar from "@/components/calendar/MonthlyCalendar";
 import {
   WEEKDAYS as weekdays,

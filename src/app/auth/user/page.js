@@ -55,6 +55,8 @@ import {
  * @returns {JSX.Element} The authentication page UI.
  */
 export default function UserAuth() {
+  const { t } = useTranslation();
+  
   // Form state management
   const [isLogin, setIsLogin] = useState(true); // Toggle between login (true) and signup (false) modes
   const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
@@ -225,32 +227,32 @@ export default function UserAuth() {
               <div className="form-field">
                 <label className="form-field-label">
                   <User />
-                  <span>Full Name</span>
+                  <span>{t.formFields.fullName}</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter your full name"
+                  placeholder={t.formFields.enterFullName}
                   value={formData.name}
                   onChange={(e) => updateFormField("name", e.target.value)}
                   className="form-field-input"
                   required
-                  aria-label="Full name"
+                  aria-label={t.formFields.fullName}
                 />
               </div>
 
               <div className="form-field">
                 <label className="form-field-label">
                   <Phone />
-                  <span>Phone Number</span>
+                  <span>{t.formFields.phone}</span>
                 </label>
                 <input
                   type="tel"
-                  placeholder="+91 98765 43210"
+                  placeholder={t.formFields.phonePlaceholder}
                   value={formData.phone}
                   onChange={(e) => updateFormField("phone", e.target.value)}
                   className="form-field-input"
                   required
-                  aria-label="Phone number"
+                  aria-label={t.formFields.phone}
                 />
               </div>
             </>
@@ -260,16 +262,16 @@ export default function UserAuth() {
           <div className="form-field">
             <label className="form-field-label">
               <Mail />
-              <span>Email Address</span>
+              <span>{t.formFields.email}</span>
             </label>
             <input
               type="email"
-              placeholder="you@example.com"
+              placeholder={t.formFields.emailPlaceholder}
               value={formData.email}
               onChange={(e) => updateFormField("email", e.target.value)}
               className="form-field-input"
               required
-              aria-label="Email address"
+              aria-label={t.formFields.email}
             />
           </div>
 
@@ -277,17 +279,17 @@ export default function UserAuth() {
           <div className="form-field">
             <label className="form-field-label">
               <Lock />
-              <span>Password</span>
+              <span>{t.formFields.password}</span>
             </label>
             <div className="auth-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
+                placeholder={t.formFields.passwordPlaceholder}
                 value={formData.password}
                 onChange={(e) => updateFormField("password", e.target.value)}
                 className="form-field-input password-input"
                 required
-                aria-label="Password"
+                aria-label={t.formFields.password}
               />
               <button
                 type="button"
@@ -310,17 +312,17 @@ export default function UserAuth() {
             {loading ? (
               <>
                 <div className="spinner" /> {/* Inline spinner */}
-                <span>Processing...</span>
+                <span>{t.messages.processing}</span>
               </>
             ) : (
-              <span>{isLogin ? "Sign In" : "Create Account"}</span>
+              <span>{isLogin ? t.auth.signIn : t.auth.createAccount}</span>
             )}
           </button>
         </form>
         {/* Divider – Separates form from Google button */}
         <div className="divider">
           <div className="divider-line" />
-          <span className="divider-text">OR CONTINUE WITH</span>
+          <span className="divider-text">{t.auth.signInWithGoogle === "Sign in with Google" ? "OR CONTINUE WITH" : "या जारी रखें"}</span>
           <div className="divider-line" />
         </div>
         {/* Google sign-in button – OAuth integration */}

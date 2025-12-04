@@ -9,6 +9,7 @@ import AstrologyOptionCard from "@/components/AstrologyOptionCard";
 import AstrologyForm from "@/components/AstrologyForm";
 import AstrologyResult from "@/components/AstrologyResult";
 import DateSelector from "@/components/DateSelector";
+import { useTranslation } from "@/hooks/useTranslation";
 import { mockPanchangData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
 import {
@@ -53,6 +54,7 @@ const writeHomeCache = (key, value) => {
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [panchangData, setPanchangData] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
 
@@ -1359,19 +1361,18 @@ export default function Home() {
               <div className="hero-left">
                 <div className="hero-badge">
                   <Sparkles className="hero-badge-icon" />
-                  <span>Trusted Vedic Astrology Platform</span>
+                  <span>{t.hero.badge}</span>
                 </div>
 
                 {/* NEW: Updated headline per request */}
                 <h1 className="hero-main-title">
-                  Navigate Life's Challenges with{" "}
-                  <span className="hero-highlight">Ancient Wisdom & Modern AI</span>
+                  {t.hero.title}{" "}
+                  <span className="hero-highlight">{t.hero.titleHighlight}</span>
                 </h1>
 
                 {/* NEW: Refined subheading */}
                 <p className="hero-description">
-                  Get instant astrological insights through <strong>expert astrologers</strong> or our{" "}
-                  <strong>AI-powered predictions</strong> trained on 200,000+ real charts & NASA ephemeris data.
+                  {t.hero.description}
                 </p>
 
                 {/* NEW: Pill chips under subheading (Life Insights, Kundali Matching, Panchang Today) */}
@@ -1383,7 +1384,7 @@ export default function Home() {
                       window.location.href = "/predictions";
                     }}
                   >
-                    Life Insights
+                    {t.hero.lifeInsights}
                   </button>
                   <button
                     className="hero-pill"
@@ -1391,7 +1392,7 @@ export default function Home() {
                       window.location.href = "/matching";
                     }}
                   >
-                    Kundali Matching
+                    {t.hero.kundaliMatching}
                   </button>
                   <button
                     className="hero-pill"
@@ -1399,7 +1400,7 @@ export default function Home() {
                       window.location.href = "/panchang/calender";
                     }}
                   >
-                    Panchang Today
+                    {t.hero.panchangToday}
                   </button>
                 </div>
 
@@ -1413,7 +1414,7 @@ export default function Home() {
                     className="hero-btn hero-btn-primary"
                   >
                     <Star className="hero-btn-icon" />
-                    Talk to an Astrologer
+                    {t.hero.talkToAstrologer}
                   </button>
 
                   <button
@@ -1428,16 +1429,16 @@ export default function Home() {
                     }}
                   >
                     <Sparkles className="hero-btn-icon" />
-                    Get AI Predictions
+                    {t.hero.getAIPredictions}
                   </button>
                 </div>
 
                 {/* Subtexts that sit directly below the primary CTAs */}
                 <div className="hero-cta-subtexts">
                   <p className="cta-subtext">
-                    Instant 1:1 call or chat with a real expert.
+                    {t.hero.instantCall}
                   </p>
-                  <p className="cta-subtext">Precise insights in 60 seconds.</p>
+                  <p className="cta-subtext">{t.hero.preciseInsights}</p>
                 </div>
 
                 {/* Social proof line (updated stats per design) */}
@@ -1615,7 +1616,7 @@ export default function Home() {
                   <div className="hero-info-card hero-info-card-1">
                     <Clock className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">Current Date</div>
+                      <div className="hero-info-label">{t.heroLabels.currentDate}</div>
                       <div className="hero-info-value">{currentDate}</div>
                     </div>
                   </div>
@@ -1623,9 +1624,9 @@ export default function Home() {
                   <div className="hero-info-card hero-info-card-2">
                     <Moon className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">Tithi</div>
+                      <div className="hero-info-label">{t.heroLabels.tithi}</div>
                       <div className="hero-info-value">
-                        {panchangData?.tithi || "Loading..."}
+                        {panchangData?.tithi || t.heroLabels.loading}
                       </div>
                     </div>
                   </div>
@@ -1633,9 +1634,9 @@ export default function Home() {
                   <div className="hero-info-card hero-info-card-3">
                     <Star className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">Nakshatra</div>
+                      <div className="hero-info-label">{t.heroLabels.nakshatra}</div>
                       <div className="hero-info-value">
-                        {panchangData?.nakshatra || "Loading..."}
+                        {panchangData?.nakshatra || t.heroLabels.loading}
                       </div>
                     </div>
                   </div>
@@ -1648,8 +1649,8 @@ export default function Home() {
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
           <section className="max-w-7xl mx-auto mt-16 px-4">
             <div className="text-center mb-10">
-              <h2 className="text-4xl text-gold font-bold mb-3">What Can We Help You With?</h2>
-              <p className="text-slate-600 text-lg">Choose your path to cosmic clarity</p>
+              <h2 className="text-4xl text-gold font-bold mb-3">{t.services.sectionTitle}</h2>
+              <p className="text-slate-600 text-lg">{t.services.sectionSubtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1662,9 +1663,9 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Star className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Talk to Expert</h3>
-                  <p className="text-sm text-gray-600">Connect with verified astrologers via call or chat</p>
-                  <div className="mt-2 text-xs text-purple-600 font-semibold">1:1 Consultation →</div>
+                  <h3 className="text-xl font-bold text-gray-900">{t.services.talkToExpert}</h3>
+                  <p className="text-sm text-gray-600">{t.services.talkToExpertDesc}</p>
+                  <div className="mt-2 text-xs text-purple-600 font-semibold">{t.services.talkToExpertCta}</div>
                 </div>
               </div>
 
@@ -1677,9 +1678,9 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Sparkles className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">AI Predictions</h3>
-                  <p className="text-sm text-gray-600">Instant insights powered by advanced algorithms</p>
-                  <div className="mt-2 text-xs text-amber-600 font-semibold">60 Second Results →</div>
+                  <h3 className="text-xl font-bold text-gray-900">{t.services.aiPredictionsTitle}</h3>
+                  <p className="text-sm text-gray-600">{t.services.aiPredictionsDesc}</p>
+                  <div className="mt-2 text-xs text-amber-600 font-semibold">{t.services.aiPredictionsCta}</div>
                 </div>
               </div>
 
@@ -1694,9 +1695,9 @@ export default function Home() {
                       <path d="M12 21s-7-4.35-9-7.5A6 6 0 0112 3a6 6 0 019 10.5C19 16.65 12 21 12 21z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Love Match</h3>
-                  <p className="text-sm text-gray-600">Check relationship compatibility with Kundali matching</p>
-                  <div className="mt-2 text-xs text-rose-600 font-semibold">Find Compatibility →</div>
+                  <h3 className="text-xl font-bold text-gray-900">{t.services.loveMatch}</h3>
+                  <p className="text-sm text-gray-600">{t.services.loveMatchDesc}</p>
+                  <div className="mt-2 text-xs text-rose-600 font-semibold">{t.services.loveMatchCta}</div>
                 </div>
               </div>
 
@@ -1709,9 +1710,9 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Calendar className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Daily Panchang</h3>
-                  <p className="text-sm text-gray-600">Today's auspicious timings & celestial events</p>
-                  <div className="mt-2 text-xs text-blue-600 font-semibold">View Today →</div>
+                  <h3 className="text-xl font-bold text-gray-900">{t.services.dailyPanchang}</h3>
+                  <p className="text-sm text-gray-600">{t.services.dailyPanchangDesc}</p>
+                  <div className="mt-2 text-xs text-blue-600 font-semibold">{t.services.dailyPanchangCta}</div>
                 </div>
               </div>
             </div>
@@ -1720,8 +1721,8 @@ export default function Home() {
           {/* ====== HOW IT WORKS SECTION ====== */}
           <section className="max-w-6xl mx-auto mt-20 px-4">
             <div className="text-center mb-12">
-              <h2 className="text-4xl text-gold font-bold mb-3">How It Works</h2>
-              <p className="text-slate-600 text-lg">Simple, fast, and accurate — in just 3 steps</p>
+              <h2 className="text-4xl text-gold font-bold mb-3">{t.howItWorks.title}</h2>
+              <p className="text-slate-600 text-lg">{t.howItWorks.subtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1731,8 +1732,8 @@ export default function Home() {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     1
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Share Your Details</h3>
-                  <p className="text-gray-600">Enter your birth date, time, and place — we'll handle the rest</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step1Title}</h3>
+                  <p className="text-gray-600">{t.howItWorks.step1Desc}</p>
                 </div>
                 {/* Connector Arrow (hidden on mobile) */}
                 <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-purple-300 to-amber-300"></div>
@@ -1744,8 +1745,8 @@ export default function Home() {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     2
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Choose Your Path</h3>
-                  <p className="text-gray-600">Talk to an expert astrologer or get instant AI predictions</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step2Title}</h3>
+                  <p className="text-gray-600">{t.howItWorks.step2Desc}</p>
                 </div>
                 {/* Connector Arrow (hidden on mobile) */}
                 <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-emerald-300"></div>
@@ -1757,8 +1758,8 @@ export default function Home() {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     3
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Get Insights</h3>
-                  <p className="text-gray-600">Receive personalized guidance for life, career, love & more</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step3Title}</h3>
+                  <p className="text-gray-600">{t.howItWorks.step3Desc}</p>
                 </div>
               </div>
             </div>
@@ -1784,11 +1785,10 @@ export default function Home() {
 
               <div>
                 <h3 className="text-4xl text-gold">
-                  Quick Start: Get Your Free AI Reading
+                  {t.aiForm.title}
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Enter your birth details below to receive instant personalized predictions.
-                  Your information will be saved for future readings.
+                  {t.aiForm.description}
                 </p>
               </div>
             </div>
@@ -1803,7 +1803,7 @@ export default function Home() {
               {/* Name */}
               <div className="flex flex-col">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  Name
+                  {t.aiForm.name}
                 </label>
                 <input
                   className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
@@ -1812,14 +1812,14 @@ export default function Home() {
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Optional — we'll personalise results.
+                  {t.aiForm.nameHelper}
                 </p>
               </div>
 
               {/* DOB */}
               <div className="flex flex-col">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  Date of Birth
+                  {t.aiForm.dob}
                 </label>
                 <input
                   type="date"
@@ -1830,14 +1830,14 @@ export default function Home() {
                   required
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Format: DD-MM-YYYY
+                  {t.aiForm.dobHelper}
                 </p>
               </div>
 
               {/* Time */}
               <div className="flex flex-col">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  Time of Birth
+                  {t.aiForm.tob}
                 </label>
                 <input
                   type="time"
@@ -1846,13 +1846,13 @@ export default function Home() {
                   onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
                   required
                 />
-                <p className="mt-2 text-xs text-slate-500">24-hour format</p>
+                <p className="mt-2 text-xs text-slate-500">{t.aiForm.tobHelper}</p>
               </div>
 
               {/* Gender (col 1 of row 2) */}
               <div className="md:col-span-1 flex flex-col md:justify-end mb-10">
                 <label className="block text-sm font-medium text-amber-600 mb-2 h-5">
-                  Gender
+                  {t.aiForm.gender}
                 </label>
 
                 <div className="h-12 flex items-center gap-6">
@@ -1865,7 +1865,7 @@ export default function Home() {
                       checked={formData.gender === "Male"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">Male</span>
+                    <span className="text-sm text-slate-700">{t.aiForm.male}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1877,7 +1877,7 @@ export default function Home() {
                       checked={formData.gender === "Female"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">Female</span>
+                    <span className="text-sm text-slate-700">{t.aiForm.female}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1889,7 +1889,7 @@ export default function Home() {
                       checked={formData.gender === "Other"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">Other</span>
+                    <span className="text-sm text-slate-700">{t.aiForm.other}</span>
                   </label>
                 </div>
               </div>
@@ -1898,7 +1898,7 @@ export default function Home() {
               <div className="md:col-span-1 flex flex-col md:justify-end relative">
                 {/* label has fixed height to match other labels */}
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  Place
+                  {t.aiForm.place}
                 </label>
 
                 <div className="flex items-center gap-3">
@@ -1906,7 +1906,7 @@ export default function Home() {
                     <input
                       ref={locationInputRef}
                       className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
-                      placeholder="City, Country"
+                      placeholder={t.aiForm.placeHolderCity}
                       value={formData.place}
                       onChange={(e) => {
                         hasInteractedWithLocation.current = true;
@@ -1960,7 +1960,7 @@ export default function Home() {
                 </div>
 
                 <p className="mt-2 text-xs text-slate-500">
-                  e.g., Mumbai, India
+                  {t.aiForm.placeHelper}
                 </p>
               </div>
 
@@ -1971,7 +1971,7 @@ export default function Home() {
                     type="submit" 
                     className="btn w-full h-12 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
                   >
-                    Get AI Predictions
+                    {t.aiForm.submit}
                   </button>
                 </div>
               </div>
@@ -1979,9 +1979,7 @@ export default function Home() {
 
             {/* footer / small note */}
             <div className="mt-6 text-xs text-slate-500">
-              Predictions under{" "}
-              <strong className="text-slate-700">60 seconds</strong>. We’ll
-              prefill fields next time.
+              {t.aiForm.footer}
             </div>
           </section>
 
@@ -1994,13 +1992,13 @@ export default function Home() {
                   <Star className="w-6 h-6 text-amber-600" />
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Connect with Top Verified Astrologers
+                  {t.astrologers.title}
                 </h2>
               </div>
 
               <p className="text-slate-600 text-base md:text-lg max-w-3xl">
-                Expert guidance from certified Vedic, KP, and Nadi astrologers.
-                <strong className="text-slate-800"> Available 24/7</strong> for instant calls or chat consultations.
+                {t.astrologers.description}
+                <strong className="text-slate-800"> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">
@@ -2015,23 +2013,23 @@ export default function Home() {
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
-                  <span>View All Astrologers</span>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </button>
+                    <span>{t.astrologers.viewAll}</span>
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </button>
 
-                <button
-                  onClick={() => (window.location.href = "/auth/astrologer")}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
-                >
-                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="19" y1="8" x2="19" y2="14" />
-                    <line x1="22" y1="11" x2="16" y2="11" />
-                  </svg>
-                  <span>Become an Astrologer</span>
+                  <button
+                    onClick={() => (window.location.href = "/auth/astrologer")}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
+                  >
+                    <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <line x1="19" y1="8" x2="19" y2="14" />
+                      <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                    <span>{t.astrologers.becomeAstrologer}</span>
                   <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -2503,11 +2501,10 @@ export default function Home() {
 
                 <div>
                   <h3 id="loyalty-title" className="text-4xl text-gold">
-                    Relationship Compatibility Checker
+                    {t.compatibility.title}
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
-                    Discover your relationship compatibility using traditional Vedic Kundali matching.
-                    Perfect for dating, engagements, or marriage planning.
+                    {t.compatibility.description}
                   </p>
 
                   <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
@@ -2515,44 +2512,43 @@ export default function Home() {
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold">
                         ✓
                       </span>
-                      Quick results — minimal details required
+                      {t.compatibility.quickResults}
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold">
                         ★
                       </span>
-                      Learn the top Koot strengths & weaknesses
+                      {t.compatibility.learnKoot}
                     </li>
                   </ul>
 
                   <p className="mt-3 text-xs text-slate-500">
-                    Already have details saved? The matching page will prefill
-                    them for you.
+                    {t.compatibility.prefillNote}
                   </p>
                 </div>
               </div>
 
               {/* Right: CTA */}
               <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/matching")}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
-                  aria-label="Check compatibility now — go to matching page"
-                  style={{ backgroundColor: "var(--color-gold)" }}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    aria-hidden="true"
+                  <button
+                    type="button"
+                    onClick={() => (window.location.href = "/matching")}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
+                    aria-label="Check compatibility now — go to matching page"
+                    style={{ backgroundColor: "var(--color-gold)" }}
                   >
-                    <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
-                  </svg>
-                  Check Compatibility Now
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
+                    </svg>
+                    {t.compatibility.checkNow}
+                  </button>
               </div>
             </div>
           </section>
@@ -2593,8 +2589,8 @@ export default function Home() {
                     <div className="flex-1">
                       <h3 id="panchang-title" className="text-4xl text-gold">
                         {selectedDate === new Date().toISOString().split("T")[0]
-                          ? "Today's Panchang"
-                          : `Panchang for ${new Date(selectedDate).toLocaleDateString(
+                          ? t.panchang.title
+                          : `${t.panchang.titleFor} ${new Date(selectedDate).toLocaleDateString(
                               "en-US",
                               {
                                 weekday: "long",
@@ -2605,8 +2601,7 @@ export default function Home() {
                             )}`}
                       </h3>
                       <p className="mt-1 text-sm text-slate-600">
-                        View today's auspicious timings, planetary positions, and muhurat for important activities.
-                        Updated daily based on Vedic calculations.
+                        {t.panchang.description}
                       </p>
 
                       {/* Date Selector */}
@@ -2622,7 +2617,7 @@ export default function Home() {
                       </div>
 
                       <p className="mt-3 text-xs text-slate-500">
-                        Select any date to view its complete Panchang details.
+                        {t.panchang.selectDateHelper}
                       </p>
                     </div>
                   </div>
@@ -2637,7 +2632,7 @@ export default function Home() {
                       style={{ backgroundColor: "var(--color-gold)" }}
                     >
                       <Calendar className="w-4 h-4" />
-                      View Full Panchang
+                      {t.panchang.viewFull}
                     </button>
                   </div>
                 </div>
@@ -2667,12 +2662,11 @@ export default function Home() {
                       <Star className="w-6 h-6 text-purple-600" />
                     </div>
                     <h2 className="text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
-                      Advanced Vedic Tools
+                      {t.tools.title}
                     </h2>
                   </div>
                   <p className="text-slate-600 text-lg max-w-3xl mx-auto">
-                    Precise calculations for serious astrology enthusiasts. 
-                    Explore detailed planetary positions, transit timings, and more.
+                    {t.tools.description}
                   </p>
                 </div>
 
@@ -2693,10 +2687,10 @@ export default function Home() {
           {/* FOOTER */}
           <footer className="home-footer">
             <p>
-              Made with ✨ by <span className="footer-brand">TheGodSays Team</span> - <span className="text-gold font-semibold">Spacenos</span>
+              {t.footer.madeBy} ✨ by <span className="footer-brand">{t.footer.team}</span> - <span className="text-gold font-semibold">{t.footer.company}</span>
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              🌟 Vedic wisdom meets modern precision
+              🌟 {t.footer.tagline}
             </p>
           </footer>
         </main>

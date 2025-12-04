@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -27,12 +27,15 @@ import {
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import "./navigation.css";
 
 const Navigation = () => {
+  const { t, language } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -56,42 +59,42 @@ const Navigation = () => {
   // Separate dropdown states for each menu
   const [openDropdown, setOpenDropdown] = useState(null); // 'tools', 'account', or null
 
-  // Astrologer-specific navigation items
-  const astrologerNavItems = [
-    { href: "/astrologer-dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: `/account/astrologer/${user?.uid}`, label: "My Profile", icon: User },
-    { href: "/profile/astrology", label: "Account Settings", icon: Settings },
-  ];
+  // Astrologer-specific navigation items - using useMemo to make them reactive
+  const astrologerNavItems = useMemo(() => [
+    { href: "/astrologer-dashboard", label: t.astrologerDashboard?.title || "Dashboard", icon: LayoutDashboard },
+    { href: `/account/astrologer/${user?.uid}`, label: t.profile?.myProfile || "My Profile", icon: User },
+    { href: "/profile/astrology", label: t.profile?.settings || "Account Settings", icon: Settings },
+  ], [language, user, t]);
 
-  // Regular user navigation items
-  const userNavItems = [
-    { href: "/talk-to-astrologer", label: "Talk to Astrologer", icon: Phone },
-    { href: "/predictions", label: "AI Predictions", icon: Star },
-    { href: "/matching", label: "Matching", icon: BookOpen },
+  // Regular user navigation items - using useMemo to make them reactive to language changes
+  const userNavItems = useMemo(() => [
+    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
+    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+    { href: "/matching", label: t.nav.matching, icon: BookOpen },
     {
       href: null,
-      label: "Tools",
+      label: t.nav.tools,
       icon: Settings,
       dropdownId: "tools",
       children: [
-        { href: "/numerology", label: "Numerology", icon: Hash },
-        { href: "/transit", label: "Planetary Transit", icon: Zap },
-        { href: "/cosmic-event-tracker", label: "Cosmic Events Tracker", icon: Calendar },
-        { href: "/panchang", label: "Panchang", icon: BookOpen },
+        { href: "/numerology", label: t.numerology.title, icon: Hash },
+        { href: "/transit", label: t.transit.title, icon: Zap },
+        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
+        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
       ],
     },
-    { href: "/wallet", label: "Wallet", icon: Wallet },
+    { href: "/wallet", label: t.nav.wallet, icon: Wallet },
     {
       href: null,
-      label: "My Account",
+      label: t.nav.myAccount,
       icon: User,
       dropdownId: "account",
       children: [
-        { href: "/profile/user", label: "My Profile", icon: User },
-        { href: "/profile/family", label: "My Family", icon: Users },
+        { href: "/profile/user", label: t.profile.myProfile, icon: User },
+        { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
       ],
     },
-  ];
+  ], [language, t]);
 
   // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
@@ -129,9 +132,6 @@ const Navigation = () => {
     ? astrologerNavItems 
     : userNavItems;
 
-  console.log("User profile:", userProfile);
-  console.log("User role:", userProfile?.role);
-  console.log("Navigation items:", navItems);
 
   async function handleAccountClick() {
     if (user) {
@@ -317,6 +317,16 @@ const Navigation = () => {
                 </Link>
               );
             })}
+
+            {/* Language Switcher */}
+            <div className="ml-4">
+              <LanguageSwitcher />
+            </div>
+          </div>
+
+          {/* Language Switcher Mobile */}
+          <div className="nav-language-mobile">
+            <LanguageSwitcher />
           </div>
 
           {/* Mobile menu button */}
@@ -506,7 +516,7 @@ const Navigation = () => {
                   onClick={onSignOutClick}
                   className="btn submit-btn"
                 >
-                  Sign Out
+                  {t.nav.signOut}
                 </button>
               </div>
             </form>
@@ -624,7 +634,7 @@ const Navigation = () => {
                     type="submit"
                     disabled={authSubmitting}
                   >
-                    {authSubmitting ? "Signing In…" : "Sign In"}
+                    {authSubmitting ? t.messages.processing : t.nav.signIn}
                   </Button>
                 </form>
               ) : (

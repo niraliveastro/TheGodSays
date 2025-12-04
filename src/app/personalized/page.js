@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   User,
   Calendar,
@@ -19,6 +20,7 @@ import { mockPersonalizedData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
 
 export default function PersonalizedPage() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     birthDate: "",

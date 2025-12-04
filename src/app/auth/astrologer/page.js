@@ -32,6 +32,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ArrowLeft, Eye, EyeOff, Sparkles, Star } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -47,17 +48,19 @@ import { db } from "@/lib/firebase";
  * @returns {JSX.Element} The authentication page UI.
  */
 export default function AstrologerAuth() {
+  const { t } = useTranslation();
+  
   // Form state management
   const [isLogin, setIsLogin] = useState(true); // Toggle between login (true) and signup (false) modes
   const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
   const [formData, setFormData] = useState({
-    email: "", // Email address
-    password: "", // Password
-    name: "", // Full name (signup only)
-    phone: "", // Phone number (signup only)
-    specialization: "", // Astrologer specialization (signup only)
-    experience: "", // Years of experience (signup only)
-    languages: "", // Languages spoken (signup only)
+    email: "",
+    password: "",
+    name: "",
+    phone: "",
+    specialization: "",
+    experience: "",
+    languages: "",
   });
   const [error, setError] = useState(""); // Form submission error message
 
@@ -263,7 +266,7 @@ export default function AstrologerAuth() {
               {/* Trust badge */}
               <div className="promo-badge">
                 <Sparkles className="promo-badge-icon" />
-                <span>Trusted by thousands</span>
+                <span>{t.auth.trustedByThousands}</span>
               </div>
             </div>
 
@@ -272,14 +275,10 @@ export default function AstrologerAuth() {
               {/* Header */}
               <div className="form-panel-header">
                 <h1 className="form-panel-title">
-                  {isLogin ? "Astrologer Sign In" : "Create Astrologer Profile"}{" "}
-                  {/* Dynamic title */}
+                  {isLogin ? t.auth.astrologerSignIn : t.auth.createAstrologerProfile}
                 </h1>
                 <p className="form-panel-subtitle">
-                  {isLogin
-                    ? "Access your dashboard and manage sessions"
-                    : "Join our community of expert astrologers"}{" "}
-                  {/* Dynamic subtitle */}
+                  {isLogin ? t.auth.accessDashboard : t.auth.joinCommunity}
                 </p>
               </div>
 
@@ -301,7 +300,7 @@ export default function AstrologerAuth() {
                   <>
                     {/* Name */}
                     <div className="form-field">
-                      <label className="form-field-label">Full Name</label>
+                      <label className="form-field-label">{t.formFields.fullName}</label>
                       <input
                         type="text"
                         placeholder="Your full name"
@@ -316,7 +315,7 @@ export default function AstrologerAuth() {
 
                     {/* Phone */}
                     <div className="form-field">
-                      <label className="form-field-label">Phone Number</label>
+                      <label className="form-field-label">{t.formFields.phone}</label>
                       <input
                         type="tel"
                         placeholder="+91 98765 43210"
@@ -331,7 +330,7 @@ export default function AstrologerAuth() {
 
                     {/* Specialization */}
                     <div className="form-field">
-                      <label className="form-field-label">Specialization</label>
+                      <label className="form-field-label">{t.auth.specialization}</label>
                       <select
                         value={formData.specialization}
                         onChange={(e) =>
@@ -356,7 +355,7 @@ export default function AstrologerAuth() {
                     {/* Experience */}
                     <div className="form-field">
                       <label className="form-field-label">
-                        Years of Experience
+                        {t.auth.yearsOfExperience}
                       </label>
                       <select
                         value={formData.experience}
@@ -379,7 +378,7 @@ export default function AstrologerAuth() {
 
                     {/* Languages */}
                     <div className="form-field">
-                      <label className="form-field-label">Languages</label>
+                      <label className="form-field-label">{t.auth.languages}</label>
                       <input
                         type="text"
                         placeholder="e.g., Hindi, English, Tamil"
@@ -403,7 +402,7 @@ export default function AstrologerAuth() {
                 {/* ==== COMMON FIELDS ==== – Email and Password */}
                 {/* Email */}
                 <div className="form-field">
-                  <label className="form-field-label">Email Address</label>
+                  <label className="form-field-label">{t.formFields.email}</label>
                   <input
                     type="email"
                     placeholder="your@email.com"
@@ -418,7 +417,7 @@ export default function AstrologerAuth() {
 
                 {/* Password */}
                 <div className="form-field">
-                  <label className="form-field-label">Password</label>
+                  <label className="form-field-label">{t.formFields.password}</label>
                   <div className="auth-input-wrapper">
                     <input
                       type={showPassword ? "text" : "password"}
