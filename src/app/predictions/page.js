@@ -20,8 +20,15 @@ import {
 } from "lucide-react";
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
 export default function PredictionsPage() {
   const { t } = useTranslation();
+  
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/predictions', 'AI Predictions');
+  }, []);
+  
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
@@ -359,9 +366,15 @@ export default function PredictionsPage() {
 
     const { error: validationError, parsed } = validate();
     if (validationError) {
+      trackEvent('form_validation_failed', { form_name: 'predictions' });
       setError(validationError);
       return;
     }
+    
+    // Track form submission
+    trackActionStart('predictions_generation');
+    trackEvent('form_submit', { form_name: 'predictions' });
+    
     setSubmitting(true);
     try {
       const geo = selectedCoords || (await geocodePlace(place));
@@ -505,6 +518,13 @@ export default function PredictionsPage() {
             finalPlanetParsed = altParsed;
         } catch { }
       }
+      // Track successful predictions generation
+      trackActionComplete('predictions_generation', {
+        success: true,
+        has_coordinates: !!(geo.latitude && geo.longitude)
+      });
+      trackEvent('predictions_generated', { success: true });
+      
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
@@ -517,6 +537,9 @@ export default function PredictionsPage() {
         apiErrors: { ...errors },
       });
     } catch (err) {
+      // Track predictions generation failure
+      trackActionAbandon('predictions_generation', err?.message || 'unknown_error');
+      trackEvent('predictions_generation_failed', { error: err?.message || 'unknown_error' });
       setError(err?.message || "Failed to compute predictions.");
     } finally {
       setSubmitting(false);

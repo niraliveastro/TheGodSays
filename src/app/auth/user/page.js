@@ -29,12 +29,13 @@
  * @module UserAuth
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { trackEvent, trackPageView } from "@/lib/analytics";
 import {
   ArrowLeft,
   Eye,
@@ -57,6 +58,11 @@ import {
  */
 export default function UserAuth() {
   const { t } = useTranslation();
+  
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/auth/user', 'User Authentication');
+  }, []);
   
   // Form state management
   const [isLogin, setIsLogin] = useState(true); // Toggle between login (true) and signup (false) modes
@@ -88,14 +94,24 @@ export default function UserAuth() {
 
     try {
       if (isLogin) {
+        // Track login attempt
+        trackEvent('login_attempt', { method: 'email' });
+        
         // Login flow
         const result = await signIn(formData.email, formData.password);
+        
+        // Track successful login
+        trackEvent('login_success', { method: 'email' });
+        
         if (result.profile?.collection === "users") {
           router.push("/talk-to-astrologer"); // Redirect to astrologer consultation page
         } else {
           router.push("/unauthorized"); // Redirect if not a user
         }
       } else {
+        // Track signup attempt
+        trackEvent('signup_attempt', { method: 'email' });
+        
         // SIGNUP FLOW
         const user = await signUp(formData.email, formData.password, {
           displayName: formData.name, // Set display name in auth profile
@@ -110,9 +126,16 @@ export default function UserAuth() {
           createdAt: new Date().toISOString(),
         });
 
+        // Track successful signup
+        trackEvent('signup_success', { method: 'email' });
         router.push("/talk-to-astrologer");
       }
     } catch (err) {
+      // Track auth failure
+      trackEvent(isLogin ? 'login_failed' : 'signup_failed', {
+        method: 'email',
+        error: err.message
+      });
       setError(err.message); // Display error message
     }
   };
@@ -128,8 +151,14 @@ export default function UserAuth() {
   const handleGoogleAuth = async () => {
     setError(""); // Clear previous errors
 
+    // Track Google auth attempt
+    trackEvent('login_attempt', { method: 'google' });
+
     try {
       const result = await signInWithGoogle();
+      
+      // Track successful Google auth
+      trackEvent('login_success', { method: 'google' });
 
       // Check if profile exists
       if (!result.profile) {

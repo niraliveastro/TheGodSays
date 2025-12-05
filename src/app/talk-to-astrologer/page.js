@@ -20,6 +20,7 @@ import Modal from "@/components/Modal";
 import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
 
 export default function TalkToAstrologer() {
   const { t } = useTranslation();
@@ -148,6 +149,9 @@ export default function TalkToAstrologer() {
   };
 
   useEffect(() => {
+    // Track page view
+    trackPageView('/talk-to-astrologer', 'Talk to Astrologer');
+    
     fetchAndUpdateAstrologers();
     const id = setInterval(fetchAndUpdateAstrologers, 30_000);
     return () => clearInterval(id);
@@ -170,9 +174,19 @@ export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
   const startCall = async (type, astrologerId) => {
     setLoading(true);
+    
+    // Track call initiation
+    trackActionStart('astrologer_booking');
+    trackEvent('call_initiated', {
+      call_type: type,
+      astrologer_id: astrologerId
+    });
+
     try {
       const userId = localStorage.getItem("tgs:userId");
       if (!userId) {
+        trackActionAbandon('astrologer_booking', 'not_logged_in');
+        trackEvent('call_failed', { reason: 'not_logged_in', call_type: type });
         alert("Please log in first.");
         router.push("/auth/user");
         setLoading(false);
@@ -192,6 +206,13 @@ export default function TalkToAstrologer() {
       if (balRes.ok) {
         const { success, validation } = await balRes.json();
         if (success && !validation.hasBalance) {
+          trackActionAbandon('astrologer_booking', 'insufficient_balance');
+          trackEvent('call_failed', {
+            reason: 'insufficient_balance',
+            call_type: type,
+            required: validation.minimumRequired,
+            available: validation.currentBalance
+          });
           setBalanceMessage(
             `Insufficient balance. Need ₹${validation.minimumRequired}, you have ₹${validation.currentBalance}.`
           );
@@ -209,9 +230,18 @@ export default function TalkToAstrologer() {
       );
       const { success, status } = await statusRes.json();
 
-      if (!success) throw new Error("Cannot check astrologer status.");
-      if (status === "offline") throw new Error("Astrologer is offline.");
+      if (!success) {
+        trackActionAbandon('astrologer_booking', 'status_check_failed');
+        throw new Error("Cannot check astrologer status.");
+      }
+      if (status === "offline") {
+        trackActionAbandon('astrologer_booking', 'astrologer_offline');
+        trackEvent('call_failed', { reason: 'astrologer_offline', call_type: type });
+        throw new Error("Astrologer is offline.");
+      }
       if (status === "busy" && !confirm("Astrologer is busy. Join queue?")) {
+        trackActionAbandon('astrologer_booking', 'user_declined_queue');
+        trackEvent('call_cancelled', { reason: 'user_declined_queue', call_type: type });
         setConnectingCallType(null);
         setLoading(false);
         return;
@@ -228,12 +258,23 @@ export default function TalkToAstrologer() {
           callType: type,
         }),
       });
-      if (!callRes.ok) throw new Error("Failed to create call.");
+      if (!callRes.ok) {
+        trackActionAbandon('astrologer_booking', 'call_creation_failed');
+        throw new Error("Failed to create call.");
+      }
       const { call } = await callRes.json();
 
       localStorage.setItem("tgs:callId", call.id);
       localStorage.setItem("tgs:currentCallId", call.id);
       localStorage.setItem("tgs:astrologerId", astrologerId);
+
+      // Track call created
+      trackEvent('call_created', {
+        call_id: call.id,
+        call_type: type,
+        astrologer_id: astrologerId,
+        status: call.status
+      });
 
       /* ---- Init billing ---- */
       await fetch("/api/billing", {
@@ -257,6 +298,14 @@ export default function TalkToAstrologer() {
         if (c?.status === "active") {
           clearInterval(poll);
           clearTimeout(timeoutId);
+          
+          // Track call accepted
+          trackEvent('call_accepted', {
+            call_id: call.id,
+            call_type: type,
+            astrologer_id: astrologerId
+          });
+
           const sessRes = await fetch("/api/livekit/create-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -272,6 +321,21 @@ export default function TalkToAstrologer() {
           });
           if (sessRes.ok) {
             const { roomName } = await sessRes.json();
+            
+            // Track successful call connection
+            trackActionComplete('astrologer_booking', {
+              call_id: call.id,
+              call_type: type,
+              astrologer_id: astrologerId,
+              room_name: roomName,
+              success: true
+            });
+            trackEvent('call_connected', {
+              call_id: call.id,
+              call_type: type,
+              astrologer_id: astrologerId
+            });
+
             setConnectingCallType(null);
             setLoading(false);
             router.push(
@@ -280,6 +344,8 @@ export default function TalkToAstrologer() {
                 : `/talk-to-astrologer/voice/${roomName}`
             );
           } else {
+            trackActionAbandon('astrologer_booking', 'session_creation_failed');
+            trackEvent('call_failed', { reason: 'session_creation_failed', call_id: call.id });
             setConnectingCallType(null);
             setLoading(false);
             alert("Failed to join room.");
@@ -287,6 +353,15 @@ export default function TalkToAstrologer() {
         } else if (c?.status === "rejected") {
           clearInterval(poll);
           clearTimeout(timeoutId);
+          
+          // Track call rejected
+          trackActionAbandon('astrologer_booking', 'astrologer_rejected');
+          trackEvent('call_rejected', {
+            call_id: call.id,
+            call_type: type,
+            astrologer_id: astrologerId
+          });
+
           await fetch("/api/billing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -302,6 +377,15 @@ export default function TalkToAstrologer() {
           // Handle cancelled status (when user cancels)
           clearInterval(poll);
           clearTimeout(timeoutId);
+          
+          // Track call cancelled
+          trackActionAbandon('astrologer_booking', 'user_cancelled');
+          trackEvent('call_cancelled', {
+            call_id: call.id,
+            call_type: type,
+            astrologer_id: astrologerId
+          });
+
           setConnectingCallType(null);
           setCallStatus("connecting");
           setLoading(false);
@@ -310,6 +394,15 @@ export default function TalkToAstrologer() {
 
       timeoutId = setTimeout(() => {
         clearInterval(poll);
+        
+        // Track timeout
+        trackActionAbandon('astrologer_booking', 'astrologer_timeout');
+        trackEvent('call_timeout', {
+          call_id: call.id,
+          call_type: type,
+          astrologer_id: astrologerId
+        });
+
         fetch("/api/billing", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -321,6 +414,12 @@ export default function TalkToAstrologer() {
       }, 60_000);
     } catch (e) {
       console.error(e);
+      trackActionAbandon('astrologer_booking', e.message || 'unknown_error');
+      trackEvent('call_error', {
+        error: e.message || 'unknown_error',
+        call_type: type,
+        astrologer_id: astrologerId
+      });
       setConnectingCallType(null);
       setLoading(false);
       alert(e.message || "Call failed.");
@@ -351,14 +450,39 @@ export default function TalkToAstrologer() {
     rating,
     comment,
   }) => {
+    // Track review submission
+    trackEvent('review_submit_attempt', {
+      astrologer_id: astrologerId,
+      rating
+    });
+
     const res = await fetch("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ astrologerId, userId, rating, comment }),
     });
-    if (!res.ok) throw new Error("Failed to submit review");
+    if (!res.ok) {
+      trackEvent('review_submit_failed', {
+        astrologer_id: astrologerId,
+        error: 'api_error'
+      });
+      throw new Error("Failed to submit review");
+    }
     const data = await res.json();
-    if (!data.success) throw new Error(data.message);
+    if (!data.success) {
+      trackEvent('review_submit_failed', {
+        astrologer_id: astrologerId,
+        error: data.message
+      });
+      throw new Error(data.message);
+    }
+
+    // Track successful review submission
+    trackEvent('review_submit_success', {
+      astrologer_id: astrologerId,
+      rating,
+      has_comment: !!comment
+    });
   };
 
   /* --------------------------------------------------------------- */
