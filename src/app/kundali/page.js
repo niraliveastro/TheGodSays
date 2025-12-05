@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import astrologyAPI from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
 
 /**
  * Helper arrays for form options
@@ -75,6 +76,11 @@ const months = [
  */
 export default function KundaliPage() {
   const { t } = useTranslation();
+  
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/kundali', 'Kundali - Birth Chart');
+  }, []);
   
   /**
    * Form state object holding all user inputs.
@@ -237,7 +243,14 @@ export default function KundaliPage() {
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      trackEvent('form_validation_failed', { form_name: 'kundali' });
+      return;
+    }
+
+    // Track form submission start
+    trackActionStart('kundali_generation');
+    trackEvent('form_submit', { form_name: 'kundali' });
 
     setSubmitting(true);
     setGenError("");
@@ -289,15 +302,30 @@ export default function KundaliPage() {
       console.log("Received response:", response);
 
       if (response && response.svg_output) {
+        // Track successful generation
+        trackActionComplete('kundali_generation', {
+          success: true,
+          has_coordinates: !!(form.latitude && form.longitude)
+        });
+        trackEvent('kundali_generated', { success: true });
         setSvgOutput(response.svg_output);
       } else if (typeof response === "string" && response.includes("<svg")) {
+        trackActionComplete('kundali_generation', {
+          success: true,
+          has_coordinates: !!(form.latitude && form.longitude)
+        });
+        trackEvent('kundali_generated', { success: true });
         setSvgOutput(response);
       } else {
         console.error("Unexpected response format:", response);
+        trackActionAbandon('kundali_generation', 'no_svg_data');
+        trackEvent('kundali_generation_failed', { error: 'no_svg_data' });
         throw new Error("No SVG data received from API");
       }
     } catch (err) {
       console.error("Kundali generation error:", err);
+      trackActionAbandon('kundali_generation', err.message || 'unknown_error');
+      trackEvent('kundali_generation_failed', { error: err.message || 'unknown_error' });
       setGenError(
         err.message || t.kundali.error
       );

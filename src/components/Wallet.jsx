@@ -15,6 +15,7 @@ import {
 import { couponDb, couponFunctions } from '@/lib/firebaseCoupons'
 import { doc, getDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
+import { trackEvent, trackActionStart, trackActionComplete } from '@/lib/analytics'
 
 export default function Wallet() {
   const { user, getUserId, userProfile } = useAuth()
@@ -89,6 +90,10 @@ const handleRedeemCoupon = async () => {
     return;
   }
 
+  // Track coupon redemption start
+  trackActionStart('coupon_redemption');
+  trackEvent('coupon_redeem_attempt', { coupon_code: couponCode.toUpperCase() });
+
   setCouponLoading(true);
   setCouponStatus({ type: "loading", msg: "Redeeming…" });
 
@@ -108,6 +113,17 @@ const handleRedeemCoupon = async () => {
     const data = await res.json();
 
     if (data.ok) {
+      // Track successful coupon redemption
+      trackActionComplete('coupon_redemption', {
+        coupon_code: couponCode.toUpperCase(),
+        amount: data.amount,
+        success: true
+      });
+      trackEvent('coupon_redeem_success', {
+        coupon_code: couponCode.toUpperCase(),
+        amount: data.amount
+      });
+
       setCouponStatus({
         type: "success",
         msg: `Coupon applied! +₹${data.amount}`,
@@ -115,6 +131,13 @@ const handleRedeemCoupon = async () => {
       setCouponCode("");
       await fetchCouponBalance();
     } else {
+      // Track failed coupon redemption
+      trackActionAbandon('coupon_redemption', data.reason || 'unknown_error');
+      trackEvent('coupon_redeem_failed', {
+        coupon_code: couponCode.toUpperCase(),
+        reason: data.reason || 'unknown'
+      });
+
       const map = {
         NOT_FOUND: "Invalid coupon",
         INACTIVE: "Coupon inactive",
@@ -129,6 +152,8 @@ const handleRedeemCoupon = async () => {
       });
     }
   } catch (e) {
+    trackActionAbandon('coupon_redemption', e.message);
+    trackEvent('coupon_redeem_error', { error: e.message });
     setCouponStatus({ type: "error", msg: e.message });
   } finally {
     setCouponLoading(false);
@@ -145,6 +170,12 @@ const handleRedeemCoupon = async () => {
       return
     }
 
+    const amount = parseFloat(rechargeAmount);
+    
+    // Track wallet recharge initiation
+    trackActionStart('wallet_recharge');
+    trackEvent('wallet_recharge_initiated', { amount });
+
     setRechargeLoading(true)
     try {
       const orderRes = await fetch('/api/payments/wallet', {
@@ -153,11 +184,17 @@ const handleRedeemCoupon = async () => {
         body: JSON.stringify({
           action: 'recharge',
           userId,
-          amount: parseFloat(rechargeAmount),
+          amount,
         }),
       })
       const orderData = await orderRes.json()
       if (!orderRes.ok || !orderData.success) {
+        // Track failed order creation
+        trackActionAbandon('wallet_recharge', orderData.error || 'order_creation_failed');
+        trackEvent('wallet_recharge_failed', {
+          amount,
+          error: orderData.error || 'order_creation_failed'
+        });
         alert(orderData.error ?? 'Failed to create payment order')
         return
       }
@@ -165,6 +202,8 @@ const handleRedeemCoupon = async () => {
       const keyRes = await fetch('/api/payments/config')
       const keyData = await keyRes.json()
       if (!keyData.success) {
+        trackActionAbandon('wallet_recharge', 'payment_config_error');
+        trackEvent('wallet_recharge_failed', { amount, error: 'payment_config_error' });
         alert('Payment configuration error')
         return
       }
@@ -189,12 +228,40 @@ const handleRedeemCoupon = async () => {
           })
           const verifyData = await verifyRes.json()
           if (verifyRes.ok && verifyData.success) {
+            // Track successful payment
+            trackActionComplete('wallet_recharge', {
+              amount,
+              order_id: resp.razorpay_order_id,
+              payment_id: resp.razorpay_payment_id,
+              success: true
+            });
+            trackEvent('payment_success', {
+              amount,
+              method: 'razorpay',
+              type: 'wallet_recharge',
+              order_id: resp.razorpay_order_id
+            });
+            
             alert('Payment successful! Wallet updated.')
             setRechargeAmount('')
             setShowRechargeForm(false)
             fetchWalletData()
           } else {
+            // Track payment verification failure
+            trackActionAbandon('wallet_recharge', 'payment_verification_failed');
+            trackEvent('payment_verification_failed', {
+              amount,
+              order_id: resp.razorpay_order_id,
+              payment_id: resp.razorpay_payment_id
+            });
             alert('Payment verification failed. Contact support.')
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            // Track payment modal dismissal (user cancelled)
+            trackActionAbandon('wallet_recharge', 'user_cancelled');
+            trackEvent('payment_cancelled', { amount, method: 'razorpay' });
           }
         },
         prefill: {
@@ -207,6 +274,8 @@ const handleRedeemCoupon = async () => {
       const rzp = new window.Razorpay(options)
       rzp.open()
     } catch (e) {
+      trackActionAbandon('wallet_recharge', e.message);
+      trackEvent('wallet_recharge_error', { amount, error: e.message });
       alert(`Error: ${e.message}`)
     } finally {
       setRechargeLoading(false)

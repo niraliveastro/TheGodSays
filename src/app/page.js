@@ -12,6 +12,7 @@ import DateSelector from "@/components/DateSelector";
 import { useTranslation } from "@/hooks/useTranslation";
 import { mockPanchangData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
+import { trackPageView } from "@/lib/analytics";
 import {
   Calendar,
   MapPin,
@@ -55,6 +56,12 @@ const writeHomeCache = (key, value) => {
 export default function Home() {
   const router = useRouter();
   const { t } = useTranslation();
+  
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/', 'Home - TheGodSays');
+  }, []);
+  
   const [panchangData, setPanchangData] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
 

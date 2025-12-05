@@ -153,6 +153,12 @@ const Navigation = () => {
   async function onSignOutClick() {
     try {
       const wasAstrologer = userProfile?.collection === "astrologers";
+      
+      // Track sign out
+      trackEvent('sign_out', {
+        user_type: wasAstrologer ? 'astrologer' : 'user'
+      });
+      
       await signOut();
       setShowProfileModal(false);
       await new Promise((res) => setTimeout(res, 50));
@@ -179,9 +185,15 @@ const Navigation = () => {
     const form = new FormData(e.currentTarget);
     const email = form.get("email")?.toString() || "";
     const password = form.get("password")?.toString() || "";
+    
+    // Track login attempt from navigation
+    trackEvent('login_attempt', { method: 'email', source: 'navigation' });
+    
     try {
       await signIn(email, password);
+      trackEvent('login_success', { method: 'email', source: 'navigation' });
     } catch (err) {
+      trackEvent('login_failed', { method: 'email', source: 'navigation', error: err.message });
       setAuthError("Failed to sign in. Please check your credentials.");
       console.error("Nav SignIn error", err);
     } finally {
@@ -199,14 +211,21 @@ const Navigation = () => {
     const password = form.get("password")?.toString() || "";
     const confirm = form.get("confirm")?.toString() || "";
     if (password !== confirm) {
+      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: 'password_mismatch' });
       setAuthError("Passwords do not match");
       setAuthSubmitting(false);
       return;
     }
+    
+    // Track signup attempt from navigation
+    trackEvent('signup_attempt', { method: 'email', source: 'navigation' });
+    
     try {
       await signUp(email, password, { displayName: name });
+      trackEvent('signup_success', { method: 'email', source: 'navigation' });
       setDisplayName(name);
     } catch (err) {
+      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: err.message });
       setAuthError("Failed to create account. Please try again.");
       console.error("Nav SignUp error", err);
     } finally {
@@ -311,6 +330,13 @@ const Navigation = () => {
                   className={`nav-link ${
                     pathname === item.href ? "nav-link-active" : ""
                   }`}
+                  onClick={() => {
+                    trackEvent('navigation_click', {
+                      destination: item.href,
+                      label: item.label,
+                      source: 'desktop_nav'
+                    });
+                  }}
                 >
                   {Icon && <Icon />}
                   <span>{item.label}</span>
@@ -396,7 +422,14 @@ const Navigation = () => {
                     className={`nav-mobile-link ${
                       pathname === item.href ? "nav-mobile-link-active" : ""
                     }`}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      trackEvent('navigation_click', {
+                        destination: item.href,
+                        label: item.label,
+                        source: 'mobile_nav'
+                      });
+                      setIsOpen(false);
+                    }}
                   >
                     {Icon && <Icon className="mr-2" />}
                     <span>{item.label}</span>
@@ -550,9 +583,12 @@ const Navigation = () => {
                 type="button"
                 onClick={async () => {
                   setAuthError("");
+                  trackEvent('login_attempt', { method: 'google', source: 'navigation' });
                   try {
                     await signInWithGoogle();
+                    trackEvent('login_success', { method: 'google', source: 'navigation' });
                   } catch (e) {
+                    trackEvent('login_failed', { method: 'google', source: 'navigation', error: e.message });
                     setAuthError("Google sign-in failed");
                     console.error(e);
                   }
