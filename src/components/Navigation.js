@@ -319,8 +319,8 @@ const Navigation = () => {
                 alt="TheGodSays Logo"
                 className="h-14 w-auto"
               />
-              <span className="nav-logo-text ml-2 font-semibold">
-                TheGodSays
+              <span className="nav-logo-text ml-2">
+                <span className="font-extrabold">rahu</span>now
               </span>
             </div>
           </Link>
