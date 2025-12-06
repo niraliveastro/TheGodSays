@@ -55,46 +55,76 @@ const Navigation = () => {
   const [showPwSignin, setShowPwSignin] = useState(false);
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
-  
+
   // Separate dropdown states for each menu
   const [openDropdown, setOpenDropdown] = useState(null); // 'tools', 'account', or null
 
   // Astrologer-specific navigation items - using useMemo to make them reactive
-  const astrologerNavItems = useMemo(() => [
-    { href: "/astrologer-dashboard", label: t.astrologerDashboard?.title || "Dashboard", icon: LayoutDashboard },
-    { href: `/account/astrologer/${user?.uid}`, label: t.profile?.myProfile || "My Profile", icon: User },
-    { href: "/profile/astrology", label: t.profile?.settings || "Account Settings", icon: Settings },
-  ], [language, user, t]);
+  const astrologerNavItems = useMemo(
+    () => [
+      {
+        href: "/astrologer-dashboard",
+        label: t.astrologerDashboard?.title || "Dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        href: `/account/astrologer/${user?.uid}`,
+        label: t.profile?.myProfile || "My Profile",
+        icon: User,
+      },
+      {
+        href: "/profile/astrology",
+        label: t.profile?.settings || "Account Settings",
+        icon: Settings,
+      },
+    ],
+    [language, user, t]
+  );
 
   // Regular user navigation items - using useMemo to make them reactive to language changes
-  const userNavItems = useMemo(() => [
-    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
-    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
-    { href: "/matching", label: t.nav.matching, icon: BookOpen },
-    {
-      href: null,
-      label: t.nav.tools,
-      icon: Settings,
-      dropdownId: "tools",
-      children: [
-        { href: "/numerology", label: t.numerology.title, icon: Hash },
-        { href: "/transit", label: t.transit.title, icon: Zap },
-        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
-        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
-      ],
-    },
-    { href: "/wallet", label: t.nav.wallet, icon: Wallet },
-    {
-      href: null,
-      label: t.nav.myAccount,
-      icon: User,
-      dropdownId: "account",
-      children: [
-        { href: "/profile/user", label: t.profile.myProfile, icon: User },
-        { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
-      ],
-    },
-  ], [language, t]);
+  const userNavItems = useMemo(
+    () => [
+      {
+        href: "/talk-to-astrologer",
+        label: t.nav.talkToAstrologer,
+        icon: Phone,
+      },
+      { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+      { href: "/matching", label: t.nav.matching, icon: BookOpen },
+      {
+        href: null,
+        label: t.nav.tools,
+        icon: Settings,
+        dropdownId: "tools",
+        children: [
+          { href: "/numerology", label: t.numerology.title, icon: Hash },
+          { href: "/transit", label: t.transit.title, icon: Zap },
+          {
+            href: "/cosmic-event-tracker",
+            label: t.calendar.title,
+            icon: Calendar,
+          },
+          { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+        ],
+      },
+      { href: "/wallet", label: t.nav.wallet, icon: Wallet },
+      {
+        href: null,
+        label: t.nav.myAccount,
+        icon: User,
+        dropdownId: "account",
+        children: [
+          { href: "/profile/user", label: t.profile.myProfile, icon: User },
+          {
+            href: "/profile/family",
+            label: t.profile.familyMembers,
+            icon: Users,
+          },
+        ],
+      },
+    ],
+    [language, t]
+  );
 
   // When user logs in from the centered auth modal, switch to top-right profile view automatically
   useEffect(() => {
@@ -128,10 +158,10 @@ const Navigation = () => {
   }, [openDropdown]);
 
   // Determine which nav items to show based on user type
-  const navItems = userProfile?.collection === "astrologers" 
-    ? astrologerNavItems 
-    : userNavItems;
-
+  const navItems =
+    userProfile?.collection === "astrologers"
+      ? astrologerNavItems
+      : userNavItems;
 
   async function handleAccountClick() {
     if (user) {
@@ -153,12 +183,12 @@ const Navigation = () => {
   async function onSignOutClick() {
     try {
       const wasAstrologer = userProfile?.collection === "astrologers";
-      
+
       // Track sign out
-      trackEvent('sign_out', {
-        user_type: wasAstrologer ? 'astrologer' : 'user'
+      trackEvent("sign_out", {
+        user_type: wasAstrologer ? "astrologer" : "user",
       });
-      
+
       await signOut();
       setShowProfileModal(false);
       await new Promise((res) => setTimeout(res, 50));
@@ -177,7 +207,6 @@ const Navigation = () => {
     }
   }
 
-
   async function handleSignIn(e) {
     e.preventDefault();
     setAuthError("");
@@ -185,15 +214,19 @@ const Navigation = () => {
     const form = new FormData(e.currentTarget);
     const email = form.get("email")?.toString() || "";
     const password = form.get("password")?.toString() || "";
-    
+
     // Track login attempt from navigation
-    trackEvent('login_attempt', { method: 'email', source: 'navigation' });
-    
+    trackEvent("login_attempt", { method: "email", source: "navigation" });
+
     try {
       await signIn(email, password);
-      trackEvent('login_success', { method: 'email', source: 'navigation' });
+      trackEvent("login_success", { method: "email", source: "navigation" });
     } catch (err) {
-      trackEvent('login_failed', { method: 'email', source: 'navigation', error: err.message });
+      trackEvent("login_failed", {
+        method: "email",
+        source: "navigation",
+        error: err.message,
+      });
       setAuthError("Failed to sign in. Please check your credentials.");
       console.error("Nav SignIn error", err);
     } finally {
@@ -211,21 +244,29 @@ const Navigation = () => {
     const password = form.get("password")?.toString() || "";
     const confirm = form.get("confirm")?.toString() || "";
     if (password !== confirm) {
-      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: 'password_mismatch' });
+      trackEvent("signup_failed", {
+        method: "email",
+        source: "navigation",
+        error: "password_mismatch",
+      });
       setAuthError("Passwords do not match");
       setAuthSubmitting(false);
       return;
     }
-    
+
     // Track signup attempt from navigation
-    trackEvent('signup_attempt', { method: 'email', source: 'navigation' });
-    
+    trackEvent("signup_attempt", { method: "email", source: "navigation" });
+
     try {
       await signUp(email, password, { displayName: name });
-      trackEvent('signup_success', { method: 'email', source: 'navigation' });
+      trackEvent("signup_success", { method: "email", source: "navigation" });
       setDisplayName(name);
     } catch (err) {
-      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: err.message });
+      trackEvent("signup_failed", {
+        method: "email",
+        source: "navigation",
+        error: err.message,
+      });
       setAuthError("Failed to create account. Please try again.");
       console.error("Nav SignUp error", err);
     } finally {
@@ -263,11 +304,25 @@ const Navigation = () => {
     <nav className="enhanced-nav">
       <div className="nav-container">
         <div className="nav-content">
-          <Link href="/" className="nav-logo-wrapper">
-            <div className="nav-logo-icon">
-              <Sparkles />
+          <Link href="/" className="nav-logo-wrapper" aria-label="Home">
+            {/*MOBILE LOGO (visible only on < md) */}
+            <img
+              src="/logo_android.png"
+              alt="RahuNow Mobile Logo"
+              className="block md:hidden h-10 w-auto"
+            />
+
+            {/* DESKTOP LOGO + TEXT (visible only on md+) */}
+            <div className="hidden md:flex items-center">
+              <img
+                src="/logo.png"
+                alt="TheGodSays Logo"
+                className="h-14 w-auto"
+              />
+              <span className="nav-logo-text ml-2 font-semibold">
+                TheGodSays
+              </span>
             </div>
-            <span className="nav-logo-text">TheGodSays</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -276,25 +331,33 @@ const Navigation = () => {
               const Icon = item.icon;
               // Handle dropdown menu (Tools, My Account) - only for users
               if (item.children) {
-                const isActive = item.children.some(child => pathname === child.href)
+                const isActive = item.children.some(
+                  (child) => pathname === child.href
+                );
                 const isOpen = openDropdown === item.dropdownId;
                 return (
-                  <div 
-                    key={item.label} 
+                  <div
+                    key={item.label}
                     className="nav-dropdown"
                     data-dropdown-container
                     onMouseEnter={() => setOpenDropdown(item.dropdownId)}
                     onMouseLeave={() => setOpenDropdown(null)}
                   >
                     <button
-                      className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
-                      onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
+                      className={`nav-dropdown-button ${
+                        isActive ? "active" : ""
+                      }`}
+                      onClick={() =>
+                        setOpenDropdown(isOpen ? null : item.dropdownId)
+                      }
                     >
                       {item.icon && <Icon />}
                       <span>{item.label}</span>
-                      <ChevronDown className={`dropdown-icon ${isOpen ? 'rotated' : ''}`} />
+                      <ChevronDown
+                        className={`dropdown-icon ${isOpen ? "rotated" : ""}`}
+                      />
                     </button>
-                    
+
                     {isOpen && (
                       <>
                         <div className="nav-dropdown-bridge"></div>
@@ -307,7 +370,7 @@ const Navigation = () => {
                                   key={child.href}
                                   href={child.href}
                                   className={`nav-dropdown-item ${
-                                    pathname === child.href ? 'active' : ''
+                                    pathname === child.href ? "active" : ""
                                   }`}
                                 >
                                   {ChildIcon && <ChildIcon />}
@@ -320,7 +383,7 @@ const Navigation = () => {
                       </>
                     )}
                   </div>
-                )
+                );
               }
 
               return (
@@ -331,10 +394,10 @@ const Navigation = () => {
                     pathname === item.href ? "nav-link-active" : ""
                   }`}
                   onClick={() => {
-                    trackEvent('navigation_click', {
+                    trackEvent("navigation_click", {
                       destination: item.href,
                       label: item.label,
-                      source: 'desktop_nav'
+                      source: "desktop_nav",
                     });
                   }}
                 >
@@ -370,23 +433,31 @@ const Navigation = () => {
 
                 // Handle dropdown menu (Tools, My Account) in mobile
                 if (item.children) {
-                  const isActive = item.children.some(child => pathname === child.href)
+                  const isActive = item.children.some(
+                    (child) => pathname === child.href
+                  );
                   const isOpen = openDropdown === item.dropdownId;
                   return (
                     <div key={item.label} data-dropdown-container>
                       {/* Dropdown button */}
                       <button
                         type="button"
-                        className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
-                        onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
+                        className={`nav-mobile-dropdown-button ${
+                          isActive ? "active" : ""
+                        }`}
+                        onClick={() =>
+                          setOpenDropdown(isOpen ? null : item.dropdownId)
+                        }
                       >
                         <div className="flex items-center">
                           {Icon && <Icon className="mr-2" />}
                           <span>{item.label}</span>
                         </div>
-                        <ChevronDown className={`chevron-icon ${isOpen ? 'rotated' : ''}`} />
+                        <ChevronDown
+                          className={`chevron-icon ${isOpen ? "rotated" : ""}`}
+                        />
                       </button>
-                      
+
                       {/* Expandable children */}
                       {isOpen && (
                         <div className="nav-mobile-dropdown-content">
@@ -397,11 +468,11 @@ const Navigation = () => {
                                 key={child.href}
                                 href={child.href}
                                 className={`nav-mobile-dropdown-item ${
-                                  pathname === child.href ? 'active' : ''
+                                  pathname === child.href ? "active" : ""
                                 }`}
                                 onClick={() => {
-                                  setIsOpen(false)
-                                  setOpenDropdown(null)
+                                  setIsOpen(false);
+                                  setOpenDropdown(null);
                                 }}
                               >
                                 {ChildIcon && <ChildIcon className="mr-2" />}
@@ -412,7 +483,7 @@ const Navigation = () => {
                         </div>
                       )}
                     </div>
-                  )
+                  );
                 }
 
                 return (
@@ -423,10 +494,10 @@ const Navigation = () => {
                       pathname === item.href ? "nav-mobile-link-active" : ""
                     }`}
                     onClick={() => {
-                      trackEvent('navigation_click', {
+                      trackEvent("navigation_click", {
                         destination: item.href,
                         label: item.label,
-                        source: 'mobile_nav'
+                        source: "mobile_nav",
                       });
                       setIsOpen(false);
                     }}
@@ -583,12 +654,22 @@ const Navigation = () => {
                 type="button"
                 onClick={async () => {
                   setAuthError("");
-                  trackEvent('login_attempt', { method: 'google', source: 'navigation' });
+                  trackEvent("login_attempt", {
+                    method: "google",
+                    source: "navigation",
+                  });
                   try {
                     await signInWithGoogle();
-                    trackEvent('login_success', { method: 'google', source: 'navigation' });
+                    trackEvent("login_success", {
+                      method: "google",
+                      source: "navigation",
+                    });
                   } catch (e) {
-                    trackEvent('login_failed', { method: 'google', source: 'navigation', error: e.message });
+                    trackEvent("login_failed", {
+                      method: "google",
+                      source: "navigation",
+                      error: e.message,
+                    });
                     setAuthError("Google sign-in failed");
                     console.error(e);
                   }
