@@ -64,6 +64,7 @@ export default function PredictionsPage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
@@ -419,7 +420,6 @@ export default function PredictionsPage() {
           observation_point: "topocentric",
           ayanamsha: "lahiri",
           house_system: "Placidus",
-          language: "en",
         },
       };
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
@@ -438,13 +438,34 @@ export default function PredictionsPage() {
       const mahaRaw = results?.["vimsottari/maha-dasas"];
       const planetsRaw = results?.["planets/extended"];
       const westernChartSvgRaw = results?.["western/natal-wheel-chart"];
-      const westernChartSvg = westernChartSvgRaw
-        ? typeof westernChartSvgRaw.output === "string"
-          ? westernChartSvgRaw.output
-          : typeof westernChartSvgRaw === "string"
-            ? westernChartSvgRaw
-            : null
-        : null;
+      // Enhanced parsing for western chart - handle various response formats
+      let westernChartSvg = null;
+      if (westernChartSvgRaw) {
+        // Try different response formats
+        if (typeof westernChartSvgRaw === "string") {
+          westernChartSvg = westernChartSvgRaw.trim();
+        } else if (typeof westernChartSvgRaw.output === "string") {
+          westernChartSvg = westernChartSvgRaw.output.trim();
+        } else if (westernChartSvgRaw.data && typeof westernChartSvgRaw.data === "string") {
+          westernChartSvg = westernChartSvgRaw.data.trim();
+        } else if (westernChartSvgRaw.svg && typeof westernChartSvgRaw.svg === "string") {
+          westernChartSvg = westernChartSvgRaw.svg.trim();
+        } else if (typeof westernChartSvgRaw === "object") {
+          // Try to find SVG string in the object
+          const stringValue = Object.values(westernChartSvgRaw).find(v => typeof v === "string" && v.trim().startsWith("<svg"));
+          if (stringValue) {
+            westernChartSvg = stringValue.trim();
+          }
+        }
+      }
+      
+      // Log for debugging
+      if (errors?.["western/natal-wheel-chart"]) {
+        console.warn("[Western Chart] Error:", errors["western/natal-wheel-chart"]);
+      }
+      if (!westernChartSvg && westernChartSvgRaw) {
+        console.warn("[Western Chart] Raw response format:", typeof westernChartSvgRaw, westernChartSvgRaw);
+      }
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
         : null;
@@ -1235,7 +1256,14 @@ export default function PredictionsPage() {
             ) : null}
 
             {/* AI Astrologer CTA / Chat Window */}
-            <div className="card mt-8 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section">
+            <div 
+              className="card mt-8 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section"
+              style={{ 
+                position: "relative",
+                zIndex: chatOpen ? 200 : 1,
+                marginBottom: chatOpen ? "2rem" : "0"
+              }}
+            >
               {!chatOpen ? (
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="flex-1">
@@ -1390,7 +1418,7 @@ export default function PredictionsPage() {
                             <td>
                               {pctVal != null ? `${pctVal.toFixed(1)}%` : "-"}
                             </td>
-                            <td style={{ width: "10rem" }}>
+                            <td>
                               {ishtaVal != null ? (
                                 <div className="strength-container">
                                   <div className="strength-bar">
@@ -1407,7 +1435,7 @@ export default function PredictionsPage() {
                                 "-"
                               )}
                             </td>
-                            <td style={{ width: "10rem" }}>
+                            <td>
                               {kashtaVal != null ? (
                                 <div className="strength-container">
                                   <div className="strength-bar">
@@ -1701,19 +1729,102 @@ export default function PredictionsPage() {
       </div>
 
       {/* Fixed Chat Assistant Card */}
-      <div className="fixed bottom-6 right-6 z-50" style={{ maxWidth: "320px" }}>
-        <div
-          className="chat-assistant-card"
-          style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-            border: "1px solid rgba(212, 175, 55, 0.3)",
-            borderRadius: "20px",
-            padding: "20px",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-          }}
-          onClick={() => {
+      <div 
+        className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
+        style={{ 
+          maxWidth: isAssistantMinimized ? "64px" : "320px",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        {isAssistantMinimized ? (
+          // Minimized Icon - Astrologer + AI Assistant
+          <button
+            onClick={() => setIsAssistantMinimized(false)}
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #d4af37, #b8972e)",
+              border: "1px solid rgba(212, 175, 55, 0.3)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
+            }}
+          >
+            {/* Combined Astrologer + AI Icon */}
+            <div style={{ position: "relative", width: "40px", height: "40px" }}>
+              {/* Star (Astrologer) */}
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                style={{ position: "absolute", top: 0, left: 0 }}
+              >
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              {/* Circuit/AI Pattern Overlay */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  left: "8px",
+                  width: "24px",
+                  height: "24px",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Cpu size={16} color="white" />
+              </div>
+            </div>
+            {/* Pulsing indicator */}
+            <div
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#10b981",
+                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
+                animation: "pulse 2s infinite",
+              }}
+            />
+          </button>
+        ) : (
+          <div
+            className="chat-assistant-card"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              border: "1px solid rgba(212, 175, 55, 0.3)",
+              borderRadius: "20px",
+              padding: "20px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              position: "relative",
+            }}
+            onClick={() => {
             const isFormFilled = fullName && dob && tob && place;
             if (!isFormFilled) {
               setError(
@@ -1752,6 +1863,39 @@ export default function PredictionsPage() {
             e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
           }}
         >
+          {/* Minimize Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAssistantMinimized(true);
+            }}
+            style={{
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              width: "28px",
+              height: "28px",
+              borderRadius: "8px",
+              background: "rgba(212, 175, 55, 0.1)",
+              border: "1px solid rgba(212, 175, 55, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              zIndex: 10,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
+              e.currentTarget.style.transform = "scale(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            <X size={16} color="#b8972e" />
+          </button>
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
             <div
               style={{
@@ -1849,6 +1993,7 @@ export default function PredictionsPage() {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

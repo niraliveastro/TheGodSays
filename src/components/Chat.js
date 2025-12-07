@@ -806,7 +806,13 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         animation: "fadeInUp 280ms ease-out",
         transition: "height 0.3s ease, max-height 0.3s ease",
         overflow: "hidden",
+        width: "100%",
+        maxWidth: "100%",
+        position: "relative",
+        zIndex: 1000,
+        marginBottom: "2rem",
       }}
+      className="chat-container-responsive"
     >
       <style>{`
         @keyframes fadeInUp{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
@@ -836,6 +842,122 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         }
         .chat-messages-container::-webkit-scrollbar-thumb:hover {
           background: rgba(212, 175, 55, 0.6);
+        }
+        
+        /* Chat Input Container - Mobile Responsive */
+        .chat-input-container {
+          flex-wrap: nowrap;
+        }
+        
+        .chat-input-field {
+          min-width: 0;
+        }
+        
+        .chat-send-button {
+          flex-shrink: 0;
+        }
+        
+        .send-button-text {
+          display: inline;
+        }
+        
+        .send-button-emoji {
+          display: none;
+        }
+        
+        /* Mobile: Show emoji, hide text */
+        @media (max-width: 768px) {
+          .chat-input-container {
+            padding: 10px 12px;
+            gap: 6px;
+          }
+          
+          .chat-input-field {
+            padding: 10px 12px;
+            font-size: 14px;
+          }
+          
+          .chat-send-button {
+            padding: 10px !important;
+            min-width: 44px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50% !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .send-button-text {
+            display: none;
+          }
+          
+          .send-button-emoji {
+            display: inline-block;
+            font-size: 22px;
+            line-height: 1;
+            color: white;
+            font-weight: 900;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+          }
+          
+          .chat-send-button:not(:disabled):active .send-button-emoji {
+            transform: translateY(-2px) scale(1.15);
+          }
+          
+          .chat-send-button:disabled .send-button-emoji {
+            color: rgba(255, 255, 255, 0.5);
+            opacity: 0.6;
+          }
+        }
+        
+        @media (max-width: 640px) {
+          .chat-input-container {
+            padding: 8px 10px;
+            gap: 6px;
+          }
+          
+          .chat-input-field {
+            padding: 10px 12px;
+            font-size: 14px;
+          }
+          
+          .chat-send-button {
+            padding: 10px !important;
+            min-width: 44px;
+            width: 44px;
+            height: 44px;
+          }
+        }
+        
+        /* Mobile Responsive Styles - Only apply on mobile */
+        @media (max-width: 768px) {
+          .chat-container-responsive {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            z-index: 9999 !important;
+          }
+        }
+        
+        /* Desktop: Ensure chat is visible and properly positioned */
+        @media (min-width: 769px) {
+          .chat-container-responsive {
+            position: relative !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            z-index: 1 !important;
+          }
         }
       `}</style>
       {/* Header with gold theme */}
@@ -1025,6 +1147,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         <div ref={messagesEndRef} />
       </div>
       <div
+        className="chat-input-container"
         style={{
           display: "flex",
           gap: 8,
@@ -1045,6 +1168,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             }
           }}
           placeholder="Type your message..."
+          className="chat-input-field"
           style={{
             flex: 1,
             padding: "10px 14px",
@@ -1067,6 +1191,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         <button
           onClick={handleSendMessage}
           disabled={isLoading}
+          className="chat-send-button"
           style={{
             padding: "10px 24px",
             background: "linear-gradient(135deg, #d4af37, #b8972e)",
@@ -1079,6 +1204,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             opacity: isLoading ? 0.6 : 1,
             boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
             transition: "all 0.2s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: "fit-content",
           }}
           onMouseEnter={(e) => {
             if (!isLoading) {
@@ -1091,7 +1220,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
           }}
         >
-          {isLoading ? "Sending..." : "Send"}
+          <span className="send-button-text">{isLoading ? "Sending..." : "Send"}</span>
+          <span className="send-button-emoji">{isLoading ? "⏳" : "↑"}</span>
         </button>
       </div>
     </div>
