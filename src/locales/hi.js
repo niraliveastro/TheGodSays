@@ -165,7 +165,7 @@ export const hi = {
   // Footer
   footer: {
     madeBy: "बनाया गया",
-    team: "TheGodSays टीम",
+    team: "RahuNow टीम",
     company: "Spacenos",
     tagline: "वैदिक ज्ञान आधुनिक सटीकता से मिलता है",
   },

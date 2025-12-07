@@ -26,7 +26,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { User, Star, ArrowRight, Sparkles } from "lucide-react";
+import { User, Star, ArrowRight, Infinity } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import styles from "./auth.module.css";
 
@@ -56,10 +56,12 @@ export default function AuthLanding() {
         {/* Header – Branding and introductory messaging */}
         <div className={styles["auth-landing-header"]}>
           <div className={styles["landing-logo-badge"]}>
-            <Sparkles className={styles["landing-logo-icon"]} />{" "}
-            {/* Animated sparkle icon */}
+            <Infinity 
+              className={styles["landing-logo-icon"]}
+              style={{ width: '100%', height: '100%' }}
+            />
           </div>
-          <h1 className={styles["landing-title"]}>Welcome to TheGodSays</h1>
+          <h1 className={styles["landing-title"]}>Welcome to RahuNow</h1>
           <p className={styles["landing-subtitle"]}>
             Connect with experienced astrologers or share your expertise with
             seekers worldwide.

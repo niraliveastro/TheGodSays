@@ -34,17 +34,51 @@
   justify-content: center;
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  border-radius: 18px;
+  background: transparent;
   margin-bottom: 1.5rem;
-  box-shadow: 0 12px 24px rgba(212, 175, 55, 0.3);
-  animation: pulse 3s ease-in-out infinite;
+  position: relative;
+}
+
+.landing-logo-badge::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.3), transparent);
+  opacity: 0;
+  animation: logoGlow 3s ease-in-out infinite;
 }
 
 .landing-logo-icon {
-  width: 40px;
-  height: 40px;
-  color: white;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  color: #d4af37;
+  transform: rotate(45deg);
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.4));
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: infinityFloat 4s ease-in-out infinite;
+}
+
+@keyframes infinityFloat {
+  0%, 100% {
+    transform: rotate(45deg) translateY(0);
+  }
+  50% {
+    transform: rotate(45deg) translateY(-4px);
+  }
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
 }
 
 .landing-title {
