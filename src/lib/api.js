@@ -377,17 +377,37 @@ export async function geocodePlace(query) {
 }
 
 // Get timezone offset in hours for a coordinate and date using IPGeolocation
+// Optimized with timeout and fast fallback for better performance
 export async function getTimezoneOffsetHours(lat, lon) {
+  // Fast fallback: Use browser timezone immediately if no API key
+  const apiKey = typeof window === 'undefined'
+    ? process.env.IPGEO_API_KEY
+    : process.env.NEXT_PUBLIC_IPGEO_API_KEY
+  
+  if (!apiKey) {
+    // No API key - use browser timezone immediately (fast path)
+    const fallback = -new Date().getTimezoneOffset() / 60
+    return Math.round(Math.max(-14, Math.min(14, fallback)) * 2) / 2
+  }
+
   try {
-    // Use environment-configured IP geolocation API key. On the client use
-    // NEXT_PUBLIC_IPGEO_API_KEY; on the server use IPGEO_API_KEY.
-    const apiKey = typeof window === 'undefined'
-      ? process.env.IPGEO_API_KEY
-      : process.env.NEXT_PUBLIC_IPGEO_API_KEY
-    const url = `https://api.ipgeolocation.io/timezone?apiKey=${encodeURIComponent(apiKey || '')}&lat=${lat}&long=${lon}`
-    const res = await fetch(url)
+    const url = `https://api.ipgeolocation.io/timezone?apiKey=${encodeURIComponent(apiKey)}&lat=${lat}&long=${lon}`
+    
+    // Use AbortController for timeout (3 seconds max)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
+    
+    const res = await fetch(url, { 
+      signal: controller.signal,
+      // Add cache headers for better performance
+      cache: 'default'
+    })
+    
+    clearTimeout(timeoutId)
+    
     if (!res.ok) throw new Error(`TZ HTTP ${res.status}`)
     const data = await res.json()
+    
     // API returns offset in seconds or strings; prefer offset in hours
     let offset
     if (typeof data.timezone_offset === 'number') offset = data.timezone_offset / 3600
@@ -407,7 +427,7 @@ export async function getTimezoneOffsetHours(lat, lon) {
     const clamped = Math.max(-14, Math.min(14, offset))
     return Math.round(clamped * 2) / 2
   } catch (e) {
-    console.warn('Timezone lookup failed:', e?.message)
+    // Fast fallback on any error (timeout, network, etc.)
     const fallback = -new Date().getTimezoneOffset() / 60
     const clamped = Math.max(-14, Math.min(14, fallback))
     return Math.round(clamped * 2) / 2

@@ -15,6 +15,7 @@ import {
   Cpu,
   X,
   LoaderCircle,
+  Star,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import Chat from "@/components/Chat";
@@ -142,6 +143,7 @@ export default function MatchingPage() {
   const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
   const [chatSessionId, setChatSessionId] = useState(0); // Chat session counter for reset
   const [chatData, setChatData] = useState(null); // Data to pass to chat component
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
 
@@ -2197,41 +2199,16 @@ export default function MatchingPage() {
               </div>
             </div>
 
-            {/* AI Astrologer CTA / Chat Window */}
-            <div className="card mt-6 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section">
-              {!chatOpen ? (
-                <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Cpu className="w-6 h-6 text-gold" />
-                      <span className="uppercase tracking-[0.2em] text-[11px] text-gold/80">
-                        AI Astrologer
-                      </span>
-                    </div>
-                    <h3 className="text-xl md:text-2xl font-semibold text-white mb-1">
-                      Get a Personalized AI Reading
-                    </h3>
-                    <p className="text-sm text-indigo-100/90 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas
-                      and planetary strengths in simple, practical language
-                      tailored just for you.
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChatSessionId(prev => prev + 1);
-                        setChatOpen(true);
-                      }}
-                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
-                    >
-                      <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to AI Astrologer
-                    </button>
-                  </div>
-                </div>
-              ) : (
+            {/* AI Astrologer Chat Window - Only shown when chat is open */}
+            {chatOpen && (
+              <div 
+                className="card mt-6 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section"
+                style={{ 
+                  position: "relative",
+                  zIndex: 200,
+                  marginBottom: "2rem"
+                }}
+              >
                 <div className="chat-window-container">
                   <Chat
                     key={`matching-chat-${chatSessionId}`}
@@ -2259,11 +2236,14 @@ export default function MatchingPage() {
                       },
                       match: result || null,
                     }}
-                    onClose={() => setChatOpen(false)}
+                    onClose={() => {
+                      setChatOpen(false);
+                      setIsAssistantMinimized(true);
+                    }}
                   />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Verdict Card */}
             <div className="card mt-6">
@@ -2618,125 +2598,6 @@ export default function MatchingPage() {
         )}
       </div>
 
-      {/* Fixed Chat Assistant Card */}
-      <div className="fixed bottom-6 right-6 z-50" style={{ maxWidth: "320px" }}>
-        <div
-          className="chat-assistant-card"
-          style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-            border: "1px solid rgba(212, 175, 55, 0.3)",
-            borderRadius: "20px",
-            padding: "20px",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-          }}
-          onClick={handleChatButtonClick}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-4px)";
-            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "14px",
-                background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-              }}
-            >
-              <Cpu className="w-6 h-6 text-white" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 700,
-                  color: "#111827",
-                  margin: "0 0 4px 0",
-                  fontFamily: '"Cormorant Garamond", serif',
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                {t.chat.aiAstrologerAssistant}
-              </h3>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#6b7280",
-                  margin: 0,
-                  lineHeight: "1.5",
-                }}
-              >
-                {t.chat.getInstantAnswers}
-              </p>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingTop: "12px",
-              borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "#10b981",
-                  boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                  animation: "pulse 2s infinite",
-                }}
-              />
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                {t.chat.online}
-              </span>
-            </div>
-            <button
-              style={{
-                background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
-                border: "none",
-                borderRadius: "10px",
-                padding: "8px 16px",
-                color: "#1f2937",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-              disabled={submitting}
-            >
-              {submitting ? t.messages.loading : t.chat.startChat}
-            </button>
-          </div>
-        </div>
-      </div>
       <style jsx>{`
         .history-cards {
           display: grid;
@@ -2838,6 +2699,310 @@ export default function MatchingPage() {
           }
         }
       `}</style>
+
+      {/* Fixed Chat Assistant Card - Always visible, like predictions page */}
+      <div 
+        className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
+        style={{ 
+          maxWidth: isAssistantMinimized ? "64px" : "320px",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        {isAssistantMinimized ? (
+          // Minimized Icon - Astrologer + AI Assistant
+          <button
+            onClick={() => setIsAssistantMinimized(false)}
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #d4af37, #b8972e)",
+              border: "1px solid rgba(212, 175, 55, 0.3)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
+            }}
+          >
+            {/* Combined Astrologer + AI Icon */}
+            <div style={{ position: "relative", width: "40px", height: "40px" }}>
+              {/* Star (Astrologer) */}
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                style={{ position: "absolute", top: 0, left: 0 }}
+              >
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              {/* Circuit/AI Pattern Overlay */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  left: "8px",
+                  width: "24px",
+                  height: "24px",
+                  background: "rgba(255, 255, 255, 0.2)",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Cpu size={16} color="white" />
+              </div>
+            </div>
+            {/* Pulsing indicator */}
+            <div
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#10b981",
+                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
+                animation: "pulse 2s infinite",
+              }}
+            />
+          </button>
+        ) : (
+          <div
+            className="chat-assistant-card"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              border: "1px solid rgba(212, 175, 55, 0.3)",
+              borderRadius: "20px",
+              padding: "20px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              position: "relative",
+            }}
+            onClick={() => {
+              // Check if form is filled
+              const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
+                                   male.fullName && male.dob && male.tob && male.place;
+              if (!isFormFilled) {
+                setError("Please complete all birth details for both individuals before using the chat.");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                return;
+              }
+              if (!result) {
+                // Submit form if no result yet
+                const form = document.querySelector("form");
+                if (form) {
+                  form.requestSubmit();
+                  setTimeout(() => {
+                    setChatSessionId(prev => prev + 1);
+                    setChatOpen(true);
+                    setTimeout(() => {
+                      document
+                        .querySelector(".ai-astrologer-section")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }, 100);
+                  }, 2000);
+                }
+              } else {
+                setChatSessionId(prev => prev + 1);
+                setChatOpen(true);
+                setTimeout(() => {
+                  document
+                    .querySelector(".ai-astrologer-section")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              }
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
+            }}
+          >
+            {/* Minimize Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAssistantMinimized(true);
+              }}
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                width: "28px",
+                height: "28px",
+                borderRadius: "8px",
+                background: "rgba(212, 175, 55, 0.1)",
+                border: "1px solid rgba(212, 175, 55, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              <X size={16} color="#b8972e" />
+            </button>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
+                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                }}
+              >
+                <Cpu className="w-6 h-6 text-white" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    margin: "0 0 4px 0",
+                    fontFamily: '"Cormorant Garamond", serif',
+                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  AI Astrologer Assistant
+                </h3>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    margin: 0,
+                    lineHeight: "1.5",
+                  }}
+                >
+                  Get personalized insights about your birth chart, planetary positions, and astrological predictions
+                </p>
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: "12px",
+                borderTop: "1px solid rgba(212, 175, 55, 0.15)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: "#10b981",
+                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
+                    animation: "pulse 2s infinite",
+                  }}
+                />
+                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
+                  Online
+                </span>
+              </div>
+              <button
+                style={{
+                  background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 16px",
+                  color: "#1f2937",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering card click
+                  // Check if form is filled
+                  const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
+                                       male.fullName && male.dob && male.tob && male.place;
+                  if (!isFormFilled) {
+                    setError("Please complete all birth details for both individuals before using the chat.");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    return;
+                  }
+                  if (!result) {
+                    // Submit form if no result yet
+                    const form = document.querySelector("form");
+                    if (form) {
+                      form.requestSubmit();
+                      setTimeout(() => {
+                        setChatSessionId(prev => prev + 1);
+                        setChatOpen(true);
+                        setTimeout(() => {
+                          document
+                            .querySelector(".ai-astrologer-section")
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }, 100);
+                      }, 2000);
+                    }
+                  } else {
+                    setChatSessionId(prev => prev + 1);
+                    setChatOpen(true);
+                    setTimeout(() => {
+                      document
+                        .querySelector(".ai-astrologer-section")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }, 100);
+                  }
+                }}
+              >
+                {submitting ? "Loading..." : "Start Chat"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

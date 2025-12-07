@@ -72,22 +72,32 @@
 .planet-table {
   width: 100%;
   border-collapse: collapse;
-
-  table-layout: auto !important; /* ✅ override fixed */
-  min-width: 880px;             /* ✅ force scroll instead of squish */
+  table-layout: fixed; /* Use fixed layout for better alignment */
+  min-width: 900px;    /* ✅ force scroll instead of squish */
 }
 
 /* Prevent ugly wrapping that breaks layout */
 .planet-table th,
 .planet-table td {
-  white-space: nowrap;  /* keeps columns clean */
   vertical-align: middle;
+  text-align: left;
+  padding: 0.75rem 1rem;
 }
+
+/* Header styling */
+.planet-table th {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+  font-weight: 600;
+  color: #1f2937;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+  white-space: nowrap;
+}
+
 /* 1st column: Planet */
 .planet-table th:nth-child(1),
 .planet-table td:nth-child(1) {
-  width: 110px;       
-  max-width: 110px;
+  width: 12%;
+  min-width: 100px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -96,46 +106,130 @@
 /* 2nd column: Sign */
 .planet-table th:nth-child(2),
 .planet-table td:nth-child(2) {
-  width: 140px;          
-  max-width: 140px;
+  width: 15%;
+  min-width: 120px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Allow ONLY Nakshatra column to wrap (long text) */
-.planet-table th:nth-child(4),
-.planet-table td:nth-child(4) {
-  white-space: normal;
-  min-width: 160px;
+
+/* 3rd column: House */
+.planet-table th:nth-child(3),
+.planet-table td:nth-child(3) {
+  width: 8%;
+  min-width: 70px;
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* Give more breathing space to heavy columns */
+/* 4th column: Nakshatra (Pada) - Allow wrapping */
+.planet-table th:nth-child(4),
+.planet-table td:nth-child(4) {
+  width: 20%;
+  min-width: 180px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* 5th column: Degrees */
 .planet-table th:nth-child(5),
-.planet-table td:nth-child(5),
+.planet-table td:nth-child(5) {
+  width: 15%;
+  min-width: 140px;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* 6th column: Strength */
+.planet-table th:nth-child(6),
+.planet-table td:nth-child(6) {
+  width: 12%;
+  min-width: 110px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 7th column: Ishta */
 .planet-table th:nth-child(7),
-.planet-table td:nth-child(7),
+.planet-table td:nth-child(7) {
+  width: 9%;
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.planet-table td:nth-child(7) {
+  width: auto !important;
+  min-width: 120px;
+}
+
+/* 8th column: Kashta */
 .planet-table th:nth-child(8),
 .planet-table td:nth-child(8) {
+  width: 9%;
   min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.planet-table td:nth-child(8) {
+  width: auto !important;
+  min-width: 120px;
+}
+
+/* Strength container alignment */
+.planet-table .strength-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 100px;
+}
+
+.planet-table .strength-bar {
+  flex: 1;
+  max-width: 80px;
+  height: 8px;
+  background: rgba(212, 175, 55, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.planet-table .strength-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #b8972e);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.planet-table .strength-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  min-width: 45px;
+  text-align: right;
 }
 
 /* Medium screens: reduce padding only (NO font changes) */
 @media (max-width: 900px) {
   .planet-table th,
   .planet-table td {
-    padding: 0.6rem 0.6rem;
+    padding: 0.6rem 0.75rem;
   }
 }
 
 /* Small screens: keep readable width, allow scroll */
 @media (max-width: 640px) {
   .planet-table {
-    min-width: 760px;
+    min-width: 800px;
   }
 
   .planet-table th,
   .planet-table td {
-    padding: 0.5rem 0.5rem;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -143,12 +237,13 @@
 .card {
   min-width: 0;
 }
-/* Degrees column: allow stacked lines */
-.planet-table th:nth-child(5),
-.planet-table td:nth-child(5) {
-  white-space: normal !important;
-  min-width: 140px;
+
+/* Ensure planet placements card doesn't overlap chat */
+#planet-placements.card {
+  position: relative;
+  z-index: 1;
 }
+/* Degrees column: allow stacked lines - already defined above */
 
 .degrees-stack {
   display: flex;
@@ -1281,13 +1376,79 @@
 
 /* AI Astrologer Chat Window Animations */
 .ai-astrologer-section {
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+  margin-bottom: 2rem;
+}
+
+/* When chat is open, ensure it's above other content */
+.ai-astrologer-section:has(.chat-window-container) {
+  z-index: 200;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+/* Alternative selector for browsers that don't support :has() */
+.ai-astrologer-section .chat-window-container {
+  position: relative;
+  z-index: 200;
 }
 
 .chat-window-container {
   animation: slideInFromRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: right center;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  z-index: 200;
+  margin-bottom: 2rem;
+  isolation: isolate; /* Create new stacking context */
+}
+
+/* Desktop: Normal positioning with high z-index */
+@media (min-width: 769px) {
+  .chat-window-container {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    z-index: 200 !important;
+    margin-bottom: 2rem !important;
+    isolation: isolate !important;
+  }
+}
+
+/* Mobile Responsive Chat Window */
+@media (max-width: 768px) {
+  .chat-window-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    animation: slideInFromBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: bottom center;
+  }
+}
+
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInFromRight {
@@ -1362,5 +1523,26 @@ select.form-field-input {
   50% {
     opacity: 0.7;
     transform: scale(1.1);
+  }
+}
+
+/* Mobile Responsive AI Assistant Card */
+@media (max-width: 768px) {
+  .ai-assistant-card {
+    bottom: 1rem !important;
+    right: 1rem !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  .ai-assistant-card .chat-assistant-card {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .ai-assistant-card {
+    bottom: 0.75rem !important;
+    right: 0.75rem !important;
+    max-width: calc(100vw - 1.5rem) !important;
   }
 }

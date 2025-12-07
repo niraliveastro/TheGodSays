@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+// Mark this route as dynamic to prevent prerendering during build
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request) {
   try {
+    // Check if db is initialized (might be null during build/prerender)
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const astrologerId = searchParams.get('astrologerId');
 
@@ -66,6 +75,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    // Check if db is initialized (might be null during build/prerender)
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
+    }
+
     const { astrologerId, userId, rating, comment } = await request.json();
 
     if (!astrologerId || !userId || !rating || rating < 1 || rating > 5) {
@@ -107,6 +121,11 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    // Check if db is initialized (might be null during build/prerender)
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const astrologerId = searchParams.get('astrologerId');
     const reviewId = searchParams.get('reviewId');

@@ -140,6 +140,18 @@
   background-clip: text;
 }
 
+/* Hide logo text on mobile for cleaner view */
+@media (max-width: 767px) {
+  .nav-logo-text {
+    display: none;
+  }
+  
+  /* Reduce gap when text is hidden */
+  .nav-logo-wrapper {
+    gap: 0;
+  }
+}
+
 /* Language Switcher Mobile */
 .nav-language-mobile {
   display: flex;
