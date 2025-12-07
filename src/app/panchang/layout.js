@@ -1,45 +1,35 @@
-"use client";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Clock, Star, BookOpen, User, Calendar, Zap } from "lucide-react";
-import "../../components/styles/panchangLayout.css";
+export const metadata = {
+  title: "Daily Panchang - Today's Panchang with Tithi, Nakshatra, Yoga",
+  description: "Get your daily Panchang with accurate Tithi, Nakshatra, Yoga, and Karana calculations. Check sunrise, sunset, moonrise, moonset timings, Rahukalam, Choghadiya, and auspicious timings for today.",
+  keywords: [
+    "panchang",
+    "daily panchang",
+    "today panchang",
+    "hindu calendar",
+    "tithi",
+    "nakshatra",
+    "yoga",
+    "karana",
+    "panchangam",
+    "hindu panchang"
+  ],
+  openGraph: {
+    title: "Daily Panchang - Today's Panchang | RahuNow",
+    description: "Get your daily Panchang with accurate Tithi, Nakshatra, Yoga, and Karana calculations. Check auspicious timings for today.",
+    url: `${SITE_URL}/panchang`,
+    type: "website",
+  },
+  twitter: {
+    title: "Daily Panchang - Today's Panchang | RahuNow",
+    description: "Get your daily Panchang with accurate Tithi, Nakshatra, Yoga, and Karana calculations.",
+  },
+  alternates: {
+    canonical: `${SITE_URL}/panchang`,
+  },
+};
 
 export default function PanchangLayout({ children }) {
-  const pathname = usePathname();
-  const items = [
-    { href: "/panchang/choghadiya-timings", label: "Choghadiya", icon: Zap },
-    { href: "/panchang/hora-timings", label: "Hora Timings", icon: Clock },
-    { href: "/panchang/maha-dasas", label: "Maha Dasas", icon: Star },
-    { href: "/panchang/calender", label: "Calendar", icon: Calendar },
-  ];
-
-  return (
-    <div className="panchang-container">
-      {/* Sub-navbar shown only within /panchang */}
-      <div className="panchang-subnav">
-        <div className="panchang-subnav-inner">
-          <nav className="panchang-nav">
-            {items.map((it) => {
-              const Icon = it.icon;
-              const isActive =
-                pathname === it.href || pathname.startsWith(it.href + "/");
-              return (
-                <Link
-                  key={it.href}
-                  href={it.href}
-                  className={`panchang-nav-item ${isActive ? "active" : ""}`}
-                >
-                  <Icon />
-                  <span>{it.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      <div className="panchang-content">{children}</div>
-    </div>
-  );
+  return <>{children}</>;
 }

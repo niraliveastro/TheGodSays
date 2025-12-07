@@ -1,0 +1,30 @@
+# robots.txt for rahunow.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+Disallow: /profile/
+Disallow: /wallet/
+Disallow: /astrologer-dashboard/
+Disallow: /talk-to-astrologer/room/
+Disallow: /talk-to-astrologer/voice/
+
+# Allow important pages
+Allow: /
+Allow: /panchang/
+Allow: /kundali/
+Allow: /numerology/
+Allow: /matching/
+Allow: /predictions/
+Allow: /transit/
+Allow: /talk-to-astrologer/
+Allow: /cosmic-event-tracker/
+
+# Sitemap
+Sitemap: https://rahunow.com/sitemap.xml
+
+# Crawl-delay (optional - remove if not needed)
+# Crawl-delay: 1
+
