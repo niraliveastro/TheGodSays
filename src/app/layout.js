@@ -9,12 +9,52 @@ import Navigation from "@/components/Navigation";
 import AstrologerRedirect from "@/components/AstrologerRedirect";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MicrosoftClarity from "@/components/MicrosoftClarity";
+import SEOStructuredData from "@/components/SEOStructuredData";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_NAME = "RahuNow - Vedic Astrology & Panchang";
+const SITE_DESCRIPTION = "Get your daily Panchang, personalized Kundali, numerology readings, and live consultations with expert astrologers. Your complete Vedic astrology platform.";
+
 export const metadata = {
-  title: "Panchang - TheGodSays",
-  description: "Your daily Panchang and personalized astrological insights",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "vedic astrology",
+    "panchang",
+    "kundali",
+    "birth chart",
+    "horoscope",
+    "numerology",
+    "astrologer",
+    "online astrology",
+    "daily panchang",
+    "hindu calendar",
+    "kundali matching",
+    "astrological predictions",
+    "live astrology consultation",
+    "online astrologer",
+    "jyotish",
+    "astrology calculator",
+    "hora timings",
+    "choghadiya",
+    "muhurat",
+    "dasha predictions",
+    "transit analysis"
+  ],
+  authors: [{ name: "RahuNow" }],
+  creator: "RahuNow",
+  publisher: "RahuNow",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   manifest: "/manifest.json",
   themeColor: "#d4af37",
   viewport: {
@@ -27,7 +67,59 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "TheGodSays",
+    title: "RahuNow",
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [`${SITE_URL}/og-image.png`],
+    creator: "@rahunow",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // Add your verification codes here when you get them
+    google: "fIXrjkSibBeeiNhwWYI5HksQEHygbeeyy7QlcCaydFc",
+    // yandex: "your-yandex-verification-code",
+    // yahoo: "your-yahoo-verification-code",
+  },
+  alternates: {
+    canonical: SITE_URL,
   },
 };
 
@@ -45,6 +137,9 @@ export default function RootLayout({ children }) {
         {process.env.NEXT_PUBLIC_CLARITY_ID && (
           <MicrosoftClarity CLARITY_PROJECT_ID={process.env.NEXT_PUBLIC_CLARITY_ID} />
         )}
+        
+        {/* Structured Data for SEO */}
+        <SEOStructuredData />
         
         {/* Persistent modal portal root */}
         <div id="modal-root" />
