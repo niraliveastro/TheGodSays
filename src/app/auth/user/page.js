@@ -44,7 +44,7 @@ import {
   Mail,
   Lock,
   Phone,
-  Sparkles,
+  Infinity,
 } from "lucide-react";
 
 /**
@@ -230,9 +230,9 @@ export default function UserAuth() {
         <div className="logo-section">
           <div className="logo-badge">
             <div className="logo-icon">
-              <Sparkles />
+              <Infinity style={{ width: '100%', height: '100%' }} />
             </div>
-            <span className="logo-text">TheGodSays</span>
+            <span className="logo-text">RahuNow</span>
           </div>
           <h1 className="auth-title">
             {isLogin ? "Welcome Back" : "Join Our Journey"}

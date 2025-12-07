@@ -69,7 +69,7 @@ export default function DateSelector(props) {
         const res = await fetch(url, {
           headers: {
             Accept: 'application/json',
-            'User-Agent': 'TheGodSays/1.0 (contact: none)',
+            'User-Agent': 'RahuNow/1.0 (contact: none)',
           },
           signal: controller.signal,
         })

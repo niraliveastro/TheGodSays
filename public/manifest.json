@@ -1,11 +1,11 @@
 {
-  "name": "Panchang - TheGodSays",
-  "short_name": "Panchang",
-  "description": "Your daily Panchang and personalized astrological insights",
+  "name": "RahuNow - Vedic Astrology & Panchang",
+  "short_name": "RahuNow",
+  "description": "Get your daily Panchang, personalized Kundali, numerology readings, and live consultations with expert astrologers.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1e40af",
+  "background_color": "#000000",
+  "theme_color": "#d4af37",
   "orientation": "portrait-primary",
   "icons": [
     {

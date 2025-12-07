@@ -342,7 +342,7 @@ export default function PredictionsPage() {
         const res = await fetch(url, {
           headers: {
             "Accept-Language": "en",
-            "User-Agent": "TheGodSays/1.0 (education)",
+            "User-Agent": "RahuNow/1.0 (education)",
           },
         });
         const arr = await res.json();

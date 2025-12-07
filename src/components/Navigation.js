@@ -18,11 +18,11 @@ import {
   Wallet,
   ChevronDown,
   MoreHorizontal,
-  Sparkles,
   LayoutDashboard,
   Settings,
   Hash,
   Zap,
+  Infinity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -265,9 +265,9 @@ const Navigation = () => {
         <div className="nav-content">
           <Link href="/" className="nav-logo-wrapper">
             <div className="nav-logo-icon">
-              <Sparkles />
+              <Infinity className="nav-logo-icon-svg" />
             </div>
-            <span className="nav-logo-text">TheGodSays</span>
+            <span className="nav-logo-text">RahuNow</span>
           </Link>
 
           {/* Desktop Navigation */}
