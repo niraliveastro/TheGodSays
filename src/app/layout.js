@@ -3,7 +3,6 @@ import "./globals.css";
 import "./globals-responsive.css";
 
 import { Providers } from "./providers";
-import PWAInstaller from "@/components/PWAInstaller";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import Navigation from "@/components/Navigation";
 import AstrologerRedirect from "@/components/AstrologerRedirect";
@@ -151,7 +150,6 @@ export default function RootLayout({ children }) {
           <AstrologerRedirect />
           <Navigation />
           {children}
-          <PWAInstaller />
           <ServiceWorkerRegistration />
         </Providers>
       </body>

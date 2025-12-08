@@ -14,6 +14,7 @@ import {
   Clock,
 } from "lucide-react";
 import astrologyAPI from "@/lib/api";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function TithiTimingsPage() {
   const { t } = useTranslation();
@@ -306,16 +307,7 @@ export default function TithiTimingsPage() {
         </div>
 
         {/* Loading State */}
-        {isLoading && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600">
-                Calculating current tithi timings...
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {isLoading && <PageLoading type="panchang" message="Calculating current tithi timings..." />}
 
         {/* Error State */}
         {error && !tithiData && (

@@ -291,3 +291,27 @@
     font-size: 1.5rem;
   }
 }
+
+/* ============================================= */
+/*  COSMIC THEME STYLES                          */
+/* ============================================= */
+
+[data-theme="cosmic"] .panchang-card {
+  background: rgba(22, 33, 62, 0.85);
+  border-color: rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="cosmic"] .panchang-card:hover {
+  background: rgba(22, 33, 62, 0.95);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+[data-theme="cosmic"] .panchang-card-label {
+  color: #d4af37;
+}
+
+[data-theme="cosmic"] .panchang-card-value {
+  color: #fbbf24;
+}

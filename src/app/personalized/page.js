@@ -18,6 +18,7 @@ import AstrologyOptions from "@/components/AstrologyOptions";
 import AstrologyResults from "@/components/AstrologyResults";
 import { mockPersonalizedData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function PersonalizedPage() {
   const { t } = useTranslation();
@@ -421,6 +422,13 @@ export default function PersonalizedPage() {
         }
       `}</style>
 
+      {/* Show full-page loading when either calculation is in progress */}
+      {(isLoadingChoghadiya || isLoadingAstrology) ? (
+        <PageLoading 
+          type="panchang" 
+          message={isLoadingChoghadiya ? "Calculating Choghadiya timings..." : "Calculating astrological data..."} 
+        />
+      ) : (
       <div className="app">
         <div
           style={{
@@ -701,6 +709,7 @@ export default function PersonalizedPage() {
           </>
         )}
       </div>
+      )}
     </>
   );
 }

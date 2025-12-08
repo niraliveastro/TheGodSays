@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function AstrologerProfilePage() {
   const { t } = useTranslation();
@@ -113,14 +114,14 @@ export default function AstrologerProfilePage() {
         );
         console.log("Reviews response status:", reviewsResponse.status);
 
-        if (reviewsResponse.ok) {
-          const reviewsResult = await reviewsResponse.json();
-          console.log("Reviews API response:", reviewsResult);
+        const reviewsResult = await reviewsResponse.json();
+        console.log("Reviews API response:", reviewsResult);
 
-          if (reviewsResult.success && reviewsResult.reviews) {
-            const reviews = reviewsResult.reviews;
-            console.log("Found reviews:", reviews.length, reviews);
+        if (reviewsResponse.ok && reviewsResult.success && reviewsResult.reviews) {
+          const reviews = reviewsResult.reviews;
+          console.log("Found reviews:", reviews.length, reviews);
 
+          if (reviews.length > 0) {
             const totalRating = reviews.reduce((sum, review) => {
               const rating = parseFloat(review.rating) || 0;
               console.log(
@@ -132,8 +133,7 @@ export default function AstrologerProfilePage() {
               return sum + rating;
             }, 0);
 
-            const avgRating =
-              reviews.length > 0 ? totalRating / reviews.length : 0;
+            const avgRating = totalRating / reviews.length;
 
             reviewsData = {
               rating: parseFloat(avgRating.toFixed(1)),
@@ -142,12 +142,12 @@ export default function AstrologerProfilePage() {
 
             console.log("Final reviews data:", reviewsData);
           } else {
-            console.log("No reviews found or API error");
+            console.log("No reviews found");
             reviewsData = { rating: 0, reviews: 0 };
           }
         } else {
-          const errorText = await reviewsResponse.text();
-          console.error("Reviews API error:", errorText);
+          // Handle 503 or other errors gracefully
+          console.warn("Reviews API error:", reviewsResult.message || "Unknown error");
           reviewsData = { rating: 0, reviews: 0 };
         }
       } catch (reviewError) {
@@ -339,26 +339,7 @@ export default function AstrologerProfilePage() {
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
   if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "var(--color-gray-50)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Loader2
-          style={{
-            width: "2rem",
-            height: "2rem",
-            animation: "spin 1s linear infinite",
-            color: "var(--color-gold)",
-          }}
-        />
-      </div>
-    );
+    return <PageLoading type="profile" message="Loading your profile..." />;
   }
 
   if (!astrologer) {

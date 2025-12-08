@@ -22,12 +22,17 @@ export default function ReviewModal({ open, onClose, astrologerId, astrologerNam
     setLoadingReviews(true)
     try {
       const res = await fetch(`/api/reviews?astrologerId=${astrologerId}`)
-      if (res.ok) {
-        const { success, reviews } = await res.json()
-        if (success) setReviews(reviews)
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setReviews(data.reviews || [])
+      } else {
+        // Handle 503 or other errors gracefully
+        console.warn('Failed to fetch reviews:', data.message || 'Unknown error')
+        setReviews([]) // Set empty array to prevent UI breaking
       }
     } catch (e) {
-      console.error(e)
+      console.error('Error fetching reviews:', e)
+      setReviews([]) // Set empty array on error
     } finally {
       setLoadingReviews(false)
     }

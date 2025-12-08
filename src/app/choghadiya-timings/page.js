@@ -46,6 +46,7 @@ import {
   Zap as ZapIcon,
 } from "lucide-react";
 import astrologyAPI from "@/lib/api";
+import { PageLoading } from "@/components/LoadingStates";
 
 /**
  * ChoghadiyaTimingsPage Component
@@ -708,13 +709,8 @@ export default function ChoghadiyaTimingsPage() {
           </div>
         </div>
 
-        {/* Loading – Spinner with message */}
-        {isLoading && (
-          <div className="stateBox">
-            <div className="spinner" />
-            <p>Calculating Choghadiya timings...</p>
-          </div>
-        )}
+        {/* Loading – Full page loading */}
+        {isLoading && <PageLoading type="panchang" message="Calculating Choghadiya timings..." />}
 
         {/* Error – Error message with retry button */}
         {error && !choghadiyaData && (

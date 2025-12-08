@@ -200,11 +200,7 @@ export default function ProfilePage() {
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
-      </div>
-    );
+    return <PageLoading type="profile" message="Loading your profile..." />;
   }
 
   if (!user) {

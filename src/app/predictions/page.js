@@ -21,8 +21,12 @@ import {
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
+import { useTheme } from "@/contexts/ThemeContext";
+import { PageLoading } from "@/components/LoadingStates";
 export default function PredictionsPage() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
   
   // Track page view on mount
   useEffect(() => {
@@ -860,6 +864,11 @@ export default function PredictionsPage() {
     currentDashaChain,
 
   } : null;
+
+  // Show full-page loading when submitting and no result yet
+  if (submitting && !result) {
+    return <PageLoading type="predictions" message="Consulting the stars for your predictions..." />;
+  }
 
   return (
     <div className="app">
@@ -1815,11 +1824,15 @@ export default function PredictionsPage() {
           <div
             className="chat-assistant-card"
             style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              background: isCosmic 
+                ? "rgba(22, 33, 62, 0.95)" 
+                : "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
               border: "1px solid rgba(212, 175, 55, 0.3)",
               borderRadius: "20px",
               padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              boxShadow: isCosmic
+                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)"
+                : "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
               cursor: "pointer",
               transition: "all 0.3s ease",
               position: "relative",
@@ -1917,13 +1930,20 @@ export default function PredictionsPage() {
                 style={{
                   fontSize: "16px",
                   fontWeight: 700,
-                  color: "#111827",
+                  color: isCosmic ? "#d4af37" : "#111827",
                   margin: "0 0 4px 0",
                   fontFamily: '"Cormorant Garamond", serif',
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  ...(isCosmic 
+                    ? {
+                        color: "#d4af37",
+                      }
+                    : {
+                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }
+                  ),
                 }}
               >
                 AI Astrologer Assistant
@@ -1931,7 +1951,7 @@ export default function PredictionsPage() {
               <p
                 style={{
                   fontSize: "13px",
-                  color: "#6b7280",
+                  color: isCosmic ? "#d4af37" : "#6b7280",
                   margin: 0,
                   lineHeight: "1.5",
                 }}
@@ -1960,22 +1980,24 @@ export default function PredictionsPage() {
                   animation: "pulse 2s infinite",
                 }}
               />
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
+              <span style={{ fontSize: "12px", color: isCosmic ? "#d4af37" : "#6b7280", fontWeight: 500 }}>
                 Online
               </span>
             </div>
             <button
               style={{
-                background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
+                background: "linear-gradient(135deg, #d4af37, #b8972e)",
                 border: "none",
                 borderRadius: "10px",
                 padding: "8px 16px",
-                color: "#1f2937",
+                color: isCosmic ? "#ffffff" : "#1f2937",
                 fontSize: "13px",
                 fontWeight: 600,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+                boxShadow: isCosmic
+                  ? "0 2px 8px rgba(212, 175, 55, 0.4)"
+                  : "0 2px 8px rgba(251, 191, 36, 0.3)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";

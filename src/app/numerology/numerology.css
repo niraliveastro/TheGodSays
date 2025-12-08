@@ -669,6 +669,23 @@
   background: linear-gradient(90deg, #111827, #111827dd);
 }
 
+/* ============================================= */
+/*  COSMIC THEME STYLES                          */
+/* ============================================= */
+
+[data-theme="cosmic"] .result-card {
+  background: rgba(22, 33, 62, 0.85);
+  border-color: rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+[data-theme="cosmic"] .result-card:hover {
+  background: rgba(22, 33, 62, 0.95);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
 .result-card.orange {
   color: #f97316;
   --card-color: #f97316;
