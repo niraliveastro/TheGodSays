@@ -133,6 +133,14 @@ export default function RootLayout({ children }) {
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       </head>
       <body className={inter.className} suppressHydrationWarning={true}>
+        {/* Cosmic Theme - Falling Stars & Particles */}
+        <div className="falling-stars-1"></div>
+        <div className="falling-stars-2"></div>
+        <div className="falling-stars-3"></div>
+        {/* Scattered Stars & Meteoroids */}
+        <div className="scattered-stars"></div>
+        <div className="meteoroids"></div>
+        
         {/* Analytics Scripts */}
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_ID} />

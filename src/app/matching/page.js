@@ -2934,10 +2934,10 @@ export default function MatchingPage() {
                           color: "#d4af37",
                         }
                       : {
-                          background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          backgroundClip: "text",
+                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                         }
                     ),
                   }}

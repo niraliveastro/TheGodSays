@@ -543,11 +543,11 @@ export default function TalkToAstrologer() {
         <PageLoading type="astrologer" message="Loading astrologers..." />
       ) : (
       <div
-        className="min-h-screen bg-gray-50 py-4 md:py-8 px-4 md:px-6 lg:px-8"
+        className="min-h-screen py-4 md:py-8 px-4 md:px-6 lg:px-8"
         style={{
           background: isCosmic 
             ? "#0a0a0f" 
-            : undefined,
+            : "#f9fafb",
         }}
       >
         <div className="app">

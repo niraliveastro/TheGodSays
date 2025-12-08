@@ -18,11 +18,14 @@ import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function FamilyPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
   const [loading, setLoading] = useState(true);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
@@ -114,7 +117,7 @@ export default function FamilyPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
+          background: isCosmic ? "#0a0a0f" : "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
         }}
       >
         <Loader2
@@ -130,7 +133,7 @@ export default function FamilyPage() {
       <div
         style={{
           minHeight: "100vh",
-          background: "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
+          background: isCosmic ? "#0a0a0f" : "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
           padding: "2rem 0",
         }}
       >
@@ -139,13 +142,14 @@ export default function FamilyPage() {
           <div style={{ marginBottom: "2rem" }}>
             <button
               onClick={() => router.push("/profile/user")}
-              className="flex items-center gap-2 text-gray-600 hover:text-gold transition-colors mb-4"
+              className="flex items-center gap-2 hover:text-gold transition-colors mb-4"
               style={{
                 background: "none",
                 border: "none",
                 cursor: "pointer",
                 fontSize: "0.875rem",
                 fontWeight: 500,
+                color: isCosmic ? "#d4af37" : "#4b5563",
               }}
             >
               <ArrowLeft className="w-4 h-4" />
@@ -165,7 +169,7 @@ export default function FamilyPage() {
                 >
                   My Family
                 </h1>
-                <p style={{ color: "#6b7280", fontSize: "1rem" }}>
+                <p style={{ color: isCosmic ? "#a78bfa" : "#6b7280", fontSize: "1rem" }}>
                   Manage your family members and view their predictions
                 </p>
               </div>
@@ -204,16 +208,21 @@ export default function FamilyPage() {
                     padding: "1.5rem",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
+                    background: isCosmic ? "rgba(22, 33, 62, 0.85)" : "rgba(255, 255, 255, 0.9)",
+                    border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid rgba(212, 175, 55, 0.2)",
+                    boxShadow: isCosmic ? "0 4px 6px rgba(0, 0, 0, 0.6)" : "0 4px 6px rgba(0, 0, 0, 0.1)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 12px 24px rgba(0, 0, 0, 0.1)";
+                    e.currentTarget.style.boxShadow = isCosmic
+                      ? "0 12px 24px rgba(0, 0, 0, 0.8)"
+                      : "0 12px 24px rgba(0, 0, 0, 0.1)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 6px rgba(0, 0, 0, 0.1)";
+                    e.currentTarget.style.boxShadow = isCosmic
+                      ? "0 4px 6px rgba(0, 0, 0, 0.6)"
+                      : "0 4px 6px rgba(0, 0, 0, 0.1)";
                   }}
                 >
                   <div
@@ -248,13 +257,13 @@ export default function FamilyPage() {
                         style={{
                           fontSize: "1.25rem",
                           fontWeight: 700,
-                          color: "#1f2937",
+                          color: isCosmic ? "#d4af37" : "#1f2937",
                           marginBottom: "0.25rem",
                         }}
                       >
                         {member.name}
                       </h3>
-                      <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                      <p style={{ fontSize: "0.875rem", color: isCosmic ? "#a78bfa" : "#6b7280" }}>
                         {member.relation}
                       </p>
                     </div>
@@ -267,7 +276,7 @@ export default function FamilyPage() {
                       gap: "0.625rem",
                       marginBottom: "1.5rem",
                       fontSize: "0.875rem",
-                      color: "#4b5563",
+                      color: isCosmic ? "#d4af37" : "#4b5563",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -328,23 +337,26 @@ export default function FamilyPage() {
               style={{
                 padding: "4rem 2rem",
                 textAlign: "center",
+                background: isCosmic ? "rgba(22, 33, 62, 0.85)" : "rgba(255, 255, 255, 0.9)",
+                border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid rgba(212, 175, 55, 0.2)",
+                boxShadow: isCosmic ? "0 4px 6px rgba(0, 0, 0, 0.6)" : "0 4px 6px rgba(0, 0, 0, 0.1)",
               }}
             >
               <Users
                 className="w-16 h-16 mx-auto mb-4"
-                style={{ color: "#d1d5db" }}
+                style={{ color: isCosmic ? "#533483" : "#d1d5db" }}
               />
               <h3
                 style={{
                   fontSize: "1.25rem",
                   fontWeight: 600,
-                  color: "#6b7280",
+                  color: isCosmic ? "#d4af37" : "#6b7280",
                   marginBottom: "0.5rem",
                 }}
               >
                 No Family Members Yet
               </h3>
-              <p style={{ color: "#9ca3af", marginBottom: "1.5rem" }}>
+              <p style={{ color: isCosmic ? "#a78bfa" : "#9ca3af", marginBottom: "1.5rem" }}>
                 Add your family members to view their astrological predictions
               </p>
               <Button
@@ -374,7 +386,10 @@ export default function FamilyPage() {
         <div style={{ padding: "1.5rem" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isCosmic ? "#d4af37" : "#374151" }}
+              >
                 Name
               </label>
               <input
@@ -383,13 +398,21 @@ export default function FamilyPage() {
                 onChange={(e) =>
                   setFamilyForm({ ...familyForm, name: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                style={{
+                  background: isCosmic ? "rgba(10, 10, 15, 0.8)" : "white",
+                  border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid #d1d5db",
+                  color: isCosmic ? "#d4af37" : "inherit",
+                }}
                 placeholder="Enter name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isCosmic ? "#d4af37" : "#374151" }}
+              >
                 Relation
               </label>
               <select
@@ -397,7 +420,12 @@ export default function FamilyPage() {
                 onChange={(e) =>
                   setFamilyForm({ ...familyForm, relation: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                style={{
+                  background: isCosmic ? "rgba(10, 10, 15, 0.8)" : "white",
+                  border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid #d1d5db",
+                  color: isCosmic ? "#d4af37" : "inherit",
+                }}
               >
                 <option value="Self">Self</option>
                 <option value="Father">Father</option>
@@ -412,7 +440,10 @@ export default function FamilyPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isCosmic ? "#d4af37" : "#374151" }}
+              >
                 Date of Birth
               </label>
               <input
@@ -421,12 +452,20 @@ export default function FamilyPage() {
                 onChange={(e) =>
                   setFamilyForm({ ...familyForm, dob: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                style={{
+                  background: isCosmic ? "rgba(10, 10, 15, 0.8)" : "white",
+                  border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid #d1d5db",
+                  color: isCosmic ? "#d4af37" : "inherit",
+                }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isCosmic ? "#d4af37" : "#374151" }}
+              >
                 Time of Birth
               </label>
               <input
@@ -435,12 +474,20 @@ export default function FamilyPage() {
                 onChange={(e) =>
                   setFamilyForm({ ...familyForm, time: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                style={{
+                  background: isCosmic ? "rgba(10, 10, 15, 0.8)" : "white",
+                  border: isCosmic ? "1px solid rgba(212, 175, 55, 0.3)" : "1px solid #d1d5db",
+                  color: isCosmic ? "#d4af37" : "inherit",
+                }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isCosmic ? "#d4af37" : "#374151" }}
+              >
                 Place of Birth
               </label>
               <PlaceAutocomplete
@@ -491,10 +538,18 @@ export default function FamilyPage() {
 
       <style jsx>{`
         .card {
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(212, 175, 55, 0.2);
           border-radius: 16px;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="cosmic"] .card {
+          background: rgba(22, 33, 62, 0.85);
+          border: 1px solid rgba(212, 175, 55, 0.3);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.6);
+        }
+        [data-theme="light"] .card,
+        :not([data-theme]) .card {
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(212, 175, 55, 0.2);
         }
 
         @keyframes spin {

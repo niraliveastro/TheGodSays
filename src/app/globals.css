@@ -10,7 +10,16 @@
 /* ============================================= */
 @layer components {
   .card {
-    @apply bg-white/85 backdrop-blur-md border border-yellow-500/20 rounded-xl shadow-lg p-8;
+    @apply backdrop-blur-md border border-yellow-500/20 rounded-xl shadow-lg p-8;
+  }
+  /* Override background for cosmic theme */
+  [data-theme="cosmic"] .card {
+    background: rgba(22, 33, 62, 0.85) !important;
+    border-color: rgba(212, 175, 55, 0.3) !important;
+  }
+  [data-theme="light"] .card,
+  :not([data-theme]) .card {
+    background: rgba(255, 255, 255, 0.85) !important;
   }
 }
 
@@ -126,11 +135,653 @@ body {
     radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.2) 0%, transparent 70%) !important;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ============================================= */
+/*  COSMIC THEME - FALLING STARS & PARTICLES    */
+/* ============================================= */
+
+/* Animated starfield background - Layer 1: Static stars */
+[data-theme="cosmic"] body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 10% 20%, #d4af37, transparent),
+    radial-gradient(1px 1px at 20% 40%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 30% 10%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 40% 60%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 50% 30%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 60% 80%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 70% 15%, #d4af37, transparent),
+    radial-gradient(1px 1px at 80% 50%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 90% 70%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 15% 90%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 25% 25%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 35% 55%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 45% 75%, #d4af37, transparent),
+    radial-gradient(1px 1px at 55% 35%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 65% 95%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 75% 5%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 85% 45%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 95% 85%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 5% 65%, #d4af37, transparent),
+    radial-gradient(1px 1px at 12% 12%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 18% 88%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 22% 32%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 28% 68%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 32% 8%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 38% 48%, #d4af37, transparent),
+    radial-gradient(1px 1px at 42% 92%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 48% 18%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 52% 58%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 58% 98%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 62% 28%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 68% 72%, #d4af37, transparent),
+    radial-gradient(1px 1px at 72% 2%, #fbbf24, transparent),
+    radial-gradient(0.5px 0.5px at 78% 52%, #fcd34d, transparent),
+    radial-gradient(1px 1px at 82% 82%, #d4af37, transparent),
+    radial-gradient(0.5px 0.5px at 88% 22%, #fbbf24, transparent),
+    radial-gradient(1px 1px at 92% 62%, #fcd34d, transparent),
+    radial-gradient(0.5px 0.5px at 98% 42%, #d4af37, transparent);
+  background-size: 200% 200%;
+  animation: starfieldMove 80s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.8;
+}
+
+/* Layer 2: Floating particles */
+[data-theme="cosmic"] body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 5% 10%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 15% 30%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1px 1px at 25% 50%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 35% 20%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1px 1px at 45% 70%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 55% 40%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 65% 80%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1px 1px at 75% 15%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 85% 55%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 95% 25%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1px 1px at 8% 60%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 18% 90%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 28% 5%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1px 1px at 38% 35%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 48% 75%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 58% 45%, rgba(212, 175, 55, 0.6), transparent),
+    radial-gradient(1px 1px at 68% 85%, rgba(251, 191, 36, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 78% 65%, rgba(252, 211, 77, 0.4), transparent),
+    radial-gradient(2px 2px at 88% 95%, rgba(212, 175, 55, 0.6), transparent);
+  background-size: 150% 150%;
+  animation: particleFloat 40s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+@keyframes starfieldMove {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-15px, -50px) scale(0.9);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(30px, -20px) scale(1.05);
+    opacity: 0.75;
+  }
+}
+
+/* ============================================= */
+/*  FALLING STARS ANIMATION - Multiple Layers   */
+/* ============================================= */
+
+/* Falling Stars Container */
+[data-theme="cosmic"] .falling-stars-1,
+[data-theme="cosmic"] .falling-stars-2,
+[data-theme="cosmic"] .falling-stars-3 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Falling Stars - Layer 1 (Fast) - Silver with long trail */
+[data-theme="cosmic"] .falling-stars-1::before,
+[data-theme="cosmic"] .falling-stars-1::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 80px;
+  background: linear-gradient(
+    to bottom right,
+    transparent 0%,
+    rgba(192, 192, 192, 0.2) 5%,
+    rgba(255, 255, 255, 0.9) 20%,
+    rgba(255, 255, 255, 1) 35%,
+    rgba(192, 192, 192, 0.7) 50%,
+    rgba(192, 192, 192, 0.4) 65%,
+    rgba(192, 192, 192, 0.2) 80%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  box-shadow: 
+    0 0 4px rgba(255, 255, 255, 0.6),
+    0 0 8px rgba(192, 192, 192, 0.5),
+    0 0 12px rgba(255, 255, 255, 0.3),
+    0 0 20px rgba(192, 192, 192, 0.2);
+  transform: rotate(-45deg);
+  animation: fallDiagonal1 12s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+[data-theme="cosmic"] .falling-stars-1::before {
+  left: 5%;
+  top: -60px;
+  animation-delay: 0s;
+}
+
+[data-theme="cosmic"] .falling-stars-1::after {
+  left: 25%;
+  top: -60px;
+  animation-delay: 8s;
+}
+
+/* Falling Stars - Layer 2 (Medium) - Silver with medium trail */
+[data-theme="cosmic"] .falling-stars-2::before,
+[data-theme="cosmic"] .falling-stars-2::after {
+  content: "";
+  position: absolute;
+  width: 1.8px;
+  height: 70px;
+  background: linear-gradient(
+    to bottom right,
+    transparent 0%,
+    rgba(192, 192, 192, 0.2) 5%,
+    rgba(255, 255, 255, 0.85) 20%,
+    rgba(255, 255, 255, 0.95) 35%,
+    rgba(192, 192, 192, 0.6) 50%,
+    rgba(192, 192, 192, 0.35) 65%,
+    rgba(192, 192, 192, 0.2) 80%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  box-shadow: 
+    0 0 3px rgba(255, 255, 255, 0.5),
+    0 0 6px rgba(192, 192, 192, 0.4),
+    0 0 10px rgba(255, 255, 255, 0.25),
+    0 0 16px rgba(192, 192, 192, 0.15);
+  transform: rotate(-45deg);
+  animation: fallDiagonal2 14s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+[data-theme="cosmic"] .falling-stars-2::before {
+  left: 45%;
+  top: -50px;
+  animation-delay: 4s;
+}
+
+[data-theme="cosmic"] .falling-stars-2::after {
+  left: 65%;
+  top: -50px;
+  animation-delay: 12s;
+}
+
+/* Falling Stars - Layer 3 (Slow) - Silver with long trail */
+[data-theme="cosmic"] .falling-stars-3::before,
+[data-theme="cosmic"] .falling-stars-3::after {
+  content: "";
+  position: absolute;
+  width: 1.5px;
+  height: 65px;
+  background: linear-gradient(
+    to bottom right,
+    transparent 0%,
+    rgba(192, 192, 192, 0.15) 5%,
+    rgba(255, 255, 255, 0.8) 20%,
+    rgba(255, 255, 255, 0.9) 35%,
+    rgba(192, 192, 192, 0.55) 50%,
+    rgba(192, 192, 192, 0.3) 65%,
+    rgba(192, 192, 192, 0.15) 80%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  box-shadow: 
+    0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 5px rgba(192, 192, 192, 0.3),
+    0 0 8px rgba(255, 255, 255, 0.2),
+    0 0 14px rgba(192, 192, 192, 0.1);
+  transform: rotate(-45deg);
+  animation: fallDiagonal3 16s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+[data-theme="cosmic"] .falling-stars-3::before {
+  left: 15%;
+  top: -45px;
+  animation-delay: 6s;
+}
+
+[data-theme="cosmic"] .falling-stars-3::after {
+  left: 85%;
+  top: -45px;
+  animation-delay: 16s;
+}
+
+/* Additional tiny particles using background */
+[data-theme="cosmic"] .falling-stars-1 {
+  background-image: 
+    radial-gradient(1px 1px at 10% 20%, rgba(212, 175, 55, 0.8), transparent),
+    radial-gradient(0.5px 0.5px at 25% 40%, rgba(251, 191, 36, 0.6), transparent),
+    radial-gradient(1px 1px at 40% 60%, rgba(252, 211, 77, 0.7), transparent),
+    radial-gradient(0.5px 0.5px at 60% 80%, rgba(212, 175, 55, 0.8), transparent),
+    radial-gradient(1px 1px at 80% 30%, rgba(251, 191, 36, 0.6), transparent);
+  background-size: 100% 200%;
+  animation: particleDrift1 25s linear infinite;
+}
+
+[data-theme="cosmic"] .falling-stars-2 {
+  background-image: 
+    radial-gradient(0.5px 0.5px at 20% 10%, rgba(252, 211, 77, 0.7), transparent),
+    radial-gradient(1px 1px at 45% 50%, rgba(212, 175, 55, 0.8), transparent),
+    radial-gradient(0.5px 0.5px at 70% 90%, rgba(251, 191, 36, 0.6), transparent),
+    radial-gradient(1px 1px at 30% 70%, rgba(252, 211, 77, 0.7), transparent),
+    radial-gradient(0.5px 0.5px at 90% 50%, rgba(212, 175, 55, 0.8), transparent);
+  background-size: 100% 200%;
+  animation: particleDrift2 30s linear infinite;
+}
+
+[data-theme="cosmic"] .falling-stars-3 {
+  background-image: 
+    radial-gradient(1px 1px at 5% 30%, rgba(251, 191, 36, 0.6), transparent),
+    radial-gradient(0.5px 0.5px at 50% 20%, rgba(252, 211, 77, 0.7), transparent),
+    radial-gradient(1px 1px at 65% 60%, rgba(212, 175, 55, 0.8), transparent),
+    radial-gradient(0.5px 0.5px at 15% 80%, rgba(251, 191, 36, 0.6), transparent),
+    radial-gradient(1px 1px at 88% 15%, rgba(252, 211, 77, 0.7), transparent);
+  background-size: 100% 200%;
+  animation: particleDrift3 35s linear infinite;
+}
+
+/* Falling animations - Diagonal from top-left to bottom-right with realistic curved path */
+@keyframes fallDiagonal1 {
+  0% {
+    top: -80px;
+    left: 5%;
+    opacity: 0;
+    transform: translateX(0) translateY(0) rotate(-42deg) scale(0.5);
+  }
+  2% {
+    opacity: 0.3;
+  }
+  5% {
+    opacity: 1;
+    transform: translateX(calc(100vw * 0.15)) translateY(calc(100vh * 0.15)) rotate(-44deg) scale(0.9);
+  }
+  30% {
+    transform: translateX(calc(100vw * 0.35)) translateY(calc(100vh * 0.35)) rotate(-46deg) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(calc(100vw * 0.55)) translateY(calc(100vh * 0.6)) rotate(-45deg) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(calc(100vw * 0.7)) translateY(calc(100vh * 0.85)) rotate(-44deg) scale(0.8);
+    opacity: 0.7;
+  }
+  98% {
+    opacity: 0.3;
+  }
+  100% {
+    top: calc(100vh + 80px);
+    left: calc(5% + 70vw);
+    opacity: 0;
+    transform: translateX(calc(100vw * 0.7)) translateY(calc(100vh * 0.85)) rotate(-43deg) scale(0.3);
+  }
+}
+
+@keyframes fallDiagonal2 {
+  0% {
+    top: -70px;
+    left: 45%;
+    opacity: 0;
+    transform: translateX(0) translateY(0) rotate(-43deg) scale(0.5);
+  }
+  2% {
+    opacity: 0.3;
+  }
+  5% {
+    opacity: 1;
+    transform: translateX(calc(100vw * 0.12)) translateY(calc(100vh * 0.15)) rotate(-44deg) scale(0.9);
+  }
+  30% {
+    transform: translateX(calc(100vw * 0.32)) translateY(calc(100vh * 0.35)) rotate(-46deg) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(calc(100vw * 0.52)) translateY(calc(100vh * 0.6)) rotate(-45deg) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(calc(100vw * 0.65)) translateY(calc(100vh * 0.82)) rotate(-44deg) scale(0.8);
+    opacity: 0.7;
+  }
+  98% {
+    opacity: 0.3;
+  }
+  100% {
+    top: calc(100vh + 70px);
+    left: calc(45% + 65vw);
+    opacity: 0;
+    transform: translateX(calc(100vw * 0.65)) translateY(calc(100vh * 0.82)) rotate(-43deg) scale(0.3);
+  }
+}
+
+@keyframes fallDiagonal3 {
+  0% {
+    top: -65px;
+    left: 15%;
+    opacity: 0;
+    transform: translateX(0) translateY(0) rotate(-44deg) scale(0.5);
+  }
+  2% {
+    opacity: 0.3;
+  }
+  5% {
+    opacity: 1;
+    transform: translateX(calc(100vw * 0.18)) translateY(calc(100vh * 0.15)) rotate(-45deg) scale(0.9);
+  }
+  30% {
+    transform: translateX(calc(100vw * 0.38)) translateY(calc(100vh * 0.35)) rotate(-47deg) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(calc(100vw * 0.58)) translateY(calc(100vh * 0.6)) rotate(-45deg) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(calc(100vw * 0.68)) translateY(calc(100vh * 0.8)) rotate(-44deg) scale(0.8);
+    opacity: 0.7;
+  }
+  98% {
+    opacity: 0.3;
+  }
+  100% {
+    top: calc(100vh + 65px);
+    left: calc(15% + 68vw);
+    opacity: 0;
+    transform: translateX(calc(100vw * 0.68)) translateY(calc(100vh * 0.8)) rotate(-43deg) scale(0.3);
+  }
+}
+
+/* Particle drift animations */
+@keyframes particleDrift1 {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+@keyframes particleDrift2 {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+@keyframes particleDrift3 {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+/* ============================================= */
+/*  SCATTERED STARS & METEOROIDS                 */
+/* ============================================= */
+
+/* Scattered Stars Layer - Static twinkling stars */
+[data-theme="cosmic"] .scattered-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+[data-theme="cosmic"] .scattered-stars::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1.5px 1.5px at 8% 12%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 15% 25%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.8px 0.8px at 22% 8%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.2px 1.2px at 28% 35%, rgba(192, 192, 192, 0.9), transparent),
+    radial-gradient(1px 1px at 35% 18%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(0.9px 0.9px at 42% 42%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1.3px 1.3px at 48% 15%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 55% 55%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.7px 0.7px at 62% 28%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.1px 1.1px at 68% 48%, rgba(192, 192, 192, 0.9), transparent),
+    radial-gradient(1px 1px at 75% 22%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(0.9px 0.9px at 82% 58%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1.2px 1.2px at 88% 32%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 92% 65%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.8px 0.8px at 5% 45%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.1px 1.1px at 12% 72%, rgba(192, 192, 192, 0.9), transparent),
+    radial-gradient(1px 1px at 18% 38%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(0.9px 0.9px at 25% 85%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1.3px 1.3px at 32% 52%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 38% 75%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.7px 0.7px at 45% 28%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.2px 1.2px at 52% 88%, rgba(192, 192, 192, 0.9), transparent),
+    radial-gradient(1px 1px at 58% 15%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(0.9px 0.9px at 65% 62%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1.1px 1.1px at 72% 38%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 78% 82%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.8px 0.8px at 85% 25%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.2px 1.2px at 95% 68%, rgba(192, 192, 192, 0.9), transparent);
+  animation: twinkle 4s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+[data-theme="cosmic"] .scattered-stars::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 3% 20%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(0.8px 0.8px at 10% 50%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1.1px 1.1px at 17% 75%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(0.9px 0.9px at 23% 30%, rgba(192, 192, 192, 0.6), transparent),
+    radial-gradient(1px 1px at 30% 90%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(0.7px 0.7px at 37% 45%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(1.2px 1.2px at 43% 10%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 50% 60%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(0.8px 0.8px at 57% 85%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.1px 1.1px at 63% 35%, rgba(192, 192, 192, 0.6), transparent),
+    radial-gradient(0.9px 0.9px at 70% 95%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 77% 20%, rgba(192, 192, 192, 0.8), transparent),
+    radial-gradient(0.7px 0.7px at 83% 55%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.2px 1.2px at 90% 80%, rgba(192, 192, 192, 0.7), transparent),
+    radial-gradient(1px 1px at 97% 40%, rgba(255, 255, 255, 0.8), transparent);
+  animation: twinkle 5s ease-in-out infinite reverse;
+  opacity: 0.7;
+  animation-delay: 1s;
+}
+
+/* Slow-moving meteoroids */
+[data-theme="cosmic"] .meteoroids {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+[data-theme="cosmic"] .meteoroids::before,
+[data-theme="cosmic"] .meteoroids::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(192, 192, 192, 0.6) 50%, transparent 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 4px rgba(255, 255, 255, 0.8),
+    0 0 8px rgba(192, 192, 192, 0.5),
+    0 0 12px rgba(255, 255, 255, 0.3);
+  animation: meteoroidFloat1 25s ease-in-out infinite;
+}
+
+[data-theme="cosmic"] .meteoroids::before {
+  left: 20%;
+  top: 15%;
+  animation-delay: 0s;
+}
+
+[data-theme="cosmic"] .meteoroids::after {
+  left: 70%;
+  top: 60%;
+  animation-delay: 12s;
+}
+
+/* Twinkling animation for stars */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Slow meteoroid floating animation */
+@keyframes meteoroidFloat1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(30px, -40px) scale(1.2);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-20px, -60px) scale(0.9);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translate(40px, -30px) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
 }
 
 /* Override any light background gradients in cosmic theme */
 [data-theme="cosmic"] [style*="background"] {
   background: rgba(22, 33, 62, 0.9) !important;
+}
+
+/* ============================================= */
+/*  GLOBAL TAILWIND CLASS OVERRIDES              */
+/* ============================================= */
+
+/* Background color overrides for cosmic theme */
+[data-theme="cosmic"] .bg-white,
+[data-theme="cosmic"] .bg-white\/90,
+[data-theme="cosmic"] .bg-white\/95 {
+  background-color: rgba(22, 33, 62, 0.85) !important;
+}
+
+[data-theme="cosmic"] .bg-gray-50,
+[data-theme="cosmic"] .bg-gray-100 {
+  background-color: rgba(22, 33, 62, 0.7) !important;
+}
+
+[data-theme="cosmic"] .bg-gray-200 {
+  background-color: rgba(15, 52, 96, 0.8) !important;
+}
+
+[data-theme="cosmic"] .bg-red-50 {
+  background-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+[data-theme="cosmic"] .bg-yellow-50 {
+  background-color: rgba(251, 191, 36, 0.15) !important;
+}
+
+[data-theme="cosmic"] .bg-gray-900 {
+  background-color: rgba(17, 24, 39, 0.9) !important;
+}
+
+/* Text color overrides for cosmic theme */
+[data-theme="cosmic"] .text-gray-600,
+[data-theme="cosmic"] .text-gray-700 {
+  color: #d4af37 !important;
+}
+
+[data-theme="cosmic"] .text-gray-500 {
+  color: #a78bfa !important;
+}
+
+[data-theme="cosmic"] .text-gray-400 {
+  color: #9333ea !important;
+}
+
+[data-theme="cosmic"] .text-red-600,
+[data-theme="cosmic"] .text-red-700 {
+  color: #fca5a5 !important;
+}
+
+[data-theme="cosmic"] .text-yellow-800 {
+  color: #fbbf24 !important;
+}
+
+/* Border color overrides */
+[data-theme="cosmic"] .border-red-200,
+[data-theme="cosmic"] .border-red-300 {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+}
+
+[data-theme="cosmic"] .border-yellow-300 {
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+[data-theme="cosmic"] .border-gray-300 {
+  border-color: rgba(83, 52, 131, 0.4) !important;
 }
 
 /* Specific overrides for common background patterns */
@@ -161,16 +812,22 @@ body {
   color: #d4af37 !important;
 }
 
-/* White card backgrounds */
+/* White card backgrounds - Override any white backgrounds in cards */
 [data-theme="cosmic"] .card[style*="background: white"],
 [data-theme="cosmic"] .card[style*="background:white"],
 [data-theme="cosmic"] .card[style*="background: #fff"],
 [data-theme="cosmic"] .card[style*="background:#fff"],
-[data-theme="cosmic"] .card[style*="background: rgba(255, 255, 255, 0.9"],
-[data-theme="cosmic"] .card[style*="background:rgba(255, 255, 255, 0.9"] {
+[data-theme="cosmic"] .card[style*="background: rgba(255, 255, 255"],
+[data-theme="cosmic"] .card[style*="background:rgba(255, 255, 255"] {
   background: rgba(22, 33, 62, 0.85) !important;
   border-color: rgba(212, 175, 55, 0.3) !important;
   color: #d4af37 !important;
+}
+
+/* Ensure all .card elements in cosmic theme have dark background */
+[data-theme="cosmic"] .card {
+  background: rgba(22, 33, 62, 0.85) !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
 }
 
 /* Chat component cosmic theme styles */
@@ -1385,32 +2042,38 @@ select {
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
 }
 
-[data-theme="cosmic"] .btn-primary {
-  background: rgba(22, 33, 62, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
-  color: #d4af37;
+[data-theme="cosmic"] .btn-primary,
+[data-theme="cosmic"] .btn-primary.btn-gold {
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  color: #1f2937;
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
-[data-theme="cosmic"] .btn-primary:hover {
-  background: rgba(22, 33, 62, 1);
-  border-color: rgba(212, 175, 55, 0.5);
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.5);
-  color: #fbbf24;
+[data-theme="cosmic"] .btn-primary:hover,
+[data-theme="cosmic"] .btn-primary.btn-gold:hover {
+  background: linear-gradient(135deg, #fbbf24, #d4af37);
+  color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.5), 0 0 30px rgba(212, 175, 55, 0.3);
 }
 
 [data-theme="cosmic"] .btn-primary svg,
 [data-theme="cosmic"] .btn-primary path,
-[data-theme="cosmic"] .btn-primary .hero-btn-icon {
-  color: #d4af37;
-  stroke: #d4af37;
+[data-theme="cosmic"] .btn-primary .hero-btn-icon,
+[data-theme="cosmic"] .btn-primary.btn-gold svg,
+[data-theme="cosmic"] .btn-primary.btn-gold path {
+  color: #1f2937;
+  stroke: #1f2937;
 }
 
 [data-theme="cosmic"] .btn-primary:hover svg,
 [data-theme="cosmic"] .btn-primary:hover path,
-[data-theme="cosmic"] .btn-primary:hover .hero-btn-icon {
-  color: #fbbf24;
-  stroke: #fbbf24;
+[data-theme="cosmic"] .btn-primary:hover .hero-btn-icon,
+[data-theme="cosmic"] .btn-primary.btn-gold:hover svg,
+[data-theme="cosmic"] .btn-primary.btn-gold:hover path {
+  color: #1f2937;
+  stroke: #1f2937;
 }
 
 .btn-secondary {

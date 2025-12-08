@@ -42,13 +42,17 @@ export async function GET(request) {
       query = query.where('astrologerId', '==', astrologerId)
     }
 
+    // Get limit from query params, default to 5 for faster loading
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam, 10) : 5
+    
     // Try the query with orderBy first, if it fails, fallback to without orderBy
     let snapshot
     try {
-      snapshot = await query.orderBy('createdAt', 'desc').limit(100).get()
+      snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get()
     } catch (indexError) {
       console.log('Index not ready, querying without orderBy:', indexError.message)
-      snapshot = await query.limit(100).get()
+      snapshot = await query.limit(limit).get()
     }
     const history = []
     
