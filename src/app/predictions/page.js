@@ -21,8 +21,12 @@ import {
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
+import { useTheme } from "@/contexts/ThemeContext";
+import { PageLoading } from "@/components/LoadingStates";
 export default function PredictionsPage() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
   
   // Track page view on mount
   useEffect(() => {
@@ -861,8 +865,19 @@ export default function PredictionsPage() {
 
   } : null;
 
+  // Show full-page loading when submitting and no result yet
+  if (submitting && !result) {
+    return <PageLoading type="predictions" message="Consulting the stars for your predictions..." />;
+  }
+
   return (
-    <div className="app">
+    <div 
+      className="app"
+      style={{
+        background: isCosmic ? "transparent" : undefined,
+        minHeight: "100vh",
+      }}
+    >
       {/* Orbs */}
       <div
         style={{
@@ -889,7 +904,14 @@ export default function PredictionsPage() {
 
       <div className="container mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+          <div 
+            className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
+            style={{
+              background: isCosmic ? "rgba(220, 38, 38, 0.2)" : "#fef2f2",
+              borderColor: isCosmic ? "rgba(220, 38, 38, 0.4)" : "#fecaca",
+              color: isCosmic ? "#fca5a5" : "#b91c1c",
+            }}
+          >
             <span>Warning</span> {error}
           </div>
         )}
@@ -900,7 +922,15 @@ export default function PredictionsPage() {
           <form
             ref={formRef}
             onSubmit={onSubmit}
-            className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-4xl mx-auto"
+            className="card backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border max-w-4xl mx-auto"
+            style={{
+              background: isCosmic 
+                ? "rgba(22, 33, 62, 0.85)" 
+                : "rgba(255, 255, 255, 0.9)",
+              borderColor: isCosmic 
+                ? "rgba(212, 175, 55, 0.3)" 
+                : "rgba(212, 175, 55, 0.2)",
+            }}
           >
             <div className="form-header" style={{ alignItems: "center" }}>
               <div className="form-header-icon">
@@ -1235,8 +1265,12 @@ export default function PredictionsPage() {
             {result?.westernChartSvg &&
               result.westernChartSvg.trim().startsWith("<svg") ? (
               <div
-                className="chart-container bg-gray-900 rounded-xl overflow-hidden shadow-lg"
-                style={{ maxWidth: "640px", margin: "0 auto" }}
+                className="chart-container rounded-xl overflow-hidden shadow-lg"
+                style={{
+                  background: isCosmic ? "rgba(17, 24, 39, 0.9)" : "#111827",
+                  maxWidth: "640px",
+                  margin: "0 auto",
+                }}
               >
                 <div
                   dangerouslySetInnerHTML={{ __html: result.westernChartSvg }}
@@ -1245,8 +1279,19 @@ export default function PredictionsPage() {
                 />
               </div>
             ) : result && !result.westernChartSvg ? (
-              <div className="card mt-8 p-6 bg-yellow-50 border border-yellow-300 rounded-lg">
-                <p className="text-sm font-medium text-yellow-800">
+              <div 
+                className="card mt-8 p-6 border rounded-lg"
+                style={{
+                  background: isCosmic ? "rgba(251, 191, 36, 0.15)" : "#fef9c3",
+                  borderColor: isCosmic ? "rgba(251, 191, 36, 0.4)" : "#fde047",
+                }}
+              >
+                <p 
+                  className="text-sm font-medium"
+                  style={{
+                    color: isCosmic ? "#fbbf24" : "#854d0e",
+                  }}
+                >
                   Western chart not available.
                 </p>
                 <p className="text-xs text-yellow-600 mt-1">
@@ -1618,7 +1663,14 @@ export default function PredictionsPage() {
               <h3 className="text-lg font-semibold text-red-800 mb-2">
                 Unable to Load Data
               </h3>
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p 
+                className="text-sm border rounded-lg px-4 py-3"
+                style={{
+                  background: isCosmic ? "rgba(220, 38, 38, 0.2)" : "#fef2f2",
+                  borderColor: isCosmic ? "rgba(220, 38, 38, 0.4)" : "#fecaca",
+                  color: isCosmic ? "#fca5a5" : "#b91c1c",
+                }}
+              >
                 {antarError}
               </p>
             </div>
@@ -1629,10 +1681,20 @@ export default function PredictionsPage() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Moon className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">
+                  <h3 
+                    className="text-lg font-medium mb-2"
+                    style={{
+                      color: isCosmic ? "#d4af37" : "#1f2937",
+                    }}
+                  >
                     No Antar Dasha Data
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p 
+                    className="text-sm"
+                    style={{
+                      color: isCosmic ? "#a78bfa" : "#6b7280",
+                    }}
+                  >
                     No sub-periods found for this Maha Dasha. Please submit the
                     form above to generate data.
                   </p>
@@ -1699,7 +1761,14 @@ export default function PredictionsPage() {
               </div>
             </div>
           ) : predictionsError ? (
-            <div className="py-4 text-sm text-red-700 bg-red-50 border border-red-300 rounded-lg px-4">
+            <div 
+              className="py-4 text-sm border rounded-lg px-4"
+              style={{
+                background: isCosmic ? "rgba(220, 38, 38, 0.2)" : "#fef2f2",
+                borderColor: isCosmic ? "rgba(220, 38, 38, 0.4)" : "#fecaca",
+                color: isCosmic ? "#fca5a5" : "#b91c1c",
+              }}
+            >
               {predictionsError}
             </div>
           ) : (
@@ -1711,7 +1780,14 @@ export default function PredictionsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4 border border-gray-300">
+                <div 
+                  className="text-sm rounded-lg p-4 border"
+                  style={{
+                    background: isCosmic ? "rgba(22, 33, 62, 0.7)" : "#f9fafb",
+                    borderColor: isCosmic ? "rgba(83, 52, 131, 0.4)" : "#d1d5db",
+                    color: isCosmic ? "#a78bfa" : "#6b7280",
+                  }}
+                >
                   No predictions available.
                 </div>
               )}
@@ -1815,11 +1891,15 @@ export default function PredictionsPage() {
           <div
             className="chat-assistant-card"
             style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              background: isCosmic 
+                ? "rgba(22, 33, 62, 0.95)" 
+                : "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
               border: "1px solid rgba(212, 175, 55, 0.3)",
               borderRadius: "20px",
               padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              boxShadow: isCosmic
+                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)"
+                : "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
               cursor: "pointer",
               transition: "all 0.3s ease",
               position: "relative",
@@ -1917,13 +1997,20 @@ export default function PredictionsPage() {
                 style={{
                   fontSize: "16px",
                   fontWeight: 700,
-                  color: "#111827",
+                  color: isCosmic ? "#d4af37" : "#111827",
                   margin: "0 0 4px 0",
                   fontFamily: '"Cormorant Garamond", serif',
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  ...(isCosmic 
+                    ? {
+                        color: "#d4af37",
+                      }
+                    : {
+                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }
+                  ),
                 }}
               >
                 AI Astrologer Assistant
@@ -1931,7 +2018,7 @@ export default function PredictionsPage() {
               <p
                 style={{
                   fontSize: "13px",
-                  color: "#6b7280",
+                  color: isCosmic ? "#d4af37" : "#6b7280",
                   margin: 0,
                   lineHeight: "1.5",
                 }}
@@ -1960,22 +2047,24 @@ export default function PredictionsPage() {
                   animation: "pulse 2s infinite",
                 }}
               />
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
+              <span style={{ fontSize: "12px", color: isCosmic ? "#d4af37" : "#6b7280", fontWeight: 500 }}>
                 Online
               </span>
             </div>
             <button
               style={{
-                background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
+                background: "linear-gradient(135deg, #d4af37, #b8972e)",
                 border: "none",
                 borderRadius: "10px",
                 padding: "8px 16px",
-                color: "#1f2937",
+                color: isCosmic ? "#ffffff" : "#1f2937",
                 fontSize: "13px",
                 fontWeight: 600,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+                boxShadow: isCosmic
+                  ? "0 2px 8px rgba(212, 175, 55, 0.4)"
+                  : "0 2px 8px rgba(251, 191, 36, 0.3)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";

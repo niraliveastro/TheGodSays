@@ -14,6 +14,7 @@ import {
 import astrologyAPI from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
+import { PageLoading } from "@/components/LoadingStates";
 
 /**
  * Helper arrays for form options
@@ -333,6 +334,11 @@ export default function KundaliPage() {
       setSubmitting(false);
     }
   };
+
+  // Show full-page loading when submitting and no result yet
+  if (submitting && !svgOutput && !genError) {
+    return <PageLoading type="kundali" message="Generating your birth chart..." />;
+  }
 
   return (
     <>

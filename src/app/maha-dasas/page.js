@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PageLoading } from "@/components/LoadingStates";
 
 /**
  * MahaDasasPage Component
@@ -779,31 +780,8 @@ export default function MahaDasasPage() {
           </div>
         </div>
 
-        {/* Loading Spinner */}
-        {isLoading && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "4rem 2rem",
-              background: "rgba(255,255,255,.9)",
-              borderRadius: "1.5rem",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                border: "5px solid rgba(212,175,55,.2)",
-                borderTopColor: "#d4af37",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-                margin: "0 auto 1rem",
-              }}
-            ></div>
-            <p>Calculating maha dasas...</p>
-          </div>
-        )}
+        {/* Loading – Full page loading */}
+        {isLoading && <PageLoading type="panchang" message="Calculating Maha Dasas..." />}
 
         {/* Error Display */}
         {error && !isLoading && (

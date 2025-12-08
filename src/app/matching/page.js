@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/contexts/ThemeContext";
+import { PageLoading } from "@/components/LoadingStates";
 
 import {
   Sparkles,
@@ -111,6 +113,8 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
   
   // Form state for female and male individuals
   const [female, setFemale] = useState({
@@ -1197,6 +1201,11 @@ export default function MatchingPage() {
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
+  // Show full-page loading when submitting and no result yet
+  if (submitting && !result) {
+    return <PageLoading type="matching" message="Analyzing compatibility between charts..." />;
+  }
+
   return (
     <>
       {/* ---------------------------------------------------------- */}
@@ -1774,7 +1783,17 @@ export default function MatchingPage() {
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">
             {/* ---------- Female ---------- */}
-            <div className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6">
+            <div 
+              className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6"
+              style={{
+                background: isCosmic 
+                  ? "rgba(22, 33, 62, 0.85)" 
+                  : undefined,
+                borderColor: isCosmic 
+                  ? "rgba(212, 175, 55, 0.3)" 
+                  : undefined,
+              }}
+            >
               <div className="results-header mb-3">
                 <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">{t.matching.femaleDetails}</h3>
@@ -1873,7 +1892,17 @@ export default function MatchingPage() {
               </div>
             </div>
             {/* ---------- Male ---------- */}
-            <div className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6">
+            <div 
+              className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6"
+              style={{
+                background: isCosmic 
+                  ? "rgba(22, 33, 62, 0.85)" 
+                  : undefined,
+                borderColor: isCosmic 
+                  ? "rgba(212, 175, 55, 0.3)" 
+                  : undefined,
+              }}
+            >
               <div className="results-header mb-3">
                 <Sun style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">{t.matching.maleDetails}</h3>
@@ -2787,11 +2816,15 @@ export default function MatchingPage() {
           <div
             className="chat-assistant-card"
             style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              background: isCosmic 
+                ? "rgba(22, 33, 62, 0.95)" 
+                : "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
               border: "1px solid rgba(212, 175, 55, 0.3)",
               borderRadius: "20px",
               padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              boxShadow: isCosmic
+                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)"
+                : "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
               cursor: "pointer",
               transition: "all 0.3s ease",
               position: "relative",
@@ -2893,13 +2926,20 @@ export default function MatchingPage() {
                   style={{
                     fontSize: "16px",
                     fontWeight: 700,
-                    color: "#111827",
+                    color: isCosmic ? "#d4af37" : "#111827",
                     margin: "0 0 4px 0",
                     fontFamily: '"Cormorant Garamond", serif',
+                    ...(isCosmic 
+                      ? {
+                          color: "#d4af37",
+                        }
+                      : {
                     background: "linear-gradient(135deg, #d4af37, #b8972e)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
+                        }
+                    ),
                   }}
                 >
                   AI Astrologer Assistant
@@ -2907,7 +2947,7 @@ export default function MatchingPage() {
                 <p
                   style={{
                     fontSize: "13px",
-                    color: "#6b7280",
+                    color: isCosmic ? "#d4af37" : "#6b7280",
                     margin: 0,
                     lineHeight: "1.5",
                   }}
@@ -2936,22 +2976,24 @@ export default function MatchingPage() {
                     animation: "pulse 2s infinite",
                   }}
                 />
-                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
+                <span style={{ fontSize: "12px", color: isCosmic ? "#d4af37" : "#6b7280", fontWeight: 500 }}>
                   Online
                 </span>
               </div>
               <button
                 style={{
-                  background: "linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b)",
+                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
                   border: "none",
                   borderRadius: "10px",
                   padding: "8px 16px",
-                  color: "#1f2937",
+                  color: isCosmic ? "#ffffff" : "#1f2937",
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+                  boxShadow: isCosmic
+                    ? "0 2px 8px rgba(212, 175, 55, 0.4)"
+                    : "0 2px 8px rgba(251, 191, 36, 0.3)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";

@@ -148,17 +148,24 @@ export default function AstrologerProfile() {
               process.env.NEXT_PUBLIC_BASE_URL || ""
             }/api/reviews?astrologerId=${id}`
           );
-          if (reviewsRes.ok) {
-            const reviewsData = await reviewsRes.json();
-            if (reviewsData.success && reviewsData.reviews?.length) {
-              const sum = reviewsData.reviews.reduce((s, r) => s + r.rating, 0);
-              setRating((sum / reviewsData.reviews.length).toFixed(1));
-              setReviewsCount(reviewsData.reviews.length);
-              setReviews(reviewsData.reviews.slice(0, 3));
-            }
+          const reviewsData = await reviewsRes.json();
+          if (reviewsRes.ok && reviewsData.success && reviewsData.reviews?.length) {
+            const sum = reviewsData.reviews.reduce((s, r) => s + r.rating, 0);
+            setRating((sum / reviewsData.reviews.length).toFixed(1));
+            setReviewsCount(reviewsData.reviews.length);
+            setReviews(reviewsData.reviews.slice(0, 3));
+          } else {
+            // Handle 503 or other errors gracefully
+            console.warn("Failed to fetch reviews:", reviewsData.message || "Unknown error");
+            setRating("0.0");
+            setReviewsCount(0);
+            setReviews([]);
           }
         } catch (e) {
           console.error("Reviews fetch error:", e);
+          setRating("0.0");
+          setReviewsCount(0);
+          setReviews([]);
         }
 
         setLoading(false);

@@ -5,6 +5,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import Wallet from "@/components/Wallet";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function WalletPage() {
   const { t } = useTranslation();
@@ -22,34 +23,7 @@ export default function WalletPage() {
   }, [user, userProfile, loading, router]);
 
   if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: "3rem",
-              height: "3rem",
-              border: "4px solid transparent",
-              borderTop: "4px solid #d4af37",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              margin: "0 auto 1rem",
-            }}
-          ></div>
-          <p style={{ color: "var(--color-gray-600)", fontSize: "1rem" }}>
-            {t.messages.loading}
-          </p>
-        </div>
-      </div>
-    );
+    return <PageLoading type="wallet" message={t.messages.loading || "Loading your wallet..."} />;
   }
 
   if (!user) {

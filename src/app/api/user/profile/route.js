@@ -3,6 +3,10 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { WalletService } from '@/lib/wallet'
 
+// Mark this route as dynamic to prevent prerendering during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
   try {
@@ -18,11 +22,11 @@ if (!getApps().length) {
   }
 }
 
-const db = getFirestore()
-
 // Helper function to calculate Quick Stats from call history
 async function calculateQuickStats(userId) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore()
     // Fetch all calls for the user
     const callsSnapshot = await db.collection('calls')
       .where('userId', '==', userId)
@@ -66,6 +70,8 @@ async function calculateQuickStats(userId) {
 
 export async function GET(request) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore()
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     if (!userId) {

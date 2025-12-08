@@ -1,22 +1,45 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Mark this route as dynamic to prevent prerendering during build
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// Initialize Firebase Admin if not already initialized
+if (!getApps().length) {
+  try {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      })
+    })
+  } catch (error) {
+    console.warn('Firebase Admin initialization failed:', error.message)
+  }
+}
+
+const db = getFirestore()
+
 export async function GET(request) {
   try {
     // Check if db is initialized (might be null during build/prerender)
     if (!db) {
-      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
+      console.error('Reviews API: Database not initialized. Check Firebase Admin configuration.');
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Database not initialized. Please check server configuration.',
+        reviews: [] 
+      }, { status: 503 });
     }
 
     const { searchParams } = new URL(request.url);
     const astrologerId = searchParams.get('astrologerId');
 
     if (!astrologerId) {
-      return NextResponse.json({ success: false, message: 'Astrologer ID is required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Astrologer ID is required.', reviews: [] }, { status: 400 });
     }
 
     const astrologerRef = db.doc(`astrologers/${astrologerId}`);
@@ -69,7 +92,12 @@ export async function GET(request) {
     return NextResponse.json({ success: true, reviews });
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    return NextResponse.json({ success: false, message: 'Failed to fetch reviews.' }, { status: 500 });
+    // Return empty reviews array instead of error to prevent UI breaking
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Failed to fetch reviews.', 
+      reviews: [] 
+    }, { status: 500 });
   }
 }
 

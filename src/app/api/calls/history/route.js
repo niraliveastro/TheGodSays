@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 
+// Mark this route as dynamic to prevent prerendering during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
   try {
@@ -17,9 +21,9 @@ if (!getApps().length) {
   }
 }
 
-const db = getFirestore()
-
 export async function GET(request) {
+  // Initialize db lazily to avoid build-time errors
+  const db = getFirestore()
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -38,13 +42,17 @@ export async function GET(request) {
       query = query.where('astrologerId', '==', astrologerId)
     }
 
+    // Get limit from query params, default to 5 for faster loading
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam, 10) : 5
+    
     // Try the query with orderBy first, if it fails, fallback to without orderBy
     let snapshot
     try {
-      snapshot = await query.orderBy('createdAt', 'desc').limit(100).get()
+      snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get()
     } catch (indexError) {
       console.log('Index not ready, querying without orderBy:', indexError.message)
-      snapshot = await query.limit(100).get()
+      snapshot = await query.limit(limit).get()
     }
     const history = []
     

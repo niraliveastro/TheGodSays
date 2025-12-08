@@ -49,6 +49,7 @@ import {
   Rocket,
   Star,
 } from "lucide-react";
+import { PageLoading } from "@/components/LoadingStates";
 import "./cosmic-event-tracker.css";
 
 /**
@@ -262,18 +263,7 @@ export default function CosmicEventTracker() {
 
   // Initial loading state
   if (loading && neoData.length === 0) {
-    return (
-      <div className="page-container">
-        <div className="loading-container">
-          <div className="loading-spinner">
-            <Rocket className="loading-icon" />
-          </div>
-          <p className="loading-text">
-            Scanning the cosmos for celestial visitors...
-          </p>
-        </div>
-      </div>
-    );
+    return <PageLoading type="cosmic" message="Scanning the cosmos for celestial visitors..." />;
   }
 
   const displayedNEOs = filteredAndSortedNEOs(); // Compute displayed list

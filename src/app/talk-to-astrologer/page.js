@@ -20,10 +20,14 @@ import Modal from "@/components/Modal";
 import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/contexts/ThemeContext";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function TalkToAstrologer() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
   
   /* --------------------------------------------------------------- */
   /*  State                                                          */
@@ -119,20 +123,19 @@ export default function TalkToAstrologer() {
         list.map(async (a) => {
           try {
             const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
-            if (res.ok) {
-              const { success, reviews } = await res.json();
-              if (success) {
-                const total = reviews.reduce((s, r) => s + r.rating, 0);
-                const avg = reviews.length
-                  ? (total / reviews.length).toFixed(1)
+            const data = await res.json();
+            if (res.ok && data.success && data.reviews?.length) {
+              const total = data.reviews.reduce((s, r) => s + r.rating, 0);
+              const avg = data.reviews.length
+                  ? (total / data.reviews.length).toFixed(1)
                   : 0;
                 return {
                   ...a,
                   rating: parseFloat(avg),
-                  reviews: reviews.length,
+                  reviews: data.reviews.length,
                 };
-              }
             }
+            return a; // Return original if reviews fetch fails
           } catch (e) {
             console.error(`Reviews error for ${a.id}:`, e);
           }
@@ -536,8 +539,16 @@ export default function TalkToAstrologer() {
         }}
       />
 
+      {fetchingAstrologers ? (
+        <PageLoading type="astrologer" message="Loading astrologers..." />
+      ) : (
       <div
-        className="min-h-screen bg-gray-50 py-4 md:py-8 px-4 md:px-6 lg:px-8"
+        className="min-h-screen py-4 md:py-8 px-4 md:px-6 lg:px-8"
+        style={{
+          background: isCosmic 
+            ? "#0a0a0f" 
+            : "#f9fafb",
+        }}
       >
         <div className="app">
           {/* Orbs */}
@@ -1300,6 +1311,7 @@ export default function TalkToAstrologer() {
           />
         )}
       </div>
+      )}
 
       {/* Local animations */}
       <style jsx>{`

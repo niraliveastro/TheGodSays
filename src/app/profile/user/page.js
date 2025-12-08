@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   User,
   Mail,
@@ -22,12 +23,16 @@ import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/contexts/ThemeContext";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
+import { PageLoading } from "@/components/LoadingStates";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, signOut } = useAuth();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
 
   /* --------------------------------------------------------------- */
   /*  State                                                          */
@@ -56,61 +61,109 @@ export default function ProfilePage() {
   const [showFamilyPanel, setShowFamilyPanel] = useState(false);
 
   /* --------------------------------------------------------------- */
-  /*  Fetch user + call history + family members                    */
+  /*  Fetch user + call history + family members with React Query   */
   /* --------------------------------------------------------------- */
+  const userId = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("tgs:userId");
+    }
+    return null;
+  }, []);
+
+  // Fetch profile data with React Query for caching and faster loading
+  const { data: profileData, isLoading: profileLoading, error: profileError } = useQuery({
+    queryKey: ['userProfile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const res = await fetch(`/api/user/profile?userId=${userId}`);
+      if (!res.ok) throw new Error('Failed to fetch profile');
+      const data = await res.json();
+      return data.success ? data.user : null;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
+    retry: 1, // Only retry once on failure
+  });
+
+  // Fetch call history with React Query - Load separately with longer timeout
+  const { data: historyData, isLoading: historyLoading } = useQuery({
+    queryKey: ['callHistory', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const res = await fetch(`/api/calls/history?userId=${userId}&limit=5`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.success ? (data.history || []).slice(0, 5) : [];
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.warn('Call history fetch timed out');
+        }
+        return [];
+      }
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache (increased)
+    retry: 0, // Don't retry to avoid delays
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+  });
+
+  // Fetch family members with React Query
+  const { data: familyData } = useQuery({
+    queryKey: ['familyMembers', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await fetch(`/api/family/members?userId=${userId}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.success ? (data.members || []) : [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    retry: 1,
+  });
+
+  // Update state when data is fetched
   useEffect(() => {
-    const fetchProfile = async () => {
-      const userId = localStorage.getItem("tgs:userId");
-      if (!userId) {
-        router.push("/auth");
-        return;
-      }
+    if (profileData) {
+      setUser(profileData);
+      setEditForm({
+        name: profileData.name || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+      });
+    }
+  }, [profileData]);
 
-      try {
-        // Mock API – replace with real endpoint
-        const res = await fetch(`/api/user/profile?userId=${userId}`);
-        const data = await res.json();
-        if (data.success) {
-          setUser(data.user);
-          setEditForm({
-            name: data.user.name,
-            email: data.user.email,
-            phone: data.user.phone || "",
-          });
-        }
-      } catch (e) {
-        console.error(e);
-      }
+  useEffect(() => {
+    if (historyData) {
+      setCallHistory(historyData);
+    }
+  }, [historyData]);
 
-      try {
-        const histRes = await fetch(`/api/calls/history?userId=${userId}`);
-        const histData = await histRes.json();
-        if (histData.success) {
-          setCallHistory(histData.history.slice(0, 5)); // last 5 calls
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (familyData) {
+      setFamilyMembers(familyData);
+    }
+  }, [familyData]);
 
-    const fetchFamilyMembers = async () => {
-      const userId = localStorage.getItem("tgs:userId");
-      try {
-        const res = await fetch(`/api/family/members?userId=${userId}`);
-        const data = await res.json();
-        if (data.success) {
-          setFamilyMembers(data.members || []);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    fetchProfile();
-    fetchFamilyMembers();
-  }, [router]);
+  // Handle loading and auth redirect
+  useEffect(() => {
+    if (!userId) {
+      router.push("/auth");
+      return;
+    }
+    setLoading(profileLoading);
+  }, [userId, profileLoading, router]);
 
   /* --------------------------------------------------------------- */
   /*  Save profile changes                                           */
@@ -200,24 +253,37 @@ export default function ProfilePage() {
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
-      </div>
-    );
+    return <PageLoading type="profile" message="Loading your profile..." />;
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-lg text-gray-600">No user data found.</p>
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          background: isCosmic ? "#0a0a0f" : "#f9fafb",
+        }}
+      >
+        <p 
+          className="text-lg"
+          style={{
+            color: isCosmic ? "#d4af37" : "#4b5563",
+          }}
+        >
+          No user data found.
+        </p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 py-8 relative">
+      <div 
+        className="min-h-screen py-8 relative"
+        style={{
+          background: isCosmic ? "#0a0a0f" : "#f9fafb",
+        }}
+      >
         {/* Orbs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="orb orb1" />
@@ -228,10 +294,14 @@ export default function ProfilePage() {
         <div className="app relative">
           {/* Left Toolbar */}
           <div
-            className={`fixed left-0 top-16 h-full bg-white shadow-2xl transition-transform duration-300 ${
+            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${
               showFamilyPanel ? "translate-x-0" : "-translate-x-full"
             }`}
-            style={{ width: "320px", zIndex: 30 }}
+            style={{ 
+              width: "320px", 
+              zIndex: 30,
+              background: isCosmic ? "rgba(22, 33, 62, 0.95)" : "white",
+            }}
           >
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
@@ -320,7 +390,10 @@ export default function ProfilePage() {
             {/* Left: Profile Card */}
             <div
               className="card"
-              style={{ padding: "2rem", position: "relative" }}
+              style={{ 
+                padding: "2rem", 
+                position: "relative",
+              }}
             >
               <div
                 style={{
@@ -484,7 +557,12 @@ export default function ProfilePage() {
             {/* Right: Wallet + Stats */}
             <div style={{ display: "grid", gap: "1.5rem" }}>
               {/* Wallet */}
-              <div className="card" style={{ padding: "1.5rem" }}>
+              <div 
+                className="card" 
+                style={{ 
+                  padding: "1.5rem",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
@@ -507,7 +585,13 @@ export default function ProfilePage() {
                         color: "var(--color-gold)",
                       }}
                     />
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: 600 }}>
+                    <h3 
+                      style={{ 
+                        fontSize: "1.125rem", 
+                        fontWeight: 600,
+                        color: isCosmic ? "#d4af37" : "#1f2937",
+                      }}
+                    >
                       Wallet Balance
                     </h3>
                   </div>
@@ -543,11 +627,17 @@ export default function ProfilePage() {
               </div>
 
               {/* Quick Stats */}
-              <div className="card" style={{ padding: "1.5rem" }}>
+              <div 
+                className="card" 
+                style={{ 
+                  padding: "1.5rem",
+                }}
+              >
                 <h3
                   style={{
                     fontSize: "1.125rem",
                     fontWeight: 600,
+                    color: isCosmic ? "#d4af37" : "#1f2937",
                     marginBottom: "1rem",
                   }}
                 >
@@ -564,7 +654,7 @@ export default function ProfilePage() {
                     <p
                       style={{
                         fontSize: "0.875rem",
-                        color: "var(--color-gray-500)",
+                        color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
                       }}
                     >
                       Total Calls
@@ -573,7 +663,7 @@ export default function ProfilePage() {
                       style={{
                         fontSize: "1.25rem",
                         fontWeight: 700,
-                        color: "var(--color-gray-900)",
+                        color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
                       }}
                     >
                       {user.totalCalls || 0}
@@ -583,7 +673,7 @@ export default function ProfilePage() {
                     <p
                       style={{
                         fontSize: "0.875rem",
-                        color: "var(--color-gray-500)",
+                        color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
                       }}
                     >
                       Minutes Used
@@ -592,7 +682,7 @@ export default function ProfilePage() {
                       style={{
                         fontSize: "1.25rem",
                         fontWeight: 700,
-                        color: "var(--color-gray-900)",
+                        color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
                       }}
                     >
                       {user.minutesUsed || 0}
@@ -606,7 +696,10 @@ export default function ProfilePage() {
           {/* Call History */}
           <div
             className="card"
-            style={{ marginTop: "2rem", padding: "1.5rem" }}
+            style={{
+              marginTop: "2rem",
+              padding: "1.5rem",
+            }}
           >
             <div
               style={{
@@ -643,7 +736,82 @@ export default function ProfilePage() {
               </Button>
             </div>
 
-            {callHistory.length > 0 ? (
+            {historyLoading ? (
+              // Skeleton loader for call history
+              <div style={{ display: "grid", gap: "0.75rem" }}>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.75rem",
+                      background: isCosmic ? "rgba(10, 10, 15, 0.5)" : "rgba(243, 244, 246, 0.8)",
+                      borderRadius: "0.5rem",
+                      animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "2.5rem",
+                          height: "2.5rem",
+                          background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                          borderRadius: "50%",
+                        }}
+                      />
+                      <div>
+                        <div
+                          style={{
+                            width: "8rem",
+                            height: "1rem",
+                            background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                            borderRadius: "0.25rem",
+                            marginBottom: "0.5rem",
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: "6rem",
+                            height: "0.75rem",
+                            background: isCosmic ? "rgba(83, 52, 131, 0.2)" : "rgba(209, 213, 219, 0.6)",
+                            borderRadius: "0.25rem",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div
+                        style={{
+                          width: "4rem",
+                          height: "0.875rem",
+                          background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                          borderRadius: "0.25rem",
+                          marginBottom: "0.5rem",
+                          marginLeft: "auto",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: "3rem",
+                          height: "0.75rem",
+                          background: isCosmic ? "rgba(83, 52, 131, 0.2)" : "rgba(209, 213, 219, 0.6)",
+                          borderRadius: "0.25rem",
+                          marginLeft: "auto",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : callHistory.length > 0 ? (
               <div style={{ display: "grid", gap: "0.75rem" }}>
                 {callHistory.map((call) => (
                   <div
@@ -653,8 +821,9 @@ export default function ProfilePage() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.75rem",
-                      background: "var(--color-gray-50)",
+                      background: isCosmic ? "rgba(10, 10, 15, 0.5)" : "var(--color-gray-50)",
                       borderRadius: "0.5rem",
+                      border: isCosmic ? "1px solid rgba(212, 175, 55, 0.1)" : "none",
                     }}
                   >
                     <div
@@ -685,7 +854,7 @@ export default function ProfilePage() {
                           style={{
                             fontSize: "0.9375rem",
                             fontWeight: 500,
-                            color: "var(--color-gray-900)",
+                            color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
                           }}
                         >
                           {call.astrologerName}
@@ -693,7 +862,7 @@ export default function ProfilePage() {
                         <p
                           style={{
                             fontSize: "0.75rem",
-                            color: "var(--color-gray-500)",
+                            color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
                           }}
                         >
                           {new Date(call.startedAt).toLocaleString()}
@@ -713,7 +882,7 @@ export default function ProfilePage() {
                       <p
                         style={{
                           fontSize: "0.75rem",
-                          color: "var(--color-gray-500)",
+                          color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
                         }}
                       >
                         {call.duration} min
@@ -723,15 +892,24 @@ export default function ProfilePage() {
                 ))}
               </div>
             ) : (
-              <p
+              <div
                 style={{
                   textAlign: "center",
-                  color: "var(--color-gray-500)",
-                  padding: "2rem 0",
+                  padding: "2rem",
+                  color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
                 }}
               >
-                No call history yet.
-              </p>
+                <Clock
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                    margin: "0 auto 1rem",
+                    opacity: 0.5,
+                    color: isCosmic ? "#533483" : "inherit",
+                  }}
+                />
+                <p>No call history yet.</p>
+              </div>
             )}
           </div>
         </div>
@@ -1015,6 +1193,34 @@ export default function ProfilePage() {
 
       {/* Local Animations & Styles */}
       <style jsx>{`
+        .card {
+          border-radius: 1rem;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: var(--transition-smooth);
+        }
+        [data-theme="cosmic"] .card {
+          background: rgba(22, 33, 62, 0.85) !important;
+          border: 1px solid rgba(212, 175, 55, 0.3) !important;
+          box-shadow: var(--shadow-lg), var(--shadow-glow) !important;
+        }
+        [data-theme="light"] .card,
+        :not([data-theme]) .card {
+          background: rgba(255, 255, 255, 0.85) !important;
+          border: 1px solid rgba(212, 175, 55, 0.2) !important;
+          box-shadow: var(--shadow-lg) !important;
+        }
+        .card:hover {
+          transform: translateY(-4px);
+        }
+        [data-theme="cosmic"] .card:hover {
+          box-shadow: var(--shadow-xl), var(--shadow-glow) !important;
+        }
+        [data-theme="light"] .card:hover,
+        :not([data-theme]) .card:hover {
+          box-shadow: var(--shadow-xl) !important;
+        }
+
         .profile-grid {
           display: grid;
           gap: 2rem;
@@ -1046,6 +1252,15 @@ export default function ProfilePage() {
           }
           75% {
             transform: translateY(-30px) translateX(30px);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
           }
         }
       `}</style>

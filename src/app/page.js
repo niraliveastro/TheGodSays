@@ -10,9 +10,11 @@ import AstrologyForm from "@/components/AstrologyForm";
 import AstrologyResult from "@/components/AstrologyResult";
 import DateSelector from "@/components/DateSelector";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/contexts/ThemeContext";
 import { mockPanchangData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
 import { trackPageView } from "@/lib/analytics";
+import { fastNavigate, prefetchRoutes, COMMON_ROUTES } from "@/lib/fastRouter";
 import {
   Calendar,
   MapPin,
@@ -56,6 +58,13 @@ const writeHomeCache = (key, value) => {
 export default function Home() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isCosmic = theme === 'cosmic';
+
+  // Prefetch common routes on mount for faster navigation
+  useEffect(() => {
+    prefetchRoutes(router, COMMON_ROUTES);
+  }, [router]);
   
   // Track page view on mount
   useEffect(() => {
@@ -980,8 +989,8 @@ export default function Home() {
       console.error("Error saving form data:", error);
     }
 
-    // Navigate to predictions page
-    window.location.href = "/predictions";
+    // Navigate to predictions page (fast client-side routing)
+    fastNavigate(router, "/predictions");
   };
 
   // Debounce location search
@@ -1035,14 +1044,14 @@ export default function Home() {
 
   const handleOptionClick = (optionId) => {
     if (optionId === "tithi-timings") {
-      // Redirect to dedicated tithi timings page
-      window.location.href = "/tithi-timings";
+      // Redirect to dedicated tithi timings page (fast client-side routing)
+      fastNavigate(router, "/tithi-timings");
       return;
     }
 
     if (optionId === "choghadiya-timings") {
-      // Redirect to dedicated choghadiya timings page
-      window.location.href = "/choghadiya-timings";
+      // Redirect to dedicated choghadiya timings page (fast client-side routing)
+      fastNavigate(router, "/choghadiya-timings");
       return;
     }
 
@@ -1098,8 +1107,8 @@ export default function Home() {
       time: birthPayload.time || "",
       place: birthPayload.place || "",
     }).toString();
-    // Redirect to AI Prediction page (prefill handled there by reading query params or localStorage)
-    window.location.href = `/ai-prediction?${qs}`;
+    // Redirect to AI Prediction page (fast client-side routing)
+    fastNavigate(router, `/ai-prediction?${qs}`);
   };
 
   // Review Modal Handlers
@@ -1387,8 +1396,8 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      // quick link to Life Insights (placeholder)
-                      window.location.href = "/predictions";
+                      // quick link to Life Insights (fast client-side routing)
+                      fastNavigate(router, "/predictions");
                     }}
                   >
                     {t.hero.lifeInsights}
@@ -1396,7 +1405,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      window.location.href = "/matching";
+                      fastNavigate(router, "/matching");
                     }}
                   >
                     {t.hero.kundaliMatching}
@@ -1404,7 +1413,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      window.location.href = "/panchang/calender";
+                      fastNavigate(router, "/panchang/calender");
                     }}
                   >
                     {t.hero.panchangToday}
@@ -1415,9 +1424,7 @@ export default function Home() {
                 <div className="hero-actions">
                   {/* The two new primary CTAs requested */}
                   <button
-                    onClick={() =>
-                      (window.location.href = "/talk-to-astrologer")
-                    }
+                    onClick={() => fastNavigate(router, "/talk-to-astrologer")}
                     className="hero-btn hero-btn-primary"
                   >
                     <Star className="hero-btn-icon" />
@@ -1425,7 +1432,7 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() => (window.location.href = "/predictions")}
+                    onClick={() => fastNavigate(router, "/predictions")}
                     className="hero-btn inline-flex items-center gap-2 px-4 py-3 rounded-md font-semibold shadow-sm
              bg-transparent border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                     type="button"
@@ -1664,7 +1671,7 @@ export default function Home() {
               {/* Service Card 1: Talk to Astrologer */}
               <div 
                 className="card bg-gradient-to-br from-white to-purple-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-purple-100"
-                onClick={() => window.location.href = "/talk-to-astrologer"}
+                onClick={() => fastNavigate(router, "/talk-to-astrologer")}
               >
                 <div className="flex flex-col items-center text-center gap-3">
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -1694,7 +1701,7 @@ export default function Home() {
               {/* Service Card 3: Compatibility Check */}
               <div 
                 className="card bg-gradient-to-br from-white to-rose-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-rose-100"
-                onClick={() => window.location.href = "/matching"}
+                onClick={() => fastNavigate(router, "/matching")}
               >
                 <div className="flex flex-col items-center text-center gap-3">
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -2010,7 +2017,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">
                 <button
-                  onClick={() => (window.location.href = "/talk-to-astrologer")}
+                  onClick={() => fastNavigate(router, "/talk-to-astrologer")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
                   style={{ backgroundColor: 'var(--color-gold)' }}
                 >
@@ -2027,7 +2034,7 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() => (window.location.href = "/auth/astrologer")}
+                    onClick={() => fastNavigate(router, "/auth/astrologer")}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
                   >
                     <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2443,7 +2450,7 @@ export default function Home() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = `/account/astrologer/${ast.id}`;
+                        fastNavigate(router, `/account/astrologer/${ast.id}`);
                       }}
                       style={{
                         width: "100%",
@@ -2487,6 +2494,14 @@ export default function Home() {
               role="region"
               aria-labelledby="loyalty-title"
               className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center"
+              style={{
+                background: isCosmic 
+                  ? "rgba(22, 33, 62, 0.85)" 
+                  : undefined,
+                borderColor: isCosmic 
+                  ? "rgba(212, 175, 55, 0.3)" 
+                  : undefined,
+              }}
             >
               {/* Left: icon + copy */}
               <div className="flex items-start gap-4 md:gap-6 flex-1">
@@ -2510,26 +2525,32 @@ export default function Home() {
                   <h3 id="loyalty-title" className="text-4xl text-gold">
                     {t.compatibility.title}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
                     {t.compatibility.description}
                   </p>
 
-                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold" style={{ 
+                        background: isCosmic ? "rgba(16, 185, 129, 0.2)" : undefined,
+                        color: isCosmic ? "#10b981" : undefined
+                      }}>
                         ✓
                       </span>
                       {t.compatibility.quickResults}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{ 
+                        background: isCosmic ? "rgba(212, 175, 55, 0.2)" : undefined,
+                        color: isCosmic ? "#d4af37" : undefined
+                      }}>
                         ★
                       </span>
                       {t.compatibility.learnKoot}
                     </li>
                   </ul>
 
-                  <p className="mt-3 text-xs text-slate-500">
+                  <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
                     {t.compatibility.prefillNote}
                   </p>
                 </div>
@@ -2539,18 +2560,24 @@ export default function Home() {
               <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
                   <button
                     type="button"
-                    onClick={() => (window.location.href = "/matching")}
+                    onClick={() => fastNavigate(router, "/matching")}
                     className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                     aria-label="Check compatibility now — go to matching page"
-                    style={{ backgroundColor: "var(--color-gold)" }}
+                    style={{ 
+                      backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
+                      color: isCosmic ? "#d4af37" : "white",
+                      borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
+                      borderWidth: isCosmic ? "1px" : "0",
+                    }}
                   >
                     <svg
                       className="w-4 h-4"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="currentColor"
+                      stroke={isCosmic ? "#d4af37" : "currentColor"}
                       strokeWidth="1.5"
                       aria-hidden="true"
+                      style={{ color: isCosmic ? "#d4af37" : "currentColor" }}
                     >
                       <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
                     </svg>
@@ -2581,6 +2608,14 @@ export default function Home() {
                 role="region"
                 aria-labelledby="panchang-title"
                 className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg"
+                style={{
+                  background: isCosmic 
+                    ? "rgba(22, 33, 62, 0.85)" 
+                    : undefined,
+                  borderColor: isCosmic 
+                    ? "rgba(212, 175, 55, 0.3)" 
+                    : undefined,
+                }}
               >
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row gap-6 items-center mb-8">
@@ -2607,7 +2642,7 @@ export default function Home() {
                               }
                             )}`}
                       </h3>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
                         {t.panchang.description}
                       </p>
 
@@ -2623,7 +2658,7 @@ export default function Home() {
                         />
                       </div>
 
-                      <p className="mt-3 text-xs text-slate-500">
+                      <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
                         {t.panchang.selectDateHelper}
                       </p>
                     </div>
@@ -2633,12 +2668,17 @@ export default function Home() {
                   <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
                     <button
                       type="button"
-                      onClick={() => (window.location.href = "/panchang")}
+                      onClick={() => fastNavigate(router, "/panchang")}
                       className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                       aria-label="View full Panchang details"
-                      style={{ backgroundColor: "var(--color-gold)" }}
+                      style={{ 
+                        backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
+                        color: isCosmic ? "#d4af37" : "white",
+                        borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
+                        borderWidth: isCosmic ? "1px" : "0",
+                      }}
                     >
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-4 h-4" style={{ color: isCosmic ? "#d4af37" : "currentColor" }} />
                       {t.panchang.viewFull}
                     </button>
                   </div>
