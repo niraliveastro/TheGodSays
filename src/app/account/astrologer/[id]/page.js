@@ -24,29 +24,22 @@ import {
 
 /**
  * AstrologerProfile Component
- *
- * This component renders a detailed profile page for an astrologer.
- * It fetches data from Firestore, handles reviews and pricing via API,
- * supports profile editing for the owner, avatar uploads with compression,
- * and responsive layouts for desktop, tablet, and mobile.
- *
- * Key Features:
- * - Fetch and display astrologer details (name, bio, specialties, etc.)
- * - Display ratings and recent reviews
- * - Action buttons for video/voice calls (only when online)
- * - Edit modal for profile updates (owner only)
- * - Avatar upload with client-side compression and base64 storage
- * - Responsive design with CSS classes
- * - Loading and error states
- *
- * Dependencies:
- * - Firebase (Firestore, Auth)
- * - Next.js (useParams, useRouter)
- * - Lucide React icons
- *
- *
- * @returns {JSX.Element} The astrologer profile UI
+ * - Added: areasOfExpertise (array) with multi-select UI in edit modal
+ * - Stored as array in Firestore under `areasOfExpertise`
  */
+
+const EXPERTISE_OPTIONS = [
+  "Relationships",
+  "Career",
+  "Health",
+  "Finance",
+  "Marriage",
+  "Education",
+  "Business",
+  "Travel",
+  "Family",
+  "Spirituality",
+];
 
 export default function AstrologerProfile() {
   const params = useParams();
@@ -73,6 +66,7 @@ export default function AstrologerProfile() {
     languages: "",
     experience: "",
     status: "offline",
+    areasOfExpertise: [], // NEW: store as array
   });
 
   // Listen to auth state
@@ -116,6 +110,7 @@ export default function AstrologerProfile() {
           languages: (astrologerData.languages || ["English"]).join(", "),
           experience: astrologerData.experience || "",
           status: astrologerData.status || "offline",
+          areasOfExpertise: astrologerData.areasOfExpertise || [], // NEW
         });
 
         // Pricing
@@ -155,7 +150,6 @@ export default function AstrologerProfile() {
             setReviewsCount(reviewsData.reviews.length);
             setReviews(reviewsData.reviews.slice(0, 3));
           } else {
-            // Handle 503 or other errors gracefully
             console.warn("Failed to fetch reviews:", reviewsData.message || "Unknown error");
             setRating("0.0");
             setReviewsCount(0);
@@ -204,6 +198,9 @@ export default function AstrologerProfile() {
           .filter((l) => l),
         experience: editForm.experience.trim(),
         status: editForm.status,
+        areasOfExpertise: Array.isArray(editForm.areasOfExpertise)
+          ? editForm.areasOfExpertise
+          : [], // NEW: ensure array
       };
 
       await updateDoc(docRef, updatedData);
@@ -469,6 +466,16 @@ export default function AstrologerProfile() {
     }
   };
 
+  // Helper: Avatar initials
+  const avatarInitials = (name = "") =>
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+
   return (
     <>
       {/* Desktop Layout - Custom Grid */}
@@ -609,11 +616,7 @@ export default function AstrologerProfile() {
                             position: "relative",
                           }}
                         >
-                          {!astrologer.avatar &&
-                            astrologer.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                          {!astrologer.avatar && avatarInitials(astrologer.name)}
 
                           {isOnline && (
                             <div
@@ -723,6 +726,109 @@ export default function AstrologerProfile() {
                         >
                           {astrologer.specialization}
                         </p>
+
+                        {/* NEW ROW (Option A): Specialties (left) | Areas of Expertise (right) */}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "1rem",
+                            alignItems: "flex-start",
+                            marginBottom: "var(--space-lg)",
+                          }}
+                        >
+                          {/* Specialties column */}
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: "0.875rem",
+                                color: "var(--color-gray-600)",
+                                marginBottom: "0.5rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Specialties
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              {(specialties || []).map((spec, i) => (
+                                <span
+                                  key={i}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "0.5rem 0.9rem",
+                                    background: "var(--color-indigo-light)",
+                                    color: "var(--color-indigo)",
+                                    borderRadius: "var(--radius-full)",
+                                    fontSize: "0.875rem",
+                                    fontWeight: 500,
+                                    border: "1px solid rgba(79, 70, 229, 0.2)",
+                                  }}
+                                >
+                                  {spec}
+                                </span>
+                              ))}
+                              {(specialties || []).length === 0 && (
+                                <div style={{ color: "var(--color-gray-500)" }}>
+                                  No specialties listed
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Areas of Expertise column */}
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: "0.875rem",
+                                color: "var(--color-gray-600)",
+                                marginBottom: "0.5rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Areas of Expertise
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              {astrologer.areasOfExpertise &&
+                              astrologer.areasOfExpertise.length > 0 ? (
+                                astrologer.areasOfExpertise.map((area, idx) => (
+                                  <span
+                                    key={idx}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      padding: "0.45rem 0.95rem",
+                                      background:
+                                        "linear-gradient(180deg,#fff7ed,#ffedd5)",
+                                      color: "#92400e",
+                                      borderRadius: "var(--radius-full)",
+                                      fontSize: "0.9rem",
+                                      fontWeight: 700,
+                                      border: "1px solid rgba(245,158,11,0.12)",
+                                    }}
+                                  >
+                                    {area}
+                                  </span>
+                                ))
+                              ) : (
+                                <div style={{ color: "var(--color-gray-500)" }}>
+                                  No specific expertise selected
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Rating */}
                         <div
@@ -1055,7 +1161,11 @@ export default function AstrologerProfile() {
                           gap: "0.75rem",
                         }}
                       >
-                        {specialties.map((specialty, idx) => (
+                        {/* Render the new areasOfExpertise if present, otherwise fall back to specialties */}
+                        {(astrologer.areasOfExpertise && astrologer.areasOfExpertise.length > 0
+                          ? astrologer.areasOfExpertise
+                          : specialties
+                        ).map((specialty, idx) => (
                           <span
                             key={idx}
                             style={{
@@ -1446,6 +1556,70 @@ export default function AstrologerProfile() {
                       fontFamily: "'Inter', sans-serif",
                     }}
                   />
+                </div>
+
+                {/* NEW: Areas of Expertise multi-select */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "0.5rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Areas of Expertise
+                  </label>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {EXPERTISE_OPTIONS.map((area) => {
+                      const selected = editForm.areasOfExpertise.includes(area);
+                      return (
+                        <button
+                          key={area}
+                          type="button"
+                          onClick={() => {
+                            setEditForm((prev) => {
+                              const already = prev.areasOfExpertise.includes(area);
+                              return {
+                                ...prev,
+                                areasOfExpertise: already
+                                  ? prev.areasOfExpertise.filter((a) => a !== area)
+                                  : [...prev.areasOfExpertise, area],
+                              };
+                            });
+                          }}
+                          style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "20px",
+                            border: "1px solid var(--color-indigo)",
+                            background: selected ? "var(--color-indigo)" : "white",
+                            color: selected ? "white" : "var(--color-indigo)",
+                            cursor: "pointer",
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {area}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--color-gray-500)",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    Select all topics where you provide the best guidance.
+                  </p>
                 </div>
 
                 <div>
