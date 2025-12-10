@@ -52,7 +52,7 @@ const writeHomeCache = (key, value) => {
   try {
     if (typeof window === "undefined") return;
     localStorage.setItem(HOME_STORAGE_PREFIX + key, JSON.stringify(value));
-  } catch {}
+  } catch { }
 };
 
 export default function Home() {
@@ -65,12 +65,12 @@ export default function Home() {
   useEffect(() => {
     prefetchRoutes(router, COMMON_ROUTES);
   }, [router]);
-  
+
   // Track page view on mount
   useEffect(() => {
     trackPageView('/', 'Home - RahuNow');
   }, []);
-  
+
   const [panchangData, setPanchangData] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
 
@@ -475,10 +475,10 @@ export default function Home() {
     // 2) If it's a JSON string, parse 1–2 times (handles double-encoded JSON)
     try {
       if (typeof out === "string") out = JSON.parse(out);
-    } catch {}
+    } catch { }
     try {
       if (typeof out === "string") out = JSON.parse(out);
-    } catch {}
+    } catch { }
 
     return out || null;
   };
@@ -496,8 +496,8 @@ export default function Home() {
       const cacheKey = `${date
         .toISOString()
         .slice(0, 10)}|${userLocation.latitude.toFixed(
-        3
-      )},${userLocation.longitude.toFixed(3)}|${tzNow}`;
+          3
+        )},${userLocation.longitude.toFixed(3)}|${tzNow}`;
 
       // 1) Check in-memory cache
       const mem = homePanchangCache.get(cacheKey);
@@ -516,7 +516,7 @@ export default function Home() {
             data: stored.data,
             savedAt: stored.savedAt || Date.now(),
           });
-        } catch {}
+        } catch { }
         setIsLoadingPanchang(false);
         return;
       }
@@ -553,7 +553,7 @@ export default function Home() {
         console.log("[Panchang] Payload", payload);
         console.log("[Auspicious] Payload", auspiciousPayload);
         console.groupEnd();
-      } catch {}
+      } catch { }
 
       // Tolerate partial failures: do not reject if a single call returns 429 or 403
       const [panchangSettled, sunMoonSettled, auspiciousSettled] =
@@ -571,18 +571,18 @@ export default function Home() {
         panchangSettled.status === "fulfilled"
           ? panchangSettled.value
           : {
-              results: {},
-              errors: { all: panchangSettled.reason?.message || "failed" },
-            };
+            results: {},
+            errors: { all: panchangSettled.reason?.message || "failed" },
+          };
       const sunMoonData =
         sunMoonSettled.status === "fulfilled" ? sunMoonSettled.value : null;
       const auspiciousData =
         auspiciousSettled.status === "fulfilled"
           ? auspiciousSettled.value
           : {
-              results: {},
-              errors: { all: auspiciousSettled.reason?.message || "failed" },
-            };
+            results: {},
+            errors: { all: auspiciousSettled.reason?.message || "failed" },
+          };
 
       // Check if API authentication failed (403 error)
       const hasAuthError = [
@@ -713,7 +713,7 @@ export default function Home() {
         console.log("sunMoonData:", sunMoonData);
         console.log("auspiciousData:", auspiciousData);
         console.groupEnd();
-      } catch (_) {}
+      } catch (_) { }
 
       // Log Auspicious/Inauspicious fetch outcome per endpoint
       if (auspiciousData) {
@@ -839,18 +839,18 @@ export default function Home() {
           data: updatedPanchangData,
           savedAt: Date.now(),
         });
-      } catch {}
+      } catch { }
 
       // Decide banner severity
       const hasAnyData = Boolean(
         updatedPanchangData.tithi !== mockPanchangData.tithi ||
-          updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
-          updatedPanchangData.yoga !== mockPanchangData.yoga ||
-          updatedPanchangData.karana !== mockPanchangData.karana ||
-          updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
-          updatedPanchangData.sunset !== mockPanchangData.sunset ||
-          updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
-          updatedPanchangData.moonset !== mockPanchangData.moonset
+        updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
+        updatedPanchangData.yoga !== mockPanchangData.yoga ||
+        updatedPanchangData.karana !== mockPanchangData.karana ||
+        updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
+        updatedPanchangData.sunset !== mockPanchangData.sunset ||
+        updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
+        updatedPanchangData.moonset !== mockPanchangData.moonset
       );
       const allFailed =
         panchangSettled.status === "rejected" &&
@@ -900,18 +900,18 @@ export default function Home() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          
+
           // Reverse geocode to get location name
           try {
             const response = await fetch(
               `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
             );
             const data = await response.json();
-            
+
             const city = data.address.city || data.address.town || data.address.village || "";
             const country = data.address.country || "";
             const locationString = [city, country].filter(Boolean).join(", ");
-            
+
             setFormData(prev => ({ ...prev, place: locationString }));
             setShowLocationSuggestions(false);
           } catch (error) {
@@ -944,7 +944,7 @@ export default function Home() {
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
       );
       const data = await response.json();
-      
+
       const suggestions = data.map(item => ({
         display_name: item.display_name || "",
         city: item.address?.city || item.address?.town || item.address?.village || "",
@@ -952,7 +952,7 @@ export default function Home() {
         lat: item.lat,
         lon: item.lon,
       }));
-      
+
       setLocationSuggestions(suggestions);
       setShowLocationSuggestions(true);
     } catch (error) {
@@ -1207,7 +1207,7 @@ export default function Home() {
           userId,
           astrologerId,
         }),
-      }).catch(() => {});
+      }).catch(() => { });
 
       /* ---- Poll for call status ---- */
       let timeoutId;
@@ -1253,7 +1253,7 @@ export default function Home() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "cancel-call", callId: call.id }),
-          }).catch(() => {});
+          }).catch(() => { });
           setCallStatus("rejected");
           setTimeout(() => {
             setConnectingCallType(null);
@@ -1275,7 +1275,7 @@ export default function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "cancel-call", callId: call.id }),
-        }).catch(() => {});
+        }).catch(() => { });
         setConnectingCallType(null);
         setLoading(false);
         alert("Astrologer not responding.");
@@ -1663,7 +1663,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Service Card 1: Talk to Astrologer */}
-              <div 
+              <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => fastNavigate(router, "/talk-to-astrologer")}
               >
@@ -1678,7 +1678,7 @@ export default function Home() {
               </div>
 
               {/* Service Card 2: AI Predictions */}
-              <div 
+              <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => document.getElementById('ai-prediction-section')?.scrollIntoView({ behavior: 'smooth' })}
               >
@@ -1693,7 +1693,7 @@ export default function Home() {
               </div>
 
               {/* Service Card 3: Compatibility Check */}
-              <div 
+              <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => fastNavigate(router, "/matching")}
               >
@@ -1710,7 +1710,7 @@ export default function Home() {
               </div>
 
               {/* Service Card 4: Daily Panchang */}
-              <div 
+              <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => document.getElementById('panchang-section')?.scrollIntoView({ behavior: 'smooth' })}
               >
@@ -1778,12 +1778,12 @@ export default function Home() {
             id="ai-prediction-section"
             className="max-w-4xl mx-auto mt-12 ai-prediction-form-section rounded-3xl shadow-xl p-6 md:p-10"
             style={{
-              background: isCosmic 
-                ? "rgba(22, 33, 62, 0.85)" 
+              background: isCosmic
+                ? "rgba(22, 33, 62, 0.85)"
                 : "rgba(255, 255, 255, 0.9)",
               backdropFilter: "blur(20px)",
-              border: isCosmic 
-                ? "1px solid rgba(212, 175, 55, 0.3)" 
+              border: isCosmic
+                ? "1px solid rgba(212, 175, 55, 0.3)"
                 : "1px solid rgba(212, 175, 55, 0.2)",
             }}
           >
@@ -1868,7 +1868,7 @@ export default function Home() {
               </div>
 
               {/* Gender (col 1 of row 2) */}
-              <div className="md:col-span-1 flex flex-col md:justify-end ai-form-field">
+              <div className="md:col-span-1 flex flex-col ai-form-field">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.gender}
                 </label>
@@ -1913,7 +1913,7 @@ export default function Home() {
               </div>
 
               {/* Place (col 2 of row 2) */}
-              <div className="md:col-span-1 flex flex-col md:justify-end relative ai-form-field">
+              <div className="md:col-span-1 flex flex-col relative ai-form-field">
                 {/* label has fixed height to match other labels */}
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.place}
@@ -1937,7 +1937,7 @@ export default function Home() {
                       required
                       autoComplete="off"
                     />
-                    
+
                     {/* Location suggestions dropdown */}
                     {showLocationSuggestions && locationSuggestions.length > 0 && (
                       <div
@@ -1976,17 +1976,17 @@ export default function Home() {
                     )}
                   </button>
                 </div>
-
-                <p className="mt-2 text-xs text-gold-dark">
-                  {t.aiForm.placeHelper}
-                </p>
               </div>
 
               {/* CTA (col 3 of row 2) */}
-              <div className="flex flex-col md:justify-end">
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gold mb-2 h-5 opacity-0">
+                  {/* Hidden label for alignment */}
+                  Placeholder
+                </label>
                 <div className="w-full">
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn ai-predictions-submit-btn w-full h-12 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
                   >
                     {t.aiForm.submit}
@@ -2031,25 +2031,25 @@ export default function Home() {
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
-                    <span>{t.astrologers.viewAll}</span>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                  </button>
+                  <span>{t.astrologers.viewAll}</span>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </button>
 
-                  <button
-                    onClick={() => fastNavigate(router, "/auth/astrologer")}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
-                  >
-                    <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <line x1="19" y1="8" x2="19" y2="14" />
-                      <line x1="22" y1="11" x2="16" y2="11" />
-                    </svg>
-                    <span>{t.astrologers.becomeAstrologer}</span>
+                <button
+                  onClick={() => fastNavigate(router, "/auth/astrologer")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
+                >
                   <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                  <span>{t.astrologers.becomeAstrologer}</span>
+                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
@@ -2080,414 +2080,413 @@ export default function Home() {
                   ? onlineAstrologers
                   : featuredAstrologers
                 ).map((ast) => (
-                <div
-                  key={ast.id}
-                  className="card astrologer-card"
-                  role="listitem"
-                  style={{
-                    padding: "1.5rem",
-                    transition: "all 0.3s ease",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    position: "relative",
-                    textDecoration: "none",
-                    color: "inherit",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.3)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow =
-                      "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
-                  }}
-                >
-                  {/* Top Row: Avatar + Name + Info */}
                   <div
+                    key={ast.id}
+                    className="card astrologer-card"
+                    role="listitem"
                     style={{
+                      padding: "1.5rem",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
                       display: "flex",
-                      alignItems: "flex-start",
-                      gap: "1rem",
-                      marginBottom: "1rem",
+                      flexDirection: "column",
                       position: "relative",
-                      zIndex: 20,
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow =
+                        "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow =
+                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
                     }}
                   >
-                    {/* Avatar + Online Indicator */}
-                    <div style={{ position: "relative", flexShrink: 0 }}>
-                      <div
-                        style={{
-                          width: "4rem",
-                          height: "4rem",
-                          background:
-                            "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "white",
-                          fontWeight: 700,
-                          fontSize: "1.25rem",
-                        }}
-                      >
-                        {ast.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "-0.25rem",
-                          right: "-0.25rem",
-                          width: "1.25rem",
-                          height: "1.25rem",
-                          borderRadius: "50%",
-                          border: "2px solid white",
-                          background: ast.online || ast.isOnline
-                            ? "#10b981"
-                            : "var(--color-gray-400)",
-                          animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
-                        }}
-                      />
-                    </div>
-
-                    {/* Name, Spec, Experience, Rating */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          gap: "1rem",
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h3
-                            style={{
-                              fontSize: "1.5rem",
-                              fontWeight: 700,
-                              color: "var(--color-gray-900)",
-                              margin: 0,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              fontFamily: "var(--font-heading)",
-                              lineHeight: 1.3,
-                            }}
-                            title={ast.name}
-                          >
-                            {ast.name}
-                          </h3>
-                          <p
-                            style={{
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                              color: "var(--color-indigo)",
-                              margin: "0.125rem 0 0",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              fontFamily: "var(--font-body)",
-                            }}
-                            title={ast.specialization ?? "Astrology"}
-                          >
-                            {ast.specialization ?? "Astrology"}
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "var(--color-gray-500)",
-                              margin: "0.25rem 0 0",
-                              fontWeight: 500,
-                              fontFamily: "Courier New, monospace",
-                            }}
-                          >
-                            {ast.experience ?? "Experienced in astrology"}
-                          </p>
+                    {/* Top Row: Avatar + Name + Info */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "1rem",
+                        marginBottom: "1rem",
+                        position: "relative",
+                        zIndex: 20,
+                      }}
+                    >
+                      {/* Avatar + Online Indicator */}
+                      <div style={{ position: "relative", flexShrink: 0 }}>
+                        <div
+                          style={{
+                            width: "4rem",
+                            height: "4rem",
+                            background:
+                              "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontWeight: 700,
+                            fontSize: "1.25rem",
+                          }}
+                        >
+                          {ast.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </div>
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "-0.25rem",
+                            right: "-0.25rem",
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "50%",
+                            border: "2px solid white",
+                            background: ast.online || ast.isOnline
+                              ? "#10b981"
+                              : "var(--color-gray-400)",
+                            animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
+                          }}
+                        />
+                      </div>
 
-                        {/* Rating Badge + Review Button */}
+                      {/* Name, Spec, Experience, Rating */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
                             display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: "0.5rem",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            gap: "1rem",
                           }}
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.375rem",
-                              background: "var(--color-amber-50)",
-                              color: "var(--color-amber-700)",
-                              padding: "0.25rem 0.5rem",
-                              borderRadius: "9999px",
-                              fontFamily: "Courier New, monospace",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            <Star
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3
                               style={{
-                                width: "0.875rem",
-                                height: "0.875rem",
-                                fill: "#f59e0b",
-                                color: "#f59e0b",
+                                fontSize: "1.5rem",
+                                fontWeight: 700,
+                                color: "var(--color-gray-900)",
+                                margin: 0,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontFamily: "var(--font-heading)",
+                                lineHeight: 1.3,
                               }}
-                            />
-                            {ast.rating ?? 4.7}{" "}
-                            <span
+                              title={ast.name}
+                            >
+                              {ast.name}
+                            </h3>
+                            <p
                               style={{
+                                fontSize: "0.875rem",
+                                fontWeight: 500,
+                                color: "var(--color-indigo)",
+                                margin: "0.125rem 0 0",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontFamily: "var(--font-body)",
+                              }}
+                              title={ast.specialization ?? "Astrology"}
+                            >
+                              {ast.specialization ?? "Astrology"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
                                 color: "var(--color-gray-500)",
-                                marginLeft: "0.125rem",
+                                margin: "0.25rem 0 0",
+                                fontWeight: 500,
                                 fontFamily: "Courier New, monospace",
                               }}
                             >
-                              ({ast.reviews ?? 0})
-                            </span>
+                              {ast.experience ?? "Experienced in astrology"}
+                            </p>
                           </div>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleOpenReview(ast);
-                            }}
-                            style={{
-                              fontSize: "0.75rem",
-                              padding: "0.25rem 0.75rem",
-                              height: "1.75rem",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "0.375rem",
-                              background: "white",
-                              color: "#374151",
-                              cursor: "pointer",
-                              fontWeight: 500,
-                            }}
-                          >
-                            Review
-                          </button>
-                        </div>
-                      </div>
 
-                      {/* Status and Verified Badges */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                        {/* Status Badge */}
-                        <div
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            background: (ast.online || ast.isOnline)
-                              ? "#d1fae5" 
-                              : ast.status === "busy" 
-                              ? "#fef3c7" 
-                              : "#f3f4f6",
-                            color: (ast.online || ast.isOnline)
-                              ? "#065f46" 
-                              : ast.status === "busy" 
-                              ? "#92400e" 
-                              : "#6b7280",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "9999px",
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                            border: `1px solid ${
-                              (ast.online || ast.isOnline)
-                                ? "#6ee7b7" 
-                                : ast.status === "busy" 
-                                ? "#fbbf24" 
-                                : "#d1d5db"
-                            }`,
-                          }}
-                        >
+                          {/* Rating Badge + Review Button */}
                           <div
                             style={{
-                              width: "0.5rem",
-                              height: "0.5rem",
-                              borderRadius: "50%",
-                              background: (ast.online || ast.isOnline)
-                                ? "#10b981" 
-                                : ast.status === "busy" 
-                                ? "#f59e0b" 
-                                : "#9ca3af",
-                              boxShadow: (ast.online || ast.isOnline)
-                                ? "0 0 6px rgba(16, 185, 129, 0.6)" 
-                                : ast.status === "busy" 
-                                ? "0 0 6px rgba(245, 158, 11, 0.6)" 
-                                : "none",
-                              animation: (ast.online || ast.isOnline || ast.status === "busy")
-                                ? "pulse 2s infinite" 
-                                : "none",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: "0.5rem",
                             }}
-                          />
-                          {(ast.online || ast.isOnline) ? "Online" : ast.status === "busy" ? "Busy" : "Offline"}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.375rem",
+                                background: "var(--color-amber-50)",
+                                color: "var(--color-amber-700)",
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "9999px",
+                                fontFamily: "Courier New, monospace",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <Star
+                                style={{
+                                  width: "0.875rem",
+                                  height: "0.875rem",
+                                  fill: "#f59e0b",
+                                  color: "#f59e0b",
+                                }}
+                              />
+                              {ast.rating ?? 4.7}{" "}
+                              <span
+                                style={{
+                                  color: "var(--color-gray-500)",
+                                  marginLeft: "0.125rem",
+                                  fontFamily: "Courier New, monospace",
+                                }}
+                              >
+                                ({ast.reviews ?? 0})
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenReview(ast);
+                              }}
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.25rem 0.75rem",
+                                height: "1.75rem",
+                                border: "1px solid #d1d5db",
+                                borderRadius: "0.375rem",
+                                background: "white",
+                                color: "#374151",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                            >
+                              Review
+                            </button>
+                          </div>
                         </div>
 
-                        {ast.verified && (
+                        {/* Status and Verified Badges */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                          {/* Status Badge */}
                           <div
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "0.25rem",
-                              background: "var(--color-indigo-light)",
-                              color: "var(--color-indigo)",
-                              padding: "0.25rem 0.5rem",
+                              gap: "0.35rem",
+                              background: (ast.online || ast.isOnline)
+                                ? "#d1fae5"
+                                : ast.status === "busy"
+                                  ? "#fef3c7"
+                                  : "#f3f4f6",
+                              color: (ast.online || ast.isOnline)
+                                ? "#065f46"
+                                : ast.status === "busy"
+                                  ? "#92400e"
+                                  : "#6b7280",
+                              padding: "0.35rem 0.65rem",
                               borderRadius: "9999px",
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              border: `1px solid ${(ast.online || ast.isOnline)
+                                  ? "#6ee7b7"
+                                  : ast.status === "busy"
+                                    ? "#fbbf24"
+                                    : "#d1d5db"
+                                }`,
                             }}
                           >
-                            ✓ Verified
+                            <div
+                              style={{
+                                width: "0.5rem",
+                                height: "0.5rem",
+                                borderRadius: "50%",
+                                background: (ast.online || ast.isOnline)
+                                  ? "#10b981"
+                                  : ast.status === "busy"
+                                    ? "#f59e0b"
+                                    : "#9ca3af",
+                                boxShadow: (ast.online || ast.isOnline)
+                                  ? "0 0 6px rgba(16, 185, 129, 0.6)"
+                                  : ast.status === "busy"
+                                    ? "0 0 6px rgba(245, 158, 11, 0.6)"
+                                    : "none",
+                                animation: (ast.online || ast.isOnline || ast.status === "busy")
+                                  ? "pulse 2s infinite"
+                                  : "none",
+                              }}
+                            />
+                            {(ast.online || ast.isOnline) ? "Online" : ast.status === "busy" ? "Busy" : "Offline"}
                           </div>
-                        )}
+
+                          {ast.verified && (
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                background: "var(--color-indigo-light)",
+                                color: "var(--color-indigo)",
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "9999px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                              }}
+                            >
+                              ✓ Verified
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Price */}
-                  {ast.perMinuteCharge && (
-                    <div
-                      style={{
-                        marginBottom: "0.75rem",
-                        position: "relative",
-                        zIndex: 20,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "1.125rem",
-                          fontWeight: 700,
-                          color: "#059669",
-                          fontFamily: "Courier New, monospace",
-                        }}
-                      >
-                        ₹{ast.perMinuteCharge}/min
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Bio */}
-                  <p
-                    style={{
-                      fontSize: "0.875rem",
-                      fontFamily: "var(--font-body)",
-                      color: "var(--color-gray-600)",
-                      marginBottom: "0.75rem",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      position: "relative",
-                      zIndex: 20,
-                    }}
-                  >
-                    {ast.bio ??
-                      `Expert in ${ast.specialization ?? "astrology"}`}
-                  </p>
-
-                  {/* Languages */}
-                  {ast.languages?.length > 0 && (
-                    <div
-                      style={{
-                        marginBottom: "0.75rem",
-                        position: "relative",
-                        zIndex: 20,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          color: "var(--color-gray-600)",
-                          marginBottom: "0.5rem",
-                        }}
-                      >
-                        Speaks:
-                      </p>
+                    {/* Price */}
+                    {ast.perMinuteCharge && (
                       <div
                         style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: "0.375rem",
+                          marginBottom: "0.75rem",
+                          position: "relative",
+                          zIndex: 20,
                         }}
                       >
-                        {ast.languages.map((l, i) => (
-                          <span
-                            key={l + i}
-                            style={{
-                              padding: "0.25rem 0.625rem",
-                              background: "var(--color-indigo-light)",
-                              color: "var(--color-indigo)",
-                              fontSize: "0.75rem",
-                              fontWeight: 700,
-                              borderRadius: "9999px",
-                            }}
-                          >
-                            {l}
-                          </span>
-                        ))}
+                        <span
+                          style={{
+                            fontSize: "1.125rem",
+                            fontWeight: 700,
+                            color: "#059669",
+                            fontFamily: "Courier New, monospace",
+                          }}
+                        >
+                          ₹{ast.perMinuteCharge}/min
+                        </span>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Action button – Bottom */}
-                  <div
-                    style={{
-                      display: "flex",
-                      marginTop: "auto",
-                      position: "relative",
-                      zIndex: 30,
-                    }}
-                  >
-                    <button
-                      className="btn btn-primary"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        fastNavigate(router, `/account/astrologer/${ast.id}`);
-                      }}
+                    {/* Bio */}
+                    <p
                       style={{
-                        width: "100%",
-                        height: "3rem",
-                        padding: "0 1.5rem",
-                        fontSize: "1rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.5rem",
-                        fontWeight: 600,
+                        fontSize: "0.875rem",
+                        fontFamily: "var(--font-body)",
+                        color: "var(--color-gray-600)",
+                        marginBottom: "0.75rem",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        position: "relative",
+                        zIndex: 20,
                       }}
-                      type="button"
-                      aria-label={`Connect with ${ast.name}`}
                     >
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      {ast.bio ??
+                        `Expert in ${ast.specialization ?? "astrology"}`}
+                    </p>
+
+                    {/* Languages */}
+                    {ast.languages?.length > 0 && (
+                      <div
+                        style={{
+                          marginBottom: "0.75rem",
+                          position: "relative",
+                          zIndex: 20,
+                        }}
                       >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                      Connect with {ast.name.split(" ")[0]}
-                    </button>
+                        <p
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            color: "var(--color-gray-600)",
+                            marginBottom: "0.5rem",
+                          }}
+                        >
+                          Speaks:
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "0.375rem",
+                          }}
+                        >
+                          {ast.languages.map((l, i) => (
+                            <span
+                              key={l + i}
+                              style={{
+                                padding: "0.25rem 0.625rem",
+                                background: "var(--color-indigo-light)",
+                                color: "var(--color-indigo)",
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                borderRadius: "9999px",
+                              }}
+                            >
+                              {l}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action button – Bottom */}
+                    <div
+                      style={{
+                        display: "flex",
+                        marginTop: "auto",
+                        position: "relative",
+                        zIndex: 30,
+                      }}
+                    >
+                      <button
+                        className="btn btn-primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          fastNavigate(router, `/account/astrologer/${ast.id}`);
+                        }}
+                        style={{
+                          width: "100%",
+                          height: "3rem",
+                          padding: "0 1.5rem",
+                          fontSize: "1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "0.5rem",
+                          fontWeight: 600,
+                        }}
+                        type="button"
+                        aria-label={`Connect with ${ast.name}`}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Connect with {ast.name.split(" ")[0]}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               </div>
             )}
           </section>
@@ -2499,11 +2498,11 @@ export default function Home() {
               aria-labelledby="loyalty-title"
               className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center"
               style={{
-                background: isCosmic 
-                  ? "rgba(22, 33, 62, 0.85)" 
+                background: isCosmic
+                  ? "rgba(22, 33, 62, 0.85)"
                   : undefined,
-                borderColor: isCosmic 
-                  ? "rgba(212, 175, 55, 0.3)" 
+                borderColor: isCosmic
+                  ? "rgba(212, 175, 55, 0.3)"
                   : undefined,
               }}
             >
@@ -2535,7 +2534,7 @@ export default function Home() {
 
                   <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold" style={{ 
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold" style={{
                         background: isCosmic ? "rgba(16, 185, 129, 0.2)" : undefined,
                         color: isCosmic ? "#10b981" : undefined
                       }}>
@@ -2544,7 +2543,7 @@ export default function Home() {
                       {t.compatibility.quickResults}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{ 
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{
                         background: isCosmic ? "rgba(212, 175, 55, 0.2)" : undefined,
                         color: isCosmic ? "#d4af37" : undefined
                       }}>
@@ -2562,31 +2561,31 @@ export default function Home() {
 
               {/* Right: CTA */}
               <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
-                  <button
-                    type="button"
-                    onClick={() => fastNavigate(router, "/matching")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
-                    aria-label="Check compatibility now — go to matching page"
-                    style={{ 
-                      backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
-                      color: isCosmic ? "#d4af37" : "white",
-                      borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
-                      borderWidth: isCosmic ? "1px" : "0",
-                    }}
+                <button
+                  type="button"
+                  onClick={() => fastNavigate(router, "/matching")}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
+                  aria-label="Check compatibility now — go to matching page"
+                  style={{
+                    backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
+                    color: isCosmic ? "#d4af37" : "white",
+                    borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
+                    borderWidth: isCosmic ? "1px" : "0",
+                  }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={isCosmic ? "#d4af37" : "currentColor"}
+                    strokeWidth="1.5"
+                    aria-hidden="true"
+                    style={{ color: isCosmic ? "#d4af37" : "currentColor" }}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={isCosmic ? "#d4af37" : "currentColor"}
-                      strokeWidth="1.5"
-                      aria-hidden="true"
-                      style={{ color: isCosmic ? "#d4af37" : "currentColor" }}
-                    >
-                      <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
-                    </svg>
-                    {t.compatibility.checkNow}
-                  </button>
+                    <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
+                  </svg>
+                  {t.compatibility.checkNow}
+                </button>
               </div>
             </div>
           </section>
@@ -2613,11 +2612,11 @@ export default function Home() {
                 aria-labelledby="panchang-title"
                 className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg"
                 style={{
-                  background: isCosmic 
-                    ? "rgba(22, 33, 62, 0.85)" 
+                  background: isCosmic
+                    ? "rgba(22, 33, 62, 0.85)"
                     : undefined,
-                  borderColor: isCosmic 
-                    ? "rgba(212, 175, 55, 0.3)" 
+                  borderColor: isCosmic
+                    ? "rgba(212, 175, 55, 0.3)"
                     : undefined,
                 }}
               >
@@ -2637,14 +2636,14 @@ export default function Home() {
                         {selectedDate === new Date().toISOString().split("T")[0]
                           ? t.panchang.title
                           : `${t.panchang.titleFor} ${new Date(selectedDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              }
-                            )}`}
+                            "en-US",
+                            {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            }
+                          )}`}
                       </h3>
                       <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
                         {t.panchang.description}
@@ -2675,7 +2674,7 @@ export default function Home() {
                       onClick={() => fastNavigate(router, "/panchang")}
                       className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                       aria-label="View full Panchang details"
-                      style={{ 
+                      style={{
                         backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
                         color: isCosmic ? "#d4af37" : "white",
                         borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
@@ -2802,8 +2801,8 @@ export default function Home() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "cancel-call", callId }),
-              }).catch(() => {});
-              
+              }).catch(() => { });
+
               await fetch("/api/calls", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -2811,7 +2810,7 @@ export default function Home() {
                   callId,
                   status: "cancelled",
                 }),
-              }).catch(() => {});
+              }).catch(() => { });
             }
             setConnectingCallType(null);
             setCallStatus("connecting");
