@@ -1,18 +1,36 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
+// Mark this route as dynamic to prevent prerendering during build
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+// Initialize Firebase Admin if not already initialized
+if (!getApps().length) {
+  try {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      })
+    });
+  } catch (error) {
+    console.warn('Firebase Admin initialization failed:', error?.message);
+  }
+}
 
 export async function GET(request) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore();
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
     if (!userId) {
       return NextResponse.json({ success: false, message: 'User ID required' }, { status: 400 });
-    }
-
-    // Return empty array if Firebase is not available
-    if (!db) {
-      return NextResponse.json({ success: true, members: [] });
     }
 
     const membersRef = db.collection('users').doc(userId).collection('familyMembers');
@@ -35,15 +53,14 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore();
+    
     const body = await request.json();
     const { userId, name, dob, time, place, relation } = body;
 
     if (!userId || !name || !dob || !time || !place || !relation) {
       return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
-    }
-
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Database unavailable' }, { status: 503 });
     }
 
     const memberData = {
@@ -73,6 +90,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore();
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const memberId = searchParams.get('memberId');

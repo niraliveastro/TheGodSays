@@ -952,8 +952,8 @@ export default function PredictionsPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="form-field-input"
+                  placeholder="e.g., Priya Sharma"
+                  className="form-field-input form-input-field"
                   required
                 />
                 <p className="form-field-helper">
@@ -970,7 +970,8 @@ export default function PredictionsPage() {
                   type="date"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  className="form-field-input"
+                  className="form-field-input form-input-field"
+                  placeholder="YYYY-MM-DD"
                   required
                 />
                 <p className="form-field-helper">Format: YYYY-MM-DD (browser date picker)</p>
@@ -986,7 +987,8 @@ export default function PredictionsPage() {
                   value={tob}
                   onChange={(e) => setTob(e.target.value)}
                   step="60"
-                  className="form-field-input"
+                  className="form-field-input form-input-field"
+                  placeholder="14:30"
                   required
                 />
                 <p className="form-field-helper">24-hour format</p>
@@ -1005,7 +1007,7 @@ export default function PredictionsPage() {
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="form-field-input pr-10"
+                        className="form-field-input form-input-field pr-10"
                         required
                       >
                         <option value="" disabled>
@@ -1031,7 +1033,7 @@ export default function PredictionsPage() {
                     <div className="relative">
                       <div className="place-input-wrapper">
                         <input
-                          placeholder="City, Country"
+                          placeholder="e.g., Mumbai, India"
                           value={place}
                           onChange={(e) => {
                             const q = e.target.value;
@@ -1039,7 +1041,7 @@ export default function PredictionsPage() {
                             setSelectedCoords(null);
                             fetchSuggestions(q);
                           }}
-                          className="form-field-input place-input"
+                          className="form-field-input form-input-field place-input"
                           autoComplete="off"
                           required
                         />

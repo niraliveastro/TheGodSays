@@ -137,15 +137,22 @@ export function PageLoading({ type = 'default', message = null }) {
     <div 
       className="page-loading-container"
       style={{
-        minHeight: '60vh',
+        minHeight: '100vh',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '2rem',
         padding: '2rem',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
         background: isCosmic 
-          ? 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%)'
+          ? '#0a0a0f'
           : 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
       }}
     >

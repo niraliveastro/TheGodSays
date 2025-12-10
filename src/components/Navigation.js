@@ -87,7 +87,6 @@ const Navigation = () => {
         { href: "/panchang", label: t.panchang.title, icon: BookOpen },
       ],
     },
-    { href: "/wallet", label: t.nav.wallet, icon: Wallet },
     {
       href: null,
       label: t.nav.myAccount,
@@ -95,6 +94,7 @@ const Navigation = () => {
       dropdownId: "account",
       children: [
         { href: "/profile/user", label: t.profile.myProfile, icon: User },
+        { href: "/wallet", label: t.nav.wallet, icon: Wallet },
         { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
       ],
     },
