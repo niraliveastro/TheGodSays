@@ -14,7 +14,7 @@
 
 [data-theme="cosmic"] .home-page {
   background: #0a0a0f;
-  background-image: 
+  background-image:
     radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.2) 0%, transparent 70%);
@@ -28,7 +28,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(2px 2px at 20% 30%, rgba(212, 175, 55, 0.4), transparent),
     radial-gradient(2px 2px at 60% 70%, rgba(124, 58, 237, 0.3), transparent),
     radial-gradient(1px 1px at 50% 50%, rgba(212, 175, 55, 0.5), transparent),
@@ -44,7 +44,7 @@
 }
 
 [data-theme="cosmic"] .home-page::before {
-  background-image: 
+  background-image:
     radial-gradient(2px 2px at 20% 30%, #d4af37, transparent),
     radial-gradient(1.5px 1.5px at 60% 70%, #fbbf24, transparent),
     radial-gradient(1px 1px at 50% 50%, #fcd34d, transparent),
@@ -60,8 +60,13 @@
 }
 
 @keyframes starfield {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 /* Floating cosmic particles */
@@ -72,7 +77,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: 
+  background:
     radial-gradient(circle at 15% 25%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 85% 75%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.06) 0%, transparent 50%);
@@ -83,7 +88,7 @@
 }
 
 [data-theme="cosmic"] .home-page::after {
-  background: 
+  background:
     radial-gradient(ellipse at 20% 20%, rgba(83, 52, 131, 0.2) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 80%, rgba(147, 51, 234, 0.15) 0%, transparent 60%),
     radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.25) 0%, transparent 60%),
@@ -92,14 +97,18 @@
 }
 
 @keyframes cosmicFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
     opacity: 0.6;
   }
+
   33% {
     transform: translate(30px, -30px) scale(1.1);
     opacity: 0.8;
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
     opacity: 0.7;
@@ -120,6 +129,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -130,6 +140,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -140,6 +151,7 @@
     opacity: 0;
     transform: translateX(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -151,6 +163,7 @@
     opacity: 0;
     transform: translateX(50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -162,6 +175,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -194,22 +208,47 @@
 }
 
 /* Staggered animation for cards */
-.panchang-grid > *,
-.astrology-grid > * {
+.panchang-grid>*,
+.astrology-grid>* {
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
 }
 
-.panchang-grid > *:nth-child(1) { animation-delay: 0.1s; }
-.panchang-grid > *:nth-child(2) { animation-delay: 0.2s; }
-.panchang-grid > *:nth-child(3) { animation-delay: 0.3s; }
-.panchang-grid > *:nth-child(4) { animation-delay: 0.4s; }
+.panchang-grid>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
 
-.astrology-grid > *:nth-child(1) { animation-delay: 0.1s; }
-.astrology-grid > *:nth-child(2) { animation-delay: 0.2s; }
-.astrology-grid > *:nth-child(3) { animation-delay: 0.3s; }
-.astrology-grid > *:nth-child(4) { animation-delay: 0.4s; }
-.astrology-grid > *:nth-child(5) { animation-delay: 0.5s; }
+.panchang-grid>*:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.panchang-grid>*:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.panchang-grid>*:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.astrology-grid>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.astrology-grid>*:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.astrology-grid>*:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.astrology-grid>*:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.astrology-grid>*:nth-child(5) {
+  animation-delay: 0.5s;
+}
 
 /* ---------- Header Section ---------- */
 .home-header {
@@ -259,12 +298,10 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(212, 175, 55, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(212, 175, 55, 0.1),
+      transparent);
   transition: left 0.6s ease;
 }
 
@@ -275,7 +312,7 @@
 .date-location-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 15px 40px rgba(212, 175, 55, 0.2),
-              0 0 30px rgba(212, 175, 55, 0.15);
+    0 0 30px rgba(212, 175, 55, 0.15);
   border-color: rgba(212, 175, 55, 0.4);
 }
 
@@ -419,9 +456,11 @@
 .section-icon-blue {
   color: #4f46e5;
 }
+
 .section-icon-red {
   color: #dc2626;
 }
+
 .section-icon-purple {
   color: #7c3aed;
 }
@@ -446,12 +485,12 @@
 }
 
 /* Panchang card animations */
-.panchang-grid > * {
+.panchang-grid>* {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
-.panchang-grid > *::before {
+.panchang-grid>*::before {
   content: "";
   position: absolute;
   inset: -2px;
@@ -467,7 +506,7 @@
   animation: shimmerBorder 3s linear infinite;
 }
 
-.panchang-grid > *:hover::before {
+.panchang-grid>*:hover::before {
   opacity: 1;
 }
 
@@ -475,6 +514,7 @@
   0% {
     background-position: 0% 50%;
   }
+
   100% {
     background-position: 200% 50%;
   }
@@ -558,32 +598,30 @@
 }
 
 /* Astrology card hover effects */
-.astrology-grid > * {
+.astrology-grid>* {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
-.astrology-grid > *:hover {
+.astrology-grid>*:hover {
   transform: translateY(-8px) scale(1.03);
   z-index: 10;
 }
 
-.astrology-grid > *::after {
+.astrology-grid>*::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(
-    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(212, 175, 55, 0.15),
-    transparent 70%
-  );
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(212, 175, 55, 0.15),
+      transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
 }
 
-.astrology-grid > *:hover::after {
+.astrology-grid>*:hover::after {
   opacity: 1;
 }
 
@@ -631,7 +669,7 @@
 [data-theme="cosmic"] .form-view,
 [data-theme="cosmic"] .result-view {
   background: #0a0a0f;
-  background-image: 
+  background-image:
     radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%);
 }
@@ -905,7 +943,8 @@
   align-items: center;
   overflow: visible;
   padding: 4rem 0 2rem;
-  margin: 0 -1rem; /* Negative margin to break out of container */
+  margin: 0 -1rem;
+  /* Negative margin to break out of container */
 }
 
 /* ────────── Background Layers ────────── */
@@ -918,32 +957,29 @@
 .hero-gradient-mesh {
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-      ellipse at 20% 30%,
+  background: radial-gradient(ellipse at 20% 30%,
       rgba(212, 175, 55, 0.15) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at 80% 70%,
+      transparent 50%),
+    radial-gradient(ellipse at 80% 70%,
       rgba(79, 70, 229, 0.12) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at 50% 50%,
+      transparent 50%),
+    radial-gradient(ellipse at 50% 50%,
       rgba(124, 58, 237, 0.08) 0%,
-      transparent 50%
-    );
+      transparent 50%);
   animation: meshShift 20s ease-in-out infinite;
 }
 
 @keyframes meshShift {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(2%, -2%) scale(1.02);
   }
+
   66% {
     transform: translate(-2%, 2%) scale(0.98);
   }
@@ -952,51 +988,39 @@
 .hero-constellation {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(
-      circle at 15% 20%,
+  background-image: radial-gradient(circle at 15% 20%,
       rgba(212, 175, 55, 0.4) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 85% 25%,
+      transparent 1px),
+    radial-gradient(circle at 85% 25%,
       rgba(212, 175, 55, 0.3) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 25% 75%,
+      transparent 1px),
+    radial-gradient(circle at 25% 75%,
       rgba(212, 175, 55, 0.35) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 75% 80%,
+      transparent 1px),
+    radial-gradient(circle at 75% 80%,
       rgba(212, 175, 55, 0.4) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 50% 50%,
+      transparent 1px),
+    radial-gradient(circle at 50% 50%,
       rgba(212, 175, 55, 0.25) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 40% 40%,
+      transparent 1px),
+    radial-gradient(circle at 40% 40%,
       rgba(212, 175, 55, 0.3) 1px,
-      transparent 1px
-    ),
-    radial-gradient(
-      circle at 60% 60%,
+      transparent 1px),
+    radial-gradient(circle at 60% 60%,
       rgba(212, 175, 55, 0.35) 1px,
-      transparent 1px
-    );
+      transparent 1px);
   background-size: 100% 100%;
   opacity: 0.6;
   animation: twinkleConstellation 4s ease-in-out infinite;
 }
 
 @keyframes twinkleConstellation {
+
   0%,
   100% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 0.3;
   }
@@ -1013,11 +1037,9 @@
   position: absolute;
   width: 4px;
   height: 4px;
-  background: linear-gradient(
-    135deg,
-    var(--color-gold),
-    var(--color-gold-dark)
-  );
+  background: linear-gradient(135deg,
+      var(--color-gold),
+      var(--color-gold-dark));
   border-radius: 50%;
   opacity: 0.4;
   animation: floatParticle 15s ease-in-out infinite;
@@ -1036,10 +1058,13 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.6;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 1;
@@ -1051,11 +1076,13 @@
   left: 15%;
   animation-delay: 0s;
 }
+
 .particle-2 {
   top: 60%;
   left: 80%;
   animation-delay: 3s;
 }
+
 .particle-3 {
   top: 40%;
   left: 70%;
@@ -1063,11 +1090,13 @@
   width: 6px;
   height: 6px;
 }
+
 .particle-4 {
   top: 75%;
   left: 25%;
   animation-delay: 9s;
 }
+
 .particle-5 {
   top: 30%;
   left: 50%;
@@ -1077,19 +1106,23 @@
 }
 
 @keyframes floatParticle {
+
   0%,
   100% {
     transform: translate(0, 0) rotate(0deg);
     opacity: 0.4;
   }
+
   25% {
     transform: translate(20px, -20px) rotate(90deg);
     opacity: 0.7;
   }
+
   50% {
     transform: translate(-10px, -40px) rotate(180deg);
     opacity: 0.5;
   }
+
   75% {
     transform: translate(10px, -20px) rotate(270deg);
     opacity: 0.6;
@@ -1099,16 +1132,18 @@
 /* Enhanced constellation animation */
 .hero-constellation {
   animation: twinkleConstellation 4s ease-in-out infinite,
-             constellationDrift 30s linear infinite;
+    constellationDrift 30s linear infinite;
 }
 
 @keyframes constellationDrift {
   0% {
     transform: translate(0, 0);
   }
+
   50% {
     transform: translate(20px, 20px);
   }
+
   100% {
     transform: translate(0, 0);
   }
@@ -1157,11 +1192,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(
-    135deg,
-    rgba(212, 175, 55, 0.1),
-    rgba(212, 175, 55, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(212, 175, 55, 0.1),
+      rgba(212, 175, 55, 0.05));
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: var(--radius-full);
   width: fit-content;
@@ -1179,11 +1212,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(212, 175, 55, 0.2),
-    transparent
-  );
+  background: linear-gradient(135deg,
+      rgba(212, 175, 55, 0.2),
+      transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -1217,11 +1248,9 @@
 }
 
 .hero-highlight {
-  background: linear-gradient(
-    135deg,
-    var(--color-gold),
-    var(--color-gold-dark)
-  );
+  background: linear-gradient(135deg,
+      var(--color-gold),
+      var(--color-gold-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1236,12 +1265,10 @@
   left: 0;
   right: 0;
   height: 0.15em;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-gold),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      var(--color-gold),
+      transparent);
   opacity: 0.3;
 }
 
@@ -1338,11 +1365,9 @@
 }
 
 .hero-btn-primary {
-  background: linear-gradient(
-    135deg,
-    var(--color-gold),
-    var(--color-gold-dark)
-  );
+  background: linear-gradient(135deg,
+      var(--color-gold),
+      var(--color-gold-dark));
   color: white;
 }
 
@@ -1358,12 +1383,10 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -1374,7 +1397,7 @@
 .hero-btn-primary:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 12px 24px rgba(212, 175, 55, 0.3),
-              0 0 30px rgba(212, 175, 55, 0.2);
+    0 0 30px rgba(212, 175, 55, 0.2);
 }
 
 /* Hero button cosmic theme */
@@ -1390,16 +1413,14 @@
   border-color: rgba(212, 175, 55, 0.5);
   color: #fbbf24;
   box-shadow: 0 12px 24px rgba(212, 175, 55, 0.5),
-              0 0 30px rgba(212, 175, 55, 0.3);
+    0 0 30px rgba(212, 175, 55, 0.3);
 }
 
 [data-theme="cosmic"] .hero-btn-primary::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(212, 175, 55, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(212, 175, 55, 0.2),
+      transparent);
 }
 
 [data-theme="cosmic"] .hero-btn-primary svg,
@@ -1434,12 +1455,10 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(79, 70, 229, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(79, 70, 229, 0.1),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -1469,12 +1488,10 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(212, 175, 55, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(212, 175, 55, 0.1),
+      transparent);
   transition: left 0.5s ease;
 }
 
@@ -1486,7 +1503,7 @@
   background: rgba(255, 247, 237, 0.8);
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3),
-              0 0 30px rgba(212, 175, 55, 0.15);
+    0 0 30px rgba(212, 175, 55, 0.15);
   border-color: var(--color-gold-dark);
 }
 
@@ -1512,7 +1529,7 @@
   border-color: rgba(212, 175, 55, 0.6);
   color: #fbbf24;
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4),
-              0 0 30px rgba(212, 175, 55, 0.25);
+    0 0 30px rgba(212, 175, 55, 0.25);
 }
 
 [data-theme="cosmic"] .hero-btn-secondary-gold .hero-btn-icon {
@@ -1625,12 +1642,10 @@
 .hero-stat-divider {
   width: 1px;
   height: 2.5rem;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgba(212, 175, 55, 0.3),
-    transparent
-  );
+  background: linear-gradient(180deg,
+      transparent,
+      rgba(212, 175, 55, 0.3),
+      transparent);
 }
 
 /* ────────── Right Visual ────────── */
@@ -1694,6 +1709,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1703,6 +1719,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(-360deg);
   }
@@ -1712,11 +1729,9 @@
 .zodiac-center {
   width: 140px;
   height: 140px;
-  background: linear-gradient(
-    135deg,
-    var(--color-gold),
-    var(--color-gold-dark)
-  );
+  background: linear-gradient(135deg,
+      var(--color-gold),
+      var(--color-gold-dark));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1732,12 +1747,10 @@
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    rgba(212, 175, 55, 0.3),
-    transparent
-  );
+  background: conic-gradient(from 0deg,
+      transparent,
+      rgba(212, 175, 55, 0.3),
+      transparent);
   animation: rotateGlow 8s linear infinite;
   z-index: -1;
 }
@@ -1746,17 +1759,20 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     transform: scale(1);
     box-shadow: 0 0 40px rgba(212, 175, 55, 0.4), 0 20px 40px rgba(0, 0, 0, 0.1);
   }
+
   50% {
     transform: scale(1.05);
     box-shadow: 0 0 60px rgba(212, 175, 55, 0.6),
@@ -1802,11 +1818,9 @@
   position: absolute;
   inset: -5px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(212, 175, 55, 0.2),
-    transparent
-  );
+  background: radial-gradient(circle,
+      rgba(212, 175, 55, 0.2),
+      transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: -1;
@@ -1819,7 +1833,7 @@
 .zodiac-icon:hover {
   transform: scale(1.2) translate(-50%, -50%) rotate(360deg);
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3),
-              0 0 30px rgba(212, 175, 55, 0.2);
+    0 0 30px rgba(212, 175, 55, 0.2);
   border-color: var(--color-gold);
   background: white;
   z-index: 20;
@@ -1830,56 +1844,67 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-2 {
   top: 7%;
   left: 75%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-3 {
   top: 25%;
   left: 93%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-4 {
   top: 50%;
   left: 100%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-5 {
   top: 75%;
   left: 93%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-6 {
   top: 93%;
   left: 75%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-7 {
   top: 100%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-8 {
   top: 93%;
   left: 25%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-9 {
   top: 75%;
   left: 7%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-10 {
   top: 50%;
   left: 0%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-11 {
   top: 25%;
   left: 7%;
   transform: translate(-50%, -50%);
 }
+
 .zodiac-icon-12 {
   top: 7%;
   left: 25%;
@@ -1940,16 +1965,20 @@
 }
 
 @keyframes floatCard {
+
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
   }
+
   25% {
     transform: translateY(-10px) rotate(1deg);
   }
+
   50% {
     transform: translateY(-15px) rotate(0deg);
   }
+
   75% {
     transform: translateY(-10px) rotate(-1deg);
   }
@@ -2140,7 +2169,7 @@
 .service-card-gold:hover {
   border-color: rgba(212, 175, 55, 0.5);
   box-shadow: 0 12px 32px rgba(212, 175, 55, 0.2),
-              0 0 20px rgba(212, 175, 55, 0.1);
+    0 0 20px rgba(212, 175, 55, 0.1);
   transform: translateY(-4px);
 }
 
@@ -2153,7 +2182,7 @@
   background: rgba(22, 33, 62, 0.95);
   border-color: rgba(212, 175, 55, 0.5);
   box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3),
-              0 0 20px rgba(212, 175, 55, 0.2);
+    0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 /* Service Card Content Structure */
@@ -2276,27 +2305,27 @@
     padding: 1.25rem 1rem;
     min-height: 220px;
   }
-  
+
   .service-card-icon-wrapper {
     margin-top: 0.125rem;
     margin-bottom: 0.875rem;
   }
-  
+
   .service-icon-gold {
     width: 3.5rem;
     height: 3.5rem;
   }
-  
+
   .service-icon-svg {
     width: 1.75rem;
     height: 1.75rem;
   }
-  
+
   .service-card-title {
     font-size: 1rem;
     margin-bottom: 0.4375rem;
   }
-  
+
   .service-card-description {
     font-size: 0.75rem;
     margin-bottom: 0.75rem;
@@ -2434,7 +2463,7 @@ select.form-field-input:focus {
   .ai-prediction-form {
     grid-template-columns: 1fr;
   }
-  
+
   .ai-form-field {
     min-height: auto;
   }
@@ -2455,21 +2484,17 @@ select.form-field-input:focus {
 }
 
 .how-it-works-connector {
-  background: linear-gradient(
-    to right,
-    rgba(212, 175, 55, 0.4),
-    rgba(212, 175, 55, 0.6),
-    rgba(212, 175, 55, 0.4)
-  );
+  background: linear-gradient(to right,
+      rgba(212, 175, 55, 0.4),
+      rgba(212, 175, 55, 0.6),
+      rgba(212, 175, 55, 0.4));
 }
 
 [data-theme="cosmic"] .how-it-works-connector {
-  background: linear-gradient(
-    to right,
-    rgba(212, 175, 55, 0.5),
-    rgba(251, 191, 36, 0.7),
-    rgba(212, 175, 55, 0.5)
-  );
+  background: linear-gradient(to right,
+      rgba(212, 175, 55, 0.5),
+      rgba(251, 191, 36, 0.7),
+      rgba(212, 175, 55, 0.5));
 }
 
 @media (max-width: 480px) {
@@ -2596,12 +2621,10 @@ html {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-gold),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      var(--color-gold),
+      transparent);
   opacity: 0.6;
 }
 
@@ -2709,11 +2732,9 @@ html {
 }
 
 .status-banner-error {
-  background: linear-gradient(
-    135deg,
-    rgba(254, 243, 199, 0.95),
-    rgba(254, 243, 199, 0.8)
-  );
+  background: linear-gradient(135deg,
+      rgba(254, 243, 199, 0.95),
+      rgba(254, 243, 199, 0.8));
   border-color: #fbbf24;
   color: #92400e;
 }
@@ -2723,11 +2744,9 @@ html {
 }
 
 .status-banner-success {
-  background: linear-gradient(
-    135deg,
-    rgba(209, 250, 229, 0.95),
-    rgba(209, 250, 229, 0.8)
-  );
+  background: linear-gradient(135deg,
+      rgba(209, 250, 229, 0.95),
+      rgba(209, 250, 229, 0.8));
   border-color: #34d399;
   color: #065f46;
 }
@@ -2785,29 +2804,23 @@ html {
 
 .section-icon-blue {
   color: #4f46e5;
-  background: linear-gradient(
-    135deg,
-    rgba(79, 70, 229, 0.1),
-    rgba(79, 70, 229, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(79, 70, 229, 0.1),
+      rgba(79, 70, 229, 0.05));
 }
 
 .section-icon-red {
   color: #dc2626;
-  background: linear-gradient(
-    135deg,
-    rgba(220, 38, 38, 0.1),
-    rgba(220, 38, 38, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(220, 38, 38, 0.1),
+      rgba(220, 38, 38, 0.05));
 }
 
 .section-icon-purple {
   color: #7c3aed;
-  background: linear-gradient(
-    135deg,
-    rgba(124, 58, 237, 0.1),
-    rgba(124, 58, 237, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(124, 58, 237, 0.1),
+      rgba(124, 58, 237, 0.05));
 }
 
 /* ---------- Panchang header wrapper & description centering fix ---------- */
@@ -2827,13 +2840,13 @@ html {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1.25rem;
-  background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(79,70,229,0.05));
-  border: 1px solid rgba(79,70,229,0.18);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(79, 70, 229, 0.05));
+  border: 1px solid rgba(79, 70, 229, 0.18);
   border-radius: 9999px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: #4f46e5;
-  box-shadow: 0 2px 8px rgba(79,70,229,0.08);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
   margin: 0 auto;
 }
 
@@ -2851,14 +2864,15 @@ html {
   margin: 0 auto;
   max-width: 920px;
   line-height: 1.6;
-  text-align: center; /* centered */
+  text-align: center;
+  /* centered */
 }
 
 /* ---------- Panchang grid container (deduplicated) ---------- */
 .panchang-grid-container {
-  background: linear-gradient(135deg, rgba(255,255,255,0.6), rgba(249,250,251,0.4));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(249, 250, 251, 0.4));
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(212,175,55,0.18);
+  border: 1px solid rgba(212, 175, 55, 0.18);
   border-radius: var(--radius-lg, 1rem);
   padding: 2rem;
   position: relative;
@@ -2874,20 +2888,39 @@ html {
 }
 
 @media (min-width: 640px) {
-  .panchang-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+  .panchang-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
 }
+
 @media (min-width: 768px) {
-  .panchang-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+  .panchang-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
 }
+
 @media (min-width: 1024px) {
-  .panchang-grid-container { padding: 2.5rem; }
-  .panchang-grid { gap: 1.75rem; }
+  .panchang-grid-container {
+    padding: 2.5rem;
+  }
+
+  .panchang-grid {
+    gap: 1.75rem;
+  }
 }
 
 /* small responsive tweaks */
 @media (max-width: 768px) {
-  .panchang-grid-container { padding: 1.5rem; }
-  .panchang-description { font-size: 0.875rem; margin-left: 0; }
+  .panchang-grid-container {
+    padding: 1.5rem;
+  }
+
+  .panchang-description {
+    font-size: 0.875rem;
+    margin-left: 0;
+  }
 }
 
 
@@ -2902,12 +2935,10 @@ html {
 }
 
 .timings-section-container {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(254, 252, 249, 0.9) 50%,
-    rgba(255, 255, 255, 0.95) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(254, 252, 249, 0.9) 50%,
+      rgba(255, 255, 255, 0.95) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(212, 175, 55, 0.25);
@@ -2926,11 +2957,9 @@ html {
   right: -80px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(
-    circle,
-    rgba(220, 38, 38, 0.08) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(220, 38, 38, 0.08) 0%,
+      transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -2954,11 +2983,9 @@ html {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(
-    135deg,
-    rgba(220, 38, 38, 0.1),
-    rgba(220, 38, 38, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(220, 38, 38, 0.1),
+      rgba(220, 38, 38, 0.05));
   border: 1px solid rgba(220, 38, 38, 0.25);
   border-radius: var(--radius-full);
   font-size: 0.8125rem;
@@ -2988,11 +3015,9 @@ html {
   height: 2.25rem;
   margin-right: 0.75rem;
   padding: 0.5rem;
-  background: linear-gradient(
-    135deg,
-    rgba(220, 38, 38, 0.12),
-    rgba(220, 38, 38, 0.06)
-  );
+  background: linear-gradient(135deg,
+      rgba(220, 38, 38, 0.12),
+      rgba(220, 38, 38, 0.06));
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
 }
@@ -3151,11 +3176,9 @@ html {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(
-    135deg,
-    rgba(236, 72, 153, 0.1),
-    rgba(236, 72, 153, 0.05)
-  );
+  background: linear-gradient(135deg,
+      rgba(236, 72, 153, 0.1),
+      rgba(236, 72, 153, 0.05));
   border: 1px solid rgba(236, 72, 153, 0.3);
   border-radius: var(--radius-full);
   width: fit-content;
@@ -3191,11 +3214,9 @@ html {
 }
 
 .festival-card-wrapper {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.85)
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0.85));
   backdrop-filter: blur(20px);
   border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: var(--radius-lg);
@@ -3213,14 +3234,12 @@ html {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    #ec4899,
-    #f97316,
-    var(--color-gold),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      #ec4899,
+      #f97316,
+      var(--color-gold),
+      transparent);
   background-size: 200% 100%;
   animation: shimmer 3s ease-in-out infinite;
 }
@@ -3278,12 +3297,10 @@ html {
 .astrology-section {
   margin-bottom: 5rem;
   padding: 4rem 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.6),
-    rgba(249, 250, 251, 0.4),
-    rgba(255, 255, 255, 0.6)
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.6),
+      rgba(249, 250, 251, 0.4),
+      rgba(255, 255, 255, 0.6));
   border-radius: var(--radius-lg);
 }
 
@@ -3308,11 +3325,9 @@ html {
   height: 2.5rem;
   color: #7c3aed;
   padding: 0.625rem;
-  background: linear-gradient(
-    135deg,
-    rgba(124, 58, 237, 0.15),
-    rgba(124, 58, 237, 0.08)
-  );
+  background: linear-gradient(135deg,
+      rgba(124, 58, 237, 0.15),
+      rgba(124, 58, 237, 0.08));
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
@@ -3336,7 +3351,7 @@ html {
   padding: 0 2rem;
 }
 
-.astrology-grid > * {
+.astrology-grid>* {
   flex: 1 1 280px;
   max-width: 320px;
   min-width: 260px;
@@ -3348,7 +3363,7 @@ html {
     padding: 0 1rem;
   }
 
-  .astrology-grid > * {
+  .astrology-grid>* {
     flex: 1 1 calc(50% - 0.625rem);
     max-width: 100%;
     min-width: 0;
@@ -3356,7 +3371,7 @@ html {
 }
 
 @media (max-width: 480px) {
-  .astrology-grid > * {
+  .astrology-grid>* {
     flex: 1 1 100%;
   }
 }
@@ -3381,12 +3396,10 @@ html {
   transform: translateX(-50%);
   width: 100px;
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-gold),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      var(--color-gold),
+      transparent);
 }
 
 .home-footer p {
@@ -3565,7 +3578,8 @@ html {
 #ai-prediction-section .btn-primary {
   min-width: 220px;
   padding: 0.9rem 1.25rem;
-  height: 52px; /* consistent with other UI */
+  height: 52px;
+  /* consistent with other UI */
   font-weight: 700;
   border-radius: 0.875rem;
   box-shadow: 0 10px 24px rgba(212, 175, 55, 0.12);
@@ -3577,10 +3591,10 @@ html {
   color: var(--color-gray-600);
   opacity: 0.95;
   text-align: right;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
   padding: 0.35rem 0.6rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(212,175,55,0.06);
+  border: 1px solid rgba(212, 175, 55, 0.06);
 }
 
 /* On very small screens: stack the actions for full width */
@@ -3589,16 +3603,20 @@ html {
     flex-direction: column;
     align-items: stretch;
   }
+
   #ai-prediction-section .cta-block {
     align-items: stretch;
   }
+
   #ai-prediction-section .btn-primary {
     width: 100%;
   }
+
   #ai-prediction-section .btn-ghost {
     width: 100%;
     text-align: left;
   }
+
   #ai-prediction-section .cta-note {
     text-align: left;
   }
@@ -3627,7 +3645,8 @@ html {
 }
 
 .astrologers-header-text {
-  min-width: 0; /* for text truncation safety */
+  min-width: 0;
+  /* for text truncation safety */
 }
 
 .astrologers-title {
@@ -3675,7 +3694,7 @@ html {
 
 .astrologer-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 /* Top row inside card */
@@ -3712,8 +3731,8 @@ html {
   font-size: 0.75rem;
   padding: 3px 8px;
   border-radius: 9999px;
-  background: rgba(255,255,255,0.9);
-  border: 1px solid rgba(0,0,0,0.04);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   color: var(--color-gray-700);
   font-weight: 600;
 }
@@ -3729,13 +3748,13 @@ html {
 
 /* Featured badge */
 .featured-badge {
-  background: rgba(212,175,55,0.1);
+  background: rgba(212, 175, 55, 0.1);
   padding: 6px 10px;
   border-radius: 9999px;
   color: #b8972e;
   font-weight: 700;
   font-size: 0.8rem;
-  border: 1px solid rgba(212,175,55,0.12);
+  border: 1px solid rgba(212, 175, 55, 0.12);
 }
 
 /* Live badge */
@@ -3745,11 +3764,11 @@ html {
   gap: 0.5rem;
   padding: 6px 10px;
   border-radius: 9999px;
-  background: rgba(212,175,55,0.12);
+  background: rgba(212, 175, 55, 0.12);
   color: #b8972e;
   font-weight: 700;
   font-size: 0.8rem;
-  border: 1px solid rgba(212,175,55,0.15);
+  border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 /* pulsing dot */
@@ -3758,7 +3777,7 @@ html {
   height: 9px;
   background: #d4af37;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(212,175,55,0.25);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
   animation: pulse 1.8s ease-in-out infinite;
 }
 
@@ -3788,6 +3807,94 @@ html {
 .astrologer-ctas .btn {
   padding: 0.45rem 0.8rem;
   font-size: 0.9rem;
+  background: transparent !important;
+  border: 1.5px solid #b8972e !important;
+  color: #b8972e !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.astrologer-ctas .btn:hover {
+  background: rgba(184, 151, 46, 0.08) !important;
+  border-color: #d4af37 !important;
+  color: #d4af37 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
+}
+
+[data-theme="cosmic"] .astrologer-ctas .btn {
+  background: transparent !important;
+  border: 1.5px solid #d4af37 !important;
+  color: #d4af37 !important;
+}
+
+[data-theme="cosmic"] .astrologer-ctas .btn:hover {
+  background: rgba(212, 175, 55, 0.1) !important;
+  border-color: #fbbf24 !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2) !important;
+}
+
+/* Target astrologer card buttons specifically */
+.astrologer-card .btn.btn-primary,
+.astrologer-card button.btn-primary {
+  background: transparent !important;
+  border: 1.5px solid #b8972e !important;
+  color: #b8972e !important;
+  box-shadow: none !important;
+}
+
+.astrologer-card .btn.btn-primary:hover,
+.astrologer-card button.btn-primary:hover {
+  background: rgba(184, 151, 46, 0.08) !important;
+  border-color: #d4af37 !important;
+  color: #d4af37 !important;
+  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
+}
+
+[data-theme="cosmic"] .astrologer-card .btn.btn-primary,
+[data-theme="cosmic"] .astrologer-card button.btn-primary {
+  background: transparent !important;
+  border: 1.5px solid #d4af37 !important;
+  color: #d4af37 !important;
+}
+
+[data-theme="cosmic"] .astrologer-card .btn.btn-primary:hover,
+[data-theme="cosmic"] .astrologer-card button.btn-primary:hover {
+  background: rgba(212, 175, 55, 0.1) !important;
+  border-color: #fbbf24 !important;
+  color: #fbbf24 !important;
+}
+
+/* Ultra-specific selector for grid layout astrologer cards - v2 */
+.grid .astrologer-card button.btn.btn-primary,
+div[role="list"] .astrologer-card button.btn.btn-primary {
+  background: transparent !important;
+  border: 1.5px solid #b8972e !important;
+  color: #b8972e !important;
+  box-shadow: none !important;
+}
+
+.grid .astrologer-card button.btn.btn-primary:hover,
+div[role="list"] .astrologer-card button.btn.btn-primary:hover {
+  background: rgba(184, 151, 46, 0.08) !important;
+  border-color: #d4af37 !important;
+  color: #d4af37 !important;
+  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
+}
+
+[data-theme="cosmic"] .grid .astrologer-card button.btn.btn-primary,
+[data-theme="cosmic"] div[role="list"] .astrologer-card button.btn.btn-primary {
+  background: transparent !important;
+  border: 1.5px solid #d4af37 !important;
+  color: #d4af37 !important;
+}
+
+[data-theme="cosmic"] .grid .astrologer-card button.btn.btn-primary:hover,
+[data-theme="cosmic"] div[role="list"] .astrologer-card button.btn.btn-primary:hover {
+  background: rgba(212, 175, 55, 0.1) !important;
+  border-color: #fbbf24 !important;
+  color: #fbbf24 !important;
 }
 
 /* Responsive tweaks */
@@ -3795,58 +3902,228 @@ html {
   .astrologers-header {
     align-items: flex-start;
   }
+
   .astrologers-actions {
     width: 100%;
     justify-content: flex-start;
     gap: 0.5rem;
     margin-top: 0.5rem;
   }
+
   .astrologer-card {
     min-height: 110px;
   }
 }
 
 /* Loyalty Detector styles */
-.loyalty-detector { border-radius: 12px; padding: 18px; display: block; background: linear-gradient(180deg,#fff,#fbfbff); box-shadow: 0 6px 18px rgba(12,16,32,0.06); }
-.loyalty-inner { display:flex; gap:18px; align-items:stretch; flex-wrap:wrap; }
-.loyalty-left { flex:1 1 420px; min-width:260px; display:flex; flex-direction:column; gap:12px; }
-.loyalty-right { width:220px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:220px; }
+.loyalty-detector {
+  border-radius: 12px;
+  padding: 18px;
+  display: block;
+  background: linear-gradient(180deg, #fff, #fbfbff);
+  box-shadow: 0 6px 18px rgba(12, 16, 32, 0.06);
+}
 
-.loyalty-top { display:flex; gap:12px; align-items:center; }
-.loyalty-badge { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f3e8ff,#eef2ff); color: #6d28d9; box-shadow: 0 2px 6px rgba(99,102,241,0.08); }
-.loyalty-title { margin:0; font-size:18px; font-weight:800; letter-spacing:-0.2px; }
-.loyalty-sub { margin:2px 0 0 0; color:var(--color-gray-600); font-size:13px; }
+.loyalty-inner {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
 
-.loyalty-features { margin:8px 0 0 0; padding:0; list-style:none; display:flex; gap:10px; flex-direction:column; color:var(--color-gray-600); font-size:13px; }
-.loyalty-features li::before { content: "•"; margin-right:8px; color:var(--color-indigo); }
+.loyalty-left {
+  flex: 1 1 420px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-.loyalty-quick-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:6px; }
-.input-small { padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); min-width:120px; }
-.loyalty-actions { display:flex; gap:8px; align-items:center; margin-left: auto; }
+.loyalty-right {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+}
 
-.loyalty-note { margin-top:6px; color:var(--color-gray-500); font-size:12px; }
+.loyalty-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
 
-.loyalty-meter { position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; }
-.loyalty-meter-svg { width:100%; height:100%; transform: rotate(-90deg); }
-.meter-bg { fill:none; stroke:rgba(15,23,42,0.06); stroke-width:8; }
-.meter-progress { fill:none; stroke-width:8; stroke-linecap:round; transition: stroke-dashoffset 700ms cubic-bezier(.2,.9,.2,1); }
+.loyalty-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3e8ff, #eef2ff);
+  color: #6d28d9;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.08);
+}
 
-.meter-center { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-.meter-score { font-weight:800; font-size:28px; color: #111827; }
-.meter-label { font-size:12px; color:var(--color-gray-500); margin-top:2px; }
+.loyalty-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
 
-.loyalty-explain { margin-top:12px; width:100%; }
-.ex-row { display:flex; gap:10px; align-items:center; font-size:13px; color:var(--color-gray-600); margin-bottom:8px; }
-.dot { width:10px; height:10px; border-radius:999px; box-shadow:0 1px 2px rgba(16,24,40,0.06); }
-.dot-good { background:linear-gradient(90deg,#7c3aed,#06b6d4); }
-.dot-mid { background:linear-gradient(90deg,#f59e0b,#f97316); }
-.dot-low { background:linear-gradient(90deg,#ef4444,#f97316); }
+.loyalty-sub {
+  margin: 2px 0 0 0;
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+.loyalty-features {
+  margin: 8px 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+.loyalty-features li::before {
+  content: "•";
+  margin-right: 8px;
+  color: var(--color-indigo);
+}
+
+.loyalty-quick-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.input-small {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  min-width: 120px;
+}
+
+.loyalty-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.loyalty-note {
+  margin-top: 6px;
+  color: var(--color-gray-500);
+  font-size: 12px;
+}
+
+.loyalty-meter {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loyalty-meter-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.meter-bg {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.06);
+  stroke-width: 8;
+}
+
+.meter-progress {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 700ms cubic-bezier(.2, .9, .2, 1);
+}
+
+.meter-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.meter-score {
+  font-weight: 800;
+  font-size: 28px;
+  color: #111827;
+}
+
+.meter-label {
+  font-size: 12px;
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.loyalty-explain {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.ex-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--color-gray-600);
+  margin-bottom: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.dot-good {
+  background: linear-gradient(90deg, #7c3aed, #06b6d4);
+}
+
+.dot-mid {
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+
+.dot-low {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+}
 
 /* Responsive */
 @media (max-width:880px) {
-  .loyalty-inner { flex-direction:column; align-items:stretch; }
-  .loyalty-right { width:100%; order: -1; display:flex; justify-content:flex-start; padding-bottom:6px; }
-  .loyalty-left { min-width:0; }
+  .loyalty-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .loyalty-right {
+    width: 100%;
+    order: -1;
+    display: flex;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+  }
+
+  .loyalty-left {
+    min-width: 0;
+  }
 }
 
 /* ============================================= */
@@ -3878,9 +4155,12 @@ html {
 
 /* Pulse opacity animation for online indicators */
 @keyframes pulse-opacity {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -3898,17 +4178,22 @@ html {
 
 /* Mobile-first responsive containers */
 @media (max-width: 640px) {
+
   /* Stack all flex-row layouts to column on mobile */
   .flex.flex-row {
     flex-direction: column !important;
   }
 
   /* Reduce padding on mobile */
-  .p-8, .p-10, .px-8, .py-8 {
+  .p-8,
+  .p-10,
+  .px-8,
+  .py-8 {
     padding: 1.5rem !important;
   }
 
-  .md\:p-8, .md\:p-10 {
+  .md\:p-8,
+  .md\:p-10 {
     padding: 1.5rem !important;
   }
 
@@ -3931,7 +4216,8 @@ html {
     max-width: 100%;
   }
 
-  img, svg {
+  img,
+  svg {
     max-width: 100%;
     height: auto;
   }
@@ -3961,13 +4247,22 @@ section {
 }
 
 /* Responsive container utilities */
-.container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl {
+.container,
+.max-w-7xl,
+.max-w-6xl,
+.max-w-5xl,
+.max-w-4xl {
   padding-left: 1rem;
   padding-right: 1rem;
 }
 
 @media (min-width: 768px) {
-  .container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl {
+
+  .container,
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-5xl,
+  .max-w-4xl {
     padding-left: 2rem;
     padding-right: 2rem;
   }
@@ -3978,3 +4273,30 @@ section {
   overflow: hidden !important;
 }
 
+/* AI Predictions Submit Button - Ensure text is always visible */
+.ai-predictions-submit-btn {
+  background: linear-gradient(135deg, #b8972e, #9a7a2d) !important;
+  color: #f9fafb !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.25) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ai-predictions-submit-btn:hover {
+  background: linear-gradient(135deg, #c7a33a, #b8972e) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(184, 151, 46, 0.35) !important;
+}
+
+[data-theme="cosmic"] .ai-predictions-submit-btn {
+  background: linear-gradient(135deg, #b8972e, #9a7a2d) !important;
+  color: #f9fafb !important;
+  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.25), 0 0 15px rgba(184, 151, 46, 0.15) !important;
+}
+
+[data-theme="cosmic"] .ai-predictions-submit-btn:hover {
+  background: linear-gradient(135deg, #c7a33a, #b8972e) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(184, 151, 46, 0.4), 0 0 25px rgba(184, 151, 46, 0.25) !important;
+}

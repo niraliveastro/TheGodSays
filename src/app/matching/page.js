@@ -115,7 +115,7 @@ export default function MatchingPage() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isCosmic = theme === 'cosmic';
-  
+
   // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
@@ -324,10 +324,10 @@ export default function MatchingPage() {
    */
   const parseDateTime = (dob, tob) => {
     if (!dob) throw new Error("Date of birth is required");
-    
+
     const dobParts = dob.split("-").map((n) => parseInt(n, 10));
     let Y, M, D;
-    
+
     // Handle both YYYY-MM-DD and DD-MM-YYYY formats
     if (dobParts.length === 3) {
       if (dobParts[0] > 1900) {
@@ -340,30 +340,30 @@ export default function MatchingPage() {
     } else {
       throw new Error(`Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`);
     }
-    
+
     if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
       throw new Error(`Invalid date values: ${dob}`);
     }
-    
+
     // Validate date ranges
     if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
     if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
-    
+
     // Parse time
     if (!tob) throw new Error("Time of birth is required");
     const timeParts = tob.split(":").map((n) => parseInt(n, 10));
     const [H, Min, S = 0] = timeParts;
-    
+
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
       throw new Error(`Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`);
     }
-    
+
     // Validate time ranges
     if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
     if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
     if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
-    
+
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
   /**
@@ -701,14 +701,14 @@ export default function MatchingPage() {
       };
       setFDetails(buildUserDetails(fCalc));
       setMDetails(buildUserDetails(mCalc));
-      
+
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
         if (resultsRef.current) {
           resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }, 100);
-      
+
       // Return the computed result for callers that await onSubmit
       return out;
     } catch (err) {
@@ -757,7 +757,7 @@ export default function MatchingPage() {
     // If no result exists, calculate it first
     if (!result) {
       // Create a synthetic event to trigger form submission and await the computed result
-      const syntheticEvent = { preventDefault: () => {} };
+      const syntheticEvent = { preventDefault: () => { } };
       const computed = await onSubmit(syntheticEvent);
       if (computed) {
         // result state is set inside onSubmit; prepare chat and open
@@ -1783,14 +1783,14 @@ export default function MatchingPage() {
           {/* Grid */}
           <div className="grid md:grid-cols-2 gap-8 mt-4">
             {/* ---------- Female ---------- */}
-            <div 
+            <div
               className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6"
               style={{
-                background: isCosmic 
-                  ? "rgba(22, 33, 62, 0.85)" 
+                background: isCosmic
+                  ? "rgba(22, 33, 62, 0.85)"
                   : undefined,
-                borderColor: isCosmic 
-                  ? "rgba(212, 175, 55, 0.3)" 
+                borderColor: isCosmic
+                  ? "rgba(212, 175, 55, 0.3)"
                   : undefined,
               }}
             >
@@ -1892,14 +1892,14 @@ export default function MatchingPage() {
               </div>
             </div>
             {/* ---------- Male ---------- */}
-            <div 
+            <div
               className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6"
               style={{
-                background: isCosmic 
-                  ? "rgba(22, 33, 62, 0.85)" 
+                background: isCosmic
+                  ? "rgba(22, 33, 62, 0.85)"
                   : undefined,
-                borderColor: isCosmic 
-                  ? "rgba(212, 175, 55, 0.3)" 
+                borderColor: isCosmic
+                  ? "rgba(212, 175, 55, 0.3)"
                   : undefined,
               }}
             >
@@ -2230,9 +2230,9 @@ export default function MatchingPage() {
 
             {/* AI Astrologer Chat Window - Only shown when chat is open */}
             {chatOpen && (
-              <div 
+              <div
                 className="card mt-6 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section"
-                style={{ 
+                style={{
                   position: "relative",
                   zIndex: 200,
                   marginBottom: "2rem"
@@ -2434,9 +2434,8 @@ export default function MatchingPage() {
                       </thead>
                       <tbody>
                         {(fDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
-                            p.pada ?? "—"
-                          })`;
+                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
+                            })`;
 
                           return (
                             <tr key={i}>
@@ -2556,9 +2555,8 @@ export default function MatchingPage() {
                       </thead>
                       <tbody>
                         {(mDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
-                            p.pada ?? "—"
-                          })`;
+                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
+                            })`;
 
                           return (
                             <tr key={i}>
@@ -2642,9 +2640,18 @@ export default function MatchingPage() {
           transition: transform 160ms ease, box-shadow 160ms ease;
           cursor: pointer;
         }
+        [data-theme="cosmic"] .history-card {
+          background: linear-gradient(145deg, rgba(22, 33, 62, 0.95), rgba(10, 10, 15, 0.9));
+          border: 1px solid rgba(212, 175, 55, 0.3);
+          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.2);
+          color: #d4af37;
+        }
         .history-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
+        }
+        [data-theme="cosmic"] .history-card:hover {
+          box-shadow: 0 16px 36px rgba(212, 175, 55, 0.3);
         }
         .history-card-top {
           display: flex;
@@ -2662,20 +2669,33 @@ export default function MatchingPage() {
         .pill {
           padding: 6px 10px;
           border-radius: 999px;
-          font-weight: 600;
-          font-size: 0.9rem;
+          font-weight: 700;
+          font-size: 1rem;
           border: 1px solid #f5d276;
           background: #fff8e6;
           color: #8b6b15;
+        }
+        [data-theme="cosmic"] .pill {
+          border: 1px solid rgba(212, 175, 55, 0.4);
+          background: rgba(212, 175, 55, 0.15);
+          color: #fbbf24;
         }
         .pill-male {
           background: #e8f1ff;
           border-color: #c9daf8;
           color: #1f3b6d;
         }
+        [data-theme="cosmic"] .pill-male {
+          background: rgba(99, 102, 241, 0.2);
+          border-color: rgba(99, 102, 241, 0.4);
+          color: #a5b4fc;
+        }
         .dot-separator {
           color: #c4a13f;
           font-weight: 700;
+        }
+        [data-theme="cosmic"] .dot-separator {
+          color: #d4af37;
         }
         .history-card-body {
           display: flex;
@@ -2692,16 +2712,22 @@ export default function MatchingPage() {
           text-transform: uppercase;
           font-size: 0.75rem;
           letter-spacing: 0.04em;
-          color: #9a7a2d;
+          color: #fbbf24;
           font-weight: 700;
+        }
+        [data-theme="cosmic"] .person-label {
+          color: #fbbf24;
         }
         .person-meta {
           display: flex;
           gap: 8px;
           align-items: center;
-          color: #4b5563;
-          font-size: 0.95rem;
+          color: #d4af37;
+          font-size: 0.85rem;
           line-height: 1.4;
+        }
+        [data-theme="cosmic"] .person-meta {
+          color: #d4af37;
         }
         .meta-icon {
           width: 16px;
@@ -2712,10 +2738,49 @@ export default function MatchingPage() {
           width: 1px;
           background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
         }
+        [data-theme="cosmic"] .person-divider {
+          background: linear-gradient(180deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+        }
         .history-actions {
           display: flex;
           align-items: center;
           gap: 10px;
+        }
+        .use-btn {
+          background: #fff8e6;
+          color: #8b6b15;
+          border: 1px solid #f5d276;
+          padding: 0.35rem 0.75rem;
+          border-radius: 0.5rem;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        [data-theme="cosmic"] .use-btn {
+          background: rgba(212, 175, 55, 0.15);
+          color: #fbbf24;
+          border-color: rgba(212, 175, 55, 0.4);
+        }
+        .use-btn:hover {
+          background: #fff3d4;
+        }
+        [data-theme="cosmic"] .use-btn:hover {
+          background: rgba(212, 175, 55, 0.25);
+        }
+        .delete-btn {
+          background: transparent;
+          border: none;
+          color: #dc2626;
+          padding: 0.35rem;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .delete-btn:hover {
+          background: rgba(220, 38, 38, 0.1);
+          color: #b91c1c;
+          transform: scale(1.1);
         }
         @media (max-width: 720px) {
           .history-card-body {
@@ -2726,13 +2791,16 @@ export default function MatchingPage() {
             width: 100%;
             background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
           }
+          [data-theme="cosmic"] .person-divider {
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+          }
         }
       `}</style>
 
       {/* Fixed Chat Assistant Card - Always visible, like predictions page */}
-      <div 
-        className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
-        style={{ 
+      <div
+        className="fixed bottom-6 right-6 z-50 ai-assistant-card"
+        style={{
           maxWidth: isAssistantMinimized ? "64px" : "320px",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
@@ -2816,8 +2884,8 @@ export default function MatchingPage() {
           <div
             className="chat-assistant-card"
             style={{
-              background: isCosmic 
-                ? "rgba(22, 33, 62, 0.95)" 
+              background: isCosmic
+                ? "rgba(22, 33, 62, 0.95)"
                 : "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
               border: "1px solid rgba(212, 175, 55, 0.3)",
               borderRadius: "20px",
@@ -2832,7 +2900,7 @@ export default function MatchingPage() {
             onClick={() => {
               // Check if form is filled
               const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
-                                   male.fullName && male.dob && male.tob && male.place;
+                male.fullName && male.dob && male.tob && male.place;
               if (!isFormFilled) {
                 setError("Please complete all birth details for both individuals before using the chat.");
                 window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2929,16 +2997,16 @@ export default function MatchingPage() {
                     color: isCosmic ? "#d4af37" : "#111827",
                     margin: "0 0 4px 0",
                     fontFamily: '"Cormorant Garamond", serif',
-                    ...(isCosmic 
+                    ...(isCosmic
                       ? {
-                          color: "#d4af37",
-                        }
+                        color: "#d4af37",
+                      }
                       : {
-                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                        }
+                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }
                     ),
                   }}
                 >
@@ -3007,7 +3075,7 @@ export default function MatchingPage() {
                   e.stopPropagation(); // Prevent triggering card click
                   // Check if form is filled
                   const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
-                                       male.fullName && male.dob && male.tob && male.place;
+                    male.fullName && male.dob && male.tob && male.place;
                   if (!isFormFilled) {
                     setError("Please complete all birth details for both individuals before using the chat.");
                     window.scrollTo({ top: 0, behavior: "smooth" });

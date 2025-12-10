@@ -105,10 +105,10 @@ export default function DateSelector(props) {
   const formatDateForDisplay = (date) =>
     date
       ? new Date(date).toLocaleDateString('en-US', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
       : ''
 
   /* -------------------------------------------------
