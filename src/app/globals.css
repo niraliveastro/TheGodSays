@@ -1595,6 +1595,88 @@ a:hover {
   font-style: italic;
 }
 
+/* Global form input field styling - Golden theme */
+.form-input-field {
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-input-field:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+[data-theme="cosmic"] .form-input-field {
+  background: rgba(22, 33, 62, 0.7);
+  border-color: rgba(212, 175, 55, 0.3);
+  color: #f9fafb;
+}
+
+[data-theme="cosmic"] .form-input-field:focus {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="cosmic"] .form-input-field::placeholder {
+  color: rgba(249, 250, 251, 0.6);
+}
+
+/* Gender Radio Buttons - Global Golden Theme */
+input[type="radio"].gender-radio,
+.gender-radio {
+  accent-color: var(--color-gold);
+  cursor: pointer;
+}
+
+.gender-radio:checked {
+  accent-color: var(--color-gold-dark);
+}
+
+[data-theme="cosmic"] .gender-radio,
+[data-theme="cosmic"] input[type="radio"].gender-radio {
+  accent-color: #d4af37;
+}
+
+[data-theme="cosmic"] .gender-radio:checked,
+[data-theme="cosmic"] input[type="radio"].gender-radio:checked {
+  accent-color: #fbbf24;
+}
+
+/* Select Dropdowns - Golden Theme (Global) */
+select.form-input-field,
+select.form-field-input {
+  background-color: white;
+  color: var(--color-gray-900);
+  border-color: var(--color-gray-300);
+}
+
+select.form-input-field:focus,
+select.form-field-input:focus {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  outline: none;
+}
+
+[data-theme="cosmic"] select.form-input-field,
+[data-theme="cosmic"] select.form-field-input {
+  background-color: rgba(22, 33, 62, 0.7);
+  border-color: rgba(212, 175, 55, 0.3);
+  color: #f9fafb;
+}
+
+[data-theme="cosmic"] select.form-input-field:focus,
+[data-theme="cosmic"] select.form-field-input:focus {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="cosmic"] select.form-input-field option,
+[data-theme="cosmic"] select.form-field-input option {
+  background-color: rgba(22, 33, 62, 0.95);
+  color: #f9fafb;
+}
+
 .form-field-helper {
   font-size: 0.75rem; /* text-xs */
   color: var(--color-gray-500);

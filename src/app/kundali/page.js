@@ -1221,7 +1221,8 @@ export default function KundaliPage() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
-                  placeholder={t.kundali.namePlaceholder}
+                  placeholder="e.g., Rajesh Kumar"
+                  className="form-input-field"
                 />
                 {errors.name && <p className="error">{errors.name}</p>}
               </div>
@@ -1247,10 +1248,11 @@ export default function KundaliPage() {
                       <input
                         type="radio"
                         name="gender"
+                        className="gender-radio"
                         checked={form.gender === g.value}
                         onChange={() => setField("gender", g.value)}
                       />
-                      <span>{g.label}</span>
+                      <span style={{ color: "var(--color-gold-dark)", fontWeight: 600 }}>{g.label}</span>
                     </label>
                   ))}
                 </div>
@@ -1272,19 +1274,15 @@ export default function KundaliPage() {
                     type="text"
                     value={form.birthDate}
                     onChange={(e) => setField("birthDate", e.target.value)}
-                    placeholder="YYYY-MM-DD"
+                    placeholder="e.g., 1990-05-15"
                     pattern="\\d{4}-\\d{2}-\\d{2}"
+                    className="form-input-field"
                     style={{
                       flex: 1,
                       fontFamily: "monospace",
                       fontSize: "0.925rem",
                       padding: ".65rem 1rem",
-                      border: "1.5px solid #e5e7eb",
-                      borderRadius: ".875rem",
-                      transition: "all .2s",
                     }}
-                    onFocus={(e) => (e.target.style.borderColor = "#d4af37")}
-                    onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                   />
                   <button
                     type="button"
@@ -1423,7 +1421,8 @@ export default function KundaliPage() {
                       setField("latitude", null);
                       setField("longitude", null);
                     }}
-                    placeholder="City, State, Country"
+                    placeholder="e.g., Mumbai, Maharashtra, India"
+                    className="form-input-field"
                   />
                   <MapPin
                     style={{

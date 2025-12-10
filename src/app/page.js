@@ -1433,14 +1433,8 @@ export default function Home() {
 
                   <button
                     onClick={() => fastNavigate(router, "/predictions")}
-                    className="hero-btn inline-flex items-center gap-2 px-4 py-3 rounded-md font-semibold shadow-sm
-             bg-transparent border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    className="hero-btn hero-btn-secondary-gold"
                     type="button"
-                    style={{
-                      background: "transparent",
-                      border: "2px solid #a78bfa",
-                      color: "#5b21b6", // optional: make text match border
-                    }}
                   >
                     <Sparkles className="hero-btn-icon" />
                     {t.hero.getAIPredictions}
@@ -1667,67 +1661,67 @@ export default function Home() {
               <p className="text-slate-600 text-lg">{t.services.sectionSubtitle}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Service Card 1: Talk to Astrologer */}
               <div 
-                className="card bg-gradient-to-br from-white to-purple-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-purple-100"
+                className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => fastNavigate(router, "/talk-to-astrologer")}
               >
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Star className="w-8 h-8 text-white" />
+                <div className="service-card-icon-wrapper">
+                  <div className="service-icon-gold group-hover:scale-110 transition-transform">
+                    <Star className="service-icon-svg text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{t.services.talkToExpert}</h3>
-                  <p className="text-sm text-gray-600">{t.services.talkToExpertDesc}</p>
-                  <div className="mt-2 text-xs text-purple-600 font-semibold">{t.services.talkToExpertCta}</div>
                 </div>
+                <h3 className="service-card-title">{t.services.talkToExpert}</h3>
+                <p className="service-card-description">{t.services.talkToExpertDesc}</p>
+                <div className="service-card-cta">{t.services.talkToExpertCta}</div>
               </div>
 
               {/* Service Card 2: AI Predictions */}
               <div 
-                className="card bg-gradient-to-br from-white to-amber-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-amber-100"
+                className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => document.getElementById('ai-prediction-section')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-8 h-8 text-white" />
+                <div className="service-card-icon-wrapper">
+                  <div className="service-icon-gold group-hover:scale-110 transition-transform">
+                    <Sparkles className="service-icon-svg text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{t.services.aiPredictionsTitle}</h3>
-                  <p className="text-sm text-gray-600">{t.services.aiPredictionsDesc}</p>
-                  <div className="mt-2 text-xs text-amber-600 font-semibold">{t.services.aiPredictionsCta}</div>
                 </div>
+                <h3 className="service-card-title">{t.services.aiPredictionsTitle}</h3>
+                <p className="service-card-description">{t.services.aiPredictionsDesc}</p>
+                <div className="service-card-cta">{t.services.aiPredictionsCta}</div>
               </div>
 
               {/* Service Card 3: Compatibility Check */}
               <div 
-                className="card bg-gradient-to-br from-white to-rose-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-rose-100"
+                className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => fastNavigate(router, "/matching")}
               >
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <div className="service-card-icon-wrapper">
+                  <div className="service-icon-gold group-hover:scale-110 transition-transform">
+                    <svg className="service-icon-svg text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 21s-7-4.35-9-7.5A6 6 0 0112 3a6 6 0 019 10.5C19 16.65 12 21 12 21z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{t.services.loveMatch}</h3>
-                  <p className="text-sm text-gray-600">{t.services.loveMatchDesc}</p>
-                  <div className="mt-2 text-xs text-rose-600 font-semibold">{t.services.loveMatchCta}</div>
                 </div>
+                <h3 className="service-card-title">{t.services.loveMatch}</h3>
+                <p className="service-card-description">{t.services.loveMatchDesc}</p>
+                <div className="service-card-cta">{t.services.loveMatchCta}</div>
               </div>
 
               {/* Service Card 4: Daily Panchang */}
               <div 
-                className="card bg-gradient-to-br from-white to-blue-50/40 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group border border-blue-100"
+                className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
                 onClick={() => document.getElementById('panchang-section')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Calendar className="w-8 h-8 text-white" />
+                <div className="service-card-icon-wrapper">
+                  <div className="service-icon-gold group-hover:scale-110 transition-transform">
+                    <Calendar className="service-icon-svg text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{t.services.dailyPanchang}</h3>
-                  <p className="text-sm text-gray-600">{t.services.dailyPanchangDesc}</p>
-                  <div className="mt-2 text-xs text-blue-600 font-semibold">{t.services.dailyPanchangCta}</div>
                 </div>
+                <h3 className="service-card-title">{t.services.dailyPanchang}</h3>
+                <p className="service-card-description">{t.services.dailyPanchangDesc}</p>
+                <div className="service-card-cta">{t.services.dailyPanchangCta}</div>
               </div>
             </div>
           </section>
@@ -1743,33 +1737,33 @@ export default function Home() {
               {/* Step 1 */}
               <div className="relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     1
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step1Title}</h3>
                   <p className="text-gray-600">{t.howItWorks.step1Desc}</p>
                 </div>
                 {/* Connector Arrow (hidden on mobile) */}
-                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-purple-300 to-amber-300"></div>
+                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 how-it-works-connector"></div>
               </div>
 
               {/* Step 2 */}
               <div className="relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     2
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step2Title}</h3>
                   <p className="text-gray-600">{t.howItWorks.step2Desc}</p>
                 </div>
                 {/* Connector Arrow (hidden on mobile) */}
-                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-emerald-300"></div>
+                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 how-it-works-connector"></div>
               </div>
 
               {/* Step 3 */}
               <div className="relative">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
                     3
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step3Title}</h3>
@@ -1782,7 +1776,16 @@ export default function Home() {
           {/* ====== AI PREDICTION FORM SECTION — VISUALLY MATCHES PROVIDED DESIGN ====== */}
           <section
             id="ai-prediction-section"
-            className="max-w-4xl mx-auto mt-12 bg-white/90 backdrop-blur-xl rounded-3xl border border-amber-200/30 shadow-xl p-6 md:p-10"
+            className="max-w-4xl mx-auto mt-12 ai-prediction-form-section rounded-3xl shadow-xl p-6 md:p-10"
+            style={{
+              background: isCosmic 
+                ? "rgba(22, 33, 62, 0.85)" 
+                : "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(20px)",
+              border: isCosmic 
+                ? "1px solid rgba(212, 175, 55, 0.3)" 
+                : "1px solid rgba(212, 175, 55, 0.2)",
+            }}
           >
             {/* header */}
             <div className="flex items-start gap-4 mb-6">
@@ -1801,71 +1804,72 @@ export default function Home() {
                 <h3 className="text-4xl text-gold">
                   {t.aiForm.title}
                 </h3>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm" style={{ color: isCosmic ? "rgba(249, 250, 251, 0.8)" : "#6b7280" }}>
                   {t.aiForm.description}
                 </p>
               </div>
             </div>
 
             <form
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 ai-prediction-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 handleAIPredictionsSubmit();
               }}
             >
               {/* Name */}
-              <div className="flex flex-col">
+              <div className="flex flex-col ai-form-field">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.name}
                 </label>
                 <input
-                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
-                  placeholder="Enter your full name"
+                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
+                  placeholder="e.g., Rajesh Kumar"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-gold-dark">
                   {t.aiForm.nameHelper}
                 </p>
               </div>
 
               {/* DOB */}
-              <div className="flex flex-col">
+              <div className="flex flex-col ai-form-field">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.dob}
                 </label>
                 <input
                   type="date"
-                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
-                  placeholder="dd-mm-yyyy"
+                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
+                  placeholder="YYYY-MM-DD"
                   value={formData.dob}
                   onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
                   required
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-gold-dark">
                   {t.aiForm.dobHelper}
                 </p>
               </div>
 
               {/* Time */}
-              <div className="flex flex-col">
+              <div className="flex flex-col ai-form-field">
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.tob}
                 </label>
                 <input
                   type="time"
-                  className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
+                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
+                  placeholder="14:30"
                   value={formData.tob}
                   onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
                   required
                 />
-                <p className="mt-2 text-xs text-slate-500">{t.aiForm.tobHelper}</p>
+                <p className="mt-2 text-xs text-gold-dark">{t.aiForm.tobHelper}</p>
               </div>
 
               {/* Gender (col 1 of row 2) */}
-              <div className="md:col-span-1 flex flex-col md:justify-end mb-10">
-                <label className="block text-sm font-medium text-amber-600 mb-2 h-5">
+              <div className="md:col-span-1 flex flex-col md:justify-end ai-form-field">
+                <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.gender}
                 </label>
 
@@ -1875,11 +1879,11 @@ export default function Home() {
                       type="radio"
                       name="gender"
                       value="Male"
-                      className="h-4 w-4"
+                      className="gender-radio h-4 w-4"
                       checked={formData.gender === "Male"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">{t.aiForm.male}</span>
+                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.male}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1887,11 +1891,11 @@ export default function Home() {
                       type="radio"
                       name="gender"
                       value="Female"
-                      className="h-4 w-4"
+                      className="gender-radio h-4 w-4"
                       checked={formData.gender === "Female"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">{t.aiForm.female}</span>
+                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.female}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1899,17 +1903,17 @@ export default function Home() {
                       type="radio"
                       name="gender"
                       value="Other"
-                      className="h-4 w-4"
+                      className="gender-radio h-4 w-4"
                       checked={formData.gender === "Other"}
                       onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                     />
-                    <span className="text-sm text-slate-700">{t.aiForm.other}</span>
+                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.other}</span>
                   </label>
                 </div>
               </div>
 
               {/* Place (col 2 of row 2) */}
-              <div className="md:col-span-1 flex flex-col md:justify-end relative">
+              <div className="md:col-span-1 flex flex-col md:justify-end relative ai-form-field">
                 {/* label has fixed height to match other labels */}
                 <label className="block text-sm font-medium text-gold mb-2 h-5">
                   {t.aiForm.place}
@@ -1919,8 +1923,8 @@ export default function Home() {
                   <div className="relative flex-1">
                     <input
                       ref={locationInputRef}
-                      className="h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
-                      placeholder={t.aiForm.placeHolderCity}
+                      className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
+                      placeholder="e.g., Mumbai, India"
                       value={formData.place}
                       onChange={(e) => {
                         hasInteractedWithLocation.current = true;
@@ -1973,17 +1977,17 @@ export default function Home() {
                   </button>
                 </div>
 
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-gold-dark">
                   {t.aiForm.placeHelper}
                 </p>
               </div>
 
               {/* CTA (col 3 of row 2) */}
-              <div className="flex flex-col md:justify-end mb-12">
+              <div className="flex flex-col md:justify-end">
                 <div className="w-full">
                   <button 
                     type="submit" 
-                    className="btn w-full h-12 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
+                    className="btn ai-predictions-submit-btn w-full h-12 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
                   >
                     {t.aiForm.submit}
                   </button>
@@ -1992,7 +1996,7 @@ export default function Home() {
             </form>
 
             {/* footer / small note */}
-            <div className="mt-6 text-xs text-slate-500">
+            <div className="mt-6 text-xs" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : "var(--color-gold-dark)" }}>
               {t.aiForm.footer}
             </div>
           </section>
@@ -2010,9 +2014,9 @@ export default function Home() {
                 </h2>
               </div>
 
-              <p className="text-slate-600 text-base md:text-lg max-w-3xl">
+              <p className="text-gray-800 text-base md:text-lg max-w-3xl" style={{ color: isCosmic ? '#d4af37' : '#1f2937' }}>
                 {t.astrologers.description}
-                <strong className="text-slate-800"> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
+                <strong style={{ color: isCosmic ? '#fbbf24' : '#111827' }}> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">

@@ -1804,7 +1804,7 @@ export default function MatchingPage() {
                   <label className="form-field-label">{t.matching.femaleName}</label>
                   <input
                     type="text"
-                    placeholder={t.matching.enterFemaleName}
+                    placeholder="e.g., Priya Sharma"
                     value={female.fullName}
                     onChange={onChangePerson(
                       setFemale,
@@ -1814,7 +1814,7 @@ export default function MatchingPage() {
                       "fullName"
                     )}
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                 </div>
                 <div className="form-field">
@@ -1830,7 +1830,7 @@ export default function MatchingPage() {
                       "dob"
                     )}
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                   <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
                 </div>
@@ -1848,7 +1848,7 @@ export default function MatchingPage() {
                       fTimer,
                       "tob"
                     )}
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                     required
                   />
                   <p className="form-field-helper">24-hour format</p>
@@ -1856,7 +1856,7 @@ export default function MatchingPage() {
                 <div className="form-field relative">
                   <label className="form-field-label">Place</label>
                   <input
-                    placeholder="City, Country"
+                    placeholder="e.g., Mumbai, India"
                     value={female.place}
                     onChange={onChangePerson(
                       setFemale,
@@ -1867,7 +1867,7 @@ export default function MatchingPage() {
                     )}
                     autoComplete="off"
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                   {fSuggest.length > 0 && (
                     <div className="suggestions">
@@ -1913,7 +1913,7 @@ export default function MatchingPage() {
                   <label className="form-field-label">{t.matching.maleName}</label>
                   <input
                     type="text"
-                    placeholder={t.matching.enterMaleName}
+                    placeholder="e.g., Rajesh Kumar"
                     value={male.fullName}
                     onChange={onChangePerson(
                       setMale,
@@ -1923,7 +1923,7 @@ export default function MatchingPage() {
                       "fullName"
                     )}
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                 </div>
                 <div className="form-field">
@@ -1939,7 +1939,7 @@ export default function MatchingPage() {
                       "dob"
                     )}
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                   <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
                 </div>
@@ -1957,7 +1957,7 @@ export default function MatchingPage() {
                       mTimer,
                       "tob"
                     )}
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                     required
                   />
                   <p className="form-field-helper">24-hour format</p>
@@ -1965,7 +1965,7 @@ export default function MatchingPage() {
                 <div className="form-field relative">
                   <label className="form-field-label">Place</label>
                   <input
-                    placeholder="City, Country"
+                    placeholder="e.g., Mumbai, India"
                     value={male.place}
                     onChange={onChangePerson(
                       setMale,
@@ -1976,7 +1976,7 @@ export default function MatchingPage() {
                     )}
                     autoComplete="off"
                     required
-                    className="form-field-input"
+                    className="form-field-input form-input-field"
                   />
                   {mSuggest.length > 0 && (
                     <div className="suggestions">
