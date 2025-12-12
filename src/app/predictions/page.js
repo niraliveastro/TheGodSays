@@ -43,10 +43,20 @@ export default function PredictionsPage() {
   const suggestTimer = useRef(null);
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
+  const initialHistoryHeightRef = useRef(null); // Store initial height to lock it
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+
+  // Automatically show full assistant card when results are generated
+  useEffect(() => {
+    if (result) {
+      setIsAssistantMinimized(false);
+    } else {
+      setIsAssistantMinimized(true);
+    }
+  }, [result]);
   const [selectedMaha, setSelectedMaha] = useState(null);
   const [antarOpen, setAntarOpen] = useState(false);
   const [antarLoading, setAntarLoading] = useState(false);
@@ -64,6 +74,7 @@ export default function PredictionsPage() {
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(true); // Control history visibility
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
@@ -100,6 +111,8 @@ export default function PredictionsPage() {
     if (current.length > 10) current = current.slice(0, 10);
     localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(current));
     setHistory(current);
+    // Show history after saving
+    setShowHistory(true);
   };
 
   const deleteHistoryItem = (id) => {
@@ -137,36 +150,68 @@ export default function PredictionsPage() {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         
+        // Hide history when coming from landing page
+        setShowHistory(false);
+        
         // Populate form fields
-        if (parsedData.name) setFullName(parsedData.name);
-        if (parsedData.gender) setGender(parsedData.gender);
+        if (parsedData.name && parsedData.name.trim()) {
+          setFullName(parsedData.name.trim());
+        }
+        if (parsedData.gender) {
+          setGender(parsedData.gender);
+        }
         if (parsedData.dob) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD format for the date input
+          // Check if date is already in YYYY-MM-DD format (from date input)
+          // or needs conversion from DD-MM-YYYY
           const parts = parsedData.dob.split("-");
           if (parts.length === 3) {
-            const [day, month, year] = parts;
-            setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            // Check if first part is 4 digits (YYYY-MM-DD format)
+            if (parts[0].length === 4) {
+              // Already in YYYY-MM-DD format, use directly
+              setDob(parsedData.dob);
+            } else {
+              // Convert DD-MM-YYYY to YYYY-MM-DD format
+              const [day, month, year] = parts;
+              setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            }
+          } else {
+            // Use as-is if format is unexpected
+            setDob(parsedData.dob);
           }
         }
-        if (parsedData.tob) setTob(parsedData.tob);
-        if (parsedData.place) setPlace(parsedData.place);
+        if (parsedData.tob) {
+          setTob(parsedData.tob);
+        }
+        if (parsedData.place && parsedData.place.trim()) {
+          setPlace(parsedData.place.trim());
+        }
 
         // Set flag to auto-submit if all required fields are present
-        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender) {
+        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender && parsedData.name) {
           shouldAutoSubmit.current = true;
         }
 
         // Clear the saved data so it doesn't auto-fill again next time
         localStorage.removeItem("tgs:aiPredictionForm");
+        
+        // Scroll to top to avoid scrolling through history cards
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+      } else {
+        // Normal load - show history immediately
+        setShowHistory(true);
       }
     } catch (error) {
       console.error("Error loading saved form data:", error);
+      // On error, still show history
+      setShowHistory(true);
     }
   }, []);
 
   // Auto-submit effect - runs after form fields are populated
   useEffect(() => {
-    if (shouldAutoSubmit.current && dob && tob && place && gender && !submitting && !result) {
+    if (shouldAutoSubmit.current && dob && tob && place && gender && fullName && !submitting && !result) {
       shouldAutoSubmit.current = false; // Reset flag
       
       // Trigger form submission after a short delay to ensure all state is updated
@@ -181,7 +226,7 @@ export default function PredictionsPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [dob, tob, place, gender, submitting, result]);
+  }, [dob, tob, place, gender, fullName, submitting, result]);
 
   useEffect(() => {
     const check = () => {
@@ -219,11 +264,25 @@ export default function PredictionsPage() {
 
 
   useEffect(() => {
-    if (!formRef.current || !historyCardRef.current) return;
+    if (!formRef.current || !historyCardRef.current || !showHistory) return;
 
     const syncHeights = () => {
+      // If results are already generated, lock the history card to its initial height
+      if (result && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+        return;
+      }
+
+      // Otherwise, sync with form height
       const formHeight = formRef.current?.offsetHeight || 0;
       if (!formHeight) return;
+      
+      // Store the initial height before results are generated
+      if (!initialHistoryHeightRef.current) {
+        initialHistoryHeightRef.current = formHeight;
+      }
+      
       historyCardRef.current.style.height = `${formHeight}px`;
       historyCardRef.current.style.maxHeight = `${formHeight}px`;
     };
@@ -234,7 +293,7 @@ export default function PredictionsPage() {
     return () => {
       window.removeEventListener("resize", syncHeights);
     };
-  }, [dob, tob, place, fullName, suggestions.length, history.length]);
+  }, [dob, tob, place, fullName, suggestions.length, history.length, showHistory, result]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -380,6 +439,8 @@ export default function PredictionsPage() {
     trackActionStart('predictions_generation');
     trackEvent('form_submit', { form_name: 'predictions' });
     
+    // Hide history during submission to avoid visual clutter
+    setShowHistory(false);
     setSubmitting(true);
     try {
       const geo = selectedCoords || (await geocodePlace(place));
@@ -561,6 +622,17 @@ export default function PredictionsPage() {
         westernChartSvg,
         apiErrors: { ...errors },
       });
+      
+      // Lock history card height to prevent expansion after results are generated
+      if (historyCardRef.current && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+      }
+      // Lock history card height to prevent expansion after results are generated
+      if (historyCardRef.current && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+      }
     } catch (err) {
       // Track predictions generation failure
       trackActionAbandon('predictions_generation', err?.message || 'unknown_error');
@@ -974,7 +1046,7 @@ export default function PredictionsPage() {
                   placeholder="YYYY-MM-DD"
                   required
                 />
-                <p className="form-field-helper">Format: YYYY-MM-DD (browser date picker)</p>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
               </div>
 
               {/* Time of Birth */}
@@ -1108,10 +1180,11 @@ export default function PredictionsPage() {
           </form>
 
           {/* Prediction History to the RIGHT of the form */}
-          <section
-            className="results-section history-side"
-            style={{ marginTop: 0 }}
-          >
+          {showHistory && (
+            <section
+              className="results-section history-side"
+              style={{ marginTop: 0 }}
+            >
             <div className="card" ref={historyCardRef}>
               <div className="results-header">
                 <History style={{ color: "#ca8a04" }} />
@@ -1199,6 +1272,7 @@ export default function PredictionsPage() {
               )}
             </div>
           </section>
+          )}
         </div>
 
         {/* Results */}
@@ -1806,18 +1880,22 @@ export default function PredictionsPage() {
         </Modal>
       </div>
 
-      {/* Fixed Chat Assistant Card */}
+      {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
       <div 
         className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
         style={{ 
-          maxWidth: isAssistantMinimized ? "64px" : "320px",
+          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {isAssistantMinimized ? (
+        {(!result || isAssistantMinimized) ? (
           // Minimized Icon - Astrologer + AI Assistant
           <button
-            onClick={() => setIsAssistantMinimized(false)}
+            onClick={() => {
+              if (result) {
+                setIsAssistantMinimized(false);
+              }
+            }}
             style={{
               width: "64px",
               height: "64px",
@@ -2054,30 +2132,50 @@ export default function PredictionsPage() {
               </span>
             </div>
             <button
+              disabled={submitting}
               style={{
-                background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                background: submitting 
+                  ? "rgba(212, 175, 55, 0.5)" 
+                  : "linear-gradient(135deg, #d4af37, #b8972e)",
                 border: "none",
                 borderRadius: "10px",
                 padding: "8px 16px",
                 color: isCosmic ? "#ffffff" : "#1f2937",
                 fontSize: "13px",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: submitting ? "not-allowed" : "pointer",
                 transition: "all 0.2s ease",
                 boxShadow: isCosmic
                   ? "0 2px 8px rgba(212, 175, 55, 0.4)"
                   : "0 2px 8px rgba(251, 191, 36, 0.3)",
+                opacity: submitting ? 0.6 : 1,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                e.currentTarget.style.transform = "scale(1.05)";
+                if (!submitting) {
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                e.currentTarget.style.transform = "scale(1)";
+                if (!submitting) {
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }
               }}
               onClick={(e) => {
                 e.stopPropagation(); // Prevent triggering card click
+                if (submitting) return;
+                
+                // Since we only show full card when result exists, we can directly open chat
+                if (result) {
+                  setChatSessionId(prev => prev + 1);
+                  setChatOpen(true);
+                  setTimeout(() => {
+                    document
+                      .querySelector(".ai-astrologer-section")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }
               }}
             >
               {submitting ? "Loading..." : "Start Chat"}
