@@ -23,14 +23,14 @@ import {
   Hash,
   Zap,
   Infinity,
-  Moon,
-  Sun,
+  // Moon,
+  // Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useTheme } from "@/contexts/ThemeContext";
+// import { useTheme } from "@/contexts/ThemeContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase";
@@ -39,7 +39,7 @@ import "./navigation.css";
 
 const Navigation = () => {
   const { t, language } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
+  // const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -348,15 +348,15 @@ const Navigation = () => {
               );
             })}
 
-            {/* Theme Toggle */}
-            <button
+            {/* Theme Toggle - Commented out for future use */}
+            {/* <button
               onClick={toggleTheme}
               className="theme-toggle-btn"
               aria-label={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
               title={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
             >
               {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
+            </button> */}
 
             {/* Language Switcher */}
             <div className="ml-4">
@@ -364,15 +364,15 @@ const Navigation = () => {
             </div>
           </div>
 
-          {/* Theme Toggle Mobile */}
-          <button
+          {/* Theme Toggle Mobile - Commented out for future use */}
+          {/* <button
             onClick={toggleTheme}
             className="theme-toggle-btn theme-toggle-btn-mobile"
             aria-label={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
             title={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
           >
             {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          </button> */}
 
           {/* Language Switcher Mobile */}
           <div className="nav-language-mobile">
