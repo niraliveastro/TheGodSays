@@ -134,8 +134,15 @@ export default function MatchingPage() {
   const [mCoords, setMCoords] = useState(null); // Male coordinates {latitude, longitude}
   const [fSuggest, setFSuggest] = useState([]); // Female place suggestions array
   const [mSuggest, setMSuggest] = useState([]); // Male place suggestions array
+  const [fLocating, setFLocating] = useState(false); // Female location fetching state
+  const [mLocating, setMLocating] = useState(false); // Male location fetching state
   const fTimer = useRef(null); // Debounce timer ref for female place search
   const mTimer = useRef(null); // Debounce timer ref for male place search
+  const fDateInputRef = useRef(null); // Ref for female date input
+  const mDateInputRef = useRef(null); // Ref for male date input
+  const fTimeInputRef = useRef(null); // Ref for female time input
+  const mTimeInputRef = useRef(null); // Ref for male time input
+  const [expandedAddresses, setExpandedAddresses] = useState({}); // Track expanded addresses by itemId-field
   // Submission and result state
   const [submitting, setSubmitting] = useState(false); // Loading state during submission
   const [error, setError] = useState(""); // Error message string
@@ -258,6 +265,15 @@ export default function MatchingPage() {
     setHistory(getHistory());
   }, []);
 
+  // Automatically show full assistant card when results are generated
+  useEffect(() => {
+    if (result) {
+      setIsAssistantMinimized(false);
+    } else {
+      setIsAssistantMinimized(true);
+    }
+  }, [result]);
+
   /* -------------------------------------------------------------- */
   /* Lifecycle / resize */
   /* -------------------------------------------------------------- */
@@ -366,6 +382,84 @@ export default function MatchingPage() {
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
+  /**
+   * Reverse geocodes coordinates to get place name.
+   * @param {number} lat - Latitude.
+   * @param {number} lon - Longitude.
+   * @returns {Promise<string>} Place name or coordinates string.
+   */
+  async function reverseGeocodeCoords(lat, lon) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
+      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    } catch {
+      return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    }
+  }
+
+  /**
+   * Fetches current location for female and fills place field.
+   */
+  async function useMyLocationFemale() {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setError("Geolocation is not supported by this browser.");
+      return;
+    }
+    setFLocating(true);
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+        });
+      });
+      const { latitude, longitude } = pos.coords;
+      const label = await reverseGeocodeCoords(latitude, longitude);
+      setFemale((prev) => ({ ...prev, place: label }));
+      setFCoords({ latitude, longitude, label });
+      setFSuggest([]);
+    } catch (e) {
+      setError(
+        "Could not access your location. Please allow permission or type the city manually."
+      );
+    } finally {
+      setFLocating(false);
+    }
+  }
+
+  /**
+   * Fetches current location for male and fills place field.
+   */
+  async function useMyLocationMale() {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setError("Geolocation is not supported by this browser.");
+      return;
+    }
+    setMLocating(true);
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+        });
+      });
+      const { latitude, longitude } = pos.coords;
+      const label = await reverseGeocodeCoords(latitude, longitude);
+      setMale((prev) => ({ ...prev, place: label }));
+      setMCoords({ latitude, longitude, label });
+      setMSuggest([]);
+    } catch (e) {
+      setError(
+        "Could not access your location. Please allow permission or type the city manually."
+      );
+    } finally {
+      setMLocating(false);
+    }
+  }
+
   /**
    * Ensures coordinates for a person; geocodes if not provided.
    * @param {object} person - Person with place string.
@@ -485,6 +579,26 @@ export default function MatchingPage() {
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
+      
+      // Validate that both API calls succeeded
+      if (!fCalc || !fCalc.results) {
+        console.error('[Matching] Female calculation failed:', fCalc);
+        throw new Error('Failed to fetch female individual data. Please try again.');
+      }
+      if (!mCalc || !mCalc.results) {
+        console.error('[Matching] Male calculation failed:', mCalc);
+        throw new Error('Failed to fetch male individual data. Please try again.');
+      }
+      
+      // Log to verify both have vimsottari data
+      const fVims = fCalc.results["vimsottari/dasa-information"];
+      const mVims = mCalc.results["vimsottari/dasa-information"];
+      console.log('[Matching] API Results:', {
+        femaleHasVimsottari: !!fVims,
+        maleHasVimsottari: !!mVims,
+        femaleResultsKeys: Object.keys(fCalc.results || {}),
+        maleResultsKeys: Object.keys(mCalc.results || {}),
+      });
       const safeParse = (v) => {
         try {
           return typeof v === "string" ? JSON.parse(v) : v;
@@ -697,10 +811,29 @@ export default function MatchingPage() {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
           placements: toPlacements(planets),
+          vimsottari: vims, // Include raw vimsottari data for Chat component
+          mahaDasas: maha, // Include maha dasas data for Chat component
         };
       };
-      setFDetails(buildUserDetails(fCalc));
-      setMDetails(buildUserDetails(mCalc));
+      const fDetailsBuilt = buildUserDetails(fCalc);
+      const mDetailsBuilt = buildUserDetails(mCalc);
+      
+      // Validate that both have vimsottari data
+      if (!fDetailsBuilt.vimsottari) {
+        console.error('[Matching] ⚠️ WARNING: Female vimsottari data is missing!', {
+          fCalcResults: Object.keys(fCalc.results || {}),
+          hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
+        });
+      }
+      if (!mDetailsBuilt.vimsottari) {
+        console.error('[Matching] ⚠️ WARNING: Male vimsottari data is missing!', {
+          mCalcResults: Object.keys(mCalc.results || {}),
+          hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
+        });
+      }
+      
+      setFDetails(fDetailsBuilt);
+      setMDetails(mDetailsBuilt);
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
@@ -1294,22 +1427,29 @@ export default function MatchingPage() {
           outline: none;
           border-color: var(--c-primary);
         }
-        .suggest-list {
+        .suggest-list,
+        .suggestions {
           position: absolute;
           z-index: 20;
           width: 100%;
           max-height: 12rem;
           overflow-y: auto;
-          background: var(--color-cream);
-          border: 1px solid var(--c-border);
+          background: white;
+          border: 1px solid #e5e7eb;
           border-radius: 0.5rem;
           margin-top: 0.25rem;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          top: 100%;
+          left: 0;
+          box-sizing: border-box;
         }
         .suggest-item {
           padding: 0.5rem 0.75rem;
           cursor: pointer;
           font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
         .suggest-item:hover {
           background: #f1f5f9;
@@ -1735,6 +1875,518 @@ export default function MatchingPage() {
           text-transform: none;
           letter-spacing: normal;
         }
+
+        /* Two-column layout for matching page */
+        .matching-page-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+          max-width: 1800px;
+          margin: 2rem auto;
+          padding: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+          .matching-page-container {
+            grid-template-columns: 4fr 1.2fr;
+            gap: 2.5rem;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1800px;
+            justify-items: start;
+          }
+          
+          .matching-page-container > * {
+            min-width: 0;
+          }
+        }
+
+        .birth-details-section {
+          background: white;
+          border-radius: 1.5rem;
+          padding: 2.5rem 2rem 2.5rem 2.5rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          width: 100%;
+          box-sizing: border-box;
+          margin-right: auto;
+          margin-left: 0;
+        }
+
+        @media (max-width: 1023px) {
+          .birth-details-section {
+            padding: 2rem;
+          }
+        }
+
+        .matching-history-sidebar {
+          background: white;
+          border-radius: 1.5rem;
+          padding: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          height: fit-content;
+          position: sticky;
+          top: 2rem;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .form-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .form-header-icon {
+          display: flex;
+          align-items: center;
+        }
+
+        .form-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .form-subtitle {
+          font-size: 0.875rem;
+          color: #6b7280;
+          margin: 0.25rem 0 0 0;
+        }
+
+        .form-grid-2col {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (min-width: 640px) {
+          .form-grid-2col {
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            grid-auto-flow: row;
+          }
+        }
+
+        .form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+          min-width: 0;
+          flex-shrink: 1;
+        }
+
+        .form-field.relative {
+          position: relative;
+          width: 100%;
+        }
+
+        .form-field-label {
+          font-size: 0.8rem;
+          font-weight: 500;
+          color: #ca8a04;
+        }
+
+        .form-field-input,
+        .form-input-field {
+          padding: 0.5rem 0.75rem;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          font-size: 0.9rem;
+          width: 100% !important;
+          max-width: 100%;
+          box-sizing: border-box !important;
+          transition: border-color 0.2s;
+          display: block;
+          margin: 0;
+        }
+
+        .form-field-input:focus {
+          outline: none;
+          border-color: #ca8a04;
+        }
+
+        .form-field-helper {
+          font-size: 0.7rem;
+          color: #6b7280;
+          margin: 0;
+        }
+
+        .input-with-icon {
+          position: relative;
+          width: 100%;
+          display: block;
+          box-sizing: border-box;
+        }
+
+        .input-with-icon input {
+          padding-right: 2.5rem !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          max-width: 100%;
+        }
+
+        .input-with-icon input[type="text"][placeholder*="Place"],
+        .input-with-icon input[type="text"][placeholder*="place"] {
+          padding-right: 3rem !important;
+        }
+
+        .input-icon {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #9ca3af;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .calendar-icon-btn,
+        .clock-icon-btn {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0.25rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          transition: opacity 0.2s;
+        }
+
+        .calendar-icon-btn:hover,
+        .clock-icon-btn:hover {
+          opacity: 0.7;
+        }
+
+        .location-icon-btn {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0.25rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          transition: opacity 0.2s;
+        }
+
+        .location-icon-btn:hover {
+          opacity: 0.7;
+        }
+
+        .location-icon-btn:disabled {
+          cursor: wait;
+          opacity: 0.6;
+        }
+
+        .input-with-icon input[placeholder*="Place"],
+        .input-with-icon input[placeholder*="place"] {
+          padding-right: 3rem !important;
+        }
+
+        /* Hide default browser calendar/clock icons */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+          display: none !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          opacity: 0 !important;
+          position: absolute !important;
+          right: 0 !important;
+          width: 0 !important;
+          height: 0 !important;
+          pointer-events: none !important;
+        }
+
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="time"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-outer-spin-button,
+        input[type="time"]::-webkit-outer-spin-button {
+          display: none !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          margin: 0 !important;
+        }
+
+        input[type="date"],
+        input[type="time"] {
+          -webkit-appearance: none !important;
+          appearance: none !important;
+        }
+
+        /* Firefox */
+        input[type="date"]::-moz-calendar-picker-indicator,
+        input[type="time"]::-moz-calendar-picker-indicator {
+          display: none !important;
+          opacity: 0 !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+
+        .form-section {
+          border-radius: 1rem;
+          padding: 2.5rem !important;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          overflow: visible;
+        }
+        
+        .form-section > * {
+          min-width: 0;
+        }
+
+        .results-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .results-title {
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: 2rem;
+          align-items: center;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b);
+          color: #1f2937;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 0 20px rgba(250, 204, 21, 0.55);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          box-shadow: 0 0 30px rgba(250, 204, 21, 0.8);
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-ghost {
+          background: white;
+          color: #1f2937;
+          border: 1px solid #e5e7eb;
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .btn-ghost:hover {
+          background: #f9fafb;
+          border-color: #d1d5db;
+        }
+
+        .history-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+
+        .history-title {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .history-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          overflow-y: auto;
+          max-height: 500px;
+          padding-right: 0.5rem;
+          scrollbar-width: thin;
+          scrollbar-color: #ca8a04 #f3f4f6;
+        }
+
+        .history-cards::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .history-cards::-webkit-scrollbar-track {
+          background: #f3f4f6;
+          border-radius: 10px;
+        }
+
+        .history-cards::-webkit-scrollbar-thumb {
+          background: #ca8a04;
+          border-radius: 10px;
+        }
+
+        .history-cards::-webkit-scrollbar-thumb:hover {
+          background: #b8972e;
+        }
+
+        .history-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          padding: 0.875rem;
+          background: #f9fafb;
+          cursor: pointer;
+          transition: all 0.2s;
+          flex-shrink: 0;
+          min-height: 160px;
+        }
+
+        .history-card:hover {
+          border-color: #ca8a04;
+          box-shadow: 0 2px 8px rgba(202, 138, 4, 0.2);
+        }
+
+        .history-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+
+        .history-card-names {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .pill {
+          padding: 0.375rem 0.75rem;
+          border-radius: 9999px;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+
+        .pill-female {
+          background: #fce7f3;
+          border-color: #fbcfe8;
+          color: #831843;
+        }
+
+        .pill-male {
+          background: #dbeafe;
+          border-color: #bfdbfe;
+          color: #1e3a8a;
+        }
+
+        .dot-separator {
+          color: #6b7280;
+          font-size: 1.25rem;
+        }
+
+        .history-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .use-btn {
+          background: linear-gradient(135deg, #fcd34d, #fbbf24);
+          color: #1f2937;
+          border: none;
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .delete-btn {
+          background: transparent;
+          border: none;
+          color: #ef4444;
+          cursor: pointer;
+          padding: 0.375rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .delete-btn:hover {
+          color: #dc2626;
+        }
+
+        .person-block {
+          margin-bottom: 0.75rem;
+        }
+
+        .person-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          margin-bottom: 0.5rem;
+        }
+
+        .person-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: #374151;
+          margin-bottom: 0.25rem;
+        }
+
+        .meta-icon {
+          width: 1rem;
+          height: 1rem;
+          color: #9ca3af;
+        }
+
+        .person-divider {
+          height: 1px;
+          background: #e5e7eb;
+          margin: 0.75rem 0;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 2rem;
+          color: #9ca3af;
+          font-size: 0.875rem;
+        }
       `}</style>
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
@@ -1753,49 +2405,86 @@ export default function MatchingPage() {
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
-        <header className="header">
-          <IoHeartCircle
-            className="headerIcon"
-            style={{ color: "white", padding: "0.4rem", width: 36, height: 36 }}
-          />
-          <h1 className="title">{t.matching.title}</h1>
-          <p className="subtitle">
-            {t.matching.subtitle}
+        {error && <div className="error" style={{ maxWidth: "1600px", margin: "2rem auto", padding: "0 2rem" }}>{error}</div>}
+        {/* Header Section */}
+        <header className="header" style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <div className="headerIcon" style={{ 
+            width: "64px", 
+            height: "64px", 
+            background: "linear-gradient(135deg, #d4af37, #b8972e)",
+            borderRadius: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 1rem",
+            boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)"
+          }}>
+            <IoHeartCircle style={{ color: "white", width: "36px", height: "36px" }} />
+          </div>
+          <h1 className="title" style={{
+            fontFamily: "var(--font-heading), 'Cormorant Garamond', serif",
+            fontSize: "3rem",
+            fontWeight: 700,
+            background: "linear-gradient(135deg, #d4af37, #b8972e)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            margin: 0
+          }}>
+            Match Making
+          </h1>
+          <p className="subtitle" style={{
+            color: "#555",
+            marginTop: "0.5rem",
+            fontSize: "1rem"
+          }}>
+            Enter birth details for both to get Ashtakoot score
           </p>
         </header>
-        {error && <div className="error">{error}</div>}
-        <form
-          onSubmit={onSubmit}
-          className="card bg-white/90 backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border border-gold/20 max-w-6xl mx-auto"
-        >
-          {/* Header */}
-          <div className="form-header" style={{ position: "relative" }}>
-            <div className="form-header-icon">
-              <Moon className="w-6 h-6 text-gold" />
-            </div>
-            <div className="form-header-text">
-              <h3 className="form-title">{t.matching.birthDetails}</h3>
-              <p className="form-subtitle">
-                {t.matching.enterBothDetails}
-              </p>
-            </div>
-          </div>
-          {/* Grid */}
-          <div className="grid md:grid-cols-2 gap-8 mt-4">
+        <div className="matching-page-container">
+          {/* Left Column - Birth Details */}
+          <div className="birth-details-section">
+            <form onSubmit={onSubmit}>
+              {/* Header */}
+              <div className="form-header">
+                <Moon className="w-6 h-6" style={{ color: "#ca8a04" }} />
+                <div>
+                  <h3 className="form-title">{t.matching.birthDetails}</h3>
+                  <p className="form-subtitle">
+                    {t.matching.enterBothDetails}
+                  </p>
+                </div>
+              </div>
+              {/* Grid */}
+              <div 
+                className="grid md:grid-cols-2 gap-8 mt-6" 
+                style={{ 
+                  width: "100%", 
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: "1.5rem",
+                  boxSizing: "border-box",
+                  padding: "0"
+                }}
+              >
             {/* ---------- Female ---------- */}
             <div
-              className="form-section border border-pink-200 bg-pink-50 rounded-2xl p-6"
+              className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
               style={{
                 background: isCosmic
                   ? "rgba(22, 33, 62, 0.85)"
-                  : undefined,
+                  : "#fdf2f8",
                 borderColor: isCosmic
                   ? "rgba(212, 175, 55, 0.3)"
-                  : undefined,
+                  : "#fbcfe8",
+                padding: "2.5rem",
+                width: "100%",
+                boxSizing: "border-box",
+                minWidth: 0,
               }}
             >
               <div className="results-header mb-3">
-                <Moon style={{ color: "#ca8a04" }} />
+                <Moon style={{ color: "#ec4899" }} />
                 <h3 className="results-title">{t.matching.femaleDetails}</h3>
               </div>
               <div className="form-grid-2col">
@@ -1804,7 +2493,7 @@ export default function MatchingPage() {
                   <label className="form-field-label">{t.matching.femaleName}</label>
                   <input
                     type="text"
-                    placeholder="e.g., Priya Sharma"
+                    placeholder="e.g., Priya"
                     value={female.fullName}
                     onChange={onChangePerson(
                       setFemale,
@@ -1819,56 +2508,134 @@ export default function MatchingPage() {
                 </div>
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <input
-                    type="date"
-                    value={female.dob}
-                    onChange={onChangePerson(
-                      setFemale,
-                      setFCoords,
-                      setFSuggest,
-                      fTimer,
-                      "dob"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
+                  <div className="input-with-icon">
+                    <input
+                      ref={fDateInputRef}
+                      type="date"
+                      value={female.dob}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "dob"
+                      )}
+                      required
+                      className="form-field-input form-input-field"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fDateInputRef.current?.showPicker?.() || fDateInputRef.current?.click()}
+                      className="calendar-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2,
+                        transition: "opacity 0.2s",
+                      }}
+                    >
+                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
+                    </button>
+                  </div>
+                  <p className="form-field-helper">dd-mm-yyyy format</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <input
-                    type="time"
-                    step="60"
-                    value={female.tob}
-                    onChange={onChangePerson(
-                      setFemale,
-                      setFCoords,
-                      setFSuggest,
-                      fTimer,
-                      "tob"
-                    )}
-                    className="form-field-input form-input-field"
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      ref={fTimeInputRef}
+                      type="time"
+                      step="60"
+                      value={female.tob}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "tob"
+                      )}
+                      className="form-field-input form-input-field"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fTimeInputRef.current?.showPicker?.() || fTimeInputRef.current?.click()}
+                      className="clock-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2,
+                        transition: "opacity 0.2s",
+                      }}
+                    >
+                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
+                    </button>
+                  </div>
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
                   <label className="form-field-label">Place</label>
-                  <input
-                    placeholder="e.g., Mumbai, India"
-                    value={female.place}
-                    onChange={onChangePerson(
-                      setFemale,
-                      setFCoords,
-                      setFSuggest,
-                      fTimer,
-                      "place"
-                    )}
-                    autoComplete="off"
-                    required
-                    className="form-field-input form-input-field"
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      placeholder="e.g., Mumbai, India"
+                      value={female.place}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "place"
+                      )}
+                      autoComplete="off"
+                      required
+                      className="form-field-input form-input-field"
+                    />
+                    <button
+                      type="button"
+                      onClick={useMyLocationFemale}
+                      disabled={fLocating}
+                      className="location-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: fLocating ? "wait" : "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1,
+                      }}
+                    >
+                      {fLocating ? (
+                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#ec4899" }} />
+                      ) : (
+                        <MapPin className="w-5 h-5" style={{ color: "#ec4899" }} />
+                      )}
+                    </button>
+                  </div>
                   {fSuggest.length > 0 && (
                     <div className="suggestions">
                       {fSuggest.map((s, i) => (
@@ -1893,18 +2660,22 @@ export default function MatchingPage() {
             </div>
             {/* ---------- Male ---------- */}
             <div
-              className="form-section border border-blue-200 bg-blue-50 rounded-2xl p-6"
+              className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
               style={{
                 background: isCosmic
                   ? "rgba(22, 33, 62, 0.85)"
-                  : undefined,
+                  : "#eff6ff",
                 borderColor: isCosmic
                   ? "rgba(212, 175, 55, 0.3)"
-                  : undefined,
+                  : "#bfdbfe",
+                padding: "2.5rem",
+                width: "100%",
+                boxSizing: "border-box",
+                minWidth: 0,
               }}
             >
               <div className="results-header mb-3">
-                <Sun style={{ color: "#ca8a04" }} />
+                <Sun style={{ color: "#3b82f6" }} />
                 <h3 className="results-title">{t.matching.maleDetails}</h3>
               </div>
               <div className="form-grid-2col">
@@ -1913,7 +2684,7 @@ export default function MatchingPage() {
                   <label className="form-field-label">{t.matching.maleName}</label>
                   <input
                     type="text"
-                    placeholder="e.g., Rajesh Kumar"
+                    placeholder="e.g., Rohan"
                     value={male.fullName}
                     onChange={onChangePerson(
                       setMale,
@@ -1928,56 +2699,134 @@ export default function MatchingPage() {
                 </div>
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <input
-                    type="date"
-                    value={male.dob}
-                    onChange={onChangePerson(
-                      setMale,
-                      setMCoords,
-                      setMSuggest,
-                      mTimer,
-                      "dob"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">{t.formFields.formatYYYYMMDD}</p>
+                  <div className="input-with-icon">
+                    <input
+                      ref={mDateInputRef}
+                      type="date"
+                      value={male.dob}
+                      onChange={onChangePerson(
+                        setMale,
+                        setMCoords,
+                        setMSuggest,
+                        mTimer,
+                        "dob"
+                      )}
+                      required
+                      className="form-field-input form-input-field"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => mDateInputRef.current?.showPicker?.() || mDateInputRef.current?.click()}
+                      className="calendar-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2,
+                        transition: "opacity 0.2s",
+                      }}
+                    >
+                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
+                    </button>
+                  </div>
+                  <p className="form-field-helper">dd-mm-yyyy format</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <input
-                    type="time"
-                    step="60"
-                    value={male.tob}
-                    onChange={onChangePerson(
-                      setMale,
-                      setMCoords,
-                      setMSuggest,
-                      mTimer,
-                      "tob"
-                    )}
-                    className="form-field-input form-input-field"
-                    required
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      ref={mTimeInputRef}
+                      type="time"
+                      step="60"
+                      value={male.tob}
+                      onChange={onChangePerson(
+                        setMale,
+                        setMCoords,
+                        setMSuggest,
+                        mTimer,
+                        "tob"
+                      )}
+                      className="form-field-input form-input-field"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => mTimeInputRef.current?.showPicker?.() || mTimeInputRef.current?.click()}
+                      className="clock-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2,
+                        transition: "opacity 0.2s",
+                      }}
+                    >
+                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
+                    </button>
+                  </div>
                   <p className="form-field-helper">24-hour format</p>
                 </div>
                 <div className="form-field relative">
                   <label className="form-field-label">Place</label>
-                  <input
-                    placeholder="e.g., Mumbai, India"
-                    value={male.place}
-                    onChange={onChangePerson(
-                      setMale,
-                      setMCoords,
-                      setMSuggest,
-                      mTimer,
-                      "place"
-                    )}
-                    autoComplete="off"
-                    required
-                    className="form-field-input form-input-field"
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      placeholder="e.g., Mumbai, India"
+                      value={male.place}
+                      onChange={onChangePerson(
+                        setMale,
+                        setMCoords,
+                        setMSuggest,
+                        mTimer,
+                        "place"
+                      )}
+                      autoComplete="off"
+                      required
+                      className="form-field-input form-input-field"
+                    />
+                    <button
+                      type="button"
+                      onClick={useMyLocationMale}
+                      disabled={mLocating}
+                      className="location-icon-btn"
+                      style={{ 
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: mLocating ? "wait" : "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1,
+                      }}
+                    >
+                      {mLocating ? (
+                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#3b82f6" }} />
+                      ) : (
+                        <MapPin className="w-5 h-5" style={{ color: "#3b82f6" }} />
+                      )}
+                    </button>
+                  </div>
                   {mSuggest.length > 0 && (
                     <div className="suggestions">
                       {mSuggest.map((s, i) => (
@@ -2001,55 +2850,44 @@ export default function MatchingPage() {
               </div>
             </div>
           </div>
-          {/* Action Buttons */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(12, 1fr)",
-              gap: "1rem",
-              alignItems: "end",
-              marginTop: "2rem",
-            }}
-          >
-            <div className="submit-col col-span-3">
-              <button
-                type="submit"
-                disabled={submitting || fFilled < 3 || mFilled < 3}
-                className="btn btn-primary btn-gold w-full"
-              >
-                {submitting ? (
-                  <>
-                    <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
-                    Calculating…
-                  </>
-                ) : (
-                  <>Get Match Score</>
-                )}
-              </button>
-            </div>
-            <div className="reset-col col-span-2">
-              <button
-                type="reset"
-                onClick={resetAllFields}
-                className="btn btn-ghost w-full"
-              >
-                <RotateCcw className="w-4 h-4" /> Reset
-              </button>
-            </div>
+              {/* Action Buttons */}
+              <div className="action-buttons">
+                <button
+                  type="submit"
+                  disabled={submitting || fFilled < 3 || mFilled < 3}
+                  className="btn-primary"
+                >
+                  {submitting ? (
+                    <>
+                      <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
+                      Calculating…
+                    </>
+                  ) : (
+                    <>It's a Match?</>
+                  )}
+                </button>
+                <button
+                  type="reset"
+                  onClick={resetAllFields}
+                  className="btn-ghost"
+                >
+                  <RotateCcw className="w-4 h-4" /> Reset
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-        {/* Matching History Table */}
-        <section className="results-section" style={{ marginTop: "3rem" }}>
-          <div className="card">
-            <div className="results-header">
-              <Sparkles style={{ color: "#ca8a04" }} />
-              <h3 className="results-title flex items-center gap-2">
+          {/* Right Column - Matching History Sidebar */}
+          <div className="matching-history-sidebar">
+            <div className="history-header">
+              <h3 className="history-title">
+                <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
                 Matching History
               </h3>
               {history.length > 0 && (
                 <button
                   onClick={clearHistory}
-                  className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
+                  className="btn-ghost"
+                  style={{ padding: "0.5rem", fontSize: "0.875rem" }}
                 >
                   <RotateCcw className="w-4 h-4" /> Clear
                 </button>
@@ -2059,12 +2897,14 @@ export default function MatchingPage() {
               <div className="empty-state">No matching history yet.</div>
             ) : (
               <div className="history-cards">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className="history-card"
-                    onClick={() => loadHistoryIntoForm(item)}
-                  >
+                {history.map((item) => {
+                  const isExpanded = expandedAddresses[`${item.id}-female`] || expandedAddresses[`${item.id}-male`];
+                  return (
+                    <div
+                      key={item.id}
+                      className={`history-card ${isExpanded ? 'expanded' : ''}`}
+                      onClick={() => loadHistoryIntoForm(item)}
+                    >
                     <div className="history-card-top">
                       <div className="history-card-names">
                         <span className="pill pill-female">
@@ -2098,7 +2938,7 @@ export default function MatchingPage() {
                     </div>
                     <div className="history-card-body">
                       <div className="person-block">
-                        <div className="person-label">Female</div>
+                        <div className="person-label">FEMALE</div>
                         <div className="person-meta">
                           <Calendar className="meta-icon" />
                           <span>
@@ -2107,12 +2947,30 @@ export default function MatchingPage() {
                         </div>
                         <div className="person-meta">
                           <MapPin className="meta-icon" />
-                          <span>{item.femalePlace || "-"}</span>
+                          <div style={{ flex: 1 }}>
+                            <span className={`address-text ${expandedAddresses[`${item.id}-female`] ? 'expanded' : ''}`}>
+                              {item.femalePlace || "-"}
+                            </span>
+                            {item.femalePlace && item.femalePlace.length > 50 && (
+                              <button
+                                className="show-more-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedAddresses(prev => ({
+                                    ...prev,
+                                    [`${item.id}-female`]: !prev[`${item.id}-female`]
+                                  }));
+                                }}
+                              >
+                                {expandedAddresses[`${item.id}-female`] ? 'Show less' : 'Show more'}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="person-divider" />
                       <div className="person-block">
-                        <div className="person-label">Male</div>
+                        <div className="person-label">MALE</div>
                         <div className="person-meta">
                           <Calendar className="meta-icon" />
                           <span>
@@ -2121,16 +2979,35 @@ export default function MatchingPage() {
                         </div>
                         <div className="person-meta">
                           <MapPin className="meta-icon" />
-                          <span>{item.malePlace || "-"}</span>
+                          <div style={{ flex: 1 }}>
+                            <span className={`address-text ${expandedAddresses[`${item.id}-male`] ? 'expanded' : ''}`}>
+                              {item.malePlace || "-"}
+                            </span>
+                            {item.malePlace && item.malePlace.length > 50 && (
+                              <button
+                                className="show-more-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedAddresses(prev => ({
+                                    ...prev,
+                                    [`${item.id}-male`]: !prev[`${item.id}-male`]
+                                  }));
+                                }}
+                              >
+                                {expandedAddresses[`${item.id}-male`] ? 'Show less' : 'Show more'}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                    );
+                })}
               </div>
             )}
           </div>
-        </section>
+        </div>
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
         {/* ---------------------------------------------------------- */}
@@ -2636,9 +3513,14 @@ export default function MatchingPage() {
           border: 1px solid #f1e9d2;
           box-shadow: 0 12px 30px rgba(212, 175, 55, 0.12);
           border-radius: 16px;
-          padding: 16px;
-          transition: transform 160ms ease, box-shadow 160ms ease;
+          padding: 12px;
+          transition: transform 160ms ease, box-shadow 160ms ease, max-height 0.3s ease;
           cursor: pointer;
+          max-height: 240px;
+          overflow: hidden;
+        }
+        .history-card.expanded {
+          max-height: none;
         }
         [data-theme="cosmic"] .history-card {
           background: linear-gradient(145deg, rgba(22, 33, 62, 0.95), rgba(10, 10, 15, 0.9));
@@ -2680,15 +3562,25 @@ export default function MatchingPage() {
           background: rgba(212, 175, 55, 0.15);
           color: #fbbf24;
         }
+        .pill-female {
+          background: #fce7f3;
+          border-color: #fbcfe8;
+          color: #831843;
+        }
+        [data-theme="cosmic"] .pill-female {
+          background: rgba(236, 72, 153, 0.2);
+          border-color: rgba(236, 72, 153, 0.4);
+          color: #ec4899;
+        }
         .pill-male {
-          background: #e8f1ff;
-          border-color: #c9daf8;
-          color: #1f3b6d;
+          background: #dbeafe;
+          border-color: #bfdbfe;
+          color: #1e3a8a;
         }
         [data-theme="cosmic"] .pill-male {
-          background: rgba(99, 102, 241, 0.2);
-          border-color: rgba(99, 102, 241, 0.4);
-          color: #a5b4fc;
+          background: rgba(59, 130, 246, 0.2);
+          border-color: rgba(59, 130, 246, 0.4);
+          color: #3b82f6;
         }
         .dot-separator {
           color: #c4a13f;
@@ -2721,10 +3613,45 @@ export default function MatchingPage() {
         .person-meta {
           display: flex;
           gap: 8px;
-          align-items: center;
+          align-items: flex-start;
           color: #d4af37;
           font-size: 0.85rem;
           line-height: 1.4;
+        }
+        .person-meta span {
+          flex: 1;
+          word-break: break-word;
+        }
+        .address-text {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .address-text.expanded {
+          display: block;
+          -webkit-line-clamp: unset;
+        }
+        .show-more-btn {
+          margin-top: 4px;
+          background: none;
+          border: none;
+          color: #d4af37;
+          font-size: 0.75rem;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+          font-weight: 500;
+        }
+        .show-more-btn:hover {
+          color: #fbbf24;
+        }
+        [data-theme="cosmic"] .show-more-btn {
+          color: #d4af37;
+        }
+        [data-theme="cosmic"] .show-more-btn:hover {
+          color: #fbbf24;
         }
         [data-theme="cosmic"] .person-meta {
           color: #d4af37;
@@ -2797,18 +3724,22 @@ export default function MatchingPage() {
         }
       `}</style>
 
-      {/* Fixed Chat Assistant Card - Always visible, like predictions page */}
+      {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
       <div
         className="fixed bottom-6 right-6 z-50 ai-assistant-card"
         style={{
-          maxWidth: isAssistantMinimized ? "64px" : "320px",
+          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {isAssistantMinimized ? (
+        {(!result || isAssistantMinimized) ? (
           // Minimized Icon - Astrologer + AI Assistant
           <button
-            onClick={() => setIsAssistantMinimized(false)}
+            onClick={() => {
+              if (result) {
+                setIsAssistantMinimized(false);
+              }
+            }}
             style={{
               width: "64px",
               height: "64px",
@@ -3049,54 +3980,42 @@ export default function MatchingPage() {
                 </span>
               </div>
               <button
+                disabled={submitting}
                 style={{
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  background: submitting 
+                    ? "rgba(212, 175, 55, 0.5)" 
+                    : "linear-gradient(135deg, #d4af37, #b8972e)",
                   border: "none",
                   borderRadius: "10px",
                   padding: "8px 16px",
                   color: isCosmic ? "#ffffff" : "#1f2937",
                   fontSize: "13px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: submitting ? "not-allowed" : "pointer",
                   transition: "all 0.2s ease",
                   boxShadow: isCosmic
                     ? "0 2px 8px rgba(212, 175, 55, 0.4)"
                     : "0 2px 8px rgba(251, 191, 36, 0.3)",
+                  opacity: submitting ? 0.6 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                  e.currentTarget.style.transform = "scale(1.05)";
+                  if (!submitting) {
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                  e.currentTarget.style.transform = "scale(1)";
+                  if (!submitting) {
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }
                 }}
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent triggering card click
-                  // Check if form is filled
-                  const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
-                    male.fullName && male.dob && male.tob && male.place;
-                  if (!isFormFilled) {
-                    setError("Please complete all birth details for both individuals before using the chat.");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    return;
-                  }
-                  if (!result) {
-                    // Submit form if no result yet
-                    const form = document.querySelector("form");
-                    if (form) {
-                      form.requestSubmit();
-                      setTimeout(() => {
-                        setChatSessionId(prev => prev + 1);
-                        setChatOpen(true);
-                        setTimeout(() => {
-                          document
-                            .querySelector(".ai-astrologer-section")
-                            ?.scrollIntoView({ behavior: "smooth" });
-                        }, 100);
-                      }, 2000);
-                    }
-                  } else {
+                  if (submitting) return;
+                  
+                  // Since we only show full card when result exists, we can directly open chat
+                  if (result) {
                     setChatSessionId(prev => prev + 1);
                     setChatOpen(true);
                     setTimeout(() => {

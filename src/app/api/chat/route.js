@@ -1,6 +1,15 @@
 
 import { NextResponse } from 'next/server';
 
+// Prevent static generation - this is a dynamic API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+// Add GET handler to prevent prerendering errors
+export async function GET() {
+  return NextResponse.json({ error: 'Method not allowed. Use POST.' }, { status: 405 });
+}
+
 export async function POST(req) {
   try {
     const { conversationHistory, page, isContext, language } = await req.json();

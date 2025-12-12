@@ -969,6 +969,10 @@ export default function Home() {
 
   const handleAIPredictionsSubmit = () => {
     // Validate required fields
+    if (!formData.name || !formData.name.trim()) {
+      alert("Please enter your Name");
+      return;
+    }
     if (!formData.dob) {
       alert("Please enter your Date of Birth");
       return;
@@ -977,8 +981,12 @@ export default function Home() {
       alert("Please enter your Time of Birth");
       return;
     }
-    if (!formData.place) {
+    if (!formData.place || !formData.place.trim()) {
       alert("Please enter your Place of Birth");
+      return;
+    }
+    if (!formData.gender) {
+      alert("Please select your Gender");
       return;
     }
 
@@ -1827,6 +1835,7 @@ export default function Home() {
                   placeholder="e.g., Rajesh Kumar"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
                 />
                 <p className="mt-2 text-xs text-gold-dark">
                   {t.aiForm.nameHelper}
@@ -2302,10 +2311,10 @@ export default function Home() {
                               textTransform: "uppercase",
                               letterSpacing: "0.05em",
                               border: `1px solid ${(ast.online || ast.isOnline)
-                                  ? "#6ee7b7"
-                                  : ast.status === "busy"
-                                    ? "#fbbf24"
-                                    : "#d1d5db"
+                                ? "#6ee7b7"
+                                : ast.status === "busy"
+                                  ? "#fbbf24"
+                                  : "#d1d5db"
                                 }`,
                             }}
                           >
@@ -2650,14 +2659,25 @@ export default function Home() {
                       </p>
 
                       {/* Date Selector */}
-                      <div className="mt-4 inline-flex items-center gap-3 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 px-5 py-2.5 rounded-full border border-gold/30 shadow-sm">
-                        <Calendar className="w-4 h-4 text-gold" />
+                      <div
+                        className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${isCosmic
+                          ? "bg-gradient-to-r from-yellow-500/10 via-yellow-400/10 to-yellow-500/10 border-yellow-500/30"
+                          : "bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
+                          }`}
+                      >
+                        <Calendar className={`w-4 h-4 ${isCosmic ? "text-yellow-400" : "text-gold"}`} />
                         <input
                           type="date"
                           value={selectedDate}
                           onChange={(e) => setSelectedDate(e.target.value)}
-                          className="bg-transparent border-none outline-none text-center text-sm font-medium text-gray-700 cursor-pointer hover:text-gold transition-colors"
-                          style={{ colorScheme: 'light' }}
+                          className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${isCosmic
+                            ? "text-yellow-100 hover:text-yellow-300 placeholder-yellow-200/50"
+                            : "text-gray-700 hover:text-gold"
+                            }`}
+                          style={{
+                            colorScheme: isCosmic ? "dark" : "light",
+                            background: 'transparent'
+                          }}
                         />
                       </div>
 

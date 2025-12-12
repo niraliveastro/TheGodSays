@@ -43,10 +43,20 @@ export default function PredictionsPage() {
   const suggestTimer = useRef(null);
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
+  const initialHistoryHeightRef = useRef(null); // Store initial height to lock it
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+
+  // Automatically show full assistant card when results are generated
+  useEffect(() => {
+    if (result) {
+      setIsAssistantMinimized(false);
+    } else {
+      setIsAssistantMinimized(true);
+    }
+  }, [result]);
   const [selectedMaha, setSelectedMaha] = useState(null);
   const [antarOpen, setAntarOpen] = useState(false);
   const [antarLoading, setAntarLoading] = useState(false);
@@ -64,6 +74,7 @@ export default function PredictionsPage() {
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(true); // Control history visibility
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
@@ -100,6 +111,8 @@ export default function PredictionsPage() {
     if (current.length > 10) current = current.slice(0, 10);
     localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(current));
     setHistory(current);
+    // Show history after saving
+    setShowHistory(true);
   };
 
   const deleteHistoryItem = (id) => {
@@ -137,36 +150,68 @@ export default function PredictionsPage() {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         
+        // Hide history when coming from landing page
+        setShowHistory(false);
+        
         // Populate form fields
-        if (parsedData.name) setFullName(parsedData.name);
-        if (parsedData.gender) setGender(parsedData.gender);
+        if (parsedData.name && parsedData.name.trim()) {
+          setFullName(parsedData.name.trim());
+        }
+        if (parsedData.gender) {
+          setGender(parsedData.gender);
+        }
         if (parsedData.dob) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD format for the date input
+          // Check if date is already in YYYY-MM-DD format (from date input)
+          // or needs conversion from DD-MM-YYYY
           const parts = parsedData.dob.split("-");
           if (parts.length === 3) {
-            const [day, month, year] = parts;
-            setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            // Check if first part is 4 digits (YYYY-MM-DD format)
+            if (parts[0].length === 4) {
+              // Already in YYYY-MM-DD format, use directly
+              setDob(parsedData.dob);
+            } else {
+              // Convert DD-MM-YYYY to YYYY-MM-DD format
+              const [day, month, year] = parts;
+              setDob(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            }
+          } else {
+            // Use as-is if format is unexpected
+            setDob(parsedData.dob);
           }
         }
-        if (parsedData.tob) setTob(parsedData.tob);
-        if (parsedData.place) setPlace(parsedData.place);
+        if (parsedData.tob) {
+          setTob(parsedData.tob);
+        }
+        if (parsedData.place && parsedData.place.trim()) {
+          setPlace(parsedData.place.trim());
+        }
 
         // Set flag to auto-submit if all required fields are present
-        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender) {
+        if (parsedData.dob && parsedData.tob && parsedData.place && parsedData.gender && parsedData.name) {
           shouldAutoSubmit.current = true;
         }
 
         // Clear the saved data so it doesn't auto-fill again next time
         localStorage.removeItem("tgs:aiPredictionForm");
+        
+        // Scroll to top to avoid scrolling through history cards
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+      } else {
+        // Normal load - show history immediately
+        setShowHistory(true);
       }
     } catch (error) {
       console.error("Error loading saved form data:", error);
+      // On error, still show history
+      setShowHistory(true);
     }
   }, []);
 
   // Auto-submit effect - runs after form fields are populated
   useEffect(() => {
-    if (shouldAutoSubmit.current && dob && tob && place && gender && !submitting && !result) {
+    if (shouldAutoSubmit.current && dob && tob && place && gender && fullName && !submitting && !result) {
       shouldAutoSubmit.current = false; // Reset flag
       
       // Trigger form submission after a short delay to ensure all state is updated
@@ -181,7 +226,7 @@ export default function PredictionsPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [dob, tob, place, gender, submitting, result]);
+  }, [dob, tob, place, gender, fullName, submitting, result]);
 
   useEffect(() => {
     const check = () => {
@@ -219,11 +264,25 @@ export default function PredictionsPage() {
 
 
   useEffect(() => {
-    if (!formRef.current || !historyCardRef.current) return;
+    if (!formRef.current || !historyCardRef.current || !showHistory) return;
 
     const syncHeights = () => {
+      // If results are already generated, lock the history card to its initial height
+      if (result && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+        return;
+      }
+
+      // Otherwise, sync with form height
       const formHeight = formRef.current?.offsetHeight || 0;
       if (!formHeight) return;
+      
+      // Store the initial height before results are generated
+      if (!initialHistoryHeightRef.current) {
+        initialHistoryHeightRef.current = formHeight;
+      }
+      
       historyCardRef.current.style.height = `${formHeight}px`;
       historyCardRef.current.style.maxHeight = `${formHeight}px`;
     };
@@ -234,7 +293,7 @@ export default function PredictionsPage() {
     return () => {
       window.removeEventListener("resize", syncHeights);
     };
-  }, [dob, tob, place, fullName, suggestions.length, history.length]);
+  }, [dob, tob, place, fullName, suggestions.length, history.length, showHistory, result]);
 
   const getZodiacSign = (signNumber) => {
     const signs = [
@@ -380,6 +439,8 @@ export default function PredictionsPage() {
     trackActionStart('predictions_generation');
     trackEvent('form_submit', { form_name: 'predictions' });
     
+    // Hide history during submission to avoid visual clutter
+    setShowHistory(false);
     setSubmitting(true);
     try {
       const geo = selectedCoords || (await geocodePlace(place));
@@ -473,6 +534,21 @@ export default function PredictionsPage() {
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
         : null;
+      
+      // Debug vimsottari parsing
+      if (!vimsParsed) {
+        console.warn('[Predictions] vimsRaw is null or empty:', vimsRaw);
+      } else {
+        console.log('[Predictions] vimsParsed structure:', {
+          hasCurrent: !!vimsParsed.current,
+          hasRunning: !!vimsParsed.running,
+          hasNow: !!vimsParsed.now,
+          hasMahadashaList: !!vimsParsed.mahadasha_list,
+          hasMahadasha: !!vimsParsed.mahadasha,
+          hasMd: !!vimsParsed.md,
+          keys: Object.keys(vimsParsed),
+        });
+      }
       let mahaParsed = mahaRaw
         ? safeParse(safeParse(mahaRaw.output ?? mahaRaw))
         : null;
@@ -561,6 +637,17 @@ export default function PredictionsPage() {
         westernChartSvg,
         apiErrors: { ...errors },
       });
+      
+      // Lock history card height to prevent expansion after results are generated
+      if (historyCardRef.current && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+      }
+      // Lock history card height to prevent expansion after results are generated
+      if (historyCardRef.current && initialHistoryHeightRef.current) {
+        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
+        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
+      }
     } catch (err) {
       // Track predictions generation failure
       trackActionAbandon('predictions_generation', err?.message || 'unknown_error');
@@ -571,40 +658,237 @@ export default function PredictionsPage() {
     }
   }
   const currentDashaChain = useMemo(() => {
+    // PRIORITY 1: Try to extract from maha data first (since API call to vimsottari/dasa-information is failing)
+    // Use mahaRows which is already computed and sorted
+    console.log('[Predictions] Extracting Dasha. Result data:', {
+      hasResult: !!result,
+      hasMaha: !!result?.maha,
+      hasVimsottari: !!result?.vimsottari,
+      mahaType: typeof result?.maha,
+      mahaSample: result?.maha ? (typeof result.maha === 'string' ? result.maha.substring(0, 100) : JSON.stringify(result.maha).substring(0, 100)) : null
+    });
+    
+    const m = result?.maha;
+    if (m) {
+      const obj = typeof m === "string" ? safeParse(m) : m;
+      if (obj && typeof obj === 'object') {
+        const entries = Object.entries(obj);
+        if (entries.length > 0) {
+          const now = new Date();
+          let currentMaha = null;
+          
+          // Find the maha dasha that is currently active based on dates
+          for (const [key, value] of entries) {
+            const startDate = value.start_time || value.start;
+            const endDate = value.end_time || value.end;
+            
+            if (startDate && endDate) {
+              try {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                // Check if current date is within range
+                if (now >= start && now <= end) {
+                  currentMaha = value.Lord || value.lord || value.planet || key;
+                  console.log('[Predictions] Found current maha dasha by date:', currentMaha, 'from', startDate, 'to', endDate);
+                  break;
+                }
+              } catch (e) {
+                console.warn('[Predictions] Error parsing dates for maha dasha:', key, startDate, endDate, e);
+              }
+            } else if (!currentMaha) {
+              // If no dates available, use the first entry we find
+              currentMaha = value.Lord || value.lord || value.planet || key;
+              console.log('[Predictions] Using maha dasha without date check:', currentMaha);
+            }
+          }
+          
+          // If no current found by date, use the first one (earliest start)
+          if (!currentMaha && entries.length > 0) {
+            const sorted = entries.sort((a, b) => {
+              try {
+                const aStart = new Date(a[1].start_time || a[1].start || 0);
+                const bStart = new Date(b[1].start_time || b[1].start || 0);
+                return aStart - bStart;
+              } catch {
+                return 0;
+              }
+            });
+            const first = sorted[0];
+            currentMaha = first[1].Lord || first[1].lord || first[1].planet || first[0];
+            console.log('[Predictions] Using first maha dasha (sorted by start date):', currentMaha);
+          }
+          
+          // Final fallback: just use the first entry
+          if (!currentMaha && entries.length > 0) {
+            const first = entries[0];
+            currentMaha = first[1].Lord || first[1].lord || first[1].planet || first[0];
+            console.log('[Predictions] Using first maha dasha (fallback):', currentMaha);
+          }
+          
+          if (currentMaha) {
+            console.log('[Predictions] Dasha extracted from maha data:', currentMaha);
+            return String(currentMaha).trim();
+          }
+        }
+      }
+    }
+    
+    // PRIORITY 2: Try vimsottari data (if API call succeeded)
     const v = result?.vimsottari;
-    if (!v) return null;
+    if (!v) {
+      console.warn('[Predictions] No vimsottari data found in result (API call may have failed)');
+      return null;
+    }
+    
+    // Enhanced extraction logic - try multiple paths
+    // First, try current/running/now structure
     const current = v.current || v.running || v.now || v?.mahadasha?.current;
     if (current && (current.md || current.mahadasha)) {
       const md = current.md || current.mahadasha;
       const ad = current.ad || current.antardasha;
       const pd = current.pd || current.pratyantar;
-      return [md, ad, pd]
+      const dashaChain = [md, ad, pd]
         .filter(Boolean)
-        .map((x) => (x.name || x.planet || x).toString().trim())
+        .map((x) => {
+          if (typeof x === 'string') return x.trim();
+          return (x.name || x.planet || x).toString().trim();
+        })
         .join(" > ");
+      if (dashaChain) {
+        console.log('[Predictions] Dasha extracted from current/running structure:', dashaChain);
+        return dashaChain;
+      }
     }
+    
+    // Try mahadasha_list structure
     const md = (v.mahadasha_list || v.mahadasha || v.md || [])[0];
-    const adList = v.antardasha_list || v.antardasha || v.ad || {};
-    const firstMdKey = md?.key || md?.planet || md?.name;
-    const ad = Array.isArray(adList[firstMdKey])
-      ? adList[firstMdKey][0]
-      : Array.isArray(adList)
-        ? adList[0]
-        : null;
-    const pdList = v.pratyantar_list || v.pd || {};
-    const firstAdKey = ad?.key || ad?.planet || ad?.name;
-    const pd = Array.isArray(pdList[firstAdKey])
-      ? pdList[firstAdKey][0]
-      : Array.isArray(pdList)
-        ? pdList[0]
-        : null;
-    return [
-      md?.name || md?.planet,
-      ad?.name || ad?.planet,
-      pd?.name || pd?.planet,
-    ]
-      .filter(Boolean)
-      .join(" > ");
+    if (md) {
+      const adList = v.antardasha_list || v.antardasha || v.ad || {};
+      const firstMdKey = md?.key || md?.planet || md?.name;
+      
+      // Try to get antardasha
+      let ad = null;
+      if (firstMdKey && adList[firstMdKey]) {
+        ad = Array.isArray(adList[firstMdKey]) ? adList[firstMdKey][0] : adList[firstMdKey];
+      } else if (Array.isArray(adList)) {
+        ad = adList[0];
+      } else if (typeof adList === 'object' && Object.keys(adList).length > 0) {
+        // Try first key in the object
+        const firstKey = Object.keys(adList)[0];
+        ad = Array.isArray(adList[firstKey]) ? adList[firstKey][0] : adList[firstKey];
+      }
+      
+      // Try to get pratyantar
+      const pdList = v.pratyantar_list || v.pd || {};
+      let pd = null;
+      if (ad) {
+        const firstAdKey = ad?.key || ad?.planet || ad?.name;
+        if (firstAdKey && pdList[firstAdKey]) {
+          pd = Array.isArray(pdList[firstAdKey]) ? pdList[firstAdKey][0] : pdList[firstAdKey];
+        } else if (Array.isArray(pdList)) {
+          pd = pdList[0];
+        } else if (typeof pdList === 'object' && Object.keys(pdList).length > 0) {
+          const firstKey = Object.keys(pdList)[0];
+          pd = Array.isArray(pdList[firstKey]) ? pdList[firstKey][0] : pdList[firstKey];
+        }
+      }
+      
+      const dashaChain = [
+        md?.name || md?.planet || md?.key,
+        ad?.name || ad?.planet || ad?.key,
+        pd?.name || pd?.planet || pd?.key,
+      ]
+        .filter(Boolean)
+        .map(x => typeof x === 'string' ? x.trim() : String(x).trim())
+        .join(" > ");
+      
+      if (dashaChain) {
+        console.log('[Predictions] Dasha extracted from mahadasha_list structure:', dashaChain);
+        return dashaChain;
+      }
+      
+      // If we have at least mahadasha, return it
+      const mdName = md?.name || md?.planet || md?.key;
+      if (mdName) {
+        console.log('[Predictions] Dasha extracted (Maha Dasha only):', mdName);
+        return String(mdName).trim();
+      }
+    }
+    
+    // Fallback: Try to get from maha data if available
+    const maha = result?.maha;
+    if (maha) {
+      let mahaData = maha;
+      if (typeof maha === 'string') {
+        try {
+          mahaData = JSON.parse(maha);
+        } catch (e) {
+          mahaData = maha;
+        }
+      }
+      
+      // If it's an object with entries, find the current one
+      if (typeof mahaData === 'object' && !Array.isArray(mahaData)) {
+        const now = new Date();
+        let currentMaha = null;
+        
+        // Find the maha dasha that is currently active based on dates
+        Object.entries(mahaData).forEach(([key, value]) => {
+          const startDate = value.start_time || value.start;
+          const endDate = value.end_time || value.end;
+          
+          if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (now >= start && now <= end) {
+              currentMaha = value.Lord || value.lord || value.planet || key;
+            }
+          }
+        });
+        
+        // If no current found by date, use the first one (earliest start)
+        if (!currentMaha) {
+          const entries = Object.entries(mahaData);
+          if (entries.length > 0) {
+            const sorted = entries.sort((a, b) => {
+              const aStart = new Date(a[1].start_time || a[1].start || 0);
+              const bStart = new Date(b[1].start_time || b[1].start || 0);
+              return aStart - bStart;
+            });
+            const first = sorted[0][1];
+            currentMaha = first.Lord || first.lord || first.planet || sorted[0][0];
+          }
+        }
+        
+        if (currentMaha) {
+          console.log('[Predictions] Dasha extracted from maha data (fallback):', currentMaha);
+          return String(currentMaha).trim();
+        }
+      } else if (Array.isArray(mahaData) && mahaData.length > 0) {
+        // If it's an array, find current or use first
+        const currentMaha = mahaData.find(m => m.isCurrent || m.active || m.current) || mahaData[0];
+        if (currentMaha && (currentMaha.lord || currentMaha.Lord || currentMaha.planet)) {
+          const lord = currentMaha.lord || currentMaha.Lord || currentMaha.planet;
+          console.log('[Predictions] Dasha extracted from maha array (fallback):', lord);
+          return String(lord).trim();
+        }
+      }
+    }
+    
+    // Log the structure for debugging
+    console.warn('[Predictions] Could not extract Dasha. Vimsottari structure:', {
+      hasCurrent: !!v.current,
+      hasRunning: !!v.running,
+      hasNow: !!v.now,
+      hasMahadashaList: !!v.mahadasha_list,
+      hasMahadasha: !!v.mahadasha,
+      hasMd: !!v.md,
+      hasMaha: !!result?.maha,
+      keys: Object.keys(v),
+      sample: JSON.stringify(v).substring(0, 200)
+    });
+    
+    return null;
   }, [result]);
   function buildPayloadForApi() {
     const inp = result?.input;
@@ -974,7 +1258,7 @@ export default function PredictionsPage() {
                   placeholder="YYYY-MM-DD"
                   required
                 />
-                <p className="form-field-helper">Format: YYYY-MM-DD (browser date picker)</p>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
               </div>
 
               {/* Time of Birth */}
@@ -1108,10 +1392,11 @@ export default function PredictionsPage() {
           </form>
 
           {/* Prediction History to the RIGHT of the form */}
-          <section
-            className="results-section history-side"
-            style={{ marginTop: 0 }}
-          >
+          {showHistory && (
+            <section
+              className="results-section history-side"
+              style={{ marginTop: 0 }}
+            >
             <div className="card" ref={historyCardRef}>
               <div className="results-header">
                 <History style={{ color: "#ca8a04" }} />
@@ -1199,6 +1484,7 @@ export default function PredictionsPage() {
               )}
             </div>
           </section>
+          )}
         </div>
 
         {/* Results */}
@@ -1806,18 +2092,22 @@ export default function PredictionsPage() {
         </Modal>
       </div>
 
-      {/* Fixed Chat Assistant Card */}
+      {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
       <div 
         className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
         style={{ 
-          maxWidth: isAssistantMinimized ? "64px" : "320px",
+          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        {isAssistantMinimized ? (
+        {(!result || isAssistantMinimized) ? (
           // Minimized Icon - Astrologer + AI Assistant
           <button
-            onClick={() => setIsAssistantMinimized(false)}
+            onClick={() => {
+              if (result) {
+                setIsAssistantMinimized(false);
+              }
+            }}
             style={{
               width: "64px",
               height: "64px",
@@ -2054,30 +2344,50 @@ export default function PredictionsPage() {
               </span>
             </div>
             <button
+              disabled={submitting}
               style={{
-                background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                background: submitting 
+                  ? "rgba(212, 175, 55, 0.5)" 
+                  : "linear-gradient(135deg, #d4af37, #b8972e)",
                 border: "none",
                 borderRadius: "10px",
                 padding: "8px 16px",
                 color: isCosmic ? "#ffffff" : "#1f2937",
                 fontSize: "13px",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: submitting ? "not-allowed" : "pointer",
                 transition: "all 0.2s ease",
                 boxShadow: isCosmic
                   ? "0 2px 8px rgba(212, 175, 55, 0.4)"
                   : "0 2px 8px rgba(251, 191, 36, 0.3)",
+                opacity: submitting ? 0.6 : 1,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                e.currentTarget.style.transform = "scale(1.05)";
+                if (!submitting) {
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                e.currentTarget.style.transform = "scale(1)";
+                if (!submitting) {
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }
               }}
               onClick={(e) => {
                 e.stopPropagation(); // Prevent triggering card click
+                if (submitting) return;
+                
+                // Since we only show full card when result exists, we can directly open chat
+                if (result) {
+                  setChatSessionId(prev => prev + 1);
+                  setChatOpen(true);
+                  setTimeout(() => {
+                    document
+                      .querySelector(".ai-astrologer-section")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }
               }}
             >
               {submitting ? "Loading..." : "Start Chat"}
