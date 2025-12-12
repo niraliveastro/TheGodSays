@@ -4,25 +4,44 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { BillingService } from '@/lib/billing'
 
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  try {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      })
-    })
-  } catch (error) {
-    console.warn('Firebase Admin initialization failed:', error.message)
-  }
-}
+// Prevent static generation - this is a dynamic API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-const db = getFirestore()
+// Lazy Firebase initialization function
+function getFirestoreDB() {
+  // Initialize Firebase Admin if not already initialized
+  if (!getApps().length) {
+    try {
+      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+      if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Firebase environment variables are not set');
+      }
+
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'),
+        })
+      });
+    } catch (error) {
+      console.error('Firebase Admin initialization failed:', error.message);
+      throw error;
+    }
+  }
+
+  return getFirestore();
+}
 
 export async function POST(request) {
   try {
+    // Initialize Firebase only when the route is called
+    const db = getFirestoreDB();
+
     const { action, astrologerId, callId, userId, status, callType = 'video', durationMinutes } = await request.json()
 
     // Validate action
@@ -251,6 +270,9 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
+    // Initialize Firebase only when the route is called
+    const db = getFirestoreDB();
+
     const { searchParams } = new URL(request.url)
     const astrologerId = searchParams.get('astrologerId')
 

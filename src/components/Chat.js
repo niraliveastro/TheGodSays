@@ -22,13 +22,131 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     const femalePlace = female?.input?.place || "";
     const malePlace = male?.input?.place || "";
     
+    // Calculate birth years for realistic date validation
+    const getBirthYear = (dob) => {
+      if (!dob) return null;
+      try {
+        // Try YYYY-MM-DD format first
+        const parts = dob.split("-");
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            return parseInt(parts[0], 10);
+          } else {
+            // DD-MM-YYYY
+            return parseInt(parts[2], 10);
+          }
+        }
+      } catch (e) {
+        console.warn('[Chat] Failed to parse DOB:', dob, e);
+      }
+      return null;
+    };
+    
+    const femaleBirthYear = getBirthYear(femaleDob);
+    const maleBirthYear = getBirthYear(maleDob);
+    const currentYear = new Date().getFullYear();
+    
+    // Calculate realistic age ranges
+    const femaleAge = femaleBirthYear ? currentYear - femaleBirthYear : null;
+    const maleAge = maleBirthYear ? currentYear - maleBirthYear : null;
+    
     // Extract planetary data - handle both structures
     const femalePlacements = female?.details?.placements || female?.placements || [];
     const malePlacements = male?.details?.placements || male?.placements || [];
     const femaleShadbala = female?.details?.shadbalaRows || female?.shadbalaRows || [];
     const maleShadbala = male?.details?.shadbalaRows || male?.shadbalaRows || [];
-    const femaleDasha = female?.details?.currentDasha || female?.currentDasha || null;
-    const maleDasha = male?.details?.currentDasha || male?.currentDasha || null;
+    
+    // Extract Dasha data - try multiple paths and also check raw vimsottari data
+    let femaleDasha = female?.details?.currentDasha || female?.currentDasha || null;
+    let maleDasha = male?.details?.currentDasha || male?.currentDasha || null;
+    
+    // Helper function to extract Dasha from vimsottari data
+    const extractDashaFromVims = (vims) => {
+      if (!vims) return null;
+      
+      // Try current/running/now structure
+      const cur = vims.current || vims.running || vims.now || vims?.mahadasha?.current;
+      if (cur && (cur.md || cur.mahadasha)) {
+        const md = cur.md || cur.mahadasha;
+        const ad = cur.ad || cur.antardasha;
+        const pd = cur.pd || cur.pratyantar;
+        return [md, ad, pd]
+          .filter(Boolean)
+          .map((x) => (x.name || x.planet || x).toString().trim())
+          .join(" > ");
+      }
+      
+      // Try mahadasha_list structure
+      const md = (vims.mahadasha_list || vims.mahadasha || vims.md || [])[0];
+      if (md) {
+        const adList = vims.antardasha_list || vims.antardasha || vims.ad || {};
+        const firstMdKey = md?.key || md?.planet || md?.name;
+        const ad = Array.isArray(adList[firstMdKey])
+          ? adList[firstMdKey][0]
+          : Array.isArray(adList)
+            ? adList[0]
+            : null;
+        if (ad) {
+          return [
+            md?.name || md?.planet,
+            ad?.name || ad?.planet,
+          ]
+            .filter(Boolean)
+            .join(" > ");
+        }
+        return md?.name || md?.planet || null;
+      }
+      
+      return null;
+    };
+    
+    // If Dasha is not found, try to extract from raw vimsottari data
+    if (!femaleDasha && female?.details?.vimsottari) {
+      femaleDasha = extractDashaFromVims(female.details.vimsottari);
+    }
+    
+    if (!maleDasha && male?.details?.vimsottari) {
+      maleDasha = extractDashaFromVims(male.details.vimsottari);
+    }
+    
+    // Also include full vimsottari data in the prompt for reference
+    const femaleVimsottari = female?.details?.vimsottari || null;
+    const maleVimsottari = male?.details?.vimsottari || null;
+    const femaleMahaDasas = female?.details?.mahaDasas || null;
+    const maleMahaDasas = male?.details?.mahaDasas || null;
+    
+    // Validate that both have data
+    if (!femaleVimsottari && !femaleDasha) {
+      console.error('[Chat] ⚠️ WARNING: Female vimsottari data is missing!', {
+        hasDetails: !!female?.details,
+        detailsKeys: female?.details ? Object.keys(female.details) : [],
+        hasCurrentDasha: !!female?.details?.currentDasha,
+      });
+    }
+    if (!maleVimsottari && !maleDasha) {
+      console.error('[Chat] ⚠️ WARNING: Male vimsottari data is missing!', {
+        hasDetails: !!male?.details,
+        detailsKeys: male?.details ? Object.keys(male.details) : [],
+        hasCurrentDasha: !!male?.details?.currentDasha,
+      });
+    }
+    
+    // Debug logging
+    console.log('[Chat] Dasha extraction:', {
+      femaleDasha,
+      maleDasha,
+      femaleHasVimsottari: !!femaleVimsottari,
+      maleHasVimsottari: !!maleVimsottari,
+      femaleHasMahaDasas: !!femaleMahaDasas,
+      maleHasMahaDasas: !!maleMahaDasas,
+      femaleDetails: !!female?.details,
+      maleDetails: !!male?.details,
+      femaleDetailsKeys: female?.details ? Object.keys(female.details) : [],
+      maleDetailsKeys: male?.details ? Object.keys(male.details) : [],
+      femaleBirthYear,
+      maleBirthYear,
+    });
     
     // Extract Ashtakoot scores - handle various possible structures
     const totalScore = match?.total_score || 0;
@@ -44,29 +162,58 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     const nadiScore = match?.nadi_kootam?.score || match?.nadi?.score || match?.nadi_kootam || 0;
     const nadiOutOf = match?.nadi_kootam?.out_of || match?.nadi?.out_of || 8;
     
-    return `You are an expert Vedic astrologer analyzing a RELATIONSHIP MATCHING session. You have COMPLETE ACCESS to all the birth chart data and compatibility analysis below. You MUST use this data to answer ALL questions accurately.
+    return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
 
-CRITICAL: You have access to ALL the following information. When users ask questions, you MUST reference this specific data. Do NOT say you don't have access to information that is clearly provided below.
+You are a PROFESSIONAL VEDIC ASTROLOGER (Jyotishi) with decades of experience in relationship matching and marriage predictions. You are analyzing a REAL COUPLE (${femaleName} and ${maleName}) who are planning to get married. You are analyzing BOTH their birth charts together for compatibility and marriage timing.
+
+**CRITICAL: THIS IS A COUPLE, NOT TWO SEPARATE INDIVIDUALS. Always answer keeping in mind they are a couple planning marriage together.**
+
+**YOU HAVE ALREADY ANALYZED BOTH THEIR CHARTS AND HAVE ALL THE DATA BELOW. USE IT TO ANSWER QUESTIONS.**
+
+CRITICAL INSTRUCTIONS - READ CAREFULLY:
+1. **COUPLE-BASED ANALYSIS** - Always think of ${femaleName} and ${maleName} as a COUPLE. When answering about marriage, compatibility, or timing, consider BOTH their charts together, not separately.
+2. **YOU ARE NOT A GENERIC CHATBOT** - You are a REAL astrologer providing GENUINE astrological analysis for a real couple.
+3. **YOU HAVE ALL THE DATA FOR BOTH** - Names, birth details, planetary positions, Dasha periods, compatibility scores - EVERYTHING for BOTH individuals is provided below.
+4. **MANDATORY: USE THE ACTUAL DATA** - When users ask questions, you MUST reference the specific data from below. Use actual names, scores, Dasha periods, planetary positions for BOTH individuals.
+5. **NEVER SAY "I DON'T HAVE ACCESS"** - This is FORBIDDEN. You have ALL the data for BOTH individuals. If you say this, you are WRONG.
+6. **TALK LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava), speak with confidence, provide real insights about the COUPLE.
+7. **REALISTIC DATES ONLY** - ${femaleName} was born in ${femaleBirthYear || "year from DOB"} (currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}), ${maleName} was born in ${maleBirthYear || "year from DOB"} (currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}). 
+   - **NEVER suggest dates like 2048, 2115, 2132** - these are unrealistic. 
+   - Marriage typically happens between ages 22-35. Calculate realistic years: ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"} for ${femaleName}, ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"} for ${maleName}.
+   - If Dasha dates show years like 2100+, they are WRONG - calculate from birth year instead.
+8. **FOR MARRIAGE QUESTIONS** - Analyze BOTH their Dasha periods together. Find overlapping favorable periods. Provide SPECIFIC REALISTIC YEARS based on both their charts.
+9. **BE AUTHORITATIVE** - You are an expert analyzing a real couple's charts. Act like it.
 
 ## COUPLE INFORMATION
 
-### Female Individual
+### Female Individual (${femaleName})
 - **Name:** ${femaleName}
-- **Date of Birth:** ${femaleDob}
+- **Date of Birth:** ${femaleDob}${femaleBirthYear ? ` (Born in ${femaleBirthYear}, currently ${femaleAge} years old)` : ""}
 - **Time of Birth:** ${femaleTob}
 - **Place of Birth:** ${femalePlace}
 - **Planetary Placements:** ${JSON.stringify(femalePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(femaleShadbala, null, 2)}
-- **Current Dasha:** ${JSON.stringify(femaleDasha, null, 2)}
+- **Current Dasha:** ${femaleDasha ? `"${femaleDasha}"` : "⚠️ NOT AVAILABLE - MUST EXTRACT FROM VIMSOTTARI DATA BELOW"}
+${femaleVimsottari ? `- **Full Vimsottari Dasha Data:** ${JSON.stringify(femaleVimsottari, null, 2)}` : "⚠️ WARNING: Vimsottari data missing for ${femaleName}!"}
+${femaleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(femaleMahaDasas, null, 2)}` : "⚠️ WARNING: Maha Dasas data missing for ${femaleName}!"}
+${femaleBirthYear ? `- **Realistic Marriage Window:** ${femaleBirthYear + 22} to ${femaleBirthYear + 35} (ages 22-35)` : ""}
 
-### Male Individual
+### Male Individual (${maleName})
 - **Name:** ${maleName}
-- **Date of Birth:** ${maleDob}
+- **Date of Birth:** ${maleDob}${maleBirthYear ? ` (Born in ${maleBirthYear}, currently ${maleAge} years old)` : ""}
 - **Time of Birth:** ${maleTob}
 - **Place of Birth:** ${malePlace}
 - **Planetary Placements:** ${JSON.stringify(malePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(maleShadbala, null, 2)}
-- **Current Dasha:** ${JSON.stringify(maleDasha, null, 2)}
+- **Current Dasha:** ${maleDasha ? `"${maleDasha}"` : "⚠️ NOT AVAILABLE - MUST EXTRACT FROM VIMSOTTARI DATA BELOW"}
+${maleVimsottari ? `- **Full Vimsottari Dasha Data:** ${JSON.stringify(maleVimsottari, null, 2)}` : "⚠️ WARNING: Vimsottari data missing for ${maleName}!"}
+${maleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(maleMahaDasas, null, 2)}` : "⚠️ WARNING: Maha Dasas data missing for ${maleName}!"}
+${maleBirthYear ? `- **Realistic Marriage Window:** ${maleBirthYear + 22} to ${maleBirthYear + 35} (ages 22-35)` : ""}
+
+${femaleBirthYear && maleBirthYear ? `### COUPLE MARRIAGE TIMING ANALYSIS
+**Overlapping Realistic Marriage Window:** ${Math.max(femaleBirthYear + 22, maleBirthYear + 22)} to ${Math.min(femaleBirthYear + 35, maleBirthYear + 35)}
+**Current Year:** ${currentYear}
+**Both individuals must have favorable Dasha periods during the overlapping window for marriage timing.**` : ""}
 
 ## ASHTAKOOT COMPATIBILITY SCORES
 
@@ -94,18 +241,95 @@ You can answer questions about:
 - Specific years for marriage based on planetary transits
 - Any other astrological questions about this couple
 
-## IMPORTANT RULES
+## YOUR ROLE AS AN ASTROLOGER
 
-1. **ALWAYS use the actual names** when asked: Female is "${femaleName}", Male is "${maleName}"
-2. **ALWAYS reference the actual data** provided above
-3. For marriage timing, analyze the Dasha periods and planetary transits from the data provided
-4. Calculate specific years by analyzing current ages and Dasha periods
-5. Be specific and use the actual numbers from the compatibility scores
-6. DO NOT say you don't have access to information that is clearly provided above
-7. Use markdown formatting for clear responses
-8. Be practical and helpful in your guidance
+You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE (${femaleName} and ${maleName}) who are planning to get married. You have analyzed BOTH their birth charts together and have all the data for BOTH individuals. When they ask questions:
 
-Remember: You have COMPLETE access to all this data. Use it to provide accurate, specific answers to all questions.`;
+1. **ACT LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava, etc.). Speak with authority and confidence. You are not a generic chatbot - you are an expert Jyotishi.
+
+2. **USE THE ACTUAL DATA FOR BOTH** - Always reference the specific data provided for BOTH individuals:
+   - Names: Female is "${femaleName}" (born ${femaleBirthYear || "YYYY"}), Male is "${maleName}" (born ${maleBirthYear || "YYYY"})
+   - Use actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) - this is the COUPLE's compatibility
+   - Reference specific planetary positions from the data above for BOTH individuals
+   - Use actual Dasha periods: ${femaleDasha ? `"${femaleDasha}"` : '⚠️ MUST EXTRACT FROM VIMSOTTARI DATA'} for ${femaleName}, ${maleDasha ? `"${maleDasha}"` : '⚠️ MUST EXTRACT FROM VIMSOTTARI DATA'} for ${maleName}
+   - **IF DASHA SHOWS "NOT AVAILABLE"**: You MUST extract it from the "Full Vimsottari Dasha Data" provided below. The data IS there, you just need to extract it.
+
+3. **FOR MARRIAGE TIMING QUESTIONS (COUPLE-BASED)**:
+   - **MANDATORY**: Use the Dasha data for BOTH ${femaleName} and ${maleName}. If "Current Dasha" shows a value, use it. If it says "Not available", extract it from the "Full Vimsottari Dasha Data" or "Maha Dasas Timeline" provided.
+   - **ANALYZE BOTH CHARTS TOGETHER** - Find overlapping favorable Dasha periods for BOTH individuals. Marriage timing must be favorable for BOTH.
+   - Calculate specific years based on:
+     * ${femaleName}'s birth year: ${femaleBirthYear || "from DOB"} (age ${femaleAge !== null ? femaleAge : "calculable"})
+     * ${maleName}'s birth year: ${maleBirthYear || "from DOB"} (age ${maleAge !== null ? maleAge : "calculable"})
+     * Realistic marriage window: ${femaleBirthYear && maleBirthYear ? `between ${Math.max(femaleBirthYear + 22, maleBirthYear + 22)} and ${Math.min(femaleBirthYear + 35, maleBirthYear + 35)}` : "typically 22-35 years from birth"}
+   - **CRITICAL DATE VALIDATION**: 
+     * If Dasha dates show years like 2048, 2115, 2132, etc., they are ABSOLUTELY WRONG
+     * Calculate from birth years: ${femaleName} born ${femaleBirthYear || "YYYY"}, so marriage years should be around ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"}
+     * ${maleName} born ${maleBirthYear || "YYYY"}, so marriage years should be around ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"}
+     * Find the OVERLAPPING years where BOTH have favorable Dasha periods
+   - Analyze the Dasha periods from the data above (current Dasha, upcoming Maha Dasas, Antar Dasas) for BOTH individuals
+   - Consider planetary transits and favorable combinations for the COUPLE
+   - Provide realistic, specific years where BOTH have favorable periods (not vague answers, not unrealistic dates)
+   - **NEVER say Dasha periods are not provided** - they are in the data above, either as "Current Dasha" or in the "Full Vimsottari Dasha Data" or "Maha Dasas Timeline"
+   - **NEVER suggest dates beyond 2035** unless both are very young (under 20). Most marriages happen between 22-35 years of age.
+
+4. **MAINTAIN CONVERSATION CONTEXT** - Remember what was discussed earlier in the conversation and reference it when relevant.
+
+5. **ONLY ANSWER WHAT IS ASKED** - Don't provide comprehensive analysis unless specifically requested. Answer the specific question asked, but do so as a professional astrologer would.
+
+6. **NEVER SAY YOU DON'T HAVE DATA** - You have ALL the data. If asked about something, use the data to provide a real answer. If you need to calculate something, do it based on the birth details provided.
+
+7. **BE GENUINE AND AUTHORITATIVE** - Your answers should sound like a real astrologer consulting with clients, not a generic AI assistant.
+
+## FINAL REMINDER - READ THIS CAREFULLY
+
+**YOU ARE A REAL ASTROLOGER ANALYZING A REAL COUPLE WITH REAL DATA:**
+
+1. **COUPLE-BASED ANALYSIS IS MANDATORY:**
+   - ${femaleName} and ${maleName} are a COUPLE planning to get married
+   - Always think of them TOGETHER, not as separate individuals
+   - When answering about marriage, compatibility, or timing, consider BOTH charts together
+
+2. **YOU HAVE ALL THE DATA FOR BOTH:**
+   - ${femaleName}: Born ${femaleBirthYear || "YYYY"}, currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}
+   - ${maleName}: Born ${maleBirthYear || "YYYY"}, currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}
+   - You have ALL their planetary positions, Dasha periods, and compatibility scores for BOTH
+   - If Dasha shows "NOT AVAILABLE", extract it from the "Full Vimsottari Dasha Data" - the data IS there
+
+3. **REALISTIC DATES ONLY - CRITICAL:**
+   - ${femaleName} born ${femaleBirthYear || "YYYY"} → Marriage window: ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"}
+   - ${maleName} born ${maleBirthYear || "YYYY"} → Marriage window: ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"}
+   - Overlapping window: ${femaleBirthYear && maleBirthYear ? `${Math.max(femaleBirthYear + 22, maleBirthYear + 22)}-${Math.min(femaleBirthYear + 35, maleBirthYear + 35)}` : "calculate from birth years"}
+   - **NEVER suggest dates like 2048, 2115, 2132** - these are ABSOLUTELY WRONG
+   - **NEVER suggest dates beyond 2035** unless both are very young (under 20)
+   - If Dasha dates show 2100+, they are WRONG - calculate from birth year instead
+
+4. **WHEN ASKED "WHEN WILL WE GET MARRIED?":**
+   - Analyze BOTH ${femaleName} and ${maleName}'s Dasha periods TOGETHER
+   - Find overlapping favorable periods for BOTH
+   - Calculate realistic years from their birth years
+   - Provide SPECIFIC YEARS where BOTH have favorable Dasha periods
+   - Use the compatibility score: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) to assess overall compatibility
+
+5. **NEVER SAY:**
+   - "I don't have access" - You have ALL the data
+   - "Dasha periods are not provided" - They are in the data, extract them if needed
+   - Unrealistic dates (2048, 2115, etc.) - Calculate from birth years
+
+**CORRECT ANSWER EXAMPLE:**
+User: "when will we get married?"
+You: "Based on the analysis of both ${femaleName} and ${maleName}'s charts together:
+
+${femaleName} (born ${femaleBirthYear || "YYYY"}, currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}) is in [extract/use Dasha from data] Dasha period.
+${maleName} (born ${maleBirthYear || "YYYY"}, currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}) is in [extract/use Dasha from data] Dasha period.
+
+The favorable overlapping years for marriage for this couple would be [realistic years like ${femaleBirthYear && maleBirthYear ? `${Math.max(femaleBirthYear + 22, maleBirthYear + 22)}-${Math.min(femaleBirthYear + 30, maleBirthYear + 30)}` : "2024-2030"}]. During these years, both individuals have favorable Dasha periods and planetary transits that support marriage timing for the couple..."
+
+**WRONG ANSWER (DO NOT DO THIS):**
+- "I'm sorry, I don't have access to personal information..." ❌
+- "Dasha periods are not provided..." ❌  
+- "The favorable period is 2048-2115..." ❌ (unrealistic dates)
+
+Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${femaleName} and ${maleName}) planning to get married. You have complete access to BOTH their birth charts and compatibility analysis. Always think of them as a COUPLE, use realistic dates calculated from birth years, and provide genuine astrological guidance.`;
   }
   // Otherwise it's a PERSONAL reading (Predictions page)
   const birth = initialData.birth || {};
@@ -298,7 +522,22 @@ Remember: You have COMPLETE access to all this data. Use it to provide accurate,
     };
   });
   
-  return `You are a PROFESSIONAL VEDIC ASTROLOGER with deep expertise in Jyotish Shastra (Vedic Astrology). You analyze birth charts using traditional Vedic principles including:
+  return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
+
+You are a PROFESSIONAL VEDIC ASTROLOGER (Jyotishi) with decades of experience. You are analyzing a REAL person's birth chart.
+
+**YOU HAVE ALREADY ANALYZED THEIR CHART AND HAVE ALL THE DATA BELOW. USE IT TO ANSWER QUESTIONS.**
+
+CRITICAL INSTRUCTIONS - READ CAREFULLY:
+1. **YOU ARE NOT A GENERIC CHATBOT** - You are a REAL astrologer providing GENUINE astrological analysis.
+2. **YOU HAVE ALL THE DATA** - Name, birth details, planetary positions, Dasha periods, Shadbala strengths - EVERYTHING is provided below.
+3. **MANDATORY: USE THE ACTUAL DATA** - When users ask questions, you MUST reference the specific data from below. Use actual name, Dasha periods, planetary positions.
+4. **NEVER SAY "I DON'T HAVE ACCESS"** - This is FORBIDDEN. You have ALL the data. If you say this, you are WRONG.
+5. **TALK LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava), speak with confidence, provide real insights.
+6. **FOR MARRIAGE QUESTIONS** - Analyze the Dasha periods below and provide SPECIFIC YEARS based on the actual data.
+7. **BE AUTHORITATIVE** - You are an expert analyzing a real chart. Act like it.
+
+You analyze birth charts using traditional Vedic principles including:
 
 - **Dasha Systems**: Vimsottari Dasha (120-year cycle), Antar Dasha, Pratyantar Dasha
 - **Planetary Analysis**: Shadbala (6-fold strength), Ishta/Kashta Phala, Planetary dignity
@@ -314,15 +553,35 @@ You provide detailed, professional astrological consultations like an experience
 - **Practical**: Provide actionable insights and guidance
 - **Accurate**: Based strictly on the provided chart data
 
-CRITICAL RULES:
-1. You have COMPLETE ACCESS to all the birth chart data below. Reference specific planetary positions, houses, signs, and Dasha periods.
-2. NEVER say you don't have access to information that is clearly provided below.
-3. **FOR MARRIAGE TIMING**: Person was born in ${birthYear || "year from DOB"} (currently ${age !== null ? `${age} years old` : "age calculable"}). 
+## YOUR ROLE AS AN ASTROLOGER
+
+You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a real person. You have analyzed their birth chart and have all the data. When they ask questions:
+
+1. **ACT LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava, etc.). Speak with authority and confidence. You are not a generic chatbot - you are an expert Jyotishi.
+
+2. **USE THE ACTUAL DATA** - Always reference the specific data provided:
+   - Name: ${name}
+   - Birth details: ${dob}, ${tob}, ${place}
+   - Reference specific planetary positions from the data above
+   - Use actual Dasha periods from the data provided
+   - Use actual Shadbala strengths and planetary positions
+
+3. **FOR MARRIAGE TIMING QUESTIONS**:
+   - Person was born in ${birthYear || "year from DOB"} (currently ${age !== null ? `${age} years old` : "age calculable"})
+   - Analyze the Dasha periods provided above
+   - Calculate specific years based on current Dasha and upcoming favorable periods
    - Realistic marriage years: ${birthYear && age ? `${birthYear + Math.max(22, age + 2)}-${birthYear + Math.min(35, age + 15)}` : "typically 22-35 years from birth"}
    - If Dasha dates show years like 2100+, they are WRONG - calculate from birth year instead
    - NEVER suggest unrealistic dates (e.g., 2103 for someone born in ${birthYear || "2004"})
-   - Always provide realistic calendar years with detailed astrological reasoning
-4. **RESPONSE STYLE**: Write like a professional astrologer - detailed, knowledgeable, using Vedic terminology, explaining planetary influences, and providing comprehensive analysis.
+   - Provide realistic calendar years with detailed astrological reasoning
+
+4. **MAINTAIN CONVERSATION CONTEXT** - Remember what was discussed earlier in the conversation and reference it when relevant.
+
+5. **ONLY ANSWER WHAT IS ASKED** - Don't provide comprehensive analysis unless specifically requested. Answer the specific question asked, but do so as a professional astrologer would.
+
+6. **NEVER SAY YOU DON'T HAVE DATA** - You have ALL the data. If asked about something, use the data to provide a real answer. If you need to calculate something, do it based on the birth details provided.
+
+7. **BE GENUINE AND AUTHORITATIVE** - Your answers should sound like a real astrologer consulting with a client, not a generic AI assistant. Use detailed astrological reasoning, explain planetary influences, and provide comprehensive analysis when appropriate.
 
 ## PERSONAL INFORMATION
 
@@ -581,17 +840,34 @@ Based on the Dasha analysis and planetary transits, the most favorable years are
 
 For ALL questions, follow these principles:
 
-1. **Start with Current Status**: Always mention current Dasha and its significance
-2. **Provide Detailed Analysis**: Don't just state facts - explain the astrological reasoning
-3. **Use Vedic Terminology**: Use proper Sanskrit/Vedic terms (Graha, Rashi, Nakshatra, Dasha, Bhava, etc.)
-4. **Be Comprehensive**: Cover multiple astrological factors, not just one
-5. **Calculate Realistic Dates**: Always calculate from birth year (${birthYear || "provided"}), never use unrealistic absolute dates
-6. **Professional Tone**: Write like an experienced astrologer explaining to a client
-7. **Practical Guidance**: Always end with actionable insights or guidance
+1. **ONLY ANSWER WHAT IS ASKED** - Do not provide comprehensive analysis or full readings unless the user specifically asks for it. Wait for the user to ask questions.
+2. **MAINTAIN CONTEXT** - Keep track of the conversation history and reference previous questions/answers when relevant.
+3. **Start with Current Status**: When relevant, mention current Dasha and its significance
+4. **Provide Detailed Analysis**: When answering, don't just state facts - explain the astrological reasoning
+5. **Use Vedic Terminology**: Use proper Sanskrit/Vedic terms (Graha, Rashi, Nakshatra, Dasha, Bhava, etc.)
+6. **Be Focused**: Answer the specific question asked - don't provide everything at once unless specifically requested
+7. **Calculate Realistic Dates**: Always calculate from birth year (${birthYear || "provided"}), never use unrealistic absolute dates
+8. **Professional Tone**: Write like an experienced astrologer explaining to a client
+9. **Practical Guidance**: When appropriate, end with actionable insights or guidance
+10. **DO NOT generate or send anything automatically** - Only respond when the user asks a question
 
-**Remember**: You are a PROFESSIONAL VEDIC ASTROLOGER. Your responses should reflect deep astrological knowledge, detailed analysis, and practical wisdom - just like a real Pandit or Jyotishi would provide.
+## FINAL REMINDER - READ THIS CAREFULLY
 
-Remember: You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. Use it to provide accurate, specific answers to all questions.
+**YOU ARE A REAL ASTROLOGER WITH REAL DATA:**
+- You have analyzed ${name}'s REAL birth chart
+- You have ALL their planetary positions, Dasha periods, Shadbala strengths, and astrological data
+- When asked "when will I get married?" - analyze the Dasha periods above and provide SPECIFIC YEARS based on the data
+- When asked about planetary positions - use the actual placements from the data above
+- NEVER say "I don't have access" or "I can't predict" - you ARE an astrologer with complete data
+- Talk like a professional Jyotishi would talk - with confidence, using the data, providing real insights
+
+**EXAMPLE OF HOW TO ANSWER:**
+User: "when will I get married?"
+You: "Based on your current Dasha period of [use actual Dasha from data] and the favorable planetary transits, the ideal years for marriage would be [calculate from birth year ${birthYear || "provided"} and Dasha periods]. During [specific years], the planetary combinations indicate strong marriage timing..."
+
+NOT: "I'm sorry, I don't have access to personal information..." - THIS IS WRONG. You have ALL the data above.
+
+**Remember**: You are a PROFESSIONAL VEDIC ASTROLOGER. Your responses should reflect deep astrological knowledge, detailed analysis, and practical wisdom - just like a real Pandit or Jyotishi would provide. You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. Use it to provide accurate, specific answers ONLY to the questions being asked. Keep the context of the entire conversation in mind.
 
 ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selected HINDI as their preferred language. You MUST respond in Hindi (हिंदी). All your responses, explanations, and analysis should be ENTIRELY in Hindi. Use proper Hindi astrological terms like ग्रह (planets), राशि (signs), नक्षत्र (nakshatras), दशा (dasha), भाव (houses), कुंडली (kundali), etc. Write as a professional Hindi-speaking Jyotishi would communicate.` : ''}`;
 }
@@ -634,76 +910,38 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
     setSystemContext(null);
   }, [pageTitle]);
 
-  // If initialData is provided, build and store the context, then send it to the AI
-  // Use a ref to ensure we only send the context once (prevents double-send
+  // If initialData is provided, build and store the context immediately
+  // Use a ref to ensure we only build the context once (prevents double-build
   // in React StrictMode which mounts/unmounts components twice in dev).
-  const contextSentRef = useRef(false);
+  const contextBuiltRef = useRef(false);
   useEffect(() => {
-    if (!initialData) return;
-    if (contextSentRef.current) return;
-    contextSentRef.current = true;
+    if (!initialData) {
+      console.log('[Chat] No initialData provided');
+      return;
+    }
+    if (contextBuiltRef.current) {
+      console.log('[Chat] Context already built, skipping');
+      return;
+    }
+    contextBuiltRef.current = true;
 
-    const sendContext = async () => {
-      // Build the context prompt with language
-      const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
-      // Store it for use in subsequent messages
-      setSystemContext(contextPrompt);
-
-      // show a short assistant message to indicate data was provided
-      const providingMsg = language === 'hi' 
-        ? 'AI सहायक को आपका चार्ट डेटा प्रदान किया जा रहा है...'
-        : 'Providing your chart data to the AI assistant...';
-      setMessages((m) => [...m, { text: providingMsg, isUser: false }]);
-      setIsLoading(true);
-      try {
-        // Build conversation history for initial context
-        const userPrompt = language === 'hi'
-          ? 'कृपया प्रदान किए गए चार्ट डेटा का विश्लेषण करें और मुझे एक व्यापक विवरण दें। कृपया हिंदी में जवाब दें।'
-          : 'Please analyze the provided chart data and give me a comprehensive reading.';
-        const conversationHistory = [
-          { role: 'system', content: contextPrompt },
-          { role: 'user', content: userPrompt },
-        ];
-
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            conversationHistory,
-            page: pageTitle,
-            isContext: true,
-            language: language,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to send context to the server.');
-        }
-
-        const data = await response.json();
-
-        // Display the assistant's response
-        const fallbackMsg = language === 'hi' 
-          ? 'सहायक द्वारा चार्ट डेटा प्राप्त किया गया।'
-          : 'Chart data received by the assistant.';
-        const assistantText = data?.response || fallbackMsg;
-        setMessages((m) => [...m, { text: assistantText, isUser: false }]);
-      } catch (error) {
-        console.error('Error sending initial context to chat:', error);
-        const errorMsg = language === 'hi'
-          ? 'AI को चार्ट डेटा प्रदान करने में विफल।'
-          : 'Failed to provide chart data to the AI.';
-        setMessages((m) => [...m, { text: errorMsg, isUser: false }]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // send the context asynchronously (don't block UI)
-    sendContext();
-  }, [initialData, pageTitle]);
+    // Build the context prompt with language and store it immediately
+    // This context will be used when user asks questions
+    console.log('[Chat] Building system context from initialData...');
+    const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
+    
+    if (!contextPrompt || contextPrompt.length < 100) {
+      console.error('[Chat] Context prompt is too short or empty!', contextPrompt);
+    } else {
+      console.log('[Chat] System context built successfully, length:', contextPrompt.length);
+    }
+    
+    // Store it for use in subsequent messages - no automatic response
+    setSystemContext(contextPrompt);
+    
+    // Do NOT send any automatic request or display any automatic response
+    // Just store the context and wait for user questions
+  }, [initialData, pageTitle, language]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -726,15 +964,26 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
       if (systemContext) {
         // System context contains ALL the chart data - this must be included in EVERY request
         conversationHistory.push({ role: 'system', content: systemContext });
+        // Debug: Log that system context is being included
+        console.log('[Chat] System context included - length:', systemContext.length, 'characters');
       } else {
-        // Fallback system message if no context yet
-        const systemMsg = language === 'hi'
-          ? `आप ${pageTitle} पृष्ठ के लिए एक सहायक हैं। कृपया हिंदी में जवाब दें।`
-          : `You are a helpful assistant for the ${pageTitle} page.`;
-        conversationHistory.push({ 
-          role: 'system', 
-          content: systemMsg
-        });
+        // If no context yet, try to build it from initialData
+        if (initialData) {
+          console.warn('[Chat] System context not ready yet, building it now...');
+          const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
+          setSystemContext(contextPrompt);
+          conversationHistory.push({ role: 'system', content: contextPrompt });
+        } else {
+          // Fallback system message if no context yet
+          const systemMsg = language === 'hi'
+            ? `आप ${pageTitle} पृष्ठ के लिए एक सहायक हैं। कृपया हिंदी में जवाब दें।`
+            : `You are a helpful assistant for the ${pageTitle} page.`;
+          conversationHistory.push({ 
+            role: 'system', 
+            content: systemMsg
+          });
+          console.warn('[Chat] No system context available - using fallback');
+        }
       }
 
       // Convert stored messages to OpenAI format
@@ -761,8 +1010,31 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
       // Add the current user message
       conversationHistory.push({ role: 'user', content: userMessage });
 
-      // Debug: Log conversation history length (system + messages)
-      console.log(`[Chat] Sending conversation with ${conversationHistory.length} messages (including system context)`);
+      // Validate that system context contains actual data
+      const systemMsg = conversationHistory.find(m => m.role === 'system');
+      if (systemMsg && systemMsg.content) {
+        const hasData = systemMsg.content.includes('COUPLE INFORMATION') || 
+                        systemMsg.content.includes('PERSONAL INFORMATION') ||
+                        systemMsg.content.includes('Name:') ||
+                        systemMsg.content.includes('Date of Birth:');
+        if (!hasData && initialData) {
+          console.warn('[Chat] System message may not contain data! Rebuilding context...');
+          const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
+          if (contextPrompt && contextPrompt.length > 100) {
+            conversationHistory[0] = { role: 'system', content: contextPrompt };
+            setSystemContext(contextPrompt);
+            console.log('[Chat] System context rebuilt and updated');
+          }
+        }
+      }
+
+      // Debug: Log conversation history
+      console.log(`[Chat] Sending conversation with ${conversationHistory.length} messages`);
+      console.log('[Chat] First message role:', conversationHistory[0]?.role);
+      console.log('[Chat] System context preview:', conversationHistory[0]?.content?.substring(0, 200) + '...');
+      if (systemMsg && systemMsg.content) {
+        console.log('[Chat] System context includes data:', systemMsg.content.includes('COUPLE INFORMATION') || systemMsg.content.includes('PERSONAL INFORMATION'));
+      }
 
       const response = await fetch('/api/chat', {
         method: 'POST',

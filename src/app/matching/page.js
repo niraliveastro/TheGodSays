@@ -579,6 +579,26 @@ export default function MatchingPage() {
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
+      
+      // Validate that both API calls succeeded
+      if (!fCalc || !fCalc.results) {
+        console.error('[Matching] Female calculation failed:', fCalc);
+        throw new Error('Failed to fetch female individual data. Please try again.');
+      }
+      if (!mCalc || !mCalc.results) {
+        console.error('[Matching] Male calculation failed:', mCalc);
+        throw new Error('Failed to fetch male individual data. Please try again.');
+      }
+      
+      // Log to verify both have vimsottari data
+      const fVims = fCalc.results["vimsottari/dasa-information"];
+      const mVims = mCalc.results["vimsottari/dasa-information"];
+      console.log('[Matching] API Results:', {
+        femaleHasVimsottari: !!fVims,
+        maleHasVimsottari: !!mVims,
+        femaleResultsKeys: Object.keys(fCalc.results || {}),
+        maleResultsKeys: Object.keys(mCalc.results || {}),
+      });
       const safeParse = (v) => {
         try {
           return typeof v === "string" ? JSON.parse(v) : v;
@@ -791,10 +811,29 @@ export default function MatchingPage() {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
           placements: toPlacements(planets),
+          vimsottari: vims, // Include raw vimsottari data for Chat component
+          mahaDasas: maha, // Include maha dasas data for Chat component
         };
       };
-      setFDetails(buildUserDetails(fCalc));
-      setMDetails(buildUserDetails(mCalc));
+      const fDetailsBuilt = buildUserDetails(fCalc);
+      const mDetailsBuilt = buildUserDetails(mCalc);
+      
+      // Validate that both have vimsottari data
+      if (!fDetailsBuilt.vimsottari) {
+        console.error('[Matching] ⚠️ WARNING: Female vimsottari data is missing!', {
+          fCalcResults: Object.keys(fCalc.results || {}),
+          hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
+        });
+      }
+      if (!mDetailsBuilt.vimsottari) {
+        console.error('[Matching] ⚠️ WARNING: Male vimsottari data is missing!', {
+          mCalcResults: Object.keys(mCalc.results || {}),
+          hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
+        });
+      }
+      
+      setFDetails(fDetailsBuilt);
+      setMDetails(mDetailsBuilt);
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
