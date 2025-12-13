@@ -769,7 +769,7 @@ export default function CalendarPage() {
           transform: none;
         }
         .monthTitle {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.5rem;
           font-weight: 700;
           color: #7c2d12;

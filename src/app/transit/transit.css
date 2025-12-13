@@ -76,7 +76,7 @@
 }
 
 .transit-title {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-weight: 700;
   background: linear-gradient(135deg, #d4af37, #b8972e);
   /* reduced base size for a more compact header */
@@ -248,7 +248,7 @@
 }
 
 .titleGroup h3 {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
@@ -413,7 +413,7 @@
 }
 
 .upcoming-section-title {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.75rem;
   font-weight: 700;
   text-align: center;

@@ -202,7 +202,7 @@ export default function PersonalizedPage() {
           box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
         }
         .title {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 2.5rem;
           font-weight: 700;
           background: linear-gradient(135deg, #d4af37, #b8972e);
@@ -240,7 +240,7 @@ export default function PersonalizedPage() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.25rem;
           font-weight: 700;
           color: #7c2d12;
@@ -403,7 +403,7 @@ export default function PersonalizedPage() {
           align-items: center;
           gap: 0.5rem;
           margin-bottom: 1rem;
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.25rem;
           color: #7c2d12;
         }

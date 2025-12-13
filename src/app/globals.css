@@ -43,7 +43,7 @@
   --color-gray-900: #111827;
 
   /* Typography */
-  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-heading: 'Georgia', 'Times New Roman', serif;
   --font-body: "Inter",
     -(((apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)));
 
@@ -2896,7 +2896,7 @@ select {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 .auth-title {
@@ -2904,7 +2904,7 @@ select {
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 0.5rem;
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   transition: color 0.3s ease;
 }
 
@@ -3451,7 +3451,7 @@ body {
   box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
 }
 .title {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 3rem;
   font-weight: 500;
   background: linear-gradient(135deg, #d4af37, #b8972e);
@@ -3608,7 +3608,7 @@ body {
   color: #fff;
 }
 .titleGroup h3 {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
@@ -3724,7 +3724,7 @@ body {
 }
 
 /* .title {
-  font-family: "Cormorant Garamond", serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 2rem;
   font-weight: 700;
   background: linear-gradient(135deg, #d4af37, #b8972e);

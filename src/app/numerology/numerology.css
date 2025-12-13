@@ -20,7 +20,7 @@
   --gray-200: #e5e7eb;
   --gray-700: #374151;
   --gray-900: #111827;
-  --font-heading: "Cormorant Garamond", serif;
+  --font-heading: 'Georgia', 'Times New Roman', serif;
   --font-body: "Inter", sans-serif;
   --radius-lg: 1.5rem;
   --radius-md: 0.875rem;

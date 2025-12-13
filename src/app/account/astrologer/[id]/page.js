@@ -390,7 +390,7 @@ export default function AstrologerProfile() {
             style={{
               color: "var(--color-gray-900)",
               marginBottom: "var(--space-md)",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Georgia', 'Times New Roman', serif",
             }}
           >
             Astrologer Not Found
@@ -612,7 +612,7 @@ export default function AstrologerProfile() {
                             textTransform: "uppercase",
                             border: "4px solid white",
                             boxShadow: "var(--shadow-lg)",
-                            fontFamily: "'Cormorant Garamond', serif",
+                            fontFamily: "'Georgia', 'Times New Roman', serif",
                             position: "relative",
                           }}
                         >
@@ -709,7 +709,7 @@ export default function AstrologerProfile() {
                             fontWeight: 500,
                             marginBottom: "0.5rem",
                             color: "var(--color-gray-900)",
-                            fontFamily: "'Cormorant Garamond', serif",
+                            fontFamily: "'Georgia', 'Times New Roman', serif",
                           }}
                         >
                           {astrologer.name}
@@ -721,7 +721,7 @@ export default function AstrologerProfile() {
                             color: "var(--color-indigo)",
                             fontWeight: 500,
                             marginBottom: "var(--space-md)",
-                            fontFamily: "'Cormorant Garamond', serif",
+                            fontFamily: "'Georgia', 'Times New Roman', serif",
                           }}
                         >
                           {astrologer.specialization}
@@ -1121,7 +1121,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Cormorant Garamond', serif",
+                          fontFamily: "'Georgia', 'Times New Roman', serif",
                         }}
                       >
                         About
@@ -1149,7 +1149,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Cormorant Garamond', serif",
+                          fontFamily: "'Georgia', 'Times New Roman', serif",
                         }}
                       >
                         Areas of Expertise
@@ -1194,7 +1194,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-lg)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Cormorant Garamond', serif",
+                          fontFamily: "'Georgia', 'Times New Roman', serif",
                         }}
                       >
                         Recent Reviews
@@ -1232,7 +1232,7 @@ export default function AstrologerProfile() {
                                     style={{
                                       fontWeight: 500,
                                       marginBottom: "0.25rem",
-                                      fontFamily: "'Cormorant Garamond', serif",
+                                      fontFamily: "'Georgia', 'Times New Roman', serif",
                                       fontSize: "1.1rem",
                                     }}
                                   >
@@ -1349,7 +1349,7 @@ export default function AstrologerProfile() {
                   style={{
                     fontSize: "1.25rem",
                     fontWeight: 600,
-                    fontFamily: "'Cormorant Garamond', serif",
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
                   }}
                 >
                   Edit Profile
@@ -1691,7 +1691,7 @@ export default function AstrologerProfile() {
           }
           
           body {
-            font-family: 'Cormorant Garamond', sans-serif;
+            font-family: 'Georgia', 'Times New Roman', serif;
           }
         `}</style>
       </div>

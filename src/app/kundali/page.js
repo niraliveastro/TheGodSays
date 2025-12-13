@@ -418,7 +418,7 @@ export default function KundaliPage() {
           box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
         }
         .title {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 2.5rem;
           font-weight: 700;
           background: linear-gradient(135deg, #d4af37, #b8972e);
@@ -455,7 +455,7 @@ export default function KundaliPage() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.25rem;
           font-weight: 700;
           color: #7c2d12;
@@ -591,7 +591,7 @@ export default function KundaliPage() {
           background: rgba(255, 255, 255, 0.3);
         }
         .calMonthYear {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.25rem;
         }
         .calWeekdays {
@@ -816,7 +816,7 @@ export default function KundaliPage() {
           }
         }
         .title {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 2rem;
           font-weight: 700;
           background: linear-gradient(135deg, #d4af37, #b8972e);
@@ -869,7 +869,7 @@ export default function KundaliPage() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.125rem;
           font-weight: 700;
           color: #7c2d12;
@@ -1021,7 +1021,7 @@ export default function KundaliPage() {
           background: rgba(255, 255, 255, 0.3);
         }
         .calMonthYear {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.125rem;
         }
         @media (min-width: 640px) {

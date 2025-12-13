@@ -473,7 +473,7 @@ export default function MahaDasasPage() {
           box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
         }
         .title {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 3rem;
           font-weight: 700;
           background: linear-gradient(135deg, #d4af37, #b8972e);
@@ -630,7 +630,7 @@ export default function MahaDasasPage() {
           color: #fff;
         }
         .titleGroup h3 {
-          font-family: "Cormorant Garamond", serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: 1.5rem;
           font-weight: 700;
           margin: 0;

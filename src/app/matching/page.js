@@ -2422,7 +2422,7 @@ export default function MatchingPage() {
             <IoHeartCircle style={{ color: "white", width: "36px", height: "36px" }} />
           </div>
           <h1 className="title" style={{
-            fontFamily: "var(--font-heading), 'Cormorant Garamond', serif",
+            fontFamily: "'Georgia', 'Times New Roman', serif",
             fontSize: "3rem",
             fontWeight: 700,
             background: "linear-gradient(135deg, #d4af37, #b8972e)",
@@ -3927,7 +3927,7 @@ export default function MatchingPage() {
                     fontWeight: 700,
                     color: isCosmic ? "#d4af37" : "#111827",
                     margin: "0 0 4px 0",
-                    fontFamily: '"Cormorant Garamond", serif',
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
                     ...(isCosmic
                       ? {
                         color: "#d4af37",
