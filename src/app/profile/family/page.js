@@ -164,7 +164,7 @@ export default function FamilyPage() {
                     fontWeight: 700,
                     color: "#d4af37",
                     marginBottom: "0.5rem",
-                    fontFamily: "'Cormorant Garamond', serif",
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
                   }}
                 >
                   My Family

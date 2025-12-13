@@ -1,4 +1,4 @@
-﻿/* =================================
+/* =================================
    Page Container & Layout
    ================================= */
 
@@ -61,7 +61,7 @@
 }
 
 .page-title {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 2.5rem;
   font-weight: 700;
   color: #111827;
@@ -229,7 +229,7 @@
 }
 
 .section-title {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.75rem;
   font-weight: 600;
   color: #111827;

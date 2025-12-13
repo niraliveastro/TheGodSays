@@ -1486,7 +1486,8 @@ export default function Home() {
                     <div className="zodiac-center">
                       <Sun className="zodiac-center-icon" />
                     </div>
-                    {/* Zodiac Icons */}
+                    {/* Zodiac Icons Container - Rotates */}
+                    <div className="zodiac-icons-container">
                     <div className="zodiac-icon zodiac-icon-1">
                       <svg
                         viewBox="0 0 24 24"
@@ -1627,7 +1628,9 @@ export default function Home() {
                         {" "}
                         <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />{" "}
                       </svg>{" "}
-                    </div>{" "}
+                    </div>
+                    </div>
+                    {/* End Zodiac Icons Container */}
                   </div>
                   <div className="hero-info-card hero-info-card-1">
                     <Clock className="hero-info-icon" />
@@ -1734,279 +1737,217 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ====== HOW IT WORKS SECTION ====== */}
-          <section className="max-w-6xl mx-auto mt-20 px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl text-gold font-bold mb-3">{t.howItWorks.title}</h2>
-              <p className="text-slate-600 text-lg">{t.howItWorks.subtitle}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Step 1 */}
-              <div className="relative">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
-                    1
+          {/* ====== HOW IT WORKS & QUICK AI READING - SIDE BY SIDE ====== */}
+          <section className="how-it-works-quick-start-container max-w-7xl mx-auto mt-20 px-4">
+            <div className="how-it-works-quick-start-wrapper">
+              {/* LEFT COLUMN: How It Works */}
+              <div className="how-it-works-column">
+                <h2 className="how-it-works-title">{t.howItWorks.title}</h2>
+                <p className="how-it-works-subtitle">{t.howItWorks.subtitle}</p>
+                
+                <div className="how-it-works-steps">
+                  {/* Step 1 */}
+                  <div className="how-it-works-step">
+                    <div className="how-it-works-step-number">1</div>
+                    <h3 className="how-it-works-step-title">{t.howItWorks.step1Title}</h3>
+                    <p className="how-it-works-step-desc">{t.howItWorks.step1Desc}</p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step1Title}</h3>
-                  <p className="text-gray-600">{t.howItWorks.step1Desc}</p>
-                </div>
-                {/* Connector Arrow (hidden on mobile) */}
-                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 how-it-works-connector"></div>
-              </div>
 
-              {/* Step 2 */}
-              <div className="relative">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
-                    2
+                  {/* Step 2 */}
+                  <div className="how-it-works-step">
+                    <div className="how-it-works-step-number">2</div>
+                    <h3 className="how-it-works-step-title">{t.howItWorks.step2Title}</h3>
+                    <p className="how-it-works-step-desc">{t.howItWorks.step2Desc}</p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step2Title}</h3>
-                  <p className="text-gray-600">{t.howItWorks.step2Desc}</p>
-                </div>
-                {/* Connector Arrow (hidden on mobile) */}
-                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-0.5 how-it-works-connector"></div>
-              </div>
 
-              {/* Step 3 */}
-              <div className="relative">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full how-it-works-step-icon flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
-                    3
+                  {/* Step 3 */}
+                  <div className="how-it-works-step">
+                    <div className="how-it-works-step-number">3</div>
+                    <h3 className="how-it-works-step-title">{t.howItWorks.step3Title}</h3>
+                    <p className="how-it-works-step-desc">{t.howItWorks.step3Desc}</p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{t.howItWorks.step3Title}</h3>
-                  <p className="text-gray-600">{t.howItWorks.step3Desc}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ====== AI PREDICTION FORM SECTION — VISUALLY MATCHES PROVIDED DESIGN ====== */}
-          <section
-            id="ai-prediction-section"
-            className="max-w-4xl mx-auto mt-12 ai-prediction-form-section rounded-3xl shadow-xl p-6 md:p-10"
-            style={{
-              background: isCosmic
-                ? "rgba(22, 33, 62, 0.85)"
-                : "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(20px)",
-              border: isCosmic
-                ? "1px solid rgba(212, 175, 55, 0.3)"
-                : "1px solid rgba(212, 175, 55, 0.2)",
-            }}
-          >
-            {/* header */}
-            <div className="flex items-start gap-4 mb-6">
-              <div
-                className="flex items-center justify-center w-12 h-12 rounded-xl"
-                style={{
-                  background:
-                    "linear-gradient(180deg, rgba(255,246,230,0.8), rgba(255,247,237,0.6))",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
-                }}
-              >
-                <Star className="w-6 h-6 text-amber-500" />
-              </div>
-
-              <div>
-                <h3 className="text-4xl text-gold">
-                  {t.aiForm.title}
-                </h3>
-                <p className="text-sm" style={{ color: isCosmic ? "rgba(249, 250, 251, 0.8)" : "#6b7280" }}>
-                  {t.aiForm.description}
-                </p>
-              </div>
-            </div>
-
-            <form
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 ai-prediction-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAIPredictionsSubmit();
-              }}
-            >
-              {/* Name */}
-              <div className="flex flex-col ai-form-field">
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  {t.aiForm.name}
-                </label>
-                <input
-                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
-                  placeholder="e.g., Rajesh Kumar"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  required
-                />
-                <p className="mt-2 text-xs text-gold-dark">
-                  {t.aiForm.nameHelper}
-                </p>
-              </div>
-
-              {/* DOB */}
-              <div className="flex flex-col ai-form-field">
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  {t.aiForm.dob}
-                </label>
-                <input
-                  type="date"
-                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
-                  placeholder="YYYY-MM-DD"
-                  value={formData.dob}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
-                  required
-                />
-                <p className="mt-2 text-xs text-gold-dark">
-                  {t.aiForm.dobHelper}
-                </p>
-              </div>
-
-              {/* Time */}
-              <div className="flex flex-col ai-form-field">
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  {t.aiForm.tob}
-                </label>
-                <input
-                  type="time"
-                  className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm appearance-none"
-                  placeholder="14:30"
-                  value={formData.tob}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
-                  required
-                />
-                <p className="mt-2 text-xs text-gold-dark">{t.aiForm.tobHelper}</p>
-              </div>
-
-              {/* Gender (col 1 of row 2) */}
-              <div className="md:col-span-1 flex flex-col ai-form-field">
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  {t.aiForm.gender}
-                </label>
-
-                <div className="h-12 flex items-center gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Male"
-                      className="gender-radio h-4 w-4"
-                      checked={formData.gender === "Male"}
-                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                    />
-                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.male}</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Female"
-                      className="gender-radio h-4 w-4"
-                      checked={formData.gender === "Female"}
-                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                    />
-                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.female}</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Other"
-                      className="gender-radio h-4 w-4"
-                      checked={formData.gender === "Other"}
-                      onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                    />
-                    <span className="text-sm text-gold-dark font-medium">{t.aiForm.other}</span>
-                  </label>
                 </div>
               </div>
 
-              {/* Place (col 2 of row 2) */}
-              <div className="md:col-span-1 flex flex-col relative ai-form-field">
-                {/* label has fixed height to match other labels */}
-                <label className="block text-sm font-medium text-gold mb-2 h-5">
-                  {t.aiForm.place}
-                </label>
+              {/* RIGHT COLUMN: Quick Start AI Reading Form */}
+              <div className="quick-start-form-column">
+                <div className="quick-start-form-card">
+                  {/* Header with Star Icon */}
+                  <div className="quick-start-form-header">
+                    <Star className="quick-start-star-icon" />
+                    <h3 className="quick-start-form-title">{t.aiForm.title}</h3>
+                  </div>
+                  <p className="quick-start-form-description">{t.aiForm.description}</p>
 
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      ref={locationInputRef}
-                      className="form-input-field h-12 w-full rounded-2xl border border-slate-200 px-4 shadow-sm"
-                      placeholder="e.g., Mumbai, India"
-                      value={formData.place}
-                      onChange={(e) => {
-                        hasInteractedWithLocation.current = true;
-                        setFormData(prev => ({ ...prev, place: e.target.value }));
-                      }}
-                      onFocus={() => {
-                        hasInteractedWithLocation.current = true;
-                        setShowLocationSuggestions(locationSuggestions.length > 0);
-                      }}
-                      required
-                      autoComplete="off"
-                    />
-
-                    {/* Location suggestions dropdown */}
-                    {showLocationSuggestions && locationSuggestions.length > 0 && (
-                      <div
-                        className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto"
-                        style={{ top: "100%" }}
-                      >
-                        {locationSuggestions.map((suggestion, index) => (
-                          <div
-                            key={index}
-                            className="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
-                            onClick={() => handleLocationSelect(suggestion)}
-                          >
-                            <div className="text-sm font-medium text-slate-900">
-                              {suggestion.city || suggestion.display_name?.split(",")[0] || "Unknown Location"}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {suggestion.display_name || "No address available"}
-                            </div>
-                          </div>
-                        ))}
+                  <form
+                    className="quick-start-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAIPredictionsSubmit();
+                    }}
+                  >
+                    {/* Name and Date of Birth Row */}
+                    <div className="quick-start-form-row">
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label">{t.aiForm.name}</label>
+                        <input
+                          type="text"
+                          className="quick-start-form-input"
+                          placeholder="e.g., Rajesh Kumar"
+                          value={formData.name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                        <p className="quick-start-form-helper">Optional — we'll personalise results.</p>
                       </div>
-                    )}
-                  </div>
 
-                  <button
-                    type="button"
-                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center shadow-sm bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Use my location"
-                    onClick={handleGetLocation}
-                    disabled={isGettingLocation}
-                  >
-                    {isGettingLocation ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gold"></div>
-                    ) : (
-                      <MapPin className="w-5 h-5 text-gold" />
-                    )}
-                  </button>
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label">{t.aiForm.dob}</label>
+                        <div className="quick-start-form-input-wrapper">
+                          <input
+                            type="date"
+                            className="quick-start-form-input quick-start-date-input"
+                            value={formData.dob}
+                            onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <p className="quick-start-form-helper">Format: DD-MM-YYYY</p>
+                      </div>
+                    </div>
+
+                    {/* Gender and Place Row */}
+                    <div className="quick-start-form-row">
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label">{t.aiForm.gender}</label>
+                        <div className="quick-start-radio-group">
+                          <label className="quick-start-radio-label">
+                            <input
+                              type="radio"
+                              name="gender"
+                              value="Male"
+                              className="quick-start-radio"
+                              checked={formData.gender === "Male"}
+                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                            />
+                            <span>{t.aiForm.male}</span>
+                          </label>
+                          <label className="quick-start-radio-label">
+                            <input
+                              type="radio"
+                              name="gender"
+                              value="Female"
+                              className="quick-start-radio"
+                              checked={formData.gender === "Female"}
+                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                            />
+                            <span>{t.aiForm.female}</span>
+                          </label>
+                          <label className="quick-start-radio-label">
+                            <input
+                              type="radio"
+                              name="gender"
+                              value="Other"
+                              className="quick-start-radio"
+                              checked={formData.gender === "Other"}
+                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                            />
+                            <span>{t.aiForm.other}</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label">{t.aiForm.place}</label>
+                        <div className="quick-start-form-input-wrapper">
+                          <input
+                            ref={locationInputRef}
+                            type="text"
+                            className="quick-start-form-input"
+                            placeholder="e.g., Mumbai"
+                            value={formData.place}
+                            onChange={(e) => {
+                              hasInteractedWithLocation.current = true;
+                              setFormData(prev => ({ ...prev, place: e.target.value }));
+                            }}
+                            onFocus={() => {
+                              hasInteractedWithLocation.current = true;
+                              setShowLocationSuggestions(locationSuggestions.length > 0);
+                            }}
+                            required
+                            autoComplete="off"
+                          />
+                          <button
+                            type="button"
+                            className="quick-start-location-btn"
+                            onClick={handleGetLocation}
+                            disabled={isGettingLocation}
+                            aria-label="Use my location"
+                          >
+                            {isGettingLocation ? (
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black"></div>
+                            ) : (
+                              <MapPin className="quick-start-location-icon" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Location suggestions dropdown */}
+                        {showLocationSuggestions && locationSuggestions.length > 0 && (
+                          <div className="quick-start-location-dropdown">
+                            {locationSuggestions.map((suggestion, index) => (
+                              <div
+                                key={index}
+                                className="quick-start-location-suggestion"
+                                onClick={() => handleLocationSelect(suggestion)}
+                              >
+                                <div className="quick-start-location-suggestion-city">
+                                  {suggestion.city || suggestion.display_name?.split(",")[0] || "Unknown Location"}
+                                </div>
+                                <div className="quick-start-location-suggestion-address">
+                                  {suggestion.display_name || "No address available"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time of Birth and Submit Button Row */}
+                    <div className="quick-start-form-row">
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label">{t.aiForm.tob}</label>
+                        <div className="quick-start-form-input-wrapper">
+                          <input
+                            type="time"
+                            className="quick-start-form-input quick-start-time-input"
+                            value={formData.tob}
+                            onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <p className="quick-start-form-helper">24-hour format</p>
+                      </div>
+
+                      <div className="quick-start-form-field">
+                        <label className="quick-start-form-label" style={{ opacity: 0 }}>Submit</label>
+                        <button
+                          type="submit"
+                          className="quick-start-submit-btn"
+                        >
+                          {t.aiForm.submit}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Footer */}
+                  <p className="quick-start-form-footer">
+                    {t.aiForm.footer}
+                    <span className="quick-start-form-footer-dot"></span>
+                  </p>
                 </div>
               </div>
-
-              {/* CTA (col 3 of row 2) */}
-              <div className="flex flex-col">
-                <label className="block text-sm font-medium text-gold mb-2 h-5 opacity-0">
-                  {/* Hidden label for alignment */}
-                  Placeholder
-                </label>
-                <div className="w-full">
-                  <button
-                    type="submit"
-                    className="btn ai-predictions-submit-btn w-full h-12 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all"
-                  >
-                    {t.aiForm.submit}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* footer / small note */}
-            <div className="mt-6 text-xs" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : "var(--color-gold-dark)" }}>
-              {t.aiForm.footer}
             </div>
           </section>
 

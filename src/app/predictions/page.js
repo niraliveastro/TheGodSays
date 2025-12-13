@@ -2291,7 +2291,7 @@ export default function PredictionsPage() {
                   fontWeight: 700,
                   color: isCosmic ? "#d4af37" : "#111827",
                   margin: "0 0 4px 0",
-                  fontFamily: '"Cormorant Garamond", serif',
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
                   ...(isCosmic 
                     ? {
                         color: "#d4af37",
