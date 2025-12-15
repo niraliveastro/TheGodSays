@@ -38,6 +38,10 @@
   background: var(--color-cream);
   position: relative;
   padding: 1.5rem 1rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Subtle background texture */
@@ -118,6 +122,17 @@
   .two-column-layout {
     grid-template-columns: 1fr;
     gap: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .two-column-layout {
+    padding: 0 0.5rem;
   }
 }
 
@@ -373,6 +388,16 @@
   max-width: 95%;
   margin: 0 auto;
   margin-bottom: 3rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .results-section {
+    max-width: 100%;
+    padding: 0 0.5rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 .section-title {
@@ -386,6 +411,18 @@
   position: relative;
   font-style: normal;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .section-title {
+    font-size: 1.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* ---------- Grid Layouts ---------- */
@@ -442,10 +479,18 @@
 @media (max-width: 640px) {
   .grid-2 {
     grid-template-columns: 1fr;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
   }
 
   .grid-3 {
     grid-template-columns: 1fr;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
   }
 }
 
@@ -497,6 +542,22 @@
     font-size: 1.4rem;
     min-width: 56px;
   }
+
+  /* Fix card alignment on mobile */
+  .grid-2,
+  .grid-3 {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
+  }
+
+  .result-card {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* Medium breakpoint: make 3-column grids become 2 columns and ensure cards shrink smoothly */
@@ -504,15 +565,22 @@
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .grid-2 {
     grid-template-columns: 1fr;
     gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .result-card {
     min-height: 200px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .card-title {
@@ -529,15 +597,26 @@
   .grid-3 {
     grid-template-columns: 1fr;
     gap: 1rem;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
   }
 
   .grid-2 {
     grid-template-columns: 1fr;
     gap: 1rem;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
   }
 
   .result-card {
     min-height: 180px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -545,12 +624,17 @@
 @media (max-width: 480px) {
   .result-card {
     min-height: 140px;
-    padding: 0.5rem;
+    padding: 0.75rem;
     border-radius: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
   }
 
   .card-header {
-    padding: 0.75rem;
+    padding: 1.5rem 0.75rem 0.75rem 0.75rem;
+    margin-top: 0.5rem;
   }
 
   .card-title {
@@ -572,6 +656,22 @@
 
   .card-icon {
     font-size: 1rem;
+  }
+
+  /* Ensure proper alignment of card content */
+  .header-content {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .card-body {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .time-row {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -596,13 +696,13 @@
 .result-card::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 2rem;
-  right: 2rem;
-  margin: 24px 0;
+  top: clamp(12px, 2vw, 20px);
+  left: clamp(1rem, 2.5vw, 2rem);
+  right: clamp(1rem, 2.5vw, 2rem);
   background: linear-gradient(90deg, transparent, currentColor, transparent);
-  height: 5px;
+  height: 4px;
   opacity: 0.85;
+  border-radius: 2px;
 }
 
 .result-card:hover {
@@ -621,7 +721,7 @@
 }
 
 .result-card.blue::before {
-  background: linear-gradient(90deg, #3b82f6, #3b82f6dd);
+  background: #3b82f6;
 }
 
 .result-card.yellow {
@@ -630,7 +730,7 @@
 }
 
 .result-card.yellow::before {
-  background: linear-gradient(90deg, #d4af37, #d4af37dd);
+  background: #d4af37;
 }
 
 .result-card.green {
@@ -639,7 +739,7 @@
 }
 
 .result-card.green::before {
-  background: linear-gradient(90deg, #10b981, #10b981dd);
+  background: #10b981;
 }
 
 .result-card.teal {
@@ -648,7 +748,7 @@
 }
 
 .result-card.teal::before {
-  background: linear-gradient(90deg, #14b8a6, #14b8a6dd);
+  background: #14b8a6;
 }
 
 .result-card.red {
@@ -657,7 +757,7 @@
 }
 
 .result-card.red::before {
-  background: linear-gradient(90deg, #dc2626, #dc2626dd);
+  background: #dc2626;
 }
 
 .result-card.gray {
@@ -666,7 +766,7 @@
 }
 
 .result-card.gray::before {
-  background: linear-gradient(90deg, #111827, #111827dd);
+  background: #374151;
 }
 
 /* ============================================= */
@@ -692,7 +792,7 @@
 }
 
 .result-card.orange::before {
-  background: linear-gradient(90deg, #f97316, #f97316dd);
+  background: #f97316;
 }
 
 .result-card.purple {
@@ -701,7 +801,7 @@
 }
 
 .result-card.purple::before {
-  background: linear-gradient(90deg, #7c3aed, #7c3aeddd);
+  background: #7c3aed;
 }
 
 .result-card.center {
@@ -710,9 +810,11 @@
 
 /* Card Content */
 .card-header {
-  padding: clamp(1rem, 2vw, 1.75rem) clamp(1rem, 2.5vw, 1.75rem)
+  padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1rem, 2.5vw, 1.75rem)
     clamp(0.5rem, 1vw, 1rem);
+  padding-top: clamp(2rem, 4vw, 2.75rem);
   flex-shrink: 0;
+  margin-top: clamp(0.5rem, 1vw, 0.75rem);
 }
 
 .header-content {
