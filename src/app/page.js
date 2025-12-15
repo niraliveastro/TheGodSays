@@ -2022,10 +2022,20 @@ export default function Home() {
               </div>
             ) : (
               <div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
-                role="list"
-                aria-label="Top astrologers list"
+                className="astrologers-scroll-container"
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  height: "760px",
+                  marginTop: "1.5rem",
+                  paddingRight: "0.5rem",
+                }}
               >
+                <div
+                  className="astrologers-grid-scrollable"
+                  role="list"
+                  aria-label="Top astrologers list"
+                >
                 {(onlineAstrologers.length > 0
                   ? onlineAstrologers
                   : featuredAstrologers
@@ -2099,14 +2109,15 @@ export default function Home() {
                             <div
                               style={{
                                 position: "absolute",
-                                bottom: "0",
-                                right: "0",
+                                bottom: "2px",
+                                right: "2px",
                                 width: "0.875rem",
                                 height: "0.875rem",
                                 borderRadius: "50%",
-                                border: "2px solid white",
+                                border: "2.5px solid white",
                                 background: "#10b981",
                                 zIndex: 10,
+                                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
                               }}
                             />
                           )}
@@ -2215,22 +2226,11 @@ export default function Home() {
                         {ast.perMinuteCharge && (
                           <div
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.375rem",
                               fontSize: "0.9375rem",
                               fontWeight: 700,
                               color: "#059669",
                             }}
                           >
-                            <div
-                              style={{
-                                width: "0.5rem",
-                                height: "0.5rem",
-                                borderRadius: "50%",
-                                background: "#10b981",
-                              }}
-                            />
                             ₹{ast.perMinuteCharge}/min
                           </div>
                         )}
@@ -2358,6 +2358,7 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </section>
