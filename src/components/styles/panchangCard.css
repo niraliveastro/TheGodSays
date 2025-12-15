@@ -14,6 +14,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 .panchang-card::before {
@@ -155,6 +157,55 @@
 
 .panchang-card[data-type="moonset"] .panchang-card-icon svg {
   color: #6366f1;
+}
+
+/* Vedic Tools specific icon colors */
+.panchang-card[data-type="vedic-weekday"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08));
+}
+
+.panchang-card[data-type="vedic-weekday"] .panchang-card-icon svg {
+  color: #3b82f6;
+}
+
+.panchang-card[data-type="lunar-month"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08));
+}
+
+.panchang-card[data-type="lunar-month"] .panchang-card-icon svg {
+  color: #8b5cf6;
+}
+
+.panchang-card[data-type="ritu"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08));
+}
+
+.panchang-card[data-type="ritu"] .panchang-card-icon svg {
+  color: #22c55e;
+}
+
+.panchang-card[data-type="samvat"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.08));
+}
+
+.panchang-card[data-type="samvat"] .panchang-card-icon svg {
+  color: #a855f7;
+}
+
+.panchang-card[data-type="aayanam"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(251, 146, 60, 0.08));
+}
+
+.panchang-card[data-type="aayanam"] .panchang-card-icon svg {
+  color: #fb923c;
+}
+
+.panchang-card[data-type="choghadiya"] .panchang-card-icon {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(236, 72, 153, 0.08));
+}
+
+.panchang-card[data-type="choghadiya"] .panchang-card-icon svg {
+  color: #ec4899;
 }
 
 /* Small devices (phones, up to 480px) */

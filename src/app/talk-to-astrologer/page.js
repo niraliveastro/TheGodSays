@@ -831,8 +831,7 @@ export default function TalkToAstrologer() {
                           style={{
                             width: "4rem",
                             height: "4rem",
-                            background:
-                              "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                            background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                             borderRadius: "50%",
                             display: "flex",
                             alignItems: "center",
@@ -1023,6 +1022,20 @@ export default function TalkToAstrologer() {
                             >
                               Review
                             </button>
+
+                            {/* Price tag - right under Review button */}
+                            {a.perMinuteCharge && (
+                              <div
+                                style={{
+                                  fontSize: "0.9375rem",
+                                  fontWeight: 700,
+                                  color: "#059669",
+                                  textAlign: "right",
+                                }}
+                              >
+                                ₹{a.perMinuteCharge}/min
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1059,28 +1072,6 @@ export default function TalkToAstrologer() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Rest of content */}
-                    {a.perMinuteCharge && (
-                      <div
-                        style={{
-                          marginBottom: "0.75rem",
-                          position: "relative",
-                          zIndex: 20,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: 700,
-                            color: "#059669",
-                            fontFamily: "Courier New, monospace",
-                          }}
-                        >
-                          ₹{a.perMinuteCharge}/min
-                        </span>
-                      </div>
-                    )}
 
                     <p
                       style={{

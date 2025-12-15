@@ -2022,10 +2022,20 @@ export default function Home() {
               </div>
             ) : (
               <div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
-                role="list"
-                aria-label="Top astrologers list"
+                className="astrologers-scroll-container"
+                style={{
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  height: "760px",
+                  marginTop: "1.5rem",
+                  paddingRight: "0.5rem",
+                }}
               >
+                <div
+                  className="astrologers-grid-scrollable"
+                  role="list"
+                  aria-label="Top astrologers list"
+                >
                 {(onlineAstrologers.length > 0
                   ? onlineAstrologers
                   : featuredAstrologers
@@ -2043,305 +2053,203 @@ export default function Home() {
                       position: "relative",
                       textDecoration: "none",
                       color: "inherit",
+                      background: "#ffffff",
+                      border: "1px solid rgba(212, 175, 55, 0.15)",
+                      borderRadius: "12px",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-4px)";
                       e.currentTarget.style.boxShadow =
-                        "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.3)";
+                        "0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow =
-                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.04)";
                     }}
                   >
-                    {/* Top Row: Avatar + Name + Info */}
+                    {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
                     <div
                       style={{
                         display: "flex",
                         alignItems: "flex-start",
+                        justifyContent: "space-between",
                         gap: "1rem",
                         marginBottom: "1rem",
                         position: "relative",
                         zIndex: 20,
                       }}
                     >
-                      {/* Avatar + Online Indicator */}
-                      <div style={{ position: "relative", flexShrink: 0 }}>
-                        <div
-                          style={{
-                            width: "4rem",
-                            height: "4rem",
-                            background:
-                              "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontWeight: 700,
-                            fontSize: "1.25rem",
-                          }}
-                        >
-                          {ast.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: "-0.25rem",
-                            right: "-0.25rem",
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            borderRadius: "50%",
-                            border: "2px solid white",
-                            background: ast.online || ast.isOnline
-                              ? "#10b981"
-                              : "var(--color-gray-400)",
-                            animation: (ast.online || ast.isOnline) ? "pulse 2s infinite" : "none",
-                          }}
-                        />
-                      </div>
-
-                      {/* Name, Spec, Experience, Rating */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: "1rem",
-                          }}
-                        >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h3
-                              style={{
-                                fontSize: "1.5rem",
-                                fontWeight: 700,
-                                color: "var(--color-gray-900)",
-                                margin: 0,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                fontFamily: "var(--font-heading)",
-                                lineHeight: 1.3,
-                              }}
-                              title={ast.name}
-                            >
-                              {ast.name}
-                            </h3>
-                            <p
-                              style={{
-                                fontSize: "0.875rem",
-                                fontWeight: 500,
-                                color: "var(--color-indigo)",
-                                margin: "0.125rem 0 0",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                fontFamily: "var(--font-body)",
-                              }}
-                              title={ast.specialization ?? "Astrology"}
-                            >
-                              {ast.specialization ?? "Astrology"}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--color-gray-500)",
-                                margin: "0.25rem 0 0",
-                                fontWeight: 500,
-                                fontFamily: "Courier New, monospace",
-                              }}
-                            >
-                              {ast.experience ?? "Experienced in astrology"}
-                            </p>
-                          </div>
-
-                          {/* Rating Badge + Review Button */}
+                      {/* Left Side: Avatar + Name + Spec + Experience */}
+                      <div style={{ display: "flex", gap: "0.75rem", flex: 1, minWidth: 0 }}>
+                        {/* Avatar + Status Indicator Dot */}
+                        <div style={{ position: "relative", flexShrink: 0 }}>
                           <div
                             style={{
+                              width: "4rem",
+                              height: "4rem",
+                              background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                              borderRadius: "50%",
                               display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-end",
-                              gap: "0.5rem",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.375rem",
-                                background: "var(--color-amber-50)",
-                                color: "var(--color-amber-700)",
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontFamily: "Courier New, monospace",
-                                fontSize: "0.75rem",
-                                fontWeight: 600,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              <Star
-                                style={{
-                                  width: "0.875rem",
-                                  height: "0.875rem",
-                                  fill: "#f59e0b",
-                                  color: "#f59e0b",
-                                }}
-                              />
-                              {ast.rating ?? 4.7}{" "}
-                              <span
-                                style={{
-                                  color: "var(--color-gray-500)",
-                                  marginLeft: "0.125rem",
-                                  fontFamily: "Courier New, monospace",
-                                }}
-                              >
-                                ({ast.reviews ?? 0})
-                              </span>
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenReview(ast);
-                              }}
-                              style={{
-                                fontSize: "0.75rem",
-                                padding: "0.25rem 0.75rem",
-                                height: "1.75rem",
-                                border: "1px solid #d1d5db",
-                                borderRadius: "0.375rem",
-                                background: "white",
-                                color: "#374151",
-                                cursor: "pointer",
-                                fontWeight: 500,
-                              }}
-                            >
-                              Review
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Status and Verified Badges */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                          {/* Status Badge */}
-                          <div
-                            style={{
-                              display: "inline-flex",
                               alignItems: "center",
-                              gap: "0.35rem",
-                              background: (ast.online || ast.isOnline)
-                                ? "#d1fae5"
-                                : ast.status === "busy"
-                                  ? "#fef3c7"
-                                  : "#f3f4f6",
-                              color: (ast.online || ast.isOnline)
-                                ? "#065f46"
-                                : ast.status === "busy"
-                                  ? "#92400e"
-                                  : "#6b7280",
-                              padding: "0.35rem 0.65rem",
-                              borderRadius: "9999px",
-                              fontSize: "0.7rem",
-                              fontWeight: 600,
+                              justifyContent: "center",
+                              color: "white",
+                              fontWeight: 700,
+                              fontSize: "1.125rem",
                               textTransform: "uppercase",
-                              letterSpacing: "0.05em",
-                              border: `1px solid ${(ast.online || ast.isOnline)
-                                ? "#6ee7b7"
-                                : ast.status === "busy"
-                                  ? "#fbbf24"
-                                  : "#d1d5db"
-                                }`,
                             }}
                           >
+                            {ast.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </div>
+                          {/* Status Indicator Dot - properly aligned at avatar */}
+                          {(ast.online || ast.isOnline) && (
                             <div
                               style={{
-                                width: "0.5rem",
-                                height: "0.5rem",
+                                position: "absolute",
+                                bottom: "2px",
+                                right: "2px",
+                                width: "0.875rem",
+                                height: "0.875rem",
                                 borderRadius: "50%",
-                                background: (ast.online || ast.isOnline)
-                                  ? "#10b981"
-                                  : ast.status === "busy"
-                                    ? "#f59e0b"
-                                    : "#9ca3af",
-                                boxShadow: (ast.online || ast.isOnline)
-                                  ? "0 0 6px rgba(16, 185, 129, 0.6)"
-                                  : ast.status === "busy"
-                                    ? "0 0 6px rgba(245, 158, 11, 0.6)"
-                                    : "none",
-                                animation: (ast.online || ast.isOnline || ast.status === "busy")
-                                  ? "pulse 2s infinite"
-                                  : "none",
+                                border: "2.5px solid white",
+                                background: "#10b981",
+                                zIndex: 10,
+                                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
                               }}
                             />
-                            {(ast.online || ast.isOnline) ? "Online" : ast.status === "busy" ? "Busy" : "Offline"}
-                          </div>
-
-                          {ast.verified && (
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.25rem",
-                                background: "var(--color-indigo-light)",
-                                color: "var(--color-indigo)",
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500,
-                              }}
-                            >
-                              ✓ Verified
-                            </div>
                           )}
                         </div>
+
+                        {/* Name, Spec, Experience */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3
+                            style={{
+                              fontSize: "1.125rem",
+                              fontWeight: 700,
+                              color: "#1f2937",
+                              margin: 0,
+                              marginBottom: "0.25rem",
+                              fontFamily: "var(--font-heading)",
+                              lineHeight: 1.3,
+                              textTransform: "lowercase",
+                            }}
+                            title={ast.name}
+                          >
+                            {ast.name}
+                          </h3>
+                          <p
+                            style={{
+                              fontSize: "0.8125rem",
+                              fontWeight: 500,
+                              color: "var(--color-indigo)",
+                              margin: "0 0 0.125rem 0",
+                              fontFamily: "var(--font-body)",
+                            }}
+                            title={ast.specialization ?? "Astrology"}
+                          >
+                            {ast.specialization ?? "Astrology"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "#6b7280",
+                              margin: "0",
+                              fontWeight: 400,
+                            }}
+                          >
+                            {ast.experience ?? "Experienced in astrology"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right Side: Rating + Review Button + Price */}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "0.5rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {/* Rating */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "#1f2937",
+                          }}
+                        >
+                          <Star
+                            style={{
+                              width: "0.875rem",
+                              height: "0.875rem",
+                              fill: "#f59e0b",
+                              color: "#f59e0b",
+                            }}
+                          />
+                          <span>{ast.rating ?? 4.5}</span>
+                          <span style={{ color: "#6b7280", fontWeight: 400, marginLeft: "0.125rem" }}>
+                            ({ast.reviews ?? 2})
+                          </span>
+                        </div>
+
+                        {/* Review Button */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleOpenReview(ast);
+                          }}
+                          style={{
+                            fontSize: "0.75rem",
+                            padding: "0.25rem 0.625rem",
+                            height: "auto",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "0.375rem",
+                            background: "white",
+                            color: "#374151",
+                            cursor: "pointer",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Review
+                        </button>
+
+                        {/* Price - moved to where ONLINE was */}
+                        {ast.perMinuteCharge && (
+                          <div
+                            style={{
+                              fontSize: "0.9375rem",
+                              fontWeight: 700,
+                              color: "#059669",
+                            }}
+                          >
+                            ₹{ast.perMinuteCharge}/min
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Price */}
-                    {ast.perMinuteCharge && (
-                      <div
-                        style={{
-                          marginBottom: "0.75rem",
-                          position: "relative",
-                          zIndex: 20,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: 700,
-                            color: "#059669",
-                            fontFamily: "Courier New, monospace",
-                          }}
-                        >
-                          ₹{ast.perMinuteCharge}/min
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Bio */}
+                    {/* Middle Section: Bio */}
                     <p
                       style={{
                         fontSize: "0.875rem",
                         fontFamily: "var(--font-body)",
-                        color: "var(--color-gray-600)",
+                        color: "#4b5563",
                         marginBottom: "0.75rem",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
+                        lineHeight: 1.5,
                         position: "relative",
                         zIndex: 20,
                       }}
                     >
-                      {ast.bio ??
-                        `Expert in ${ast.specialization ?? "astrology"}`}
+                      {ast.bio ?? `Experienced astrologer providing guidance and insights.`}
                     </p>
 
                     {/* Languages */}
@@ -2357,7 +2265,7 @@ export default function Home() {
                           style={{
                             fontSize: "0.75rem",
                             fontWeight: 600,
-                            color: "var(--color-gray-600)",
+                            color: "#4b5563",
                             marginBottom: "0.5rem",
                           }}
                         >
@@ -2375,10 +2283,10 @@ export default function Home() {
                               key={l + i}
                               style={{
                                 padding: "0.25rem 0.625rem",
-                                background: "var(--color-indigo-light)",
-                                color: "var(--color-indigo)",
+                                background: "#E0E7FF",
+                                color: "#4F46E5",
                                 fontSize: "0.75rem",
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 borderRadius: "9999px",
                               }}
                             >
@@ -2389,7 +2297,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Action button – Bottom */}
+                    {/* Bottom Section: Connect Button */}
                     <div
                       style={{
                         display: "flex",
@@ -2399,7 +2307,6 @@ export default function Home() {
                       }}
                     >
                       <button
-                        className="btn btn-primary"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -2407,21 +2314,35 @@ export default function Home() {
                         }}
                         style={{
                           width: "100%",
-                          height: "3rem",
-                          padding: "0 1.5rem",
-                          fontSize: "1rem",
+                          height: "2.75rem",
+                          padding: "0 1.25rem",
+                          fontSize: "0.9375rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "0.5rem",
                           fontWeight: 600,
+                          background: "white",
+                          border: "1px solid rgba(212, 175, 55, 0.4)",
+                          borderRadius: "0.5rem",
+                          color: "#D4AF37",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
                         }}
                         type="button"
                         aria-label={`Connect with ${ast.name}`}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.6)";
+                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(212, 175, 55, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.4)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
                       >
                         <svg
-                          width="18"
-                          height="18"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -2432,11 +2353,12 @@ export default function Home() {
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
-                        Connect with {ast.name.split(" ")[0]}
+                        Connect with {ast.name.split(" ")[0].toLowerCase()}
                       </button>
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </section>
@@ -2446,7 +2368,7 @@ export default function Home() {
             <div
               role="region"
               aria-labelledby="loyalty-title"
-              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center"
+              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center w-full"
               style={{
                 background: isCosmic
                   ? "rgba(22, 33, 62, 0.85)"
@@ -2494,7 +2416,7 @@ export default function Home() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{
-                        background: isCosmic ? "rgba(212, 175, 55, 0.2)" : undefined,
+                        background: isCosmic ? "rgba(212, 175, 55, 0.15)" : undefined,
                         color: isCosmic ? "#d4af37" : undefined
                       }}>
                         ★
@@ -2540,10 +2462,9 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Main content sections wrapper */}
-          <div className="content-sections-wrapper">
-            {/* LOADING STATE */}
-            {isLoadingPanchang && (
+          {/* LOADING STATE */}
+          {isLoadingPanchang && (
+            <div className="content-sections-wrapper">
               <div className="loading-container">
                 <div className="loading-content">
                   <div className="loading-spinner"></div>
@@ -2553,136 +2474,163 @@ export default function Home() {
                   Tithi • Nakshatra • Sunrise • Muhurta
                 </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* PANCHANG GRID (Auspicious/Inauspicious moved to full Panchang page) */}
-            <section className="mt-12" id="panchang-section">
-              <div
-                role="region"
-                aria-labelledby="panchang-title"
-                className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg"
-                style={{
-                  background: isCosmic
-                    ? "rgba(22, 33, 62, 0.85)"
-                    : undefined,
-                  borderColor: isCosmic
-                    ? "rgba(212, 175, 55, 0.3)"
-                    : undefined,
-                }}
-              >
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row gap-6 items-center mb-8">
-                  {/* Left: icon + copy */}
-                  <div className="flex items-start gap-4 md:gap-6 flex-1">
-                    <div
-                      className="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-tr from-blue-100 to-indigo-50 ring-1 ring-blue-100"
-                      aria-hidden="true"
-                    >
-                      <Calendar className="w-8 h-8 text-blue-600" />
-                    </div>
-
-                    <div className="flex-1">
-                      <h3 id="panchang-title" className="text-4xl text-gold">
-                        {selectedDate === new Date().toISOString().split("T")[0]
-                          ? t.panchang.title
-                          : `${t.panchang.titleFor} ${new Date(selectedDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              weekday: "long",
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            }
-                          )}`}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
-                        {t.panchang.description}
-                      </p>
-
-                      {/* Date Selector */}
-                      <div
-                        className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${isCosmic
-                          ? "bg-gradient-to-r from-yellow-500/10 via-yellow-400/10 to-yellow-500/10 border-yellow-500/30"
-                          : "bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
-                          }`}
-                      >
-                        <Calendar className={`w-4 h-4 ${isCosmic ? "text-yellow-400" : "text-gold"}`} />
-                        <input
-                          type="date"
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${isCosmic
-                            ? "text-yellow-100 hover:text-yellow-300 placeholder-yellow-200/50"
-                            : "text-gray-700 hover:text-gold"
-                            }`}
-                          style={{
-                            colorScheme: isCosmic ? "dark" : "light",
-                            background: 'transparent'
-                          }}
-                        />
-                      </div>
-
-                      <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
-                        {t.panchang.selectDateHelper}
-                      </p>
-                    </div>
+          {/* PANCHANG GRID (Auspicious/Inauspicious moved to full Panchang page) */}
+          <section className="mt-12" id="panchang-section">
+            <div
+              role="region"
+              aria-labelledby="panchang-title"
+              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
+              style={{
+                background: isCosmic
+                  ? "rgba(22, 33, 62, 0.85)"
+                  : undefined,
+                borderColor: isCosmic
+                  ? "rgba(212, 175, 55, 0.3)"
+                  : undefined,
+                width: '100%',
+                maxWidth: '80rem',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row gap-6 items-center mb-8">
+                {/* Left: icon + copy */}
+                <div className="flex items-start gap-4 md:gap-6 flex-1">
+                  <div
+                    className="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-tr from-blue-100 to-indigo-50 ring-1 ring-blue-100"
+                    aria-hidden="true"
+                  >
+                    <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
 
-                  {/* Right: CTA */}
-                  <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
-                    <button
-                      type="button"
-                      onClick={() => fastNavigate(router, "/panchang")}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
-                      aria-label="View full Panchang details"
-                      style={{
-                        backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
-                        color: isCosmic ? "#d4af37" : "white",
-                        borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
-                        borderWidth: isCosmic ? "1px" : "0",
-                      }}
+                  <div className="flex-1">
+                    <h3 id="panchang-title" className="text-4xl text-gold">
+                      {selectedDate === new Date().toISOString().split("T")[0]
+                        ? t.panchang.title
+                        : `${t.panchang.titleFor} ${new Date(selectedDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )}`}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                      {t.panchang.description}
+                    </p>
+
+                    {/* Date Selector */}
+                    <div
+                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${isCosmic
+                        ? "bg-gradient-to-r from-yellow-500/10 via-yellow-400/10 to-yellow-500/10 border-yellow-500/30"
+                        : "bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
+                        }`}
                     >
-                      <Calendar className="w-4 h-4" style={{ color: isCosmic ? "#d4af37" : "currentColor" }} />
-                      {t.panchang.viewFull}
-                    </button>
+                      <Calendar className={`w-4 h-4 ${isCosmic ? "text-yellow-400" : "text-gold"}`} />
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${isCosmic
+                          ? "text-yellow-100 hover:text-yellow-300 placeholder-yellow-200/50"
+                          : "text-gray-700 hover:text-gold"
+                          }`}
+                        style={{
+                          colorScheme: isCosmic ? "dark" : "light",
+                          background: 'transparent'
+                        }}
+                      />
+                    </div>
+
+                    <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
+                      {t.panchang.selectDateHelper}
+                    </p>
                   </div>
                 </div>
 
-                {/* Panchang Details Cards - All cards inside the same container */}
-                <div className="border-t border-gray-100 pt-6">
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                    {panchangItems.map((item, i) => (
-                      <PanchangCard
-                        key={i}
-                        label={item.label}
-                        value={item.value}
-                      />
-                    ))}
+                {/* Right: CTA */}
+                <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fastNavigate(router, "/panchang")}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
+                    aria-label="View full Panchang details"
+                    style={{
+                      backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
+                      color: isCosmic ? "#d4af37" : "white",
+                      borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
+                      borderWidth: isCosmic ? "1px" : "0",
+                    }}
+                  >
+                    <Calendar className="w-4 h-4" style={{ color: isCosmic ? "#d4af37" : "currentColor" }} />
+                    {t.panchang.viewFull}
+                  </button>
+                </div>
+              </div>
+
+              {/* Panchang Details Cards - All cards inside the same container */}
+              <div className="border-t border-gray-100 pt-6">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  {panchangItems.map((item, i) => (
+                    <PanchangCard
+                      key={i}
+                      label={item.label}
+                      value={item.value}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ASTROLOGY OPTIONS GRID */}
+          <section className="mt-12" id="astrology-options">
+            <div
+              role="region"
+              aria-labelledby="advanced-vedic-tools-title"
+              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-purple-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
+              style={{
+                background: isCosmic
+                  ? "rgba(22, 33, 62, 0.85)"
+                  : undefined,
+                borderColor: isCosmic
+                  ? "rgba(212, 175, 55, 0.3)"
+                  : undefined,
+                width: '100%',
+                maxWidth: '80rem',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row gap-6 items-center mb-8">
+                {/* Left: icon + copy */}
+                <div className="flex items-start gap-4 md:gap-6 flex-1">
+                  <div
+                    className="flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-tr from-purple-100 to-indigo-50 ring-1 ring-purple-100"
+                    aria-hidden="true"
+                  >
+                    <Star className="w-8 h-8 text-purple-600" />
+                  </div>
+
+                  <div className="flex-1">
+                    <h2 id="advanced-vedic-tools-title" className="text-4xl text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {t.tools.title}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                      {t.tools.description}
+                    </p>
                   </div>
                 </div>
               </div>
-            </section>
 
-            {/* ASTROLOGY OPTIONS GRID */}
-            <section className="mt-12" id="astrology-options">
-              <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-100 to-indigo-50 flex items-center justify-center ring-1 ring-purple-100">
-                      <Star className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <h2 className="text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
-                      {t.tools.title}
-                    </h2>
-                  </div>
-                  <p className="text-slate-600 text-lg max-w-3xl mx-auto">
-                    {t.tools.description}
-                  </p>
-                </div>
-
-                {/* Tools Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Tools Grid - Small cards inside */}
+              <div className="border-t border-gray-100 pt-6">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
                   {astrologyOptions.map((option) => (
                     <AstrologyOptionCard
                       key={option.id}
@@ -2692,8 +2640,8 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-            </section>
-          </div>
+            </div>
+          </section>
 
           {/* FOOTER */}
           <footer className="home-footer">
