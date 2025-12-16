@@ -12,17 +12,27 @@ import './blog-detail.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
 
+// Force dynamic rendering to always fetch fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Generate static params for all blog posts (for SSG/ISR)
 export async function generateStaticParams() {
-  const slugs = await getAllBlogSlugs()
-  return slugs.map((item) => ({
-    slug: item.slug,
-  }))
+  try {
+    const slugs = await getAllBlogSlugs()
+    return slugs.map((item) => ({
+      slug: item.slug,
+    }))
+  } catch (error) {
+    console.error('Error generating static params:', error)
+    return []
+  }
 }
 
 // Generate metadata for each blog post
 export async function generateMetadata({ params }) {
-  const blog = await getBlogBySlug(params.slug)
+  const { slug } = await params
+  const blog = await getBlogBySlug(slug)
 
   if (!blog) {
     return {
@@ -33,7 +43,7 @@ export async function generateMetadata({ params }) {
   const title = blog.metaTitle || blog.title
   const description = blog.metaDescription || blog.content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Read this insightful astrology article on RahuNow.'
   const imageUrl = blog.featuredImage || `${SITE_URL}/og-image.png`
-  const url = `${SITE_URL}/blog/${blog.slug}`
+  const url = `${SITE_URL}/blog/${slug}`
 
   return {
     title: `${title} | RahuNow Blog`,
@@ -74,7 +84,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BlogPostPage({ params }) {
-  const blog = await getBlogBySlug(params.slug)
+  const { slug } = await params
+  const blog = await getBlogBySlug(slug)
 
   if (!blog) {
     notFound()
@@ -196,7 +207,7 @@ export default async function BlogPostPage({ params }) {
             },
             mainEntityOfPage: {
               '@type': 'WebPage',
-              '@id': `${SITE_URL}/blog/${blog.slug}`,
+              '@id': `${SITE_URL}/blog/${slug}`,
             },
             keywords: blog.tags?.join(', ') || 'vedic astrology, astrology, numerology',
           }),
