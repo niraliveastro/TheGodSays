@@ -909,7 +909,7 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   align-items: flex-start;
   overflow: visible;
-  padding: 2rem 0 2rem;
+  padding: 0.5rem 0 2rem;
   margin: 0 -1rem;
   /* Negative margin to break out of container */
 }
@@ -1128,7 +1128,7 @@ h1, h2, h3, h4, h5, h6,
   grid-template-columns: 1fr;
   gap: 3rem;
   align-items: center;
-  margin-top: 0;
+  margin-top: -1rem;
 }
 
 @media (min-width: 1024px) {
@@ -1571,7 +1571,7 @@ h1, h2, h3, h4, h5, h6,
   width: 100%;
   max-width: 550px;
   aspect-ratio: 1;
-  margin-top: 0;
+  margin-top: -8rem;
   transform: translateY(0);
 }
 
@@ -1996,7 +1996,7 @@ h1, h2, h3, h4, h5, h6,
   .hero-visual-container {
     max-width: 520px;
     min-height: 520px;
-    margin-top: 0;
+    margin-top: -8rem;
     transform: translateY(0);
   }
 
@@ -2836,7 +2836,7 @@ select.form-field-input:focus {
   .hero-visual-container {
     max-width: 360px;
     min-width: 280px;
-    margin-top: 0 !important;
+    margin-top: -3rem !important;
     transform: translateY(0) !important;
     margin-bottom: 1rem;
   }
