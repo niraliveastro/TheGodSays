@@ -6,7 +6,7 @@
  * For client components, use blog-utils.js instead
  */
 
-import { db } from './firebase-admin'
+import { getFirestore } from './firebase-admin'
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
 import { db as clientDb } from './firebase'
 import { generateSlug as generateSlugUtil, generateExcerpt as generateExcerptUtil } from './blog-utils'
@@ -22,7 +22,8 @@ const BLOGS_COLLECTION = 'blogs'
  */
 export async function getPublishedBlogs() {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       console.error('Firebase Admin not initialized. Check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID')
       return []
     }
@@ -87,7 +88,8 @@ export async function getPublishedBlogs() {
  */
 export async function getBlogBySlug(slug) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       throw new Error('Firebase Admin not initialized')
     }
 
@@ -123,7 +125,8 @@ export async function getBlogBySlug(slug) {
  */
 export async function getAllBlogSlugs() {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       throw new Error('Firebase Admin not initialized')
     }
 

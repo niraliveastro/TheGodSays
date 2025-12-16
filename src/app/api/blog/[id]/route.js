@@ -3,7 +3,7 @@
  * Handles GET (single blog), PUT (update), and DELETE operations
  */
 
-import { db } from '@/lib/firebase-admin'
+import { getFirestore } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { generateSlug } from '@/lib/blog-utils'
 
@@ -12,9 +12,10 @@ const BLOGS_COLLECTION = 'blogs'
 // GET: Fetch a single blog by ID
 export async function GET(request, { params }) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       return Response.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Firebase Admin not initialized. Please check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
         { status: 500 }
       )
     }
@@ -49,9 +50,10 @@ export async function GET(request, { params }) {
 // PUT: Update an existing blog post
 export async function PUT(request, { params }) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       return Response.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Firebase Admin not initialized. Please check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
         { status: 500 }
       )
     }
@@ -153,9 +155,10 @@ export async function PUT(request, { params }) {
 // DELETE: Delete a blog post
 export async function DELETE(request, { params }) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       return Response.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Firebase Admin not initialized. Please check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
         { status: 500 }
       )
     }
