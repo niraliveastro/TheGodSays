@@ -3,8 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useTheme } from '@/contexts/ThemeContext';
-
 function buildContextPrompt(initialData, pageTitle, language = 'en') {
   // If Matching page AND both charts exist
   if (pageTitle === "Matching" && initialData?.female && initialData?.male) {
@@ -116,20 +114,24 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     const femaleMahaDasas = female?.details?.mahaDasas || null;
     const maleMahaDasas = male?.details?.mahaDasas || null;
     
-    // Validate that both have data
+    // Validate that both have data (only warn in development or if critical)
     if (!femaleVimsottari && !femaleDasha) {
-      console.error('[Chat] ⚠️ WARNING: Female vimsottari data is missing!', {
-        hasDetails: !!female?.details,
-        detailsKeys: female?.details ? Object.keys(female.details) : [],
-        hasCurrentDasha: !!female?.details?.currentDasha,
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Chat] ⚠️ Female vimsottari data is missing (non-critical)', {
+          hasDetails: !!female?.details,
+          detailsKeys: female?.details ? Object.keys(female.details) : [],
+          hasCurrentDasha: !!female?.details?.currentDasha,
+        });
+      }
     }
     if (!maleVimsottari && !maleDasha) {
-      console.error('[Chat] ⚠️ WARNING: Male vimsottari data is missing!', {
-        hasDetails: !!male?.details,
-        detailsKeys: male?.details ? Object.keys(male.details) : [],
-        hasCurrentDasha: !!male?.details?.currentDasha,
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[Chat] ⚠️ Male vimsottari data is missing (non-critical)', {
+          hasDetails: !!male?.details,
+          detailsKeys: male?.details ? Object.keys(male.details) : [],
+          hasCurrentDasha: !!male?.details?.currentDasha,
+        });
+      }
     }
     
     // Debug logging
@@ -875,8 +877,7 @@ ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selec
 
 const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
   const { t, language } = useTranslation();
-  const { theme } = useTheme();
-  const [messages, setMessages] = useState([]);
+    const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   // Store the system context prompt that will be included in every API call
@@ -885,9 +886,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
   const chatContainerRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const isCosmic = theme === 'cosmic';
-
-  // Scroll to bottom when new messages arrive - only scroll within chat container
+    // Scroll to bottom when new messages arrive - only scroll within chat container
   useEffect(() => {
     if (messagesEndRef.current && chatContainerRef.current) {
       // Scroll within the chat container, not the page
@@ -1075,12 +1074,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         flexDirection: "column",
         height: isExpanded ? "80vh" : "420px",
         maxHeight: isExpanded ? "80vh" : "420px",
-        background: isCosmic ? "rgba(22, 33, 62, 0.95)" : "#fdfbf7",
+        background: "#fdfbf7",
         backdropFilter: "blur(12px)",
         border: "1px solid rgba(212, 175, 55, 0.3)",
-        boxShadow: isCosmic 
-          ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)"
-          : "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 20px rgba(212, 175, 55, 0.15)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 20px rgba(212, 175, 55, 0.15)",
         animation: "fadeInUp 280ms ease-out",
         transition: "height 0.3s ease, max-height 0.3s ease",
         overflow: "hidden",
@@ -1276,9 +1273,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
                 color: "#ffffff",
                 margin: 0,
                 fontFamily: '"Cormorant Garamond", serif',
-                background: isCosmic 
-                  ? "linear-gradient(135deg, #d4af37, #fbbf24)"
-                  : "linear-gradient(135deg, #ffffff, #fef3c7)",
+                background: "linear-gradient(135deg, #ffffff, #fef3c7)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -1288,7 +1283,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         </h2>
             <span style={{ 
               fontSize: 12, 
-              color: isCosmic ? "rgba(212, 175, 55, 0.9)" : "rgba(255, 255, 255, 0.8)", 
+              color: "rgba(255, 255, 255, 0.8)", 
               display: "block", 
               marginTop: 2 
             }}>
@@ -1379,14 +1374,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
               style={{
                 background: msg.isUser
                   ? "linear-gradient(135deg, #d4af37, #b8972e)"
-                  : isCosmic 
-                    ? "rgba(22, 33, 62, 0.9)"
-                    : "rgba(255, 255, 255, 0.9)",
+                  : "rgba(255, 255, 255, 0.9)",
                 color: msg.isUser 
                   ? "white" 
-                  : isCosmic 
-                    ? "#fbbf24"
-                    : "#111827",
+                  : "#111827",
                 padding: "10px 12px",
                 borderRadius: 14,
                 borderTopLeftRadius: msg.isUser ? 14 : 4,
@@ -1395,15 +1386,11 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
                 lineHeight: 1.35,
                 boxShadow: msg.isUser 
                   ? "0 4px 14px rgba(212, 175, 55, 0.3)"
-                  : isCosmic
-                    ? "0 2px 8px rgba(0, 0, 0, 0.3)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.06)",
+                  : "0 2px 8px rgba(0, 0, 0, 0.06)",
                 fontSize: 14,
                 border: msg.isUser 
                   ? "none" 
-                  : isCosmic
-                    ? "1px solid rgba(212, 175, 55, 0.3)"
-                    : "1px solid rgba(212, 175, 55, 0.15)",
+                  : "1px solid rgba(212, 175, 55, 0.15)",
               }}
             >
               <div className="markdown-content">
@@ -1425,22 +1412,16 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           >
             <span
               style={{
-                background: isCosmic 
-                  ? "rgba(22, 33, 62, 0.9)"
-                  : "rgba(255, 255, 255, 0.9)",
-                color: isCosmic ? "#fbbf24" : "#111827",
+                background: "rgba(255, 255, 255, 0.9)",
+                color: "#111827",
                 padding: "10px 12px",
                 borderRadius: 14,
                 borderTopLeftRadius: 4,
                 maxWidth: "76%",
                 lineHeight: 1.35,
-                boxShadow: isCosmic
-                  ? "0 2px 8px rgba(0, 0, 0, 0.3)"
-                  : "0 2px 8px rgba(0, 0, 0, 0.06)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
                 fontSize: 14,
-                border: isCosmic
-                  ? "1px solid rgba(212, 175, 55, 0.3)"
-                  : "1px solid rgba(212, 175, 55, 0.15)",
+                border: "1px solid rgba(212, 175, 55, 0.15)",
               }}
             >
               Thinking...
@@ -1457,7 +1438,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           alignItems: "center",
           padding: "12px 16px",
           borderTop: "1px solid rgba(212, 175, 55, 0.2)",
-          background: isCosmic ? "rgba(22, 33, 62, 0.9)" : "#fdfbf7",
+          background: "#fdfbf7",
         }}
       >
         <input
@@ -1479,8 +1460,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             border: "1px solid rgba(212, 175, 55, 0.3)",
             fontSize: 14,
             outline: "none",
-            background: isCosmic ? "rgba(10, 10, 15, 0.8)" : "white",
-            color: isCosmic ? "#d4af37" : "inherit",
+            background: "white",
+            color: "inherit",
             transition: "border-color 0.2s ease",
           }}
           onFocus={(e) => {

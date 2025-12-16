@@ -17,16 +17,11 @@ import {
   Moon,
   Sun
 } from 'lucide-react'
-import { useTheme } from '@/contexts/ThemeContext'
-
 /**
  * Reusable Loading Component with Page-Specific Animations
  */
 export function PageLoading({ type = 'default', message = null }) {
-  const { theme } = useTheme()
-  const isCosmic = theme === 'cosmic'
-
-  const loadingConfigs = {
+      const loadingConfigs = {
     // Cosmic Event Tracker
     cosmic: {
       icon: Rocket,
@@ -42,7 +37,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Consulting the stars for your predictions...',
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Panchang
@@ -51,7 +46,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Calculating today\'s Panchang...',
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Matching / Compatibility
@@ -60,7 +55,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Analyzing compatibility between charts...',
       colors: {
         bg: 'linear-gradient(135deg, #ec4899, #f43f5e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Talk to Astrologer
@@ -69,7 +64,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Connecting you with an astrologer...',
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Wallet
@@ -78,7 +73,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Loading your wallet...',
       colors: {
         bg: 'linear-gradient(135deg, #10b981, #059669)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Numerology
@@ -87,7 +82,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Calculating your numerology...',
       colors: {
         bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Transit
@@ -96,7 +91,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Analyzing planetary transits...',
       colors: {
         bg: 'linear-gradient(135deg, #f59e0b, #d97706)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Profile
@@ -105,7 +100,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Loading your profile...',
       colors: {
         bg: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Kundali
@@ -114,7 +109,7 @@ export function PageLoading({ type = 'default', message = null }) {
       message: message || 'Generating your birth chart...',
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        text: '#6b7280'
       }
     },
     // Default
@@ -122,10 +117,8 @@ export function PageLoading({ type = 'default', message = null }) {
       icon: Moon,
       message: message || 'Loading...',
       colors: {
-        bg: isCosmic 
-          ? 'linear-gradient(135deg, rgba(22, 33, 62, 0.9), rgba(30, 40, 70, 0.9))'
-          : 'linear-gradient(135deg, #d4af37, #b8972e)',
-        text: isCosmic ? '#d4af37' : '#6b7280'
+        bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
+        text: '#6b7280'
       }
     }
   }
@@ -151,9 +144,7 @@ export function PageLoading({ type = 'default', message = null }) {
         right: 0,
         bottom: 0,
         zIndex: 9999,
-        background: isCosmic 
-          ? '#0a0a0f'
-          : 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
+        background: 'linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)',
       }}
     >
       <div 
@@ -166,9 +157,9 @@ export function PageLoading({ type = 'default', message = null }) {
           justifyContent: 'center',
           background: config.colors.bg,
           borderRadius: '9999px',
-          boxShadow: `0 0 30px ${isCosmic ? 'rgba(212, 175, 55, 0.4)' : 'rgba(212, 175, 55, 0.3)'}`,
+          boxShadow: `0 0 30px ${'rgba(212, 175, 55, 0.3)'}`,
           animation: 'loadingPulse 2s ease-in-out infinite',
-          border: isCosmic ? '1px solid rgba(212, 175, 55, 0.3)' : 'none',
+          border: 'none',
         }}
       >
         <Icon 

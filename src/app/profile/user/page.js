@@ -23,7 +23,6 @@ import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useTheme } from "@/contexts/ThemeContext";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { PageLoading } from "@/components/LoadingStates";
 
@@ -31,10 +30,7 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, signOut } = useAuth();
-  const { theme } = useTheme();
-  const isCosmic = theme === 'cosmic';
-
-  /* --------------------------------------------------------------- */
+      /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
   const [user, setUser] = useState(null);
@@ -261,13 +257,13 @@ export default function ProfilePage() {
       <div 
         className="min-h-screen flex items-center justify-center"
         style={{
-          background: isCosmic ? "#0a0a0f" : "#f9fafb",
+          background: "#f9fafb",
         }}
       >
         <p 
           className="text-lg"
           style={{
-            color: isCosmic ? "#d4af37" : "#4b5563",
+            color: "#4b5563",
           }}
         >
           No user data found.
@@ -281,7 +277,7 @@ export default function ProfilePage() {
       <div 
         className="min-h-screen py-8 relative"
         style={{
-          background: isCosmic ? "#0a0a0f" : "#f9fafb",
+          background: "#f9fafb",
         }}
       >
         {/* Orbs */}
@@ -300,7 +296,7 @@ export default function ProfilePage() {
             style={{ 
               width: "320px", 
               zIndex: 30,
-              background: isCosmic ? "rgba(22, 33, 62, 0.95)" : "white",
+              background: "white",
             }}
           >
             <div className="p-6 h-full flex flex-col">
@@ -589,7 +585,7 @@ export default function ProfilePage() {
                       style={{ 
                         fontSize: "1.125rem", 
                         fontWeight: 600,
-                        color: isCosmic ? "#d4af37" : "#1f2937",
+                        color: "#1f2937",
                       }}
                     >
                       Wallet Balance
@@ -637,7 +633,7 @@ export default function ProfilePage() {
                   style={{
                     fontSize: "1.125rem",
                     fontWeight: 600,
-                    color: isCosmic ? "#d4af37" : "#1f2937",
+                    color: "#1f2937",
                     marginBottom: "1rem",
                   }}
                 >
@@ -654,7 +650,7 @@ export default function ProfilePage() {
                     <p
                       style={{
                         fontSize: "0.875rem",
-                        color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
+                        color: "var(--color-gray-500)",
                       }}
                     >
                       Total Calls
@@ -663,7 +659,7 @@ export default function ProfilePage() {
                       style={{
                         fontSize: "1.25rem",
                         fontWeight: 700,
-                        color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
+                        color: "var(--color-gray-900)",
                       }}
                     >
                       {user.totalCalls || 0}
@@ -673,7 +669,7 @@ export default function ProfilePage() {
                     <p
                       style={{
                         fontSize: "0.875rem",
-                        color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
+                        color: "var(--color-gray-500)",
                       }}
                     >
                       Minutes Used
@@ -682,7 +678,7 @@ export default function ProfilePage() {
                       style={{
                         fontSize: "1.25rem",
                         fontWeight: 700,
-                        color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
+                        color: "var(--color-gray-900)",
                       }}
                     >
                       {user.minutesUsed || 0}
@@ -747,7 +743,7 @@ export default function ProfilePage() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.75rem",
-                      background: isCosmic ? "rgba(10, 10, 15, 0.5)" : "rgba(243, 244, 246, 0.8)",
+                      background: "rgba(243, 244, 246, 0.8)",
                       borderRadius: "0.5rem",
                       animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                     }}
@@ -763,7 +759,7 @@ export default function ProfilePage() {
                         style={{
                           width: "2.5rem",
                           height: "2.5rem",
-                          background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                          background: "rgba(209, 213, 219, 0.8)",
                           borderRadius: "50%",
                         }}
                       />
@@ -772,7 +768,7 @@ export default function ProfilePage() {
                           style={{
                             width: "8rem",
                             height: "1rem",
-                            background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                            background: "rgba(209, 213, 219, 0.8)",
                             borderRadius: "0.25rem",
                             marginBottom: "0.5rem",
                           }}
@@ -781,7 +777,7 @@ export default function ProfilePage() {
                           style={{
                             width: "6rem",
                             height: "0.75rem",
-                            background: isCosmic ? "rgba(83, 52, 131, 0.2)" : "rgba(209, 213, 219, 0.6)",
+                            background: "rgba(209, 213, 219, 0.6)",
                             borderRadius: "0.25rem",
                           }}
                         />
@@ -792,7 +788,7 @@ export default function ProfilePage() {
                         style={{
                           width: "4rem",
                           height: "0.875rem",
-                          background: isCosmic ? "rgba(83, 52, 131, 0.3)" : "rgba(209, 213, 219, 0.8)",
+                          background: "rgba(209, 213, 219, 0.8)",
                           borderRadius: "0.25rem",
                           marginBottom: "0.5rem",
                           marginLeft: "auto",
@@ -802,7 +798,7 @@ export default function ProfilePage() {
                         style={{
                           width: "3rem",
                           height: "0.75rem",
-                          background: isCosmic ? "rgba(83, 52, 131, 0.2)" : "rgba(209, 213, 219, 0.6)",
+                          background: "rgba(209, 213, 219, 0.6)",
                           borderRadius: "0.25rem",
                           marginLeft: "auto",
                         }}
@@ -821,9 +817,9 @@ export default function ProfilePage() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.75rem",
-                      background: isCosmic ? "rgba(10, 10, 15, 0.5)" : "var(--color-gray-50)",
+                      background: "var(--color-gray-50)",
                       borderRadius: "0.5rem",
-                      border: isCosmic ? "1px solid rgba(212, 175, 55, 0.1)" : "none",
+                      border: "none",
                     }}
                   >
                     <div
@@ -854,7 +850,7 @@ export default function ProfilePage() {
                           style={{
                             fontSize: "0.9375rem",
                             fontWeight: 500,
-                            color: isCosmic ? "#d4af37" : "var(--color-gray-900)",
+                            color: "var(--color-gray-900)",
                           }}
                         >
                           {call.astrologerName}
@@ -862,7 +858,7 @@ export default function ProfilePage() {
                         <p
                           style={{
                             fontSize: "0.75rem",
-                            color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
+                            color: "var(--color-gray-500)",
                           }}
                         >
                           {new Date(call.startedAt).toLocaleString()}
@@ -882,7 +878,7 @@ export default function ProfilePage() {
                       <p
                         style={{
                           fontSize: "0.75rem",
-                          color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
+                          color: "var(--color-gray-500)",
                         }}
                       >
                         {call.duration} min
@@ -896,7 +892,7 @@ export default function ProfilePage() {
                 style={{
                   textAlign: "center",
                   padding: "2rem",
-                  color: isCosmic ? "#a78bfa" : "var(--color-gray-500)",
+                  color: "var(--color-gray-500)",
                 }}
               >
                 <Clock
@@ -905,7 +901,7 @@ export default function ProfilePage() {
                     height: "3rem",
                     margin: "0 auto 1rem",
                     opacity: 0.5,
-                    color: isCosmic ? "#533483" : "inherit",
+                    color: "inherit",
                   }}
                 />
                 <p>No call history yet.</p>
@@ -1199,22 +1195,14 @@ export default function ProfilePage() {
           -webkit-backdrop-filter: blur(12px);
           transition: var(--transition-smooth);
         }
-        [data-theme="cosmic"] .card {
-          background: rgba(22, 33, 62, 0.85) !important;
-          border: 1px solid rgba(212, 175, 55, 0.3) !important;
-          box-shadow: var(--shadow-lg), var(--shadow-glow) !important;
-        }
-        [data-theme="light"] .card,
-        :not([data-theme]) .card {
+        .card {
           background: rgba(255, 255, 255, 0.85) !important;
           border: 1px solid rgba(212, 175, 55, 0.2) !important;
           box-shadow: var(--shadow-lg) !important;
         }
         .card:hover {
           transform: translateY(-4px);
-        }
-        [data-theme="cosmic"] .card:hover {
-          box-shadow: var(--shadow-xl), var(--shadow-glow) !important;
+          box-shadow: var(--shadow-xl) !important;
         }
         [data-theme="light"] .card:hover,
         :not([data-theme]) .card:hover {

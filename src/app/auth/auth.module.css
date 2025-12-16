@@ -13,13 +13,6 @@
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] .auth-landing-page {
-  background: #0a0a0f;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%);
-}
-
 .auth-landing-container {
   position: relative;
   z-index: 10;
@@ -143,11 +136,6 @@
   animation-fill-mode: both;
 }
 
-[data-theme="cosmic"] .auth-choice-card {
-  background: rgba(22, 33, 62, 0.95);
-  border-color: rgba(212, 175, 55, 0.3);
-}
-
 .auth-choice-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -267,10 +255,6 @@
   transition: color 0.3s ease;
 }
 
-[data-theme="cosmic"] .card-title {
-  color: var(--color-gray-900);
-}
-
 .card-description {
   font-size: 1rem;
   color: #6b7280;
@@ -279,10 +263,6 @@
   margin-bottom: 2rem;
   flex-grow: 1;
   transition: color 0.3s ease;
-}
-
-[data-theme="cosmic"] .card-description {
-  color: var(--color-gray-500);
 }
 
 /* ================================================================== */
