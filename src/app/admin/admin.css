@@ -1,0 +1,36 @@
+/* Admin Index Page Styles - Light Theme Only */
+
+.admin-redirect-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.admin-redirect-content {
+  text-align: center;
+}
+
+.admin-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(212, 175, 55, 0.3);
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-redirect-text {
+  font-family: 'Inter', sans-serif;
+  color: #666;
+  font-size: 1rem;
+}

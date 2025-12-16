@@ -1,12 +1,14 @@
 /**
  * Blog Detail Page
  * SEO-optimized individual blog post page with full metadata
+ * Light theme only - matches Rahunow theme with gold accents
  */
 
 import { getBlogBySlug, getAllBlogSlugs } from '@/lib/blog'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import './blog-detail.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
 
@@ -94,109 +96,59 @@ export default async function BlogPostPage({ params }) {
       })
     : null
 
-  // Parse content - if it's HTML, render it; if it's markdown, we'll need a markdown renderer
-  // For now, we'll assume HTML content
   const content = blog.content || ''
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+    <div className="blog-detail-page">
       {/* Back to Blog Link */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <Link
-          href="/blog"
-          className="inline-flex items-center text-amber-400 hover:text-amber-300 transition-colors mb-8"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
+      <div className="blog-article">
+        <Link href="/blog" className="blog-back-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Back to Blog
         </Link>
-      </div>
 
-      {/* Article Header */}
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* Featured Image */}
         {blog.featuredImage && (
-          <div className="relative w-full h-64 sm:h-96 mb-8 rounded-xl overflow-hidden border border-gray-700/50">
+          <div className="blog-featured-image">
             <Image
               src={blog.featuredImage}
               alt={blog.title}
               fill
               className="object-cover"
               priority
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 900px"
             />
           </div>
         )}
 
-        {/* Title */}
-        <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 mb-4">
-            {blog.title}
-          </h1>
+        {/* Article Header */}
+        <header className="blog-header">
+          <h1 className="blog-title">{blog.title}</h1>
 
           {/* Meta Information */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
+          <div className="blog-meta">
             {publishedDate && (
-              <div className="flex items-center">
-                <svg
-                  className="w-4 h-4 mr-2 text-amber-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
+              <div className="blog-meta-item">
+                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Published: {publishedDate}
               </div>
             )}
             {updatedDate && (
-              <div className="flex items-center">
-                <svg
-                  className="w-4 h-4 mr-2 text-amber-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
+              <div className="blog-meta-item">
+                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Updated: {updatedDate}
               </div>
             )}
             {blog.author && (
-              <div className="flex items-center">
-                <svg
-                  className="w-4 h-4 mr-2 text-amber-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
+              <div className="blog-meta-item">
+                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 By {blog.author}
               </div>
@@ -205,39 +157,17 @@ export default async function BlogPostPage({ params }) {
 
           {/* Tags */}
           {blog.tags && blog.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="blog-tags">
               {blog.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-sm font-medium bg-amber-900/30 text-amber-300 rounded-full border border-amber-700/50"
-                >
-                  {tag}
-                </span>
+                <span key={idx} className="blog-tag">{tag}</span>
               ))}
             </div>
           )}
         </header>
 
         {/* Article Content */}
-        <div
-          className="prose prose-invert prose-lg max-w-none
-            prose-headings:text-amber-400
-            prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-4 prose-h1:mt-8
-            prose-h2:text-2xl prose-h2:font-bold prose-h2:mb-3 prose-h2:mt-6
-            prose-h3:text-xl prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-4
-            prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
-            prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-gray-100 prose-strong:font-semibold
-            prose-ul:text-gray-300 prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-            prose-ol:text-gray-300 prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4
-            prose-li:mb-2
-            prose-blockquote:border-l-4 prose-blockquote:border-amber-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-400
-            prose-code:text-amber-300 prose-code:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-            prose-img:rounded-lg prose-img:border prose-img:border-gray-700
-            prose-hr:border-gray-700"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-      </article>
+        <div className="blog-content" dangerouslySetInnerHTML={{ __html: content }} />
+      </div>
 
       {/* Schema.org JSON-LD for BlogPosting */}
       <script

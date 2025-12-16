@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateSlug } from '@/lib/blog-utils'
+import './admin-blog.css'
 
 export default function BlogAdminPage() {
   const router = useRouter()
@@ -184,39 +185,37 @@ export default function BlogAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="admin-blog-page">
+      <div className="admin-container">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 mb-2">
-            Blog Admin
-          </h1>
-          <p className="text-gray-400">Manage your astrology blog posts</p>
+        <div className="admin-header">
+          <h1>Blog Admin</h1>
+          <p>Manage your astrology blog posts</p>
         </div>
 
         {/* Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-lg text-red-300">
+          <div className="admin-message admin-error">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 p-4 bg-green-900/30 border border-green-700/50 rounded-lg text-green-300">
+          <div className="admin-message admin-success">
             {success}
           </div>
         )}
 
         {/* Form */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-100 mb-6">
+        <div className="admin-card">
+          <h2>
             {editingId ? 'Edit Blog Post' : 'Create New Blog Post'}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit}>
+            <div className="admin-form-grid admin-form-spacing">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Title * <span className="text-xs text-gray-500">(Main headline of your blog post)</span>
+                <label className="admin-label">
+                  Title * <span>(Main headline of your blog post)</span>
                 </label>
                 <input
                   type="text"
@@ -225,13 +224,13 @@ export default function BlogAdminPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., Understanding Rahu and Ketu in Vedic Astrology"
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Slug (URL) <span className="text-xs text-gray-500">(Auto-generated from title, but editable)</span>
+                <label className="admin-label">
+                  Slug (URL) <span>(Auto-generated from title, but editable)</span>
                 </label>
                 <input
                   type="text"
@@ -239,15 +238,15 @@ export default function BlogAdminPage() {
                   value={formData.slug}
                   onChange={handleInputChange}
                   placeholder="understanding-rahu-and-ketu-in-vedic-astrology"
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                 />
-                <p className="mt-1 text-xs text-gray-500">Only lowercase letters, numbers, and hyphens. Must be unique.</p>
+                <p className="admin-helper">Only lowercase letters, numbers, and hyphens. Must be unique.</p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Content (HTML) * <span className="text-xs text-gray-500">(Main body of your blog post)</span>
+            <div className="admin-form-spacing">
+              <label className="admin-label">
+                Content (HTML) * <span>(Main body of your blog post)</span>
               </label>
               <textarea
                 name="content"
@@ -255,7 +254,7 @@ export default function BlogAdminPage() {
                 onChange={handleInputChange}
                 required
                 rows={15}
-                className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm"
+                className="admin-textarea"
                 placeholder='<h2>Introduction</h2>
 <p>Your content here...</p>
 
@@ -265,13 +264,13 @@ export default function BlogAdminPage() {
 <h2>Conclusion</h2>
 <p>Wrap up your article...</p>'
               />
-              <p className="mt-1 text-xs text-gray-500">💡 Tip: Use AI tools (ChatGPT, Claude) to write content, then paste the HTML here. Use &lt;h2&gt; for main sections, &lt;h3&gt; for subsections, and &lt;p&gt; for paragraphs.</p>
+              <p className="admin-helper">💡 Tip: Use AI tools (ChatGPT, Claude) to write content, then paste the HTML here. Use &lt;h2&gt; for main sections, &lt;h3&gt; for subsections, and &lt;p&gt; for paragraphs.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="admin-form-grid admin-form-spacing">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Meta Title (SEO) <span className="text-xs text-gray-500">(Optional - appears in search results)</span>
+                <label className="admin-label">
+                  Meta Title (SEO) <span>(Optional - appears in search results)</span>
                 </label>
                 <input
                   type="text"
@@ -279,13 +278,13 @@ export default function BlogAdminPage() {
                   value={formData.metaTitle}
                   onChange={handleInputChange}
                   placeholder="Keep it under 60 characters. If empty, main title will be used."
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                 />
-                <p className="mt-1 text-xs text-gray-500">Example: "Rahu & Ketu Guide: Complete Vedic Astrology Explanation"</p>
+                <p className="admin-helper">Example: "Rahu & Ketu Guide: Complete Vedic Astrology Explanation"</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="admin-label">
                   Author
                 </label>
                 <input
@@ -293,14 +292,14 @@ export default function BlogAdminPage() {
                   name="author"
                   value={formData.author}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Meta Description (SEO) <span className="text-xs text-gray-500">(Optional - appears in search results)</span>
+            <div className="admin-form-spacing">
+              <label className="admin-label">
+                Meta Description (SEO) <span>(Optional - appears in search results)</span>
               </label>
               <textarea
                 name="metaDescription"
@@ -308,30 +307,30 @@ export default function BlogAdminPage() {
                 onChange={handleInputChange}
                 rows={3}
                 placeholder="Write a compelling 150-160 character description. If empty, first 160 characters of content will be used."
-                className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="admin-textarea"
               />
-              <p className="mt-1 text-xs text-gray-500">Example: "Learn about Rahu and Ketu in Vedic astrology. Discover their meanings, effects, and remedies for a balanced life."</p>
+              <p className="admin-helper">Example: "Learn about Rahu and Ketu in Vedic astrology. Discover their meanings, effects, and remedies for a balanced life."</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="admin-form-grid admin-form-spacing">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tags (comma-separated) <span className="text-xs text-gray-500">(Optional - for SEO and categorization)</span>
+                <label className="admin-label">
+                  Tags (comma-separated) <span>(Optional - for SEO and categorization)</span>
                 </label>
                 <input
                   type="text"
                   name="tags"
                   value={formData.tags}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                   placeholder="vedic astrology, numerology, rahu, ketu, remedies"
                 />
-                <p className="mt-1 text-xs text-gray-500">Separate multiple tags with commas. Use 5-10 relevant keywords.</p>
+                <p className="admin-helper">Separate multiple tags with commas. Use 5-10 relevant keywords.</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Featured Image URL <span className="text-xs text-gray-500">(Optional - appears in blog listing and social shares)</span>
+                <label className="admin-label">
+                  Featured Image URL <span>(Optional - appears in blog listing and social shares)</span>
                 </label>
                 <input
                   type="url"
@@ -339,33 +338,33 @@ export default function BlogAdminPage() {
                   value={formData.featuredImage}
                   onChange={handleInputChange}
                   placeholder="https://rahunow.com/images/your-image.jpg"
-                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="admin-input"
                 />
-                <p className="mt-1 text-xs text-gray-500">Recommended: 1200x630 pixels. Upload to Firebase Storage or use a CDN.</p>
+                <p className="admin-helper">Recommended: 1200x630 pixels. Upload to Firebase Storage or use a CDN.</p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Status <span className="text-xs text-gray-500">(Draft = not visible publicly, Published = live on website)</span>
+            <div className="admin-form-spacing">
+              <label className="admin-label">
+                Status <span>(Draft = not visible publicly, Published = live on website)</span>
               </label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="admin-select"
               >
                 <option value="draft">Draft (Save but don't publish)</option>
                 <option value="published">Published (Make it live)</option>
               </select>
-              <p className="mt-1 text-xs text-gray-500">💡 Tip: Start with "Draft" to review, then change to "Published" when ready.</p>
+              <p className="admin-helper">💡 Tip: Start with "Draft" to review, then change to "Published" when ready.</p>
             </div>
 
-            <div className="flex gap-4">
+            <div className="admin-form-actions">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="admin-button"
               >
                 {saving ? 'Saving...' : editingId ? 'Update Blog' : 'Create Blog'}
               </button>
@@ -373,7 +372,7 @@ export default function BlogAdminPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                  className="admin-button admin-button-secondary"
                 >
                   Cancel
                 </button>
@@ -383,54 +382,50 @@ export default function BlogAdminPage() {
         </div>
 
         {/* Blog List */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
-          <h2 className="text-2xl font-semibold text-gray-100 mb-6">All Blog Posts</h2>
+        <div className="admin-card">
+          <h2>All Blog Posts</h2>
 
           {loading ? (
-            <div className="text-center py-12 text-gray-400">Loading blogs...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+              Loading blogs...
+            </div>
           ) : blogs.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">No blog posts yet. Create your first one above!</div>
+            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+              No blog posts yet. Create your first one above!
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div>
               {blogs.map((blog) => (
-                <div
-                  key={blog.id}
-                  className="bg-gray-900/50 border border-gray-700/50 rounded-lg p-4 flex items-center justify-between"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-100">{blog.title}</h3>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${
-                          blog.status === 'published'
-                            ? 'bg-green-900/30 text-green-300 border border-green-700/50'
-                            : 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50'
-                        }`}
-                      >
+                <div key={blog.id} className="admin-blog-item">
+                  <div className="admin-blog-info">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                      <h3>{blog.title}</h3>
+                      <span className={`admin-status ${
+                        blog.status === 'published' ? 'admin-status-published' : 'admin-status-draft'
+                      }`}>
                         {blog.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-400">
+                    <p className="admin-blog-meta">
                       Slug: /blog/{blog.slug} • {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : 'Not published'}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="admin-actions">
                     <button
                       onClick={() => handleEdit(blog)}
-                      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      className="admin-action-btn admin-action-btn-edit"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => router.push(`/blog/${blog.slug}`)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                      target="_blank"
+                      className="admin-action-btn admin-action-btn-view"
                     >
                       View
                     </button>
                     <button
                       onClick={() => handleDelete(blog.id)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      className="admin-action-btn admin-action-btn-delete"
                     >
                       Delete
                     </button>
