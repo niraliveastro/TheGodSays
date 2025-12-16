@@ -1,8 +1,19 @@
+import { getAllBlogSlugs } from '@/lib/blog'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
 
-export default function sitemap() {
+export default async function sitemap() {
   const currentDate = new Date();
   const lastModified = currentDate.toISOString();
+
+  // Fetch all published blog slugs
+  const blogSlugs = await getAllBlogSlugs()
+  const blogPages = blogSlugs.map((item) => ({
+    url: `${SITE_URL}/blog/${item.slug}`,
+    lastModified: item.publishedAt || lastModified,
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }))
 
   // Static pages with their priorities and change frequencies
   const staticPages = [
@@ -126,8 +137,15 @@ export default function sitemap() {
       changeFrequency: "daily",
       priority: 0.7,
     },
+    {
+      url: `${SITE_URL}/blog`,
+      lastModified,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
   ];
 
-  return staticPages;
+  // Combine static pages and blog pages
+  return [...staticPages, ...blogPages];
 }
 

@@ -1,0 +1,221 @@
+/**
+ * Blog utilities for Firebase Firestore operations
+ * Handles blog CRUD operations with proper error handling
+ * 
+ * NOTE: This file imports firebase-admin and should ONLY be used in server components or API routes
+ * For client components, use blog-utils.js instead
+ */
+
+import { db } from './firebase-admin'
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
+import { db as clientDb } from './firebase'
+import { generateSlug as generateSlugUtil, generateExcerpt as generateExcerptUtil } from './blog-utils'
+
+// Re-export client-safe utilities for convenience
+export { generateSlugUtil as generateSlug, generateExcerptUtil as generateExcerpt }
+
+const BLOGS_COLLECTION = 'blogs'
+
+/**
+ * Server-side: Get all published blogs ordered by publishedAt
+ * @returns {Promise<Array>} Array of blog documents
+ */
+export async function getPublishedBlogs() {
+  try {
+    if (!db) {
+      throw new Error('Firebase Admin not initialized')
+    }
+
+    const blogsRef = db.collection(BLOGS_COLLECTION)
+    
+    // Try with orderBy first, fallback to without orderBy if index not ready
+    let snapshot
+    try {
+      snapshot = await blogsRef
+        .where('status', '==', 'published')
+        .orderBy('publishedAt', 'desc')
+        .get()
+    } catch (indexError) {
+      // If composite index not ready, query without orderBy and sort in memory
+      console.log('Blog index not ready, querying without orderBy:', indexError.message)
+      snapshot = await blogsRef
+        .where('status', '==', 'published')
+        .get()
+    }
+
+    const blogs = []
+    snapshot.forEach((doc) => {
+      blogs.push({
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamps to ISO strings for JSON serialization
+        publishedAt: doc.data().publishedAt?.toDate?.()?.toISOString() || doc.data().publishedAt,
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+      })
+    })
+
+    // If we couldn't use orderBy, sort in memory
+    if (blogs.length > 0 && !blogs[0].publishedAt) {
+      // This shouldn't happen for published blogs, but handle gracefully
+      return blogs
+    }
+
+    // Sort by publishedAt descending if not already sorted
+    blogs.sort((a, b) => {
+      const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0
+      const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0
+      return dateB - dateA
+    })
+
+    return blogs
+  } catch (error) {
+    console.error('Error fetching published blogs:', error)
+    return []
+  }
+}
+
+/**
+ * Server-side: Get a single blog by slug
+ * @param {string} slug - Blog slug
+ * @returns {Promise<Object|null>} Blog document or null
+ */
+export async function getBlogBySlug(slug) {
+  try {
+    if (!db) {
+      throw new Error('Firebase Admin not initialized')
+    }
+
+    const blogsRef = db.collection(BLOGS_COLLECTION)
+    const snapshot = await blogsRef
+      .where('slug', '==', slug)
+      .where('status', '==', 'published')
+      .limit(1)
+      .get()
+
+    if (snapshot.empty) {
+      return null
+    }
+
+    const doc = snapshot.docs[0]
+    const data = doc.data()
+
+    return {
+      id: doc.id,
+      ...data,
+      publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+    }
+  } catch (error) {
+    console.error('Error fetching blog by slug:', error)
+    return null
+  }
+}
+
+/**
+ * Server-side: Get all blog slugs for sitemap generation
+ * @returns {Promise<Array<Object>>} Array of objects with slug and publishedAt
+ */
+export async function getAllBlogSlugs() {
+  try {
+    if (!db) {
+      throw new Error('Firebase Admin not initialized')
+    }
+
+    const blogsRef = db.collection(BLOGS_COLLECTION)
+    const snapshot = await blogsRef
+      .where('status', '==', 'published')
+      .get()
+
+    const slugs = []
+    snapshot.forEach((doc) => {
+      const data = doc.data()
+      slugs.push({
+        slug: data.slug,
+        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
+      })
+    })
+
+    return slugs
+  } catch (error) {
+    console.error('Error fetching blog slugs:', error)
+    return []
+  }
+}
+
+/**
+ * Client-side: Get all published blogs (for client components)
+ * @returns {Promise<Array>} Array of blog documents
+ */
+export async function getPublishedBlogsClient() {
+  try {
+    if (!clientDb) {
+      throw new Error('Firebase not initialized')
+    }
+
+    const blogsRef = collection(clientDb, BLOGS_COLLECTION)
+    const q = query(
+      blogsRef,
+      where('status', '==', 'published'),
+      orderBy('publishedAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+    const blogs = []
+
+    snapshot.forEach((doc) => {
+      const data = doc.data()
+      blogs.push({
+        id: doc.id,
+        ...data,
+        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+      })
+    })
+
+    return blogs
+  } catch (error) {
+    console.error('Error fetching published blogs (client):', error)
+    return []
+  }
+}
+
+/**
+ * Client-side: Get a single blog by slug
+ * @param {string} slug - Blog slug
+ * @returns {Promise<Object|null>} Blog document or null
+ */
+export async function getBlogBySlugClient(slug) {
+  try {
+    if (!clientDb) {
+      throw new Error('Firebase not initialized')
+    }
+
+    const blogsRef = collection(clientDb, BLOGS_COLLECTION)
+    const q = query(
+      blogsRef,
+      where('slug', '==', slug),
+      where('status', '==', 'published'),
+      limit(1)
+    )
+
+    const snapshot = await getDocs(q)
+
+    if (snapshot.empty) {
+      return null
+    }
+
+    const doc = snapshot.docs[0]
+    const data = doc.data()
+
+    return {
+      id: doc.id,
+      ...data,
+      publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+    }
+  } catch (error) {
+    console.error('Error fetching blog by slug (client):', error)
+    return null
+  }
+}
+
