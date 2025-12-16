@@ -129,7 +129,8 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
