@@ -20,7 +20,6 @@ import Modal from "@/components/Modal";
 import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useTheme } from "@/contexts/ThemeContext";
 import {
   trackEvent,
   trackActionStart,
@@ -32,10 +31,7 @@ import { PageLoading } from "@/components/LoadingStates";
 
 export default function TalkToAstrologer() {
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const isCosmic = theme === "cosmic";
-
-  /* --------------------------------------------------------------- */
+      /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
   const [searchTerm, setSearchTerm] = useState("");
@@ -573,7 +569,7 @@ export default function TalkToAstrologer() {
         <div
           className="min-h-screen py-4 md:py-8 px-4 md:px-6 lg:px-8"
           style={{
-            background: isCosmic ? "#0a0a0f" : "#f9fafb",
+            background: "#f9fafb",
           }}
         >
           <div className="app">

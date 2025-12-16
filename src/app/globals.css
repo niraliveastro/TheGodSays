@@ -13,11 +13,7 @@
     @apply backdrop-blur-md border border-yellow-500/20 rounded-xl shadow-lg p-8;
   }
   /* Override background for cosmic theme */
-  [data-theme="cosmic"] .card {
-    background: rgba(22, 33, 62, 0.85) !important;
-    border-color: rgba(212, 175, 55, 0.3) !important;
-  }
-  [data-theme="light"] .card,
+    [data-theme="light"] .card,
   :not([data-theme]) .card {
     background: rgba(255, 255, 255, 0.85) !important;
   }
@@ -74,32 +70,6 @@
 }
 
 /* ---------- Cosmic Theme Variables ---------- */
-[data-theme="cosmic"] {
-  /* Primary Palette – Cosmic & Galactic (Keep Gold for Royal Look) */
-  --color-gold: #d4af37;
-  --color-gold-dark: #b8972e;
-  --color-indigo: #a78bfa;
-  --color-indigo-light: #312e81;
-  --color-purple: #9333ea;
-  --color-purple-light: #581c87;
-  --color-cream: #0a0a0f;
-  --color-white: #1a1a2e;
-  --color-gray-50: #1a1a2e;
-  --color-gray-100: #16213e;
-  --color-gray-200: #0f3460;
-  --color-gray-300: #533483;
-  --color-gray-500: #a78bfa;
-  --color-gray-700: #d4af37;
-  --color-gray-900: #fbbf24;
-
-  /* Shadows for cosmic theme */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.7);
-  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.8);
-  --shadow-glow: 0 0 30px rgba(212, 175, 55, 0.5);
-}
-
 /* ---------- Reset & Base ---------- */
 *,
 *::before,
@@ -129,108 +99,12 @@ body {
 }
 
 /* Global background override for cosmic theme - Deep space */
-[data-theme="cosmic"] body {
-  background: #0a0a0f !important;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.2) 0%, transparent 70%) !important;
-  position: relative;
-  overflow-x: hidden;
-}
-
 /* ============================================= */
 /*  COSMIC THEME - FALLING STARS & PARTICLES    */
 /* ============================================= */
 
 /* Animated starfield background - Layer 1: Static stars */
-[data-theme="cosmic"] body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(1px 1px at 10% 20%, #d4af37, transparent),
-    radial-gradient(1px 1px at 20% 40%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 30% 10%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 40% 60%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 50% 30%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 60% 80%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 70% 15%, #d4af37, transparent),
-    radial-gradient(1px 1px at 80% 50%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 90% 70%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 15% 90%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 25% 25%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 35% 55%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 45% 75%, #d4af37, transparent),
-    radial-gradient(1px 1px at 55% 35%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 65% 95%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 75% 5%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 85% 45%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 95% 85%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 5% 65%, #d4af37, transparent),
-    radial-gradient(1px 1px at 12% 12%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 18% 88%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 22% 32%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 28% 68%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 32% 8%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 38% 48%, #d4af37, transparent),
-    radial-gradient(1px 1px at 42% 92%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 48% 18%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 52% 58%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 58% 98%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 62% 28%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 68% 72%, #d4af37, transparent),
-    radial-gradient(1px 1px at 72% 2%, #fbbf24, transparent),
-    radial-gradient(0.5px 0.5px at 78% 52%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 82% 82%, #d4af37, transparent),
-    radial-gradient(0.5px 0.5px at 88% 22%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 92% 62%, #fcd34d, transparent),
-    radial-gradient(0.5px 0.5px at 98% 42%, #d4af37, transparent);
-  background-size: 200% 200%;
-  animation: starfieldMove 80s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.8;
-}
-
 /* Layer 2: Floating particles */
-[data-theme="cosmic"] body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(2px 2px at 5% 10%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1.5px 1.5px at 15% 30%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1px 1px at 25% 50%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 35% 20%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1px 1px at 45% 70%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 55% 40%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 65% 80%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1px 1px at 75% 15%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 85% 55%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 95% 25%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1px 1px at 8% 60%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 18% 90%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 28% 5%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1px 1px at 38% 35%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 48% 75%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 58% 45%, rgba(212, 175, 55, 0.6), transparent),
-    radial-gradient(1px 1px at 68% 85%, rgba(251, 191, 36, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 78% 65%, rgba(252, 211, 77, 0.4), transparent),
-    radial-gradient(2px 2px at 88% 95%, rgba(212, 175, 55, 0.6), transparent);
-  background-size: 150% 150%;
-  animation: particleFloat 40s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.7;
-}
-
 @keyframes starfieldMove {
   0% { background-position: 0% 0%; }
   100% { background-position: 100% 100%; }
@@ -260,173 +134,10 @@ body {
 /* ============================================= */
 
 /* Falling Stars Container */
-[data-theme="cosmic"] .falling-stars-1,
-[data-theme="cosmic"] .falling-stars-2,
-[data-theme="cosmic"] .falling-stars-3 {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-  overflow: hidden;
-}
-
 /* Falling Stars - Layer 1 (Fast) - Silver with long trail */
-[data-theme="cosmic"] .falling-stars-1::before,
-[data-theme="cosmic"] .falling-stars-1::after {
-  content: "";
-  position: absolute;
-  width: 2px;
-  height: 80px;
-  background: linear-gradient(
-    to bottom right,
-    transparent 0%,
-    rgba(192, 192, 192, 0.2) 5%,
-    rgba(255, 255, 255, 0.9) 20%,
-    rgba(255, 255, 255, 1) 35%,
-    rgba(192, 192, 192, 0.7) 50%,
-    rgba(192, 192, 192, 0.4) 65%,
-    rgba(192, 192, 192, 0.2) 80%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  box-shadow: 
-    0 0 4px rgba(255, 255, 255, 0.6),
-    0 0 8px rgba(192, 192, 192, 0.5),
-    0 0 12px rgba(255, 255, 255, 0.3),
-    0 0 20px rgba(192, 192, 192, 0.2);
-  transform: rotate(-45deg);
-  animation: fallDiagonal1 12s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
-}
-
-[data-theme="cosmic"] .falling-stars-1::before {
-  left: 5%;
-  top: -60px;
-  animation-delay: 0s;
-}
-
-[data-theme="cosmic"] .falling-stars-1::after {
-  left: 25%;
-  top: -60px;
-  animation-delay: 8s;
-}
-
 /* Falling Stars - Layer 2 (Medium) - Silver with medium trail */
-[data-theme="cosmic"] .falling-stars-2::before,
-[data-theme="cosmic"] .falling-stars-2::after {
-  content: "";
-  position: absolute;
-  width: 1.8px;
-  height: 70px;
-  background: linear-gradient(
-    to bottom right,
-    transparent 0%,
-    rgba(192, 192, 192, 0.2) 5%,
-    rgba(255, 255, 255, 0.85) 20%,
-    rgba(255, 255, 255, 0.95) 35%,
-    rgba(192, 192, 192, 0.6) 50%,
-    rgba(192, 192, 192, 0.35) 65%,
-    rgba(192, 192, 192, 0.2) 80%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  box-shadow: 
-    0 0 3px rgba(255, 255, 255, 0.5),
-    0 0 6px rgba(192, 192, 192, 0.4),
-    0 0 10px rgba(255, 255, 255, 0.25),
-    0 0 16px rgba(192, 192, 192, 0.15);
-  transform: rotate(-45deg);
-  animation: fallDiagonal2 14s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
-}
-
-[data-theme="cosmic"] .falling-stars-2::before {
-  left: 45%;
-  top: -50px;
-  animation-delay: 4s;
-}
-
-[data-theme="cosmic"] .falling-stars-2::after {
-  left: 65%;
-  top: -50px;
-  animation-delay: 12s;
-}
-
 /* Falling Stars - Layer 3 (Slow) - Silver with long trail */
-[data-theme="cosmic"] .falling-stars-3::before,
-[data-theme="cosmic"] .falling-stars-3::after {
-  content: "";
-  position: absolute;
-  width: 1.5px;
-  height: 65px;
-  background: linear-gradient(
-    to bottom right,
-    transparent 0%,
-    rgba(192, 192, 192, 0.15) 5%,
-    rgba(255, 255, 255, 0.8) 20%,
-    rgba(255, 255, 255, 0.9) 35%,
-    rgba(192, 192, 192, 0.55) 50%,
-    rgba(192, 192, 192, 0.3) 65%,
-    rgba(192, 192, 192, 0.15) 80%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  box-shadow: 
-    0 0 2px rgba(255, 255, 255, 0.4),
-    0 0 5px rgba(192, 192, 192, 0.3),
-    0 0 8px rgba(255, 255, 255, 0.2),
-    0 0 14px rgba(192, 192, 192, 0.1);
-  transform: rotate(-45deg);
-  animation: fallDiagonal3 16s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
-}
-
-[data-theme="cosmic"] .falling-stars-3::before {
-  left: 15%;
-  top: -45px;
-  animation-delay: 6s;
-}
-
-[data-theme="cosmic"] .falling-stars-3::after {
-  left: 85%;
-  top: -45px;
-  animation-delay: 16s;
-}
-
 /* Additional tiny particles using background */
-[data-theme="cosmic"] .falling-stars-1 {
-  background-image: 
-    radial-gradient(1px 1px at 10% 20%, rgba(212, 175, 55, 0.8), transparent),
-    radial-gradient(0.5px 0.5px at 25% 40%, rgba(251, 191, 36, 0.6), transparent),
-    radial-gradient(1px 1px at 40% 60%, rgba(252, 211, 77, 0.7), transparent),
-    radial-gradient(0.5px 0.5px at 60% 80%, rgba(212, 175, 55, 0.8), transparent),
-    radial-gradient(1px 1px at 80% 30%, rgba(251, 191, 36, 0.6), transparent);
-  background-size: 100% 200%;
-  animation: particleDrift1 25s linear infinite;
-}
-
-[data-theme="cosmic"] .falling-stars-2 {
-  background-image: 
-    radial-gradient(0.5px 0.5px at 20% 10%, rgba(252, 211, 77, 0.7), transparent),
-    radial-gradient(1px 1px at 45% 50%, rgba(212, 175, 55, 0.8), transparent),
-    radial-gradient(0.5px 0.5px at 70% 90%, rgba(251, 191, 36, 0.6), transparent),
-    radial-gradient(1px 1px at 30% 70%, rgba(252, 211, 77, 0.7), transparent),
-    radial-gradient(0.5px 0.5px at 90% 50%, rgba(212, 175, 55, 0.8), transparent);
-  background-size: 100% 200%;
-  animation: particleDrift2 30s linear infinite;
-}
-
-[data-theme="cosmic"] .falling-stars-3 {
-  background-image: 
-    radial-gradient(1px 1px at 5% 30%, rgba(251, 191, 36, 0.6), transparent),
-    radial-gradient(0.5px 0.5px at 50% 20%, rgba(252, 211, 77, 0.7), transparent),
-    radial-gradient(1px 1px at 65% 60%, rgba(212, 175, 55, 0.8), transparent),
-    radial-gradient(0.5px 0.5px at 15% 80%, rgba(251, 191, 36, 0.6), transparent),
-    radial-gradient(1px 1px at 88% 15%, rgba(252, 211, 77, 0.7), transparent);
-  background-size: 100% 200%;
-  animation: particleDrift3 35s linear infinite;
-}
-
 /* Falling animations - Diagonal from top-left to bottom-right with realistic curved path */
 @keyframes fallDiagonal1 {
   0% {
@@ -560,120 +271,7 @@ body {
 /* ============================================= */
 
 /* Scattered Stars Layer - Static twinkling stars */
-[data-theme="cosmic"] .scattered-stars {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-[data-theme="cosmic"] .scattered-stars::before {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(1.5px 1.5px at 8% 12%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 15% 25%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.8px 0.8px at 22% 8%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.2px 1.2px at 28% 35%, rgba(192, 192, 192, 0.9), transparent),
-    radial-gradient(1px 1px at 35% 18%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(0.9px 0.9px at 42% 42%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1.3px 1.3px at 48% 15%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 55% 55%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.7px 0.7px at 62% 28%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.1px 1.1px at 68% 48%, rgba(192, 192, 192, 0.9), transparent),
-    radial-gradient(1px 1px at 75% 22%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(0.9px 0.9px at 82% 58%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1.2px 1.2px at 88% 32%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 92% 65%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.8px 0.8px at 5% 45%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.1px 1.1px at 12% 72%, rgba(192, 192, 192, 0.9), transparent),
-    radial-gradient(1px 1px at 18% 38%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(0.9px 0.9px at 25% 85%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1.3px 1.3px at 32% 52%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 38% 75%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.7px 0.7px at 45% 28%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.2px 1.2px at 52% 88%, rgba(192, 192, 192, 0.9), transparent),
-    radial-gradient(1px 1px at 58% 15%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(0.9px 0.9px at 65% 62%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1.1px 1.1px at 72% 38%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 78% 82%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.8px 0.8px at 85% 25%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.2px 1.2px at 95% 68%, rgba(192, 192, 192, 0.9), transparent);
-  animation: twinkle 4s ease-in-out infinite;
-  opacity: 0.8;
-}
-
-[data-theme="cosmic"] .scattered-stars::after {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(1px 1px at 3% 20%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(0.8px 0.8px at 10% 50%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1.1px 1.1px at 17% 75%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(0.9px 0.9px at 23% 30%, rgba(192, 192, 192, 0.6), transparent),
-    radial-gradient(1px 1px at 30% 90%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(0.7px 0.7px at 37% 45%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(1.2px 1.2px at 43% 10%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 50% 60%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(0.8px 0.8px at 57% 85%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1.1px 1.1px at 63% 35%, rgba(192, 192, 192, 0.6), transparent),
-    radial-gradient(0.9px 0.9px at 70% 95%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 77% 20%, rgba(192, 192, 192, 0.8), transparent),
-    radial-gradient(0.7px 0.7px at 83% 55%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1.2px 1.2px at 90% 80%, rgba(192, 192, 192, 0.7), transparent),
-    radial-gradient(1px 1px at 97% 40%, rgba(255, 255, 255, 0.8), transparent);
-  animation: twinkle 5s ease-in-out infinite reverse;
-  opacity: 0.7;
-  animation-delay: 1s;
-}
-
 /* Slow-moving meteoroids */
-[data-theme="cosmic"] .meteoroids {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-[data-theme="cosmic"] .meteoroids::before,
-[data-theme="cosmic"] .meteoroids::after {
-  content: "";
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(192, 192, 192, 0.6) 50%, transparent 100%);
-  border-radius: 50%;
-  box-shadow: 
-    0 0 4px rgba(255, 255, 255, 0.8),
-    0 0 8px rgba(192, 192, 192, 0.5),
-    0 0 12px rgba(255, 255, 255, 0.3);
-  animation: meteoroidFloat1 25s ease-in-out infinite;
-}
-
-[data-theme="cosmic"] .meteoroids::before {
-  left: 20%;
-  top: 15%;
-  animation-delay: 0s;
-}
-
-[data-theme="cosmic"] .meteoroids::after {
-  left: 70%;
-  top: 60%;
-  animation-delay: 12s;
-}
-
 /* Twinkling animation for stars */
 @keyframes twinkle {
   0%, 100% {
@@ -711,582 +309,54 @@ body {
 }
 
 /* Override any light background gradients in cosmic theme */
-[data-theme="cosmic"] [style*="background"] {
-  background: rgba(22, 33, 62, 0.9) !important;
-}
-
 /* ============================================= */
 /*  GLOBAL TAILWIND CLASS OVERRIDES              */
 /* ============================================= */
 
 /* Background color overrides for cosmic theme */
-[data-theme="cosmic"] .bg-white,
-[data-theme="cosmic"] .bg-white\/90,
-[data-theme="cosmic"] .bg-white\/95 {
-  background-color: rgba(22, 33, 62, 0.85) !important;
-}
-
-[data-theme="cosmic"] .bg-gray-50,
-[data-theme="cosmic"] .bg-gray-100 {
-  background-color: rgba(22, 33, 62, 0.7) !important;
-}
-
-[data-theme="cosmic"] .bg-gray-200 {
-  background-color: rgba(15, 52, 96, 0.8) !important;
-}
-
-[data-theme="cosmic"] .bg-red-50 {
-  background-color: rgba(220, 38, 38, 0.2) !important;
-}
-
-[data-theme="cosmic"] .bg-yellow-50 {
-  background-color: rgba(251, 191, 36, 0.15) !important;
-}
-
-[data-theme="cosmic"] .bg-gray-900 {
-  background-color: rgba(17, 24, 39, 0.9) !important;
-}
-
 /* Text color overrides for cosmic theme */
-[data-theme="cosmic"] .text-gray-600,
-[data-theme="cosmic"] .text-gray-700 {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .text-gray-500 {
-  color: #a78bfa !important;
-}
-
-[data-theme="cosmic"] .text-gray-400 {
-  color: #9333ea !important;
-}
-
-[data-theme="cosmic"] .text-red-600,
-[data-theme="cosmic"] .text-red-700 {
-  color: #fca5a5 !important;
-}
-
-[data-theme="cosmic"] .text-yellow-800 {
-  color: #fbbf24 !important;
-}
-
 /* Border color overrides */
-[data-theme="cosmic"] .border-red-200,
-[data-theme="cosmic"] .border-red-300 {
-  border-color: rgba(220, 38, 38, 0.4) !important;
-}
-
-[data-theme="cosmic"] .border-yellow-300 {
-  border-color: rgba(251, 191, 36, 0.4) !important;
-}
-
-[data-theme="cosmic"] .border-gray-300 {
-  border-color: rgba(83, 52, 131, 0.4) !important;
-}
-
 /* Specific overrides for common background patterns */
-[data-theme="cosmic"] [style*="linear-gradient(135deg, #fdfbf7"],
-[data-theme="cosmic"] [style*="linear-gradient(135deg, #ffffff"],
-[data-theme="cosmic"] [style*="background: #fdfbf7"],
-[data-theme="cosmic"] [style*="background:#fdfbf7"] {
-  background: #0a0a0f !important;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%) !important;
-}
-
 /* ============================================= */
 /*  COSMIC THEME - WHITE BACKGROUND OVERRIDES  */
 /* ============================================= */
 
 /* Override all white backgrounds in cosmic theme */
-[data-theme="cosmic"] .bg-white,
-[data-theme="cosmic"] [class*="bg-white"],
-[data-theme="cosmic"] [style*="background: white"],
-[data-theme="cosmic"] [style*="background:white"],
-[data-theme="cosmic"] [style*="background:#fff"],
-[data-theme="cosmic"] [style*="background:#ffffff"],
-[data-theme="cosmic"] [style*="background: rgba(255, 255, 255"],
-[data-theme="cosmic"] [style*="background:rgba(255, 255, 255"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-}
-
 /* White card backgrounds - Override any white backgrounds in cards */
-[data-theme="cosmic"] .card[style*="background: white"],
-[data-theme="cosmic"] .card[style*="background:white"],
-[data-theme="cosmic"] .card[style*="background: #fff"],
-[data-theme="cosmic"] .card[style*="background:#fff"],
-[data-theme="cosmic"] .card[style*="background: rgba(255, 255, 255"],
-[data-theme="cosmic"] .card[style*="background:rgba(255, 255, 255"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
 /* Ensure all .card elements in cosmic theme have dark background */
-[data-theme="cosmic"] .card {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* Chat component cosmic theme styles */
-[data-theme="cosmic"] .chat-container-responsive {
-  background: rgba(22, 33, 62, 0.95) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .chat-messages-container {
-  background: transparent !important;
-}
-
-[data-theme="cosmic"] .chat-input-container {
-  background: rgba(22, 33, 62, 0.9) !important;
-  border-top-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .chat-input-field {
-  background: rgba(10, 10, 15, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .chat-input-field::placeholder {
-  color: rgba(212, 175, 55, 0.5) !important;
-}
-
 /* Chat message bubbles */
-[data-theme="cosmic"] [style*="background: rgba(255, 255, 255, 0.9)"] {
-  background: rgba(22, 33, 62, 0.9) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* Chat header text visibility */
-[data-theme="cosmic"] [style*="background: linear-gradient(135deg, #ffffff, #fef3c7)"] {
-  background: linear-gradient(135deg, #d4af37, #fbbf24) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-}
-
-[data-theme="cosmic"] [style*="color: rgba(255, 255, 255, 0.8)"] {
-  color: rgba(212, 175, 55, 0.9) !important;
-}
-
 /* Chat Now button and similar buttons */
-[data-theme="cosmic"] button[style*="background: white"],
-[data-theme="cosmic"] button[style*="background:white"],
-[data-theme="cosmic"] .use-btn {
-  background: rgba(22, 33, 62, 0.9) !important;
-  border-color: rgba(212, 175, 55, 0.4) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .use-btn:hover {
-  background: rgba(22, 33, 62, 1) !important;
-  border-color: rgba(212, 175, 55, 0.6) !important;
-  color: #fbbf24 !important;
-}
-
 /* Match row hover */
-[data-theme="cosmic"] .match-row:hover {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
 /* Table backgrounds */
-[data-theme="cosmic"] .match-row td {
-  color: #d4af37 !important;
-}
-
 /* Form inputs and selects */
-[data-theme="cosmic"] input[style*="background: white"],
-[data-theme="cosmic"] select[style*="background: white"],
-[data-theme="cosmic"] textarea[style*="background: white"] {
-  background: rgba(10, 10, 15, 0.8) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* Placeholder text in cosmic theme */
-[data-theme="cosmic"] input::placeholder,
-[data-theme="cosmic"] textarea::placeholder {
-  color: rgba(212, 175, 55, 0.5) !important;
-}
-
 /* Additional card overrides for subpages */
-[data-theme="cosmic"] .bg-white\/90,
-[data-theme="cosmic"] [class*="bg-white/"],
-[data-theme="cosmic"] [class*="bg-white"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-}
-
 /* Text color overrides for cosmic theme */
-[data-theme="cosmic"] .text-gray-800,
-[data-theme="cosmic"] .text-gray-700,
-[data-theme="cosmic"] .text-gray-600,
-[data-theme="cosmic"] .text-gray-500 {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .text-gray-900 {
-  color: #fbbf24 !important;
-}
-
 /* Empty state backgrounds */
-[data-theme="cosmic"] .bg-gray-100 {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
-[data-theme="cosmic"] .text-gray-400 {
-  color: rgba(212, 175, 55, 0.6) !important;
-}
-
 /* AI Assistant Card cosmic theme */
-[data-theme="cosmic"] .chat-assistant-card,
-[data-theme="cosmic"] .ai-assistant-card {
-  background: rgba(22, 33, 62, 0.95) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* Compatibility Checker card cosmic theme */
-[data-theme="cosmic"] [role="region"][aria-labelledby="loyalty-title"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] [role="region"][aria-labelledby="loyalty-title"] .text-slate-600,
-[data-theme="cosmic"] [role="region"][aria-labelledby="loyalty-title"] .text-slate-500 {
-  color: #d4af37 !important;
-}
-
 /* Panchang card container cosmic theme */
-[data-theme="cosmic"] [id="panchang-section"] .bg-gradient-to-br,
-[data-theme="cosmic"] [id="panchang-section"] [class*="bg-gradient-to-br"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] [id="panchang-section"] .text-slate-600,
-[data-theme="cosmic"] [id="panchang-section"] .text-slate-500 {
-  color: #d4af37 !important;
-}
-
 /* Advanced Vedic Tools pages - white background overrides */
-[data-theme="cosmic"] .app .card,
-[data-theme="cosmic"] .app [class*="card"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .infoBar,
-[data-theme="cosmic"] .app .stateBox,
-[data-theme="cosmic"] .app .cardHeader,
-[data-theme="cosmic"] .app .cardBody {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .app .infoLabel,
-[data-theme="cosmic"] .app .infoValue,
-[data-theme="cosmic"] .app .titleGroup h3,
-[data-theme="cosmic"] .app .desc,
-[data-theme="cosmic"] .app .timeLabel,
-[data-theme="cosmic"] .app .timeValue {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .btn,
-[data-theme="cosmic"] .app .navBtn,
-[data-theme="cosmic"] .app .dateTrigger {
-  background: rgba(22, 33, 62, 0.9) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .btn:hover,
-[data-theme="cosmic"] .app .navBtn:hover {
-  background: rgba(22, 33, 62, 1) !important;
-  border-color: rgba(212, 175, 55, 0.5) !important;
-  color: #fbbf24 !important;
-}
-
-[data-theme="cosmic"] .app input,
-[data-theme="cosmic"] .app select,
-[data-theme="cosmic"] .app textarea {
-  background: rgba(10, 10, 15, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .calendarPopup,
-[data-theme="cosmic"] .app .calPopup,
-[data-theme="cosmic"] .app .suggestList {
-  background: rgba(22, 33, 62, 0.95) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .app .suggestItem {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .suggestItem:hover {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
 /* Lunar Month Info and other tool pages */
-[data-theme="cosmic"] .app .cardTitle,
-[data-theme="cosmic"] .app .cardHeader {
-  background: rgba(22, 33, 62, 0.9) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .app .horaRow {
-  border-bottom-color: rgba(212, 175, 55, 0.2) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .app .horaRow:hover {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
-[data-theme="cosmic"] .app .currentRow {
-  background: rgba(212, 175, 55, 0.2) !important;
-  border-left-color: #d4af37 !important;
-}
-
 /* Calendar page and MonthlyCalendar component */
-[data-theme="cosmic"] .monthly-calendar,
-[data-theme="cosmic"] .calendar-container,
-[data-theme="cosmic"] .calendar-header {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .calendar-cell,
-[data-theme="cosmic"] .calendar-day {
-  background: rgba(22, 33, 62, 0.6) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.2) !important;
-}
-
-[data-theme="cosmic"] .calendar-cell:hover,
-[data-theme="cosmic"] .calendar-day:hover {
-  background: rgba(22, 33, 62, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.4) !important;
-}
-
 /* Hindu Date Card */
-[data-theme="cosmic"] .hinduCard,
-[data-theme="cosmic"] .cardWrapper .hinduCard {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .cardHeader,
-[data-theme="cosmic"] .cardBody {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .primaryTitle,
-[data-theme="cosmic"] .cardTitle {
-  color: #d4af37 !important;
-}
-
 /* Date input fields in cosmic theme */
-[data-theme="cosmic"] input[type="date"],
-[data-theme="cosmic"] input[type="time"] {
-  background: rgba(10, 10, 15, 0.8) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* All white backgrounds in tool pages */
-[data-theme="cosmic"] [style*="background: #fdfbf7"],
-[data-theme="cosmic"] [style*="background:#fdfbf7"],
-[data-theme="cosmic"] [style*="background: rgba(255, 255, 255"],
-[data-theme="cosmic"] [style*="background:rgba(255, 255, 255"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-}
-
 /* AstrologyForm component cosmic theme */
-[data-theme="cosmic"] .bg-gradient-to-br.from-white,
-[data-theme="cosmic"] [class*="bg-gradient-to-br from-white"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .bg-gradient-to-br.from-blue-50,
-[data-theme="cosmic"] .bg-gradient-to-br.from-green-50,
-[data-theme="cosmic"] .bg-gradient-to-br.from-purple-50 {
-  background: rgba(22, 33, 62, 0.6) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .text-gray-700,
-[data-theme="cosmic"] .text-gray-800,
-[data-theme="cosmic"] .text-gray-600 {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .text-gray-500 {
-  color: rgba(212, 175, 55, 0.7) !important;
-}
-
 /* Input fields in AstrologyForm */
-[data-theme="cosmic"] input[type="number"],
-[data-theme="cosmic"] input[type="text"],
-[data-theme="cosmic"] select {
-  background: rgba(10, 10, 15, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] input::placeholder {
-  color: rgba(212, 175, 55, 0.5) !important;
-}
-
 /* UI Input component cosmic theme */
-[data-theme="cosmic"] .bg-background {
-  background: rgba(10, 10, 15, 0.8) !important;
-}
-
-[data-theme="cosmic"] .border-input {
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] input,
-[data-theme="cosmic"] .input {
-  background: rgba(10, 10, 15, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] input:focus,
-[data-theme="cosmic"] .input:focus {
-  border-color: rgba(212, 175, 55, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2) !important;
-}
-
 /* Button cosmic theme in forms */
-[data-theme="cosmic"] button.bg-white,
-[data-theme="cosmic"] .bg-white.border {
-  background: rgba(22, 33, 62, 0.9) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] button.bg-white:hover {
-  background: rgba(22, 33, 62, 1) !important;
-  border-color: rgba(212, 175, 55, 0.5) !important;
-  color: #fbbf24 !important;
-}
-
 /* Talk to Astrologer page cosmic theme */
-[data-theme="cosmic"] .bg-gray-50,
-[data-theme="cosmic"] [class*="bg-gray-50"] {
-  background: #0a0a0f !important;
-}
-
 /* Matching page form sections cosmic theme */
-[data-theme="cosmic"] .bg-pink-50,
-[data-theme="cosmic"] .bg-blue-50,
-[data-theme="cosmic"] [class*="bg-pink-50"],
-[data-theme="cosmic"] [class*="bg-blue-50"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .border-pink-200,
-[data-theme="cosmic"] .border-blue-200 {
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
 /* Matching page form inputs cosmic theme */
-[data-theme="cosmic"] .form-section .form-field-input,
-[data-theme="cosmic"] .form-section input,
-[data-theme="cosmic"] .form-section select {
-  background: rgba(10, 10, 15, 0.8) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .form-section .form-field-input::placeholder,
-[data-theme="cosmic"] .form-section input::placeholder {
-  color: rgba(212, 175, 55, 0.5) !important;
-}
-
-[data-theme="cosmic"] .form-section .form-field-label {
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .form-section .form-field-helper {
-  color: rgba(212, 175, 55, 0.7) !important;
-}
-
-[data-theme="cosmic"] .form-section .suggestions {
-  background: rgba(22, 33, 62, 0.95) !important;
-  border-color: rgba(212, 175, 55, 0.3) !important;
-}
-
-[data-theme="cosmic"] .form-section .suggestion-item {
-  color: #d4af37 !important;
-  border-bottom-color: rgba(212, 175, 55, 0.2) !important;
-}
-
-[data-theme="cosmic"] .form-section .suggestion-item:hover {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
 /* Progress bars in cosmic theme */
-[data-theme="cosmic"] .progress-bar {
-  background: rgba(22, 33, 62, 0.5) !important;
-}
-
-[data-theme="cosmic"] .progress-label {
-  color: #d4af37 !important;
-}
-
 /* Table borders in cosmic theme */
-[data-theme="cosmic"] .match-row {
-  border-bottom-color: rgba(212, 175, 55, 0.2) !important;
-}
-
 /* Shadbala and other table backgrounds */
-[data-theme="cosmic"] .shadbala-table,
-[data-theme="cosmic"] .shadbala-table th,
-[data-theme="cosmic"] .shadbala-table td {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.2) !important;
-}
-
 /* Ensure all white backgrounds in cards are overridden */
-[data-theme="cosmic"] [style*="background: var(--color-white)"] {
-  background: rgba(22, 33, 62, 0.85) !important;
-  color: #d4af37 !important;
-}
-
 /* Override any light background gradients in cosmic theme */
-[data-theme="cosmic"] [style*="background"] {
-  background: rgba(30, 41, 59, 0.9) !important;
-}
-
 /* Specific overrides for common background patterns */
-[data-theme="cosmic"] [style*="linear-gradient(135deg, #fdfbf7"],
-[data-theme="cosmic"] [style*="linear-gradient(135deg, #ffffff"],
-[data-theme="cosmic"] [style*="background: #fdfbf7"],
-[data-theme="cosmic"] [style*="background:#fdfbf7"] {
-  background: #0a0e27 !important;
-}
-
 /* Subtle background texture for light theme */
 body::before {
   content: "";
@@ -1303,57 +373,8 @@ body::before {
 }
 
 /* Cosmic theme body background - Deep Space Universe */
-[data-theme="cosmic"] body {
-  background: #0a0a0f;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.2) 0%, transparent 70%);
-  color: var(--color-gray-700);
-}
-
 /* Galaxy stars background for cosmic theme - Golden stars in deep space */
-[data-theme="cosmic"] body::before {
-  background: 
-    radial-gradient(2px 2px at 20% 30%, #d4af37, transparent),
-    radial-gradient(1.5px 1.5px at 60% 70%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 50% 50%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 80% 10%, #d4af37, transparent),
-    radial-gradient(2px 2px at 90% 40%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 33% 60%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 55% 80%, #d4af37, transparent),
-    radial-gradient(2px 2px at 10% 90%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 70% 20%, #d4af37, transparent),
-    radial-gradient(1px 1px at 25% 15%, #fcd34d, transparent),
-    radial-gradient(1.5px 1.5px at 45% 25%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 75% 65%, #d4af37, transparent),
-    radial-gradient(1px 1px at 15% 85%, #fcd34d, transparent),
-    radial-gradient(2px 2px at 85% 15%, #fbbf24, transparent);
-  background-size: 200% 200%, 150% 150%, 180% 180%, 120% 120%, 160% 160%, 140% 140%, 170% 170%, 130% 130%, 110% 110%, 190% 190%, 145% 145%, 165% 165%, 135% 135%, 155% 155%;
-  background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, 50% 50%, 25% 75%, 75% 25%, 10% 90%, 90% 10%, 40% 60%, 60% 40%, 30% 70%, 70% 30%, 20% 80%;
-  animation: galaxyMove 80s ease-in-out infinite;
-  opacity: 0.8;
-}
-
 /* Nebula clouds for cosmic theme - Deep purple/indigo space clouds */
-[data-theme="cosmic"] body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(83, 52, 131, 0.2) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(147, 51, 234, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.25) 0%, transparent 60%),
-    radial-gradient(ellipse at 30% 70%, rgba(83, 52, 131, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 30%, rgba(147, 51, 234, 0.12) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: -1;
-  animation: nebulaPulse 50s ease-in-out infinite;
-}
-
 @keyframes galaxyMove {
   0%, 100% {
     background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, 50% 50%, 25% 75%, 75% 25%, 10% 90%, 90% 10%, 40% 60%;
@@ -1389,15 +410,6 @@ h6 {
   transition: color 0.3s ease;
 }
 
-[data-theme="cosmic"] h1,
-[data-theme="cosmic"] h2,
-[data-theme="cosmic"] h3,
-[data-theme="cosmic"] h4,
-[data-theme="cosmic"] h5,
-[data-theme="cosmic"] h6 {
-  color: var(--color-gray-900);
-}
-
 h1 {
   font-size: 2.75rem;
   letter-spacing: -0.02em;
@@ -1416,10 +428,6 @@ p {
   margin-bottom: var(--space-lg);
   color: var(--color-gray-700);
   transition: color 0.3s ease;
-}
-
-[data-theme="cosmic"] p {
-  color: var(--color-gray-700);
 }
 
 small,
@@ -1457,14 +465,6 @@ a:hover {
   text-decoration: underline;
 }
 
-[data-theme="cosmic"] a {
-  color: var(--color-indigo);
-}
-
-[data-theme="cosmic"] a:hover {
-  color: var(--color-purple);
-}
-
 /* ---------- Container ---------- */
 .container {
   width: 100%;
@@ -1485,12 +485,6 @@ a:hover {
   transition: var(--transition-smooth);
   position: relative;
   overflow: hidden;
-}
-
-[data-theme="cosmic"] .card {
-  background: rgba(22, 33, 62, 0.85);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 .card::before {
@@ -1516,10 +510,6 @@ a:hover {
   border-color: rgba(212, 175, 55, 0.4);
 }
 
-[data-theme="cosmic"] .card:hover {
-  border-color: rgba(212, 175, 55, 0.5);
-}
-
 /* ---------- Form Styling ---------- */
 
 /* -------------------------------------------------
@@ -1542,10 +532,6 @@ a:hover {
   transition: color 0.3s ease;
 }
 
-[data-theme="cosmic"] .form-field-label {
-  color: var(--color-gray-700);
-}
-
 .form-field-label svg {
   width: 1.25rem; /* w-5 */
   height: 1.25rem;
@@ -1565,17 +551,6 @@ a:hover {
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm); /* subtle shadow for depth */
   margin-bottom: 0.5rem;
-}
-
-[data-theme="cosmic"] .form-field-input {
-  background: var(--color-white);
-  border-color: var(--color-gray-300);
-  color: var(--color-gray-900);
-}
-
-[data-theme="cosmic"] .form-field-input:focus {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3), var(--shadow-md);
 }
 
 .form-field-input:hover {
@@ -1607,21 +582,6 @@ a:hover {
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 
-[data-theme="cosmic"] .form-input-field {
-  background: rgba(22, 33, 62, 0.7);
-  border-color: rgba(212, 175, 55, 0.3);
-  color: #f9fafb;
-}
-
-[data-theme="cosmic"] .form-input-field:focus {
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .form-input-field::placeholder {
-  color: rgba(249, 250, 251, 0.6);
-}
-
 /* Gender Radio Buttons - Global Golden Theme */
 input[type="radio"].gender-radio,
 .gender-radio {
@@ -1631,16 +591,6 @@ input[type="radio"].gender-radio,
 
 .gender-radio:checked {
   accent-color: var(--color-gold-dark);
-}
-
-[data-theme="cosmic"] .gender-radio,
-[data-theme="cosmic"] input[type="radio"].gender-radio {
-  accent-color: #d4af37;
-}
-
-[data-theme="cosmic"] .gender-radio:checked,
-[data-theme="cosmic"] input[type="radio"].gender-radio:checked {
-  accent-color: #fbbf24;
 }
 
 /* Select Dropdowns - Golden Theme (Global) */
@@ -1656,25 +606,6 @@ select.form-field-input:focus {
   border-color: var(--color-gold);
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
   outline: none;
-}
-
-[data-theme="cosmic"] select.form-input-field,
-[data-theme="cosmic"] select.form-field-input {
-  background-color: rgba(22, 33, 62, 0.7);
-  border-color: rgba(212, 175, 55, 0.3);
-  color: #f9fafb;
-}
-
-[data-theme="cosmic"] select.form-input-field:focus,
-[data-theme="cosmic"] select.form-field-input:focus {
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] select.form-input-field option,
-[data-theme="cosmic"] select.form-field-input option {
-  background-color: rgba(22, 33, 62, 0.95);
-  color: #f9fafb;
 }
 
 .form-field-helper {
@@ -1736,12 +667,6 @@ select.form-field-input:focus {
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-[data-theme="cosmic"] .modal-container {
-  background: rgba(22, 33, 62, 0.98);
-  border-color: rgba(212, 175, 55, 0.3);
-  outline: 1px solid rgba(212, 175, 55, 0.25);
-}
-
 .modal-header {
   display: flex;
   align-items: center;
@@ -1758,10 +683,6 @@ select.form-field-input:focus {
   color: #1f2937;
   margin: 0;
   transition: color 0.3s ease;
-}
-
-[data-theme="cosmic"] .modal-title {
-  color: var(--color-gray-900);
 }
 
 .modal-close-btn {
@@ -2050,21 +971,6 @@ textarea {
   font-family: inherit;
 }
 
-[data-theme="cosmic"] input,
-[data-theme="cosmic"] select,
-[data-theme="cosmic"] textarea {
-  background: var(--color-white);
-  border-color: var(--color-gray-300);
-  color: var(--color-gray-900);
-}
-
-[data-theme="cosmic"] input:focus,
-[data-theme="cosmic"] select:focus,
-[data-theme="cosmic"] textarea:focus {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
-}
-
 input:focus,
 select:focus,
 textarea:focus {
@@ -2122,40 +1028,6 @@ select {
   background: linear-gradient(135deg, #e6c04a, #c7a33a);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
-}
-
-[data-theme="cosmic"] .btn-primary,
-[data-theme="cosmic"] .btn-primary.btn-gold {
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  color: #1f2937;
-  border-color: rgba(212, 175, 55, 0.5);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2);
-}
-
-[data-theme="cosmic"] .btn-primary:hover,
-[data-theme="cosmic"] .btn-primary.btn-gold:hover {
-  background: linear-gradient(135deg, #fbbf24, #d4af37);
-  color: #1f2937;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.5), 0 0 30px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .btn-primary svg,
-[data-theme="cosmic"] .btn-primary path,
-[data-theme="cosmic"] .btn-primary .hero-btn-icon,
-[data-theme="cosmic"] .btn-primary.btn-gold svg,
-[data-theme="cosmic"] .btn-primary.btn-gold path {
-  color: #1f2937;
-  stroke: #1f2937;
-}
-
-[data-theme="cosmic"] .btn-primary:hover svg,
-[data-theme="cosmic"] .btn-primary:hover path,
-[data-theme="cosmic"] .btn-primary:hover .hero-btn-icon,
-[data-theme="cosmic"] .btn-primary.btn-gold:hover svg,
-[data-theme="cosmic"] .btn-primary.btn-gold:hover path {
-  color: #1f2937;
-  stroke: #1f2937;
 }
 
 .btn-secondary {
@@ -2335,14 +1207,6 @@ select {
   background: rgba(212, 175, 55, 0.5);
 }
 
-[data-theme="cosmic"] ::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.4);
-}
-
-[data-theme="cosmic"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.6);
-}
-
 /* Force scrollbars to be visible on mobile */
 @media (max-width: 768px) {
   .overflow-x-auto {
@@ -2422,11 +1286,6 @@ select {
   transition: background 0.3s ease;
 }
 
-[data-theme="cosmic"] ::selection {
-  background: var(--color-gold);
-  color: white;
-}
-
 /* -------------------------------------------------
    RESULTS SECTION – ICON + TITLE ALIGNMENT
    ------------------------------------------------- */
@@ -2503,16 +1362,6 @@ select {
   border-color: #d1d5db;
 }
 
-[data-theme="cosmic"] .info-card {
-  background: rgba(22, 33, 62, 0.6);
-  border-color: rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .info-card:hover {
-  background: rgba(22, 33, 62, 0.8);
-  border-color: rgba(212, 175, 55, 0.5);
-}
-
 /* -------------------------------------------------
    LABEL + ICON
    ------------------------------------------------- */
@@ -2543,10 +1392,6 @@ select {
   line-height: 1.4;
   word-break: break-word;
   transition: color 0.3s ease;
-}
-
-[data-theme="cosmic"] .info-value {
-  color: var(--color-gray-900);
 }
 
 /* -------------------------------------------------
@@ -2598,27 +1443,6 @@ select {
   background: #f3f4f6;
 }
 
-[data-theme="cosmic"] .planet-table thead {
-  background: rgba(22, 33, 62, 0.8);
-  border-bottom-color: rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .planet-table th {
-  color: var(--color-gray-700);
-}
-
-[data-theme="cosmic"] .planet-table td {
-  color: var(--color-gray-700);
-  border-bottom-color: rgba(212, 175, 55, 0.2);
-}
-
-[data-theme="cosmic"] .planet-table tbody tr:hover {
-  background: rgba(22, 33, 62, 0.6);
-}
-
-[data-theme="cosmic"] .planet-table tbody tr.selected {
-  background: rgba(22, 33, 62, 0.8);
-}
 .planet-table tbody tr {
   transition: background 0.2s;
 }
@@ -2664,13 +1488,6 @@ select {
   position: relative;
   overflow: hidden;
   transition: background 0.5s ease;
-}
-
-[data-theme="cosmic"] .auth-page {
-  background: #0a0a0f;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%);
 }
 
 /* Background animated orbs */
@@ -2770,12 +1587,6 @@ select {
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   animation: slideUp 0.6s ease-out;
   transition: background 0.3s ease, border-color 0.3s ease;
-}
-
-[data-theme="cosmic"] .auth-card {
-  background: rgba(22, 33, 62, 0.95);
-  border-color: rgba(212, 175, 55, 0.3);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(212, 175, 55, 0.2);
 }
 
 @keyframes slideUp {
@@ -2908,18 +1719,10 @@ select {
   transition: color 0.3s ease;
 }
 
-[data-theme="cosmic"] .auth-title {
-  color: var(--color-gray-900);
-}
-
 .auth-subtitle {
   color: #6b7280;
   font-size: 1rem;
   transition: color 0.3s ease;
-}
-
-[data-theme="cosmic"] .auth-subtitle {
-  color: var(--color-gray-500);
 }
 
 /* ================================================================== */
@@ -3152,13 +1955,6 @@ select {
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] .astrologer-auth-page {
-  background: #0a0a0f;
-  background-image: 
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%);
-}
-
 .astrologer-auth-container {
   position: relative;
   z-index: 10;
@@ -3379,10 +2175,6 @@ body {
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] body {
-  background: #0a0e27 !important;
-}
-
 .app {
   max-width: 1200px;
   margin: 0 auto;
@@ -3391,9 +2183,6 @@ body {
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] .app {
-  background: transparent;
-}
 .orb {
   position: absolute;
   border-radius: 50%;

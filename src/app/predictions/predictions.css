@@ -773,20 +773,9 @@
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
-[data-theme="cosmic"] .history-card-row {
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  background: linear-gradient(145deg, rgba(22, 33, 62, 0.95), rgba(10, 10, 15, 0.9));
-  box-shadow: 0 12px 30px rgba(212, 175, 55, 0.2);
-  color: #d4af37;
-}
-
 .history-card-row:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
-}
-
-[data-theme="cosmic"] .history-card-row:hover {
-  box-shadow: 0 16px 36px rgba(212, 175, 55, 0.3);
 }
 
 /* Text area */
@@ -797,24 +786,12 @@
   line-height: 1.2;
 }
 
-[data-theme="cosmic"] .history-row-text > div {
-  color: #d4af37;
-}
-
 .h-name {
   font-weight: 700;
   font-size: 1rem;
   color: #111827;
   margin-bottom: 0.5rem;
   background: linear-gradient(135deg, #d4af37, #b8972e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-[data-theme="cosmic"] .h-name {
-  color: #fbbf24;
-  background: linear-gradient(135deg, #fbbf24, #d4af37);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -883,20 +860,9 @@
   transition: all 0.2s ease;
 }
 
-[data-theme="cosmic"] .use-btn {
-  background: rgba(212, 175, 55, 0.15);
-  color: #fbbf24;
-  border-color: rgba(212, 175, 55, 0.4);
-}
-
 .use-btn:hover {
   background: #fff3d4;
 }
-
-[data-theme="cosmic"] .use-btn:hover {
-  background: rgba(212, 175, 55, 0.25);
-}
-
 
 /* Delete button stays same */
 

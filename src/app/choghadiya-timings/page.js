@@ -286,11 +286,7 @@ export default function ChoghadiyaTimingsPage() {
           margin: 0;
           font-family: "Inter", sans-serif;
         }
-        [data-theme="cosmic"] :global(body) {
-          background: #0a0a0f !important;
-        }
-        [data-theme="light"] :global(body),
-        :not([data-theme]) :global(body) {
+        :global(body) {
           background: #fdfbf7;
         }
         .app {
@@ -381,12 +377,7 @@ export default function ChoghadiyaTimingsPage() {
           margin-bottom: 2rem;
           box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
         }
-        [data-theme="cosmic"] .infoBar {
-          background: rgba(22, 33, 62, 0.85);
-          border: 1px solid rgba(212, 175, 55, 0.3);
-        }
-        [data-theme="light"] .infoBar,
-        :not([data-theme]) .infoBar {
+        .infoBar {
           background: rgba(255, 255, 255, 0.9);
           border: 1px solid rgba(212, 175, 55, 0.2);
         }

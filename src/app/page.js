@@ -10,7 +10,6 @@ import AstrologyForm from "@/components/AstrologyForm";
 import AstrologyResult from "@/components/AstrologyResult";
 import DateSelector from "@/components/DateSelector";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useTheme } from "@/contexts/ThemeContext";
 import { mockPanchangData } from "@/lib/mockData";
 import { astrologyAPI } from "@/lib/api";
 import { trackPageView } from "@/lib/analytics";
@@ -58,8 +57,6 @@ const writeHomeCache = (key, value) => {
 export default function Home() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const isCosmic = theme === 'cosmic';
 
   // Prefetch common routes on mount for faster navigation
   useEffect(() => {
@@ -1458,7 +1455,7 @@ export default function Home() {
                 </div>
 
                 {/* Social proof line (updated stats per design) */}
-                <div className="hero-stats" style={{ marginTop: 18 }}>
+                <div className="hero-stats">
                   <div className="hero-stat">
                     <div className="hero-stat-number">50K+</div>
                     <div className="hero-stat-label">Daily Users</div>
@@ -1964,9 +1961,9 @@ export default function Home() {
                 </h2>
               </div>
 
-              <p className="text-gray-800 text-base md:text-lg max-w-3xl" style={{ color: isCosmic ? '#d4af37' : '#1f2937' }}>
+              <p className="text-gray-800 text-base md:text-lg max-w-3xl" style={{ color: '#1f2937' }}>
                 {t.astrologers.description}
-                <strong style={{ color: isCosmic ? '#fbbf24' : '#111827' }}> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
+                <strong style={{ color: '#111827' }}> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">
@@ -2370,12 +2367,8 @@ export default function Home() {
               aria-labelledby="loyalty-title"
               className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center w-full"
               style={{
-                background: isCosmic
-                  ? "rgba(22, 33, 62, 0.85)"
-                  : undefined,
-                borderColor: isCosmic
-                  ? "rgba(212, 175, 55, 0.3)"
-                  : undefined,
+                background: undefined,
+                borderColor: undefined,
               }}
             >
               {/* Left: icon + copy */}
@@ -2400,15 +2393,15 @@ export default function Home() {
                   <h3 id="loyalty-title" className="text-4xl text-gold">
                     {t.compatibility.title}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                  <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
                     {t.compatibility.description}
                   </p>
 
-                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600" style={{ color: undefined }}>
                     <li className="flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold" style={{
-                        background: isCosmic ? "rgba(16, 185, 129, 0.2)" : undefined,
-                        color: isCosmic ? "#10b981" : undefined
+                        background: undefined,
+                        color: undefined
                       }}>
                         ✓
                       </span>
@@ -2416,8 +2409,8 @@ export default function Home() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{
-                        background: isCosmic ? "rgba(212, 175, 55, 0.15)" : undefined,
-                        color: isCosmic ? "#d4af37" : undefined
+                        background: undefined,
+                        color: undefined
                       }}>
                         ★
                       </span>
@@ -2425,7 +2418,7 @@ export default function Home() {
                     </li>
                   </ul>
 
-                  <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
+                  <p className="mt-3 text-xs text-slate-500" style={{ color: undefined }}>
                     {t.compatibility.prefillNote}
                   </p>
                 </div>
@@ -2439,20 +2432,20 @@ export default function Home() {
                   className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                   aria-label="Check compatibility now — go to matching page"
                   style={{
-                    backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
-                    color: isCosmic ? "#d4af37" : "white",
-                    borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
-                    borderWidth: isCosmic ? "1px" : "0",
+                    backgroundColor: "var(--color-gold)",
+                    color: "white",
+                    borderColor: "transparent",
+                    borderWidth: "0",
                   }}
                 >
                   <svg
                     className="w-4 h-4"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke={isCosmic ? "#d4af37" : "currentColor"}
+                    stroke={"currentColor"}
                     strokeWidth="1.5"
                     aria-hidden="true"
-                    style={{ color: isCosmic ? "#d4af37" : "currentColor" }}
+                    style={{ color: "currentColor" }}
                   >
                     <path d="M20.8 7.2a4.6 4.6 0 00-6.5 0L12 9.5l-2.3-2.3a4.6 4.6 0 10-6.5 6.5L12 22l8.8-8.8a4.6 4.6 0 000-6z" />
                   </svg>
@@ -2484,12 +2477,8 @@ export default function Home() {
               aria-labelledby="panchang-title"
               className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
               style={{
-                background: isCosmic
-                  ? "rgba(22, 33, 62, 0.85)"
-                  : undefined,
-                borderColor: isCosmic
-                  ? "rgba(212, 175, 55, 0.3)"
-                  : undefined,
+                background: undefined,
+                borderColor: undefined,
                 width: '100%',
                 maxWidth: '80rem',
                 boxSizing: 'border-box'
@@ -2520,34 +2509,30 @@ export default function Home() {
                           }
                         )}`}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                    <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
                       {t.panchang.description}
                     </p>
 
                     {/* Date Selector */}
                     <div
-                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${isCosmic
-                        ? "bg-gradient-to-r from-yellow-500/10 via-yellow-400/10 to-yellow-500/10 border-yellow-500/30"
-                        : "bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
+                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${"bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
                         }`}
                     >
-                      <Calendar className={`w-4 h-4 ${isCosmic ? "text-yellow-400" : "text-gold"}`} />
+                      <Calendar className={`w-4 h-4 ${"text-gold"}`} />
                       <input
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${isCosmic
-                          ? "text-yellow-100 hover:text-yellow-300 placeholder-yellow-200/50"
-                          : "text-gray-700 hover:text-gold"
+                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${"text-gray-700 hover:text-gold"
                           }`}
                         style={{
-                          colorScheme: isCosmic ? "dark" : "light",
+                          colorScheme: "light",
                           background: 'transparent'
                         }}
                       />
                     </div>
 
-                    <p className="mt-3 text-xs text-slate-500" style={{ color: isCosmic ? "rgba(212, 175, 55, 0.8)" : undefined }}>
+                    <p className="mt-3 text-xs text-slate-500" style={{ color: undefined }}>
                       {t.panchang.selectDateHelper}
                     </p>
                   </div>
@@ -2561,13 +2546,13 @@ export default function Home() {
                     className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                     aria-label="View full Panchang details"
                     style={{
-                      backgroundColor: isCosmic ? "rgba(22, 33, 62, 0.9)" : "var(--color-gold)",
-                      color: isCosmic ? "#d4af37" : "white",
-                      borderColor: isCosmic ? "rgba(212, 175, 55, 0.3)" : "transparent",
-                      borderWidth: isCosmic ? "1px" : "0",
+                      backgroundColor: "var(--color-gold)",
+                      color: "white",
+                      borderColor: "transparent",
+                      borderWidth: "0",
                     }}
                   >
-                    <Calendar className="w-4 h-4" style={{ color: isCosmic ? "#d4af37" : "currentColor" }} />
+                    <Calendar className="w-4 h-4" style={{ color: "currentColor" }} />
                     {t.panchang.viewFull}
                   </button>
                 </div>
@@ -2595,12 +2580,8 @@ export default function Home() {
               aria-labelledby="advanced-vedic-tools-title"
               className="max-w-7xl mx-auto bg-gradient-to-br from-white to-purple-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
               style={{
-                background: isCosmic
-                  ? "rgba(22, 33, 62, 0.85)"
-                  : undefined,
-                borderColor: isCosmic
-                  ? "rgba(212, 175, 55, 0.3)"
-                  : undefined,
+                background: undefined,
+                borderColor: undefined,
                 width: '100%',
                 maxWidth: '80rem',
                 boxSizing: 'border-box'
@@ -2621,7 +2602,7 @@ export default function Home() {
                     <h2 id="advanced-vedic-tools-title" className="text-4xl text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
                       {t.tools.title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-600" style={{ color: isCosmic ? "#d4af37" : undefined }}>
+                    <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
                       {t.tools.description}
                     </p>
                   </div>

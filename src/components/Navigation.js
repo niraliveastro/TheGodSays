@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
-// import { useTheme } from "@/contexts/ThemeContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase";
@@ -39,7 +38,6 @@ import "./navigation.css";
 
 const Navigation = () => {
   const { t, language } = useTranslation();
-  // const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();

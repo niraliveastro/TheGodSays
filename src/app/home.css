@@ -22,14 +22,6 @@ h1, h2, h3, h4, h5, h6,
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] .home-page {
-  background: #0a0a0f;
-  background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.2) 0%, transparent 70%);
-}
-
 /* Animated starfield background */
 .home-page::before {
   content: "";
@@ -53,21 +45,6 @@ h1, h2, h3, h4, h5, h6,
   transition: opacity 0.5s ease;
 }
 
-[data-theme="cosmic"] .home-page::before {
-  background-image:
-    radial-gradient(2px 2px at 20% 30%, #d4af37, transparent),
-    radial-gradient(1.5px 1.5px at 60% 70%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 50% 50%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 80% 10%, #d4af37, transparent),
-    radial-gradient(2px 2px at 40% 60%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 90% 80%, #fcd34d, transparent),
-    radial-gradient(1px 1px at 33% 60%, #d4af37, transparent),
-    radial-gradient(1px 1px at 55% 80%, #fbbf24, transparent),
-    radial-gradient(2px 2px at 10% 90%, #d4af37, transparent),
-    radial-gradient(1px 1px at 70% 20%, #fbbf24, transparent),
-    radial-gradient(1px 1px at 25% 15%, #fcd34d, transparent);
-  opacity: 0.9;
-}
 
 @keyframes starfield {
   0% {
@@ -97,14 +74,6 @@ h1, h2, h3, h4, h5, h6,
   transition: background 0.5s ease;
 }
 
-[data-theme="cosmic"] .home-page::after {
-  background:
-    radial-gradient(ellipse at 20% 20%, rgba(83, 52, 131, 0.2) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(147, 51, 234, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 50%, rgba(22, 33, 62, 0.25) 0%, transparent 60%),
-    radial-gradient(ellipse at 30% 70%, rgba(83, 52, 131, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 30%, rgba(147, 51, 234, 0.12) 0%, transparent 60%);
-}
 
 @keyframes cosmicFloat {
 
@@ -294,11 +263,6 @@ h1, h2, h3, h4, h5, h6,
   position: relative;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-theme="cosmic"] .date-location-card {
-  background: rgba(22, 33, 62, 0.85);
-  border-color: rgba(212, 175, 55, 0.3);
 }
 
 .date-location-card::before {
@@ -675,14 +639,6 @@ h1, h2, h3, h4, h5, h6,
   min-height: 100vh;
   background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
   transition: background 0.5s ease;
-}
-
-[data-theme="cosmic"] .form-view,
-[data-theme="cosmic"] .result-view {
-  background: #0a0a0f;
-  background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(83, 52, 131, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(147, 51, 234, 0.12) 0%, transparent 50%);
 }
 
 .form-container {
@@ -1347,6 +1303,32 @@ h1, h2, h3, h4, h5, h6,
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 0.5rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Mobile: Center align buttons */
+@media (max-width: 768px) {
+  .hero-actions {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .hero-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .hero-btn {
+    width: 100%;
+  }
 }
 
 .hero-btn {
@@ -1401,42 +1383,6 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* Hero button cosmic theme */
-[data-theme="cosmic"] .hero-btn-primary {
-  background: rgba(22, 33, 62, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  color: #d4af37;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
-}
-
-[data-theme="cosmic"] .hero-btn-primary:hover {
-  background: rgba(22, 33, 62, 1);
-  border-color: rgba(212, 175, 55, 0.5);
-  color: #fbbf24;
-  box-shadow: 0 12px 24px rgba(212, 175, 55, 0.5),
-    0 0 30px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .hero-btn-primary::before {
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(212, 175, 55, 0.2),
-      transparent);
-}
-
-[data-theme="cosmic"] .hero-btn-primary svg,
-[data-theme="cosmic"] .hero-btn-primary .hero-btn-icon,
-[data-theme="cosmic"] .hero-btn-primary path {
-  color: #d4af37;
-  stroke: #d4af37;
-}
-
-[data-theme="cosmic"] .hero-btn-primary:hover svg,
-[data-theme="cosmic"] .hero-btn-primary:hover .hero-btn-icon,
-[data-theme="cosmic"] .hero-btn-primary:hover path {
-  color: #fbbf24;
-  stroke: #fbbf24;
-}
-
 .hero-btn-secondary {
   background: white;
   color: var(--color-indigo);
@@ -1518,30 +1464,6 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* Cosmic theme for secondary gold button */
-[data-theme="cosmic"] .hero-btn-secondary-gold {
-  background: rgba(22, 33, 62, 0.7);
-  border: 2px solid rgba(212, 175, 55, 0.4);
-  color: #d4af37;
-}
-
-[data-theme="cosmic"] .hero-btn-secondary-gold:hover {
-  background: rgba(22, 33, 62, 0.9);
-  border-color: rgba(212, 175, 55, 0.6);
-  color: #fbbf24;
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4),
-    0 0 30px rgba(212, 175, 55, 0.25);
-}
-
-[data-theme="cosmic"] .hero-btn-secondary-gold .hero-btn-icon {
-  color: #d4af37;
-  stroke: #d4af37;
-}
-
-[data-theme="cosmic"] .hero-btn-secondary-gold:hover .hero-btn-icon {
-  color: #fbbf24;
-  stroke: #fbbf24;
-}
-
 .hero-btn-icon {
   width: 1.125rem;
   height: 1.125rem;
@@ -1606,12 +1528,6 @@ h1, h2, h3, h4, h5, h6,
   width: fit-content;
 }
 
-[data-theme="cosmic"] .hero-stats {
-  background: rgba(22, 33, 62, 0.85);
-  border-color: rgba(212, 175, 55, 0.3);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
-}
-
 .hero-stat {
   text-align: center;
 }
@@ -1624,19 +1540,11 @@ h1, h2, h3, h4, h5, h6,
   line-height: 1;
 }
 
-[data-theme="cosmic"] .hero-stat-number {
-  color: #fbbf24;
-}
-
 .hero-stat-label {
   font-size: 0.875rem;
   color: var(--color-gold-dark);
   margin-top: 0.25rem;
   font-weight: 600;
-}
-
-[data-theme="cosmic"] .hero-stat-label {
-  color: #d4af37;
 }
 
 .hero-stat-divider {
@@ -1663,8 +1571,8 @@ h1, h2, h3, h4, h5, h6,
   width: 100%;
   max-width: 550px;
   aspect-ratio: 1;
-  margin-top: -8%;
-  transform: translateY(-15%);
+  margin-top: 0;
+  transform: translateY(0);
 }
 
 /* Zodiac Circle */
@@ -2088,8 +1996,8 @@ h1, h2, h3, h4, h5, h6,
   .hero-visual-container {
     max-width: 520px;
     min-height: 520px;
-    margin-top: -8%;
-    transform: translateY(-15%);
+    margin-top: 0;
+    transform: translateY(0);
   }
 
   .hero-info-card-2 {
@@ -2144,8 +2052,8 @@ h1, h2, h3, h4, h5, h6,
   .hero-visual-container {
     max-width: 440px;
     min-width: 320px;
-    margin-top: -8%;
-    transform: translateY(-15%);
+    margin-top: 0;
+    transform: translateY(0);
   }
 
   .zodiac-center {
@@ -2173,11 +2081,24 @@ h1, h2, h3, h4, h5, h6,
     gap: 1rem;
     width: 100%;
     padding: 1.25rem 1.5rem;
+    margin-top: 2rem !important;
+    margin-bottom: 1rem;
   }
 
   .hero-stat-divider {
     width: 100%;
     height: 1px;
+  }
+  
+  /* Adjust zodiac circle position to avoid overlap */
+  .hero-visual-container {
+    margin-top: 0 !important;
+    transform: translateY(0) !important;
+    margin-bottom: 1rem;
+  }
+  
+  .hero-right {
+    padding: 1rem 0;
   }
 }
 
@@ -2198,18 +2119,6 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: 0 12px 32px rgba(212, 175, 55, 0.2),
     0 0 20px rgba(212, 175, 55, 0.1);
   transform: translateY(-4px);
-}
-
-[data-theme="cosmic"] .service-card-gold {
-  background: rgba(22, 33, 62, 0.85);
-  border-color: rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .service-card-gold:hover {
-  background: rgba(22, 33, 62, 0.95);
-  border-color: rgba(212, 175, 55, 0.5);
-  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3),
-    0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 /* Service Card Content Structure */
@@ -2254,11 +2163,6 @@ h1, h2, h3, h4, h5, h6,
   flex-shrink: 0;
 }
 
-[data-theme="cosmic"] .service-icon-gold {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.9), rgba(184, 134, 11, 0.9));
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
-}
-
 /* Title - Bold, golden, compact spacing */
 .service-card-title {
   font-size: 1.125rem;
@@ -2270,10 +2174,6 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: -0.01em;
 }
 
-[data-theme="cosmic"] .service-card-title {
-  color: #d4af37;
-}
-
 /* Description - Lighter, readable, compact */
 .service-card-description {
   font-size: 0.8125rem;
@@ -2282,11 +2182,6 @@ h1, h2, h3, h4, h5, h6,
   margin: 0 0 0.875rem 0;
   max-width: 100%;
   opacity: 0.85;
-}
-
-[data-theme="cosmic"] .service-card-description {
-  color: rgba(249, 250, 251, 0.75);
-  opacity: 0.9;
 }
 
 /* CTA Link - Compact spacing, golden accent */
@@ -2309,21 +2204,9 @@ h1, h2, h3, h4, h5, h6,
   transform: translateX(2px);
 }
 
-[data-theme="cosmic"] .service-card-cta {
-  color: #d4af37;
-}
-
-[data-theme="cosmic"] .service-card-content:hover .service-card-cta {
-  color: #fbbf24;
-}
-
 /* Legacy support for old class name */
 .service-cta-gold {
   color: var(--color-gold-dark);
-}
-
-[data-theme="cosmic"] .service-cta-gold {
-  color: #d4af37;
 }
 
 /* Responsive adjustments */
@@ -2380,21 +2263,6 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 
-[data-theme="cosmic"] .form-input-field {
-  background: rgba(22, 33, 62, 0.7);
-  border-color: rgba(212, 175, 55, 0.3);
-  color: #f9fafb;
-}
-
-[data-theme="cosmic"] .form-input-field:focus {
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] .form-input-field::placeholder {
-  color: rgba(249, 250, 251, 0.6);
-}
-
 /* Gender Radio Buttons - Golden Theme */
 .gender-radio {
   accent-color: var(--color-gold);
@@ -2403,14 +2271,6 @@ h1, h2, h3, h4, h5, h6,
 
 .gender-radio:checked {
   accent-color: var(--color-gold-dark);
-}
-
-[data-theme="cosmic"] .gender-radio {
-  accent-color: #d4af37;
-}
-
-[data-theme="cosmic"] .gender-radio:checked {
-  accent-color: #fbbf24;
 }
 
 /* Select Dropdowns - Golden Theme */
@@ -2428,25 +2288,6 @@ select.form-field-input:focus {
   outline: none;
 }
 
-[data-theme="cosmic"] select.form-input-field,
-[data-theme="cosmic"] select.form-field-input {
-  background-color: rgba(22, 33, 62, 0.7);
-  border-color: rgba(212, 175, 55, 0.3);
-  color: #f9fafb;
-}
-
-[data-theme="cosmic"] select.form-input-field:focus,
-[data-theme="cosmic"] select.form-field-input:focus {
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
-}
-
-[data-theme="cosmic"] select.form-input-field option,
-[data-theme="cosmic"] select.form-field-input option {
-  background-color: rgba(22, 33, 62, 0.95);
-  color: #f9fafb;
-}
-
 /* AI Predictions Submit Button */
 .ai-predictions-submit-btn {
   background: linear-gradient(135deg, var(--color-gold), var(--color-gold-dark));
@@ -2457,17 +2298,6 @@ select.form-field-input:focus {
   background: linear-gradient(135deg, var(--color-gold-dark), #b8972e);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
-}
-
-[data-theme="cosmic"] .ai-predictions-submit-btn {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.9), rgba(184, 134, 11, 0.9));
-  border: 1px solid rgba(212, 175, 55, 0.4);
-}
-
-[data-theme="cosmic"] .ai-predictions-submit-btn:hover {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(212, 175, 55, 0.95));
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.5);
 }
 
 /* AI Prediction Form Section Alignment */
@@ -2810,6 +2640,30 @@ select.form-field-input:focus {
   z-index: 10;
 }
 
+/* Mobile: Ensure proper positioning */
+@media (max-width: 768px) {
+  .quick-start-form-input-wrapper {
+    position: relative;
+  }
+  
+  .quick-start-location-btn {
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+  }
+  
+  .quick-start-location-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .quick-start-form-input-wrapper:has(.quick-start-location-btn) .quick-start-form-input {
+    padding-right: 3rem;
+  }
+}
+
 .quick-start-location-btn:hover {
   opacity: 0.7;
 }
@@ -2964,53 +2818,6 @@ select.form-field-input:focus {
 }
 
 /* Cosmic Theme Overrides */
-[data-theme="cosmic"] .how-it-works-title,
-[data-theme="cosmic"] .how-it-works-step-number {
-  background-color: rgba(192, 149, 74, 0.9);
-  color: #FFFFFF;
-}
-
-[data-theme="cosmic"] .how-it-works-step-title,
-[data-theme="cosmic"] .how-it-works-step-desc,
-[data-theme="cosmic"] .how-it-works-subtitle {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-[data-theme="cosmic"] .quick-start-form-card {
-  background: rgba(22, 33, 62, 0.9);
-  border: 1px solid rgba(184, 134, 11, 0.3);
-}
-
-[data-theme="cosmic"] .quick-start-form-title,
-[data-theme="cosmic"] .quick-start-form-label,
-[data-theme="cosmic"] .quick-start-star-icon {
-  color: #D4AF37;
-}
-
-[data-theme="cosmic"] .quick-start-form-description,
-[data-theme="cosmic"] .quick-start-form-helper,
-[data-theme="cosmic"] .quick-start-form-footer {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-[data-theme="cosmic"] .quick-start-form-input {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(184, 134, 11, 0.3);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-[data-theme="cosmic"] .quick-start-form-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-[data-theme="cosmic"] .quick-start-submit-btn {
-  background-color: #D4AF37;
-}
-
-[data-theme="cosmic"] .quick-start-submit-btn:hover {
-  background-color: #B8860B;
-}
-
 @media (max-width: 480px) {
   .hero-main-title {
     font-size: 2rem;
@@ -3029,8 +2836,17 @@ select.form-field-input:focus {
   .hero-visual-container {
     max-width: 360px;
     min-width: 280px;
-    margin-top: -8%;
-    transform: translateY(-15%);
+    margin-top: 0 !important;
+    transform: translateY(0) !important;
+    margin-bottom: 1rem;
+  }
+  
+  .hero-right {
+    padding: 1rem 0;
+  }
+  
+  .hero-stats {
+    margin-top: 2.5rem !important;
   }
 
   .zodiac-center {
@@ -3122,12 +2938,6 @@ html {
   position: relative;
   overflow: hidden;
   will-change: transform;
-}
-
-[data-theme="cosmic"] .date-location-card {
-  background: rgba(22, 33, 62, 0.95);
-  border-color: rgba(212, 175, 55, 0.3);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 .date-location-card::before {
@@ -4409,19 +4219,6 @@ html {
   box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
 }
 
-[data-theme="cosmic"] .astrologer-ctas .btn {
-  background: transparent !important;
-  border: 1.5px solid #d4af37 !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .astrologer-ctas .btn:hover {
-  background: rgba(212, 175, 55, 0.1) !important;
-  border-color: #fbbf24 !important;
-  color: #fbbf24 !important;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2) !important;
-}
-
 /* Target astrologer card buttons specifically */
 .astrologer-card .btn.btn-primary,
 .astrologer-card button.btn-primary {
@@ -4439,20 +4236,6 @@ html {
   box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
 }
 
-[data-theme="cosmic"] .astrologer-card .btn.btn-primary,
-[data-theme="cosmic"] .astrologer-card button.btn-primary {
-  background: transparent !important;
-  border: 1.5px solid #d4af37 !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .astrologer-card .btn.btn-primary:hover,
-[data-theme="cosmic"] .astrologer-card button.btn-primary:hover {
-  background: rgba(212, 175, 55, 0.1) !important;
-  border-color: #fbbf24 !important;
-  color: #fbbf24 !important;
-}
-
 /* Ultra-specific selector for grid layout astrologer cards - v2 */
 .grid .astrologer-card button.btn.btn-primary,
 div[role="list"] .astrologer-card button.btn.btn-primary {
@@ -4468,20 +4251,6 @@ div[role="list"] .astrologer-card button.btn.btn-primary:hover {
   border-color: #d4af37 !important;
   color: #d4af37 !important;
   box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
-}
-
-[data-theme="cosmic"] .grid .astrologer-card button.btn.btn-primary,
-[data-theme="cosmic"] div[role="list"] .astrologer-card button.btn.btn-primary {
-  background: transparent !important;
-  border: 1.5px solid #d4af37 !important;
-  color: #d4af37 !important;
-}
-
-[data-theme="cosmic"] .grid .astrologer-card button.btn.btn-primary:hover,
-[data-theme="cosmic"] div[role="list"] .astrologer-card button.btn.btn-primary:hover {
-  background: rgba(212, 175, 55, 0.1) !important;
-  border-color: #fbbf24 !important;
-  color: #fbbf24 !important;
 }
 
 /* Responsive tweaks */
@@ -4876,14 +4645,3 @@ section {
   box-shadow: 0 8px 20px rgba(184, 151, 46, 0.35) !important;
 }
 
-[data-theme="cosmic"] .ai-predictions-submit-btn {
-  background: linear-gradient(135deg, #b8972e, #9a7a2d) !important;
-  color: #f9fafb !important;
-  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.25), 0 0 15px rgba(184, 151, 46, 0.15) !important;
-}
-
-[data-theme="cosmic"] .ai-predictions-submit-btn:hover {
-  background: linear-gradient(135deg, #c7a33a, #b8972e) !important;
-  color: #ffffff !important;
-  box-shadow: 0 8px 24px rgba(184, 151, 46, 0.4), 0 0 25px rgba(184, 151, 46, 0.25) !important;
-}

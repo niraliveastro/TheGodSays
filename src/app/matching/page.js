@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useTheme } from "@/contexts/ThemeContext";
 import { PageLoading } from "@/components/LoadingStates";
 
 import {
@@ -113,10 +112,7 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const isCosmic = theme === 'cosmic';
-
-  // Form state for female and male individuals
+      // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
     dob: "",
@@ -590,15 +586,27 @@ export default function MatchingPage() {
         throw new Error('Failed to fetch male individual data. Please try again.');
       }
       
-      // Log to verify both have vimsottari data
-      const fVims = fCalc.results["vimsottari/dasa-information"];
-      const mVims = mCalc.results["vimsottari/dasa-information"];
-      console.log('[Matching] API Results:', {
-        femaleHasVimsottari: !!fVims,
-        maleHasVimsottari: !!mVims,
-        femaleResultsKeys: Object.keys(fCalc.results || {}),
-        maleResultsKeys: Object.keys(mCalc.results || {}),
-      });
+      // Check for errors in API responses
+      if (fCalc.errors && Object.keys(fCalc.errors).length > 0) {
+        console.warn('[Matching] Female calculation errors:', fCalc.errors);
+      }
+      if (mCalc.errors && Object.keys(mCalc.errors).length > 0) {
+        console.warn('[Matching] Male calculation errors:', mCalc.errors);
+      }
+      
+      // Log to verify both have vimsottari data (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        const fVims = fCalc.results["vimsottari/dasa-information"];
+        const mVims = mCalc.results["vimsottari/dasa-information"];
+        console.log('[Matching] API Results:', {
+          femaleHasVimsottari: !!fVims,
+          maleHasVimsottari: !!mVims,
+          femaleResultsKeys: Object.keys(fCalc.results || {}),
+          maleResultsKeys: Object.keys(mCalc.results || {}),
+          femaleErrors: fCalc.errors || {},
+          maleErrors: mCalc.errors || {},
+        });
+      }
       const safeParse = (v) => {
         try {
           return typeof v === "string" ? JSON.parse(v) : v;
@@ -818,18 +826,28 @@ export default function MatchingPage() {
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
       
-      // Validate that both have vimsottari data
+      // Validate that both have vimsottari data (warn only if endpoint failed, not if it's just missing)
       if (!fDetailsBuilt.vimsottari) {
-        console.error('[Matching] ⚠️ WARNING: Female vimsottari data is missing!', {
-          fCalcResults: Object.keys(fCalc.results || {}),
-          hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
-        });
+        const vimsError = fCalc.errors?.["vimsottari/dasa-information"];
+        if (vimsError) {
+          console.warn('[Matching] ⚠️ Female vimsottari endpoint failed:', vimsError);
+        } else if (process.env.NODE_ENV === 'development') {
+          console.warn('[Matching] ⚠️ Female vimsottari data is missing (no error reported)', {
+            fCalcResults: Object.keys(fCalc.results || {}),
+            hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
+          });
+        }
       }
       if (!mDetailsBuilt.vimsottari) {
-        console.error('[Matching] ⚠️ WARNING: Male vimsottari data is missing!', {
-          mCalcResults: Object.keys(mCalc.results || {}),
-          hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
-        });
+        const vimsError = mCalc.errors?.["vimsottari/dasa-information"];
+        if (vimsError) {
+          console.warn('[Matching] ⚠️ Male vimsottari endpoint failed:', vimsError);
+        } else if (process.env.NODE_ENV === 'development') {
+          console.warn('[Matching] ⚠️ Male vimsottari data is missing (no error reported)', {
+            mCalcResults: Object.keys(mCalc.results || {}),
+            hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
+          });
+        }
       }
       
       setFDetails(fDetailsBuilt);
@@ -953,7 +971,10 @@ export default function MatchingPage() {
    */
   const scrollToChat = () => {
     setTimeout(() => {
-      if (chatRef.current) {
+      const aiSection = document.querySelector(".ai-astrologer-section");
+      if (aiSection) {
+        aiSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (chatRef.current) {
         chatRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }, 300);
@@ -1957,6 +1978,23 @@ export default function MatchingPage() {
           margin: 0.25rem 0 0 0;
         }
 
+        .form-sections-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0;
+          margin-top: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+          .form-sections-container {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+          }
+        }
+
         .form-grid-2col {
           display: grid;
           grid-template-columns: 1fr;
@@ -2142,7 +2180,7 @@ export default function MatchingPage() {
 
         .form-section {
           border-radius: 1rem;
-          padding: 2.5rem !important;
+          padding: 1.5rem !important;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
@@ -2150,6 +2188,18 @@ export default function MatchingPage() {
           flex-direction: column;
           min-width: 0;
           overflow: visible;
+        }
+
+        @media (min-width: 640px) {
+          .form-section {
+            padding: 2rem !important;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .form-section {
+            padding: 2.5rem !important;
+          }
         }
         
         .form-section > * {
@@ -2457,27 +2507,14 @@ export default function MatchingPage() {
               </div>
               {/* Grid */}
               <div 
-                className="grid md:grid-cols-2 gap-8 mt-6" 
-                style={{ 
-                  width: "100%", 
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "1.5rem",
-                  boxSizing: "border-box",
-                  padding: "0"
-                }}
+                className="form-sections-container"
               >
             {/* ---------- Female ---------- */}
             <div
               className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
               style={{
-                background: isCosmic
-                  ? "rgba(22, 33, 62, 0.85)"
-                  : "#fdf2f8",
-                borderColor: isCosmic
-                  ? "rgba(212, 175, 55, 0.3)"
-                  : "#fbcfe8",
-                padding: "2.5rem",
+                background: "#fdf2f8",
+                borderColor: "#fbcfe8",
                 width: "100%",
                 boxSizing: "border-box",
                 minWidth: 0,
@@ -2662,13 +2699,8 @@ export default function MatchingPage() {
             <div
               className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
               style={{
-                background: isCosmic
-                  ? "rgba(22, 33, 62, 0.85)"
-                  : "#eff6ff",
-                borderColor: isCosmic
-                  ? "rgba(212, 175, 55, 0.3)"
-                  : "#bfdbfe",
-                padding: "2.5rem",
+                background: "#eff6ff",
+                borderColor: "#bfdbfe",
                 width: "100%",
                 boxSizing: "border-box",
                 minWidth: 0,
@@ -3105,21 +3137,79 @@ export default function MatchingPage() {
               </div>
             </div>
 
-            {/* AI Astrologer Chat Window - Only shown when chat is open */}
-            {chatOpen && (
-              <div
-                className="card mt-6 bg-gradient-to-r from-indigo-900 via-purple-800 to-rose-700 border border-white/20 shadow-2xl ai-astrologer-section"
-                style={{
-                  position: "relative",
-                  zIndex: 200,
-                  marginBottom: "2rem"
-                }}
-              >
+            {/* AI Astrologer CTA / Chat Window */}
+            <div 
+              className="card mt-8 ai-astrologer-section"
+              style={{ 
+                position: "relative",
+                zIndex: chatOpen ? 200 : 1,
+                marginBottom: "2rem",
+                background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+                border: "1px solid rgba(212, 175, 55, 0.3)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+                padding: "1.5rem"
+              }}
+            >
+              {!chatOpen ? (
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-1">
+                    <div
+                      className="results-header"
+                      style={{ marginBottom: "1rem" }}
+                    >
+                      <Cpu style={{ color: "#ca8a04" }} />
+                      <h3 className="results-title">AI Astrologer</h3>
+                    </div>
+
+                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
+                      Get a Personalized AI Reading
+                    </h3>
+                    <p className="text-sm text-gray-70 max-w-xl">
+                      Let our AI Astrologer interpret your birth chart, dashas
+                      and planetary strengths in simple, practical language
+                      tailored just for you.
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!validateBirthDetails()) {
+                          setError(
+                            "Please complete all fields for both individuals, including names, before using the chat."
+                          );
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          return;
+                        }
+                        if (!result) {
+                          // Auto-submit if result doesn't exist
+                          document.querySelector("form")?.requestSubmit();
+                          setTimeout(() => {
+                            prepareChatData();
+                            setChatSessionId(prev => prev + 1);
+                            setChatOpen(true);
+                            scrollToChat();
+                          }, 2000);
+                        } else {
+                          prepareChatData();
+                          setChatSessionId(prev => prev + 1);
+                          setChatOpen(true);
+                          scrollToChat();
+                        }
+                      }}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
+                    >
+                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      Talk to AI Astrologer
+                    </button>
+                  </div>
+                </div>
+              ) : (
                 <div className="chat-window-container">
                   <Chat
                     key={`matching-chat-${chatSessionId}`}
                     pageTitle="Matching"
-                    initialData={{
+                    initialData={chatData || {
                       female: {
                         input: {
                           name: female.fullName,
@@ -3148,8 +3238,8 @@ export default function MatchingPage() {
                     }}
                   />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Verdict Card */}
             <div className="card mt-6">
@@ -3522,20 +3612,11 @@ export default function MatchingPage() {
         .history-card.expanded {
           max-height: none;
         }
-        [data-theme="cosmic"] .history-card {
-          background: linear-gradient(145deg, rgba(22, 33, 62, 0.95), rgba(10, 10, 15, 0.9));
-          border: 1px solid rgba(212, 175, 55, 0.3);
-          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.2);
-          color: #d4af37;
-        }
-        .history-card:hover {
+                .history-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
         }
-        [data-theme="cosmic"] .history-card:hover {
-          box-shadow: 0 16px 36px rgba(212, 175, 55, 0.3);
-        }
-        .history-card-top {
+                .history-card-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -3557,39 +3638,21 @@ export default function MatchingPage() {
           background: #fff8e6;
           color: #8b6b15;
         }
-        [data-theme="cosmic"] .pill {
-          border: 1px solid rgba(212, 175, 55, 0.4);
-          background: rgba(212, 175, 55, 0.15);
-          color: #fbbf24;
-        }
-        .pill-female {
+                .pill-female {
           background: #fce7f3;
           border-color: #fbcfe8;
           color: #831843;
         }
-        [data-theme="cosmic"] .pill-female {
-          background: rgba(236, 72, 153, 0.2);
-          border-color: rgba(236, 72, 153, 0.4);
-          color: #ec4899;
-        }
-        .pill-male {
+                .pill-male {
           background: #dbeafe;
           border-color: #bfdbfe;
           color: #1e3a8a;
         }
-        [data-theme="cosmic"] .pill-male {
-          background: rgba(59, 130, 246, 0.2);
-          border-color: rgba(59, 130, 246, 0.4);
-          color: #3b82f6;
-        }
-        .dot-separator {
+                .dot-separator {
           color: #c4a13f;
           font-weight: 700;
         }
-        [data-theme="cosmic"] .dot-separator {
-          color: #d4af37;
-        }
-        .history-card-body {
+                .history-card-body {
           display: flex;
           gap: 16px;
           align-items: stretch;
@@ -3607,10 +3670,7 @@ export default function MatchingPage() {
           color: #fbbf24;
           font-weight: 700;
         }
-        [data-theme="cosmic"] .person-label {
-          color: #fbbf24;
-        }
-        .person-meta {
+                .person-meta {
           display: flex;
           gap: 8px;
           align-items: flex-start;
@@ -3647,16 +3707,7 @@ export default function MatchingPage() {
         .show-more-btn:hover {
           color: #fbbf24;
         }
-        [data-theme="cosmic"] .show-more-btn {
-          color: #d4af37;
-        }
-        [data-theme="cosmic"] .show-more-btn:hover {
-          color: #fbbf24;
-        }
-        [data-theme="cosmic"] .person-meta {
-          color: #d4af37;
-        }
-        .meta-icon {
+                                .meta-icon {
           width: 16px;
           height: 16px;
           color: #d4af37;
@@ -3665,10 +3716,7 @@ export default function MatchingPage() {
           width: 1px;
           background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
         }
-        [data-theme="cosmic"] .person-divider {
-          background: linear-gradient(180deg, transparent, rgba(212, 175, 55, 0.3), transparent);
-        }
-        .history-actions {
+                .history-actions {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -3684,18 +3732,10 @@ export default function MatchingPage() {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-        [data-theme="cosmic"] .use-btn {
-          background: rgba(212, 175, 55, 0.15);
-          color: #fbbf24;
-          border-color: rgba(212, 175, 55, 0.4);
-        }
-        .use-btn:hover {
+                .use-btn:hover {
           background: #fff3d4;
         }
-        [data-theme="cosmic"] .use-btn:hover {
-          background: rgba(212, 175, 55, 0.25);
-        }
-        .delete-btn {
+                .delete-btn {
           background: transparent;
           border: none;
           color: #dc2626;
@@ -3718,10 +3758,7 @@ export default function MatchingPage() {
             width: 100%;
             background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
           }
-          [data-theme="cosmic"] .person-divider {
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
-          }
-        }
+                  }
       `}</style>
 
       {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
@@ -3815,15 +3852,11 @@ export default function MatchingPage() {
           <div
             className="chat-assistant-card"
             style={{
-              background: isCosmic
-                ? "rgba(22, 33, 62, 0.95)"
-                : "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
+              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
               border: "1px solid rgba(212, 175, 55, 0.3)",
               borderRadius: "20px",
               padding: "20px",
-              boxShadow: isCosmic
-                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2)"
-                : "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
               cursor: "pointer",
               transition: "all 0.3s ease",
               position: "relative",
@@ -3925,20 +3958,13 @@ export default function MatchingPage() {
                   style={{
                     fontSize: "16px",
                     fontWeight: 700,
-                    color: isCosmic ? "#d4af37" : "#111827",
+                    color: "#111827",
                     margin: "0 0 4px 0",
                     fontFamily: "'Georgia', 'Times New Roman', serif",
-                    ...(isCosmic
-                      ? {
-                        color: "#d4af37",
-                      }
-                      : {
-                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                      }
-                    ),
+                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                   }}
                 >
                   AI Astrologer Assistant
@@ -3946,7 +3972,7 @@ export default function MatchingPage() {
                 <p
                   style={{
                     fontSize: "13px",
-                    color: isCosmic ? "#d4af37" : "#6b7280",
+                    color: "#6b7280",
                     margin: 0,
                     lineHeight: "1.5",
                   }}
@@ -3975,7 +4001,7 @@ export default function MatchingPage() {
                     animation: "pulse 2s infinite",
                   }}
                 />
-                <span style={{ fontSize: "12px", color: isCosmic ? "#d4af37" : "#6b7280", fontWeight: 500 }}>
+                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
                   Online
                 </span>
               </div>
@@ -3988,14 +4014,12 @@ export default function MatchingPage() {
                   border: "none",
                   borderRadius: "10px",
                   padding: "8px 16px",
-                  color: isCosmic ? "#ffffff" : "#1f2937",
+                  color: "#1f2937",
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: submitting ? "not-allowed" : "pointer",
                   transition: "all 0.2s ease",
-                  boxShadow: isCosmic
-                    ? "0 2px 8px rgba(212, 175, 55, 0.4)"
-                    : "0 2px 8px rgba(251, 191, 36, 0.3)",
+                  boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
                   opacity: submitting ? 0.6 : 1,
                 }}
                 onMouseEnter={(e) => {

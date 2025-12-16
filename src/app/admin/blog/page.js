@@ -8,6 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateSlug } from '@/lib/blog-utils'
+import { useToast } from '@/hooks/useToast'
+import { ToastContainer } from '@/components/Toast'
 import './admin-blog.css'
 
 export default function BlogAdminPage() {
@@ -17,6 +19,7 @@ export default function BlogAdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
 
   // Form state
   const [editingId, setEditingId] = useState(null)
@@ -36,6 +39,34 @@ export default function BlogAdminPage() {
   useEffect(() => {
     fetchBlogs()
   }, [])
+
+  // Handle edit query parameter from URL
+  useEffect(() => {
+    if (blogs.length === 0 || editingId) return
+    
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get('edit')
+    if (editId) {
+      const blogToEdit = blogs.find(b => b.id === editId)
+      if (blogToEdit) {
+        setEditingId(blogToEdit.id)
+        setFormData({
+          title: blogToEdit.title || '',
+          slug: blogToEdit.slug || '',
+          content: blogToEdit.content || '',
+          metaTitle: blogToEdit.metaTitle || blogToEdit.title || '',
+          metaDescription: blogToEdit.metaDescription || '',
+          author: blogToEdit.author || 'RahuNow',
+          tags: blogToEdit.tags?.join(', ') || '',
+          featuredImage: blogToEdit.featuredImage || '',
+          status: blogToEdit.status || 'draft',
+        })
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Clean up URL
+        window.history.replaceState({}, '', '/admin/blog')
+      }
+    }
+  }, [blogs, editingId])
 
   const fetchBlogs = async () => {
     try {
@@ -107,7 +138,9 @@ export default function BlogAdminPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess(editingId ? 'Blog updated successfully!' : 'Blog created successfully!')
+        const message = editingId ? 'Blog updated successfully!' : 'Blog created successfully!'
+        setSuccess(message)
+        showSuccess(message)
         resetForm()
         fetchBlogs()
         
@@ -118,7 +151,9 @@ export default function BlogAdminPage() {
           }, 1000)
         }
       } else {
-        setError(data.error || 'Failed to save blog')
+        const errorMsg = data.error || 'Failed to save blog'
+        setError(errorMsg)
+        showError(errorMsg)
       }
     } catch (err) {
       setError('Failed to save blog: ' + err.message)
@@ -156,13 +191,17 @@ export default function BlogAdminPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess('Blog deleted successfully!')
+        const message = 'Blog deleted successfully!'
+        setSuccess(message)
+        showSuccess(message)
         fetchBlogs()
         if (editingId === id) {
           resetForm()
         }
       } else {
-        setError(data.error || 'Failed to delete blog')
+        const errorMsg = data.error || 'Failed to delete blog'
+        setError(errorMsg)
+        showError(errorMsg)
       }
     } catch (err) {
       setError('Failed to delete blog: ' + err.message)
@@ -436,6 +475,9 @@ export default function BlogAdminPage() {
           )}
         </div>
       </div>
+      
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   )
 }
