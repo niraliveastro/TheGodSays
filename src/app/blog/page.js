@@ -30,10 +30,15 @@ export default function BlogPage() {
   useEffect(() => {
     async function fetchBlogs() {
       try {
-        const response = await fetch('/api/blog?status=published')
+        // Add cache-busting timestamp to ensure fresh data
+        const response = await fetch(`/api/blog?status=published&_t=${Date.now()}`, {
+          cache: 'no-store',
+        })
         const data = await response.json()
         if (response.ok) {
           setBlogs(data.blogs || [])
+        } else {
+          console.error('[Blog Page] API error:', data.error)
         }
       } catch (error) {
         console.error('[Blog Page] Error fetching blogs:', error)
@@ -42,6 +47,10 @@ export default function BlogPage() {
       }
     }
     fetchBlogs()
+    
+    // Refresh blogs every 30 seconds to catch new posts
+    const interval = setInterval(fetchBlogs, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   return (

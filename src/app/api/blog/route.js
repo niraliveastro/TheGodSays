@@ -3,7 +3,7 @@
  * Handles GET (list all blogs) and POST (create new blog) operations
  */
 
-import { db } from '@/lib/firebase-admin'
+import { getFirestore } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { generateSlug } from '@/lib/blog-utils'
 
@@ -12,9 +12,10 @@ const BLOGS_COLLECTION = 'blogs'
 // GET: Fetch all blogs (including drafts for admin)
 export async function GET(request) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       return Response.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Firebase Admin not initialized. Please check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
         { status: 500 }
       )
     }
@@ -28,11 +29,28 @@ export async function GET(request) {
       query = query.where('status', '==', status)
     }
 
-    const snapshot = await query.orderBy('publishedAt', 'desc').get()
+    // Try with orderBy first, fallback to without orderBy if index not ready
+    let snapshot
+    try {
+      // Try to order by publishedAt
+      snapshot = await query.orderBy('publishedAt', 'desc').get()
+    } catch (indexError) {
+      // If composite index not ready, query without orderBy and sort in memory
+      console.log('[Blog API] Index not ready, querying without orderBy:', indexError.message)
+      console.log('[Blog API] This is normal if the Firestore index is still building')
+      snapshot = await query.get()
+    }
 
     const blogs = []
     snapshot.forEach((doc) => {
       const data = doc.data()
+      
+      // For published blogs, ensure publishedAt exists
+      if (status === 'published' && !data.publishedAt) {
+        console.log(`[Blog API] Skipping blog ${doc.id} - status is published but publishedAt is missing`)
+        return // Skip blogs without publishedAt when filtering for published
+      }
+      
       blogs.push({
         id: doc.id,
         ...data,
@@ -41,7 +59,24 @@ export async function GET(request) {
       })
     })
 
-    return Response.json({ blogs }, { status: 200 })
+    // If we couldn't use orderBy, sort in memory
+    if (blogs.length > 0) {
+      blogs.sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0
+        return dateB - dateA // Descending order
+      })
+    }
+    
+    console.log(`[Blog API] Returning ${blogs.length} ${status || 'all'} blog(s)`)
+
+    return Response.json({ blogs }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      }
+    })
   } catch (error) {
     console.error('Error fetching blogs:', error)
     return Response.json(
@@ -54,9 +89,10 @@ export async function GET(request) {
 // POST: Create a new blog post
 export async function POST(request) {
   try {
-    if (!db) {
+    const db = getFirestore()
+    if (!db || typeof db.collection !== 'function') {
       return Response.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Firebase Admin not initialized. Please check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
         { status: 500 }
       )
     }
