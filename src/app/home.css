@@ -509,6 +509,7 @@ h1, h2, h3, h4, h5, h6,
   background: linear-gradient(135deg, var(--color-gold), var(--color-gold-dark), var(--color-gold));
   background-size: 200% 200%;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
