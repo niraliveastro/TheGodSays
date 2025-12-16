@@ -23,7 +23,8 @@ const BLOGS_COLLECTION = 'blogs'
 export async function getPublishedBlogs() {
   try {
     if (!db) {
-      throw new Error('Firebase Admin not initialized')
+      console.error('Firebase Admin not initialized. Check environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, NEXT_PUBLIC_FIREBASE_PROJECT_ID')
+      return []
     }
 
     const blogsRef = db.collection(BLOGS_COLLECTION)
@@ -70,6 +71,11 @@ export async function getPublishedBlogs() {
     return blogs
   } catch (error) {
     console.error('Error fetching published blogs:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    })
     return []
   }
 }

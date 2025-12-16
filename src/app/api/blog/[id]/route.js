@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
       )
     }
 
-    const { id } = params
+    const { id } = await params
     const docRef = db.collection(BLOGS_COLLECTION).doc(id)
     const doc = await docRef.get()
 
@@ -56,7 +56,7 @@ export async function PUT(request, { params }) {
       )
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const {
       title,
@@ -160,7 +160,7 @@ export async function DELETE(request, { params }) {
       )
     }
 
-    const { id } = params
+    const { id } = await params
     const docRef = db.collection(BLOGS_COLLECTION).doc(id)
     const doc = await docRef.get()
 
@@ -170,7 +170,17 @@ export async function DELETE(request, { params }) {
 
     await docRef.delete()
 
-    return Response.json({ success: true, message: 'Blog deleted successfully' }, { status: 200 })
+    // Return with no-cache headers to prevent caching
+    return Response.json(
+      { success: true, message: 'Blog deleted successfully' },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error deleting blog:', error)
     return Response.json(

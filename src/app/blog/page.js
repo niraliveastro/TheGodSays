@@ -11,6 +11,10 @@ import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
 
+// Force dynamic rendering to always fetch fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Generate metadata for SEO
 export async function generateMetadata() {
   return {
@@ -57,7 +61,13 @@ export async function generateMetadata() {
 }
 
 export default async function BlogPage() {
-  const blogs = await getPublishedBlogs()
+  let blogs = []
+  try {
+    blogs = await getPublishedBlogs()
+    console.log(`[Blog Page] Fetched ${blogs.length} published blogs`)
+  } catch (error) {
+    console.error('[Blog Page] Error fetching blogs:', error)
+  }
 
   return (
     <div className="blog-listing-page">
