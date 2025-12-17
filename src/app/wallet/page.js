@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import Wallet from "@/components/Wallet";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PageLoading } from "@/components/LoadingStates";
 
 export default function WalletPage() {
@@ -12,8 +12,24 @@ export default function WalletPage() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
+  // Check if user came from a return URL (optional - for "Back" button display)
+  const [returnUrl, setReturnUrl] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedReturnUrl = sessionStorage.getItem('tgs:returnUrl');
+      if (storedReturnUrl) {
+        setReturnUrl(storedReturnUrl);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
+      // Store current wallet page as return URL for after login
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('tgs:returnUrl', '/wallet');
+      }
       router.push("/auth/user");
     }
     // Redirect astrologers

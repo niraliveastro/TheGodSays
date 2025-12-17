@@ -62,14 +62,106 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Migrate guest conversations to user account on login
+  const migrateGuestChats = async (userId) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      // Get guest chat messages from sessionStorage
+      const predictionKey = 'tgs:guest_chat:prediction';
+      const matchmakingKey = 'tgs:guest_chat:matchmaking';
+      
+      const predictionMessages = (() => {
+        try {
+          const stored = sessionStorage.getItem(predictionKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return Array.isArray(parsed) ? parsed : [];
+          }
+        } catch (e) {
+          console.error('Error reading guest prediction chat:', e);
+        }
+        return [];
+      })();
+      
+      const matchmakingMessages = (() => {
+        try {
+          const stored = sessionStorage.getItem(matchmakingKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return Array.isArray(parsed) ? parsed : [];
+          }
+        } catch (e) {
+          console.error('Error reading guest matchmaking chat:', e);
+        }
+        return [];
+      })();
+      
+      // Migrate conversations if there are guest messages
+      const migrations = [];
+      if (predictionMessages.length > 0) {
+        migrations.push(
+          fetch('/api/conversations/migrate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              chatType: 'prediction',
+              guestMessages: predictionMessages
+            })
+          }).then(() => {
+            sessionStorage.removeItem(predictionKey);
+          }).catch(err => {
+            console.error('Error migrating prediction chat:', err);
+          })
+        );
+      }
+      
+      if (matchmakingMessages.length > 0) {
+        migrations.push(
+          fetch('/api/conversations/migrate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              chatType: 'matchmaking',
+              guestMessages: matchmakingMessages
+            })
+          }).then(() => {
+            sessionStorage.removeItem(matchmakingKey);
+          }).catch(err => {
+            console.error('Error migrating matchmaking chat:', err);
+          })
+        );
+      }
+      
+      if (migrations.length > 0) {
+        await Promise.all(migrations);
+        console.log('Guest chats migrated successfully');
+      }
+    } catch (error) {
+      console.error('Error migrating guest chats:', error);
+    }
+  };
+
   // Observe auth state changes
   useEffect(() => {
+    let prevUser = null;
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      const wasGuest = !prevUser && fbUser; // Detect login event
+      prevUser = fbUser;
+      
       setUser(fbUser || null);
       
       if (fbUser) {
         const profile = await fetchUserProfile(fbUser.uid);
         setUserProfile(profile);
+        
+        // Migrate guest chats on login
+        if (wasGuest) {
+          await migrateGuestChats(fbUser.uid);
+        }
+        
         // Persist role and ID for quick access
         try {
           if (typeof window !== 'undefined') {

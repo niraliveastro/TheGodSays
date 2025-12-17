@@ -104,7 +104,14 @@ export default function UserAuth() {
         trackEvent('login_success', { method: 'email' });
         
         if (result.profile?.collection === "users") {
-          router.push("/talk-to-astrologer"); // Redirect to astrologer consultation page
+          // Check for return URL stored before login
+          const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('tgs:returnUrl') : null;
+          if (returnUrl) {
+            sessionStorage.removeItem('tgs:returnUrl');
+            router.push(returnUrl);
+          } else {
+            router.push("/talk-to-astrologer"); // Default redirect
+          }
         } else {
           router.push("/unauthorized"); // Redirect if not a user
         }
@@ -128,7 +135,15 @@ export default function UserAuth() {
 
         // Track successful signup
         trackEvent('signup_success', { method: 'email' });
-        router.push("/talk-to-astrologer");
+        
+        // Check for return URL stored before signup
+        const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('tgs:returnUrl') : null;
+        if (returnUrl) {
+          sessionStorage.removeItem('tgs:returnUrl');
+          router.push(returnUrl);
+        } else {
+          router.push("/talk-to-astrologer"); // Default redirect
+        }
       }
     } catch (err) {
       // Track auth failure
@@ -169,10 +184,25 @@ export default function UserAuth() {
           role: "user",
           createdAt: new Date().toISOString(),
         });
-        router.push("/talk-to-astrologer");
+        
+        // Check for return URL stored before signup
+        const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('tgs:returnUrl') : null;
+        if (returnUrl) {
+          sessionStorage.removeItem('tgs:returnUrl');
+          router.push(returnUrl);
+        } else {
+          router.push("/talk-to-astrologer");
+        }
       } else {
         if (result.profile.collection === "users") {
-          router.push("/talk-to-astrologer");
+          // Check for return URL stored before login
+          const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('tgs:returnUrl') : null;
+          if (returnUrl) {
+            sessionStorage.removeItem('tgs:returnUrl');
+            router.push(returnUrl);
+          } else {
+            router.push("/talk-to-astrologer");
+          }
         } else {
           router.push("/unauthorized");
         }

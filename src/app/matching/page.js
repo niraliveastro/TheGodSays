@@ -149,6 +149,7 @@ export default function MatchingPage() {
   // === Chat State ===
   const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
   const [chatSessionId, setChatSessionId] = useState(0); // Chat session counter for reset
+  const [shouldResetChat, setShouldResetChat] = useState(false);
   const [chatData, setChatData] = useState(null); // Data to pass to chat component
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
   const chatRef = useRef(null); // Reference to chat section for scrolling
@@ -512,6 +513,8 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
+    // Mark that chat should reset on next result (new form submission)
+    setShouldResetChat(true);
     if (
       !female.fullName ||
       !female.dob ||
@@ -852,6 +855,18 @@ export default function MatchingPage() {
       
       setFDetails(fDetailsBuilt);
       setMDetails(mDetailsBuilt);
+      
+      // Prepare chat data with all details when results are ready
+      // Use setTimeout to ensure state updates are complete
+      setTimeout(() => {
+        prepareChatData();
+      }, 100);
+
+      // Reset chat on new form submission (increment session ID to trigger reset)
+      if (shouldResetChat) {
+        setChatSessionId(prev => prev + 1);
+        setShouldResetChat(false);
+      }
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
@@ -937,10 +952,10 @@ export default function MatchingPage() {
           dob: female.dob,
           tob: female.tob,
           place: female.place,
+          coords: fCoords,
         },
-        shadbalaRows: fDetails?.shadbalaRows || [],
-        placements: fDetails?.placements || [],
-        currentDasha: fDetails?.currentDasha || null,
+        // Pass the full details object with all data including vimsottari and mahaDasas
+        details: fDetails || null,
       },
       male: {
         input: {
@@ -948,23 +963,48 @@ export default function MatchingPage() {
           dob: male.dob,
           tob: male.tob,
           place: male.place,
+          coords: mCoords,
         },
-        shadbalaRows: mDetails?.shadbalaRows || [],
-        placements: mDetails?.placements || [],
-        currentDasha: mDetails?.currentDasha || null,
+        // Pass the full details object with all data including vimsottari and mahaDasas
+        details: mDetails || null,
       },
-      matching: {
-        totalScore: result?.total_score || 0,
-        outOf: result?.out_of || 36,
-        breakdown: KOOTS.map((k) => ({
-          name: k,
-          score: result?.[k]?.score || 0,
-          outOf: result?.[k]?.out_of || 0,
-        })),
-      },
+      // Use "match" key as expected by Chat component (not "matching")
+      match: result || null,
     };
     setChatData(data);
+    return data;
   };
+
+  // Auto-update chatData when results/details change
+  useEffect(() => {
+    if (result && fDetails && mDetails) {
+      // Prepare chat data with current state values
+      const data = {
+        female: {
+          input: {
+            name: female.fullName,
+            dob: female.dob,
+            tob: female.tob,
+            place: female.place,
+            coords: fCoords,
+          },
+          details: fDetails,
+        },
+        male: {
+          input: {
+            name: male.fullName,
+            dob: male.dob,
+            tob: male.tob,
+            place: male.place,
+            coords: mCoords,
+          },
+          details: mDetails,
+        },
+        match: result,
+      };
+      setChatData(data);
+    }
+  }, [result, fDetails, mDetails, female, male, fCoords, mCoords]);
 
   /**
    * Scrolls to the chat section smoothly.
@@ -3209,6 +3249,7 @@ export default function MatchingPage() {
                   <Chat
                     key={`matching-chat-${chatSessionId}`}
                     pageTitle="Matching"
+                    chatType="matchmaking"
                     initialData={chatData || {
                       female: {
                         input: {

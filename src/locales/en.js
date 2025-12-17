@@ -5,6 +5,7 @@ export const en = {
     aiPredictions: "AI Predictions",
     matching: "Matching",
     tools: "Tools",
+    blog: "Blog",
     wallet: "Wallet",
     myAccount: "My Account",
     signIn: "Sign In",
