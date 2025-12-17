@@ -74,6 +74,8 @@ export default function PredictionsPage() {
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
+  const [shouldResetChat, setShouldResetChat] = useState(false);
+  const lastResultRef = useRef(null); // Track last result to detect new submissions
   const [showNotification, setShowNotification] = useState(false);
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(true);
   const addressRefs = useRef({});
@@ -423,6 +425,8 @@ export default function PredictionsPage() {
     e.preventDefault();
     setError("");
     setResult(null);
+    // Mark that chat should reset on next result (new form submission)
+    setShouldResetChat(true);
 
     const { error: validationError, parsed } = validate();
     if (validationError) {
@@ -633,6 +637,12 @@ export default function PredictionsPage() {
         westernChartSvg,
         apiErrors: { ...errors },
       });
+      
+      // Reset chat on new form submission (increment session ID to trigger reset)
+      if (shouldResetChat) {
+        setChatSessionId(prev => prev + 1);
+        setShouldResetChat(false);
+      }
       
       // Lock history card height to prevent expansion after results are generated
       if (historyCardRef.current && initialHistoryHeightRef.current) {
@@ -1634,6 +1644,8 @@ export default function PredictionsPage() {
                     pageTitle="Predictions" 
                     initialData={chatData}
                     onClose={() => setChatOpen(false)}
+                    chatType="prediction"
+                    shouldReset={false}
                   />
                 </div>
               )}

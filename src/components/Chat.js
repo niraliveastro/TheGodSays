@@ -3,6 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useChatState } from '@/hooks/useChatState';
+import { incrementGuestUsage } from '@/lib/guest-usage';
+import { useRouter } from 'next/navigation';
 function buildContextPrompt(initialData, pageTitle, language = 'en') {
   // If Matching page AND both charts exist
   if (pageTitle === "Matching" && initialData?.female && initialData?.male) {
@@ -875,9 +879,33 @@ ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selec
 }
 
 
-const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
+const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false }) => {
   const { t, language } = useTranslation();
-    const [messages, setMessages] = useState([]);
+  const { user, getUserId } = useAuth();
+  const router = useRouter();
+  const userId = getUserId();
+  
+  // Determine chatType from pageTitle if not provided
+  const determinedChatType = chatType || (pageTitle?.toLowerCase().includes('match') ? 'matchmaking' : 'prediction');
+  
+  // Use chat state hook for conversation management
+  const {
+    messages: persistedMessages,
+    setMessages: setPersistedMessages,
+    conversationId,
+    pricing,
+    walletBalance,
+    loading: chatLoading,
+    isGuest,
+    remainingGuestQuestions,
+    canSendMessage,
+    getBlockedReason,
+    saveConversation,
+    loadWalletBalance
+  } = useChatState(determinedChatType, shouldReset);
+
+  // Local state (merged with persisted messages)
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   // Store the system context prompt that will be included in every API call
@@ -885,6 +913,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showTopUpPrompt, setShowTopUpPrompt] = useState(false);
   
     // Scroll to bottom when new messages arrive - only scroll within chat container
   useEffect(() => {
@@ -899,38 +929,55 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
     }
   }, [messages]);
 
+  // Sync persisted messages with local state
   useEffect(() => {
-    // Add a default message when the component mounts
-    const welcomeMsg = language === 'hi' 
-      ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
-      : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
-    setMessages([{ text: welcomeMsg, isUser: false }]);
+    if (persistedMessages.length > 0) {
+      setMessages(persistedMessages);
+    } else {
+      // Add a default message when the component mounts (only if no persisted messages)
+      const welcomeMsg = language === 'hi' 
+        ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
+        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+      setMessages([{ text: welcomeMsg, isUser: false }]);
+    }
     // Reset system context when page title changes
     setSystemContext(null);
-  }, [pageTitle]);
+  }, [pageTitle, persistedMessages]);
 
   // If initialData is provided, build and store the context immediately
-  // Use a ref to ensure we only build the context once (prevents double-build
-  // in React StrictMode which mounts/unmounts components twice in dev).
-  const contextBuiltRef = useRef(false);
+  // Use a ref to track the last initialData hash to rebuild when data changes
+  const contextDataRef = useRef(null);
   useEffect(() => {
     if (!initialData) {
       console.log('[Chat] No initialData provided');
+      setSystemContext(null);
+      contextDataRef.current = null;
       return;
     }
-    if (contextBuiltRef.current) {
-      console.log('[Chat] Context already built, skipping');
+    
+    // Create a hash of initialData to detect changes
+    const dataHash = JSON.stringify(initialData);
+    if (contextDataRef.current === dataHash) {
+      console.log('[Chat] Context already built for this data, skipping');
       return;
     }
-    contextBuiltRef.current = true;
+    contextDataRef.current = dataHash;
 
     // Build the context prompt with language and store it immediately
     // This context will be used when user asks questions
-    console.log('[Chat] Building system context from initialData...');
+    console.log('[Chat] Building system context from initialData...', {
+      hasInitialData: !!initialData,
+      pageTitle,
+      isMatching: pageTitle === 'Matching',
+      hasFemale: !!(initialData?.female),
+      hasMale: !!(initialData?.male),
+      hasMatch: !!(initialData?.match),
+      hasBirth: !!(initialData?.birth),
+    });
     const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
     
     if (!contextPrompt || contextPrompt.length < 100) {
-      console.error('[Chat] Context prompt is too short or empty!', contextPrompt);
+      console.error('[Chat] Context prompt is too short or empty!', contextPrompt?.substring(0, 200));
     } else {
       console.log('[Chat] System context built successfully, length:', contextPrompt.length);
     }
@@ -949,11 +996,28 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
   const handleSendMessage = async () => {
     if (input.trim() === '') return;
 
+    // Check if user can send message (guest limit or credits)
+    const blockedReason = getBlockedReason();
+    if (blockedReason) {
+      if (blockedReason.type === 'guest_limit') {
+        setShowLoginPrompt(true);
+      } else if (blockedReason.type === 'insufficient_credits') {
+        setShowTopUpPrompt(true);
+      }
+      return;
+    }
+
     const userMessage = input.trim();
     const newMessages = [...messages, { text: userMessage, isUser: true }];
     setMessages(newMessages);
+    setPersistedMessages(newMessages); // Update persisted state
     setInput('');
     setIsLoading(true);
+
+    // Increment guest usage if guest
+    if (isGuest) {
+      incrementGuestUsage(determinedChatType);
+    }
 
     try {
       // Build conversation history from all messages
@@ -1043,16 +1107,40 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
         body: JSON.stringify({ 
           conversationHistory,
           page: pageTitle,
-          language: language // Pass the current language to the API
+          language: language,
+          userId: userId || null,
+          chatType: determinedChatType,
+          conversationId: conversationId || null
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from the server.');
+        const errorData = await response.json();
+        
+        // Handle insufficient credits
+        if (response.status === 402 && errorData.error === 'INSUFFICIENT_CREDITS') {
+          setShowTopUpPrompt(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        throw new Error(errorData.error || 'Failed to get response from the server.');
       }
 
       const data = await response.json();
-      setMessages([...newMessages, { text: data.response, isUser: false }]);
+      const finalMessages = [...newMessages, { text: data.response, isUser: false }];
+      setMessages(finalMessages);
+      setPersistedMessages(finalMessages); // Update persisted state
+      
+      // Refresh wallet balance after successful chat (credits were deducted for logged-in users)
+      if (userId) {
+        await loadWalletBalance();
+      }
+      
+      // Save conversation to Firestore
+      if (userId) {
+        await saveConversation(finalMessages);
+      }
     } catch (error) {
       console.error('Error fetching chat response:', error);
       const errorMsg = language === 'hi'
@@ -1248,7 +1336,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
         <div
           style={{
               width: 40,
@@ -1265,7 +1353,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2
               style={{
                 fontSize: 18,
@@ -1290,6 +1378,40 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
               {pageTitle} Assistant
         </span>
       </div>
+        </div>
+        {/* Credits/Wallet Display */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
+          {isGuest ? (
+            <div style={{ 
+              background: "rgba(255, 255, 255, 0.2)", 
+              padding: "4px 8px", 
+              borderRadius: "6px",
+              fontSize: 11,
+              color: "white",
+              fontWeight: 600,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end"
+            }}>
+              <span>{remainingGuestQuestions !== null ? `${remainingGuestQuestions} free left` : 'Free'}</span>
+              <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+            </div>
+          ) : walletBalance !== null ? (
+            <div style={{
+              background: "rgba(255, 255, 255, 0.2)",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              fontSize: 11,
+              color: "white",
+              fontWeight: 600,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end"
+            }}>
+              <span>{walletBalance} credits</span>
+              <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+            </div>
+          ) : null}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
@@ -1446,12 +1568,20 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           value={input}
           onChange={handleInputChange}
           onKeyPress={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === "Enter" && !e.shiftKey && !isLoading) {
               e.preventDefault();
               handleSendMessage();
             }
           }}
-          placeholder="Type your message..."
+          placeholder={
+            !canSendMessage() && isGuest
+              ? "Log in to continue..."
+              : !canSendMessage() && !isGuest
+              ? "Insufficient credits..."
+              : "Type your message..."
+          }
+          readOnly={!canSendMessage() || isLoading}
+          disabled={isLoading}
           className="chat-input-field"
           style={{
             flex: 1,
@@ -1460,13 +1590,30 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
             border: "1px solid rgba(212, 175, 55, 0.3)",
             fontSize: 14,
             outline: "none",
-            background: "white",
+            background: !canSendMessage() ? "#f3f4f6" : "white",
             color: "inherit",
             transition: "border-color 0.2s ease",
+            cursor: !canSendMessage() ? "pointer" : "text",
+            opacity: !canSendMessage() ? 0.6 : 1,
+          }}
+          onClick={() => {
+            // Show popup when clicking on read-only input (when blocked)
+            if (!canSendMessage()) {
+              const blockedReason = getBlockedReason();
+              if (blockedReason) {
+                if (blockedReason.type === 'guest_limit') {
+                  setShowLoginPrompt(true);
+                } else if (blockedReason.type === 'insufficient_credits') {
+                  setShowTopUpPrompt(true);
+                }
+              }
+            }
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = "#d4af37";
-            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(212, 175, 55, 0.1)";
+            if (canSendMessage()) {
+              e.currentTarget.style.borderColor = "#d4af37";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(212, 175, 55, 0.1)";
+            }
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.3)";
@@ -1474,7 +1621,21 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           }}
         />
         <button
-          onClick={handleSendMessage}
+          onClick={() => {
+            // Show popup if disabled, otherwise send message
+            if (!canSendMessage()) {
+              const blockedReason = getBlockedReason();
+              if (blockedReason) {
+                if (blockedReason.type === 'guest_limit') {
+                  setShowLoginPrompt(true);
+                } else if (blockedReason.type === 'insufficient_credits') {
+                  setShowTopUpPrompt(true);
+                }
+              }
+              return;
+            }
+            handleSendMessage();
+          }}
           disabled={isLoading}
           className="chat-send-button"
           style={{
@@ -1509,6 +1670,171 @@ const Chat = ({ pageTitle, initialData = null, onClose = null }) => {
           <span className="send-button-emoji">{isLoading ? "⏳" : "↑"}</span>
         </button>
       </div>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "20px",
+          }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "400px",
+              width: "100%",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
+              Free Questions Used
+            </h3>
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20, lineHeight: 1.5 }}>
+              You've used your 2 free questions. Please log in to continue this conversation.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: "white",
+                  color: "#374151",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Store current page URL for redirect after login
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('tgs:returnUrl', window.location.pathname + window.location.search);
+                  }
+                  setShowLoginPrompt(false);
+                  router.push('/auth/user?login=true');
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Log In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top-Up Prompt Modal for Insufficient Credits */}
+      {showTopUpPrompt && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "20px",
+          }}
+          onClick={() => setShowTopUpPrompt(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "400px",
+              width: "100%",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
+              Credits Expired
+            </h3>
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 8, lineHeight: 1.5 }}>
+              You don't have enough credits to continue this conversation.
+            </p>
+            <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 20, lineHeight: 1.5 }}>
+              Required: <strong>{pricing.creditsPerQuestion} credits</strong> per question
+              <br />
+              Available: <strong>{walletBalance || 0} credits</strong>
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setShowTopUpPrompt(false)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  background: "white",
+                  color: "#374151",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Store current page URL for redirect after top-up
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('tgs:returnUrl', window.location.pathname + window.location.search);
+                  }
+                  setShowTopUpPrompt(false);
+                  router.push('/wallet');
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Top Up Credits
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

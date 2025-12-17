@@ -300,4 +300,23 @@ export class WalletService {
        throw new Error('Failed to fetch transaction history')
      }
    }
+
+  /**
+   * Debit wallet for AI chat (simplified wrapper)
+   * @param {string} userId - User ID
+   * @param {number} amount - Amount to deduct
+   * @param {Object} metadata - Optional metadata (description, metadata object)
+   * @returns {Promise<Object>} Transaction result
+   */
+  static async debitWallet(userId, amount, metadata = {}) {
+    try {
+      const transactionId = `ai-chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const description = metadata.description || 'AI chat question'
+      
+      return await this.deductMoney(userId, amount, transactionId, description)
+    } catch (error) {
+      console.error('Error debiting wallet:', error)
+      throw error
+    }
+  }
 }
