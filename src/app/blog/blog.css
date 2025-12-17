@@ -30,6 +30,39 @@
   margin: 0 auto;
 }
 
+.blog-hero-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.blog-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #d4af37 0%, #b8972e 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.blog-create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, #b8972e 0%, #a08526 100%);
+}
+
+.blog-create-btn:active {
+  transform: translateY(0);
+}
+
 .blog-container {
   max-width: 1200px;
   margin: 0 auto;

@@ -297,13 +297,25 @@ export default function BlogAdminPage() {
                 placeholder='<h2>Introduction</h2>
 <p>Your content here...</p>
 
+<img src="https://example.com/image.jpg" alt="Description of image" />
+
 <h2>Main Section</h2>
-<p>More content...</p>
+<p>More content with <strong>bold text</strong> and <em>italic text</em>.</p>
 
 <h2>Conclusion</h2>
 <p>Wrap up your article...</p>'
               />
-              <p className="admin-helper">💡 Tip: Use AI tools (ChatGPT, Claude) to write content, then paste the HTML here. Use &lt;h2&gt; for main sections, &lt;h3&gt; for subsections, and &lt;p&gt; for paragraphs.</p>
+              <div className="admin-helper">
+                <p><strong>💡 Tips for Adding Content:</strong></p>
+                <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', fontSize: '0.875rem' }}>
+                  <li>Use AI tools (ChatGPT, Claude) to write content, then paste the HTML here</li>
+                  <li>Use <code>&lt;h2&gt;</code> for main sections, <code>&lt;h3&gt;</code> for subsections, <code>&lt;p&gt;</code> for paragraphs</li>
+                  <li><strong>To add images:</strong> Use <code>&lt;img src="URL" alt="description" /&gt;</code></li>
+                  <li>Image URLs can be from: Unsplash, Imgur, your own CDN, or Firebase Storage</li>
+                  <li>Example: <code>&lt;img src="https://images.unsplash.com/photo-1234567890" alt="Astrology chart" /&gt;</code></li>
+                  <li>Images will automatically be styled with rounded corners and proper spacing</li>
+                </ul>
+              </div>
             </div>
 
             <div className="admin-form-grid admin-form-spacing">

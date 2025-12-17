@@ -8,6 +8,7 @@ import { getBlogBySlug, getAllBlogSlugs } from '@/lib/blog'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { customImageLoader } from '@/lib/image-loader'
 import './blog-detail.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
@@ -126,6 +127,7 @@ export default async function BlogPostPage({ params }) {
             <Image
               src={blog.featuredImage}
               alt={blog.title}
+              loader={customImageLoader}
               fill
               className="object-cover"
               priority

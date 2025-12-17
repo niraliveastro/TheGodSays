@@ -79,6 +79,7 @@ const Navigation = () => {
       icon: Settings,
       dropdownId: "tools",
       children: [
+        { href: "/blog", label: t.nav.blog || "Blog", icon: BookOpen },
         { href: "/numerology", label: t.numerology.title, icon: Hash },
         { href: "/transit", label: t.transit.title, icon: Zap },
         { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },

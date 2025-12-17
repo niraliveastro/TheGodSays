@@ -1,11 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Allow images from ANY URL/site (maximum flexibility)
+    // This disables Next.js image optimization but allows any external image
+    unoptimized: true,
+    
+    // Alternative: If you want optimization, use remotePatterns for specific domains
+    // Uncomment the remotePatterns below and set unoptimized: false
+    // remotePatterns: [
+    //   { protocol: 'https', hostname: 'images.unsplash.com' },
+    //   { protocol: 'https', hostname: 'i.imgur.com' },
+    //   { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+    //   // Add more domains as needed
+    // ],
+    
+    // Keep domains for backward compatibility (optional)
     domains: [
       'localhost',
       'rahunow.com',
       'www.rahunow.com',
-      'json.freeastrologyapi.com'
+      'json.freeastrologyapi.com',
+      'images.unsplash.com'
     ],
   },
   // Enable production optimizations

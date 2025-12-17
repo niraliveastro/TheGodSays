@@ -9,8 +9,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
+import { customImageLoader } from '@/lib/image-loader'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
@@ -23,6 +25,7 @@ function generateExcerpt(html, maxLength = 120) {
 }
 
 export default function BlogPage() {
+  const router = useRouter()
   const [blogs, setBlogs] = useState([])
   const [loading, setLoading] = useState(true)
   const { toasts, removeToast, success, error } = useToast()
@@ -59,6 +62,17 @@ export default function BlogPage() {
       <div className="blog-hero">
         <h1>Astrology Blog</h1>
         <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
+        <div className="blog-hero-actions">
+          <button 
+            onClick={() => router.push('/admin/blog')}
+            className="blog-create-btn"
+          >
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Blog Post
+          </button>
+        </div>
       </div>
 
       {/* Blog Posts Grid */}
@@ -97,6 +111,7 @@ export default function BlogPage() {
                         <Image
                           src={blog.featuredImage}
                           alt={blog.title}
+                          loader={customImageLoader}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

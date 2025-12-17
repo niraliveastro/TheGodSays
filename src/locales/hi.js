@@ -5,6 +5,7 @@ export const hi = {
     aiPredictions: "AI भविष्यवाणी",
     matching: "कुंडली मिलान",
     tools: "उपकरण",
+    blog: "ब्लॉग",
     wallet: "वॉलेट",
     myAccount: "मेरा खाता",
     signIn: "साइन इन करें",
