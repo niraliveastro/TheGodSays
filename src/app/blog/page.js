@@ -12,7 +12,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
-import { customImageLoader } from '@/lib/image-loader'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
@@ -111,7 +110,6 @@ export default function BlogPage() {
                         <Image
                           src={blog.featuredImage}
                           alt={blog.title}
-                          loader={customImageLoader}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
