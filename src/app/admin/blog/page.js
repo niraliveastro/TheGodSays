@@ -20,6 +20,8 @@ export default function BlogAdminPage() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingContentImage, setUploadingContentImage] = useState(false)
 
   // Form state
   const [editingId, setEditingId] = useState(null)
@@ -306,13 +308,100 @@ export default function BlogAdminPage() {
 <p>Wrap up your article...</p>'
               />
               <div className="admin-helper">
-                <p><strong>💡 Tips for Adding Content:</strong></p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <p style={{ margin: 0 }}><strong>💡 Tips for Adding Content:</strong></p>
+                  <label
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: uploadingContentImage ? '#e5e7eb' : 'linear-gradient(135deg, #d4af37, #b8972e)',
+                      color: uploadingContentImage ? '#9ca3af' : 'white',
+                      borderRadius: '0.375rem',
+                      cursor: uploadingContentImage ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.2s',
+                      border: 'none',
+                    }}
+                  >
+                    {uploadingContentImage ? 'Uploading...' : '📷 Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+
+                        if (!file.type.startsWith('image/')) {
+                          showError('Please select an image file')
+                          return
+                        }
+
+                        if (file.size > 5 * 1024 * 1024) {
+                          showError('Image size must be less than 5MB')
+                          return
+                        }
+
+                        setUploadingContentImage(true)
+                        try {
+                          const uploadFormData = new FormData()
+                          uploadFormData.append('file', file)
+                          uploadFormData.append('type', 'blog')
+
+                          const response = await fetch('/api/blog/upload-image', {
+                            method: 'POST',
+                            body: uploadFormData,
+                          })
+
+                          const data = await response.json()
+
+                          if (response.ok && data.url) {
+                            // Insert image tag at cursor position or at the end
+                            const textarea = e.target.closest('form').querySelector('textarea[name="content"]')
+                            const cursorPos = textarea.selectionStart || formData.content.length
+                            const textBefore = formData.content.substring(0, cursorPos)
+                            const textAfter = formData.content.substring(cursorPos)
+                            
+                            const imageTag = `\n<img src="${data.url}" alt="${file.name.replace(/\.[^/.]+$/, '')}" />\n`
+                            const newContent = textBefore + imageTag + textAfter
+                            
+                            setFormData((prev) => ({
+                              ...prev,
+                              content: newContent,
+                            }))
+                            
+                            // Set cursor position after inserted image
+                            setTimeout(() => {
+                              textarea.focus()
+                              const newCursorPos = cursorPos + imageTag.length
+                              textarea.setSelectionRange(newCursorPos, newCursorPos)
+                            }, 0)
+                            
+                            showSuccess('Image uploaded and inserted!')
+                          } else {
+                            const errorMsg = data.error || 'Failed to upload image'
+                            const suggestion = data.suggestion || ''
+                            showError(errorMsg + (suggestion ? ` ${suggestion}` : ''))
+                          }
+                        } catch (err) {
+                          showError('Failed to upload image: ' + err.message)
+                        } finally {
+                          setUploadingContentImage(false)
+                          e.target.value = '' // Reset input
+                        }
+                      }}
+                      disabled={uploadingContentImage}
+                    />
+                  </label>
+                </div>
                 <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', fontSize: '0.875rem' }}>
                   <li>Use AI tools (ChatGPT, Claude) to write content, then paste the HTML here</li>
                   <li>Use <code>&lt;h2&gt;</code> for main sections, <code>&lt;h3&gt;</code> for subsections, <code>&lt;p&gt;</code> for paragraphs</li>
-                  <li><strong>To add images:</strong> Use <code>&lt;img src="URL" alt="description" /&gt;</code></li>
-                  <li>Image URLs can be from: Unsplash, Imgur, your own CDN, or Firebase Storage</li>
-                  <li>Example: <code>&lt;img src="https://images.unsplash.com/photo-1234567890" alt="Astrology chart" /&gt;</code></li>
+                  <li><strong>To add images:</strong> Click "📷 Upload Image" button above (requires Firebase Storage enabled) or use <code>&lt;img src="URL" alt="description" /&gt;</code></li>
+                  <li>Uploaded images are automatically inserted into your content at the cursor position</li>
+                  <li>Image URLs can be from: Unsplash, Imgur, your own CDN, or Firebase Storage (when enabled)</li>
+                  <li><strong>Note:</strong> Image upload requires Firebase Storage to be enabled (Blaze plan). Until then, use external image URLs.</li>
                   <li>Images will automatically be styled with rounded corners and proper spacing</li>
                 </ul>
               </div>
@@ -381,17 +470,104 @@ export default function BlogAdminPage() {
 
               <div>
                 <label className="admin-label">
-                  Featured Image URL <span>(Optional - appears in blog listing and social shares)</span>
+                  Featured Image <span>(Optional - appears in blog listing and social shares)</span>
                 </label>
-                <input
-                  type="url"
-                  name="featuredImage"
-                  value={formData.featuredImage}
-                  onChange={handleInputChange}
-                  placeholder="https://rahunow.com/images/your-image.jpg"
-                  className="admin-input"
-                />
-                <p className="admin-helper">Recommended: 1200x630 pixels. Upload to Firebase Storage or use a CDN.</p>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <input
+                    type="url"
+                    name="featuredImage"
+                    value={formData.featuredImage}
+                    onChange={handleInputChange}
+                    placeholder="https://rahunow.com/images/your-image.jpg"
+                    className="admin-input"
+                    style={{ flex: 1 }}
+                  />
+                  <label
+                    style={{
+                      padding: '0.625rem 1.25rem',
+                      background: uploadingImage ? '#e5e7eb' : 'linear-gradient(135deg, #d4af37, #b8972e)',
+                      color: uploadingImage ? '#9ca3af' : 'white',
+                      borderRadius: '0.5rem',
+                      cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.2s',
+                      border: 'none',
+                    }}
+                  >
+                    {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+
+                        if (!file.type.startsWith('image/')) {
+                          showError('Please select an image file')
+                          return
+                        }
+
+                        if (file.size > 5 * 1024 * 1024) {
+                          showError('Image size must be less than 5MB')
+                          return
+                        }
+
+                        setUploadingImage(true)
+                        try {
+                          const uploadFormData = new FormData()
+                          uploadFormData.append('file', file)
+                          uploadFormData.append('type', 'blog')
+
+                          const response = await fetch('/api/blog/upload-image', {
+                            method: 'POST',
+                            body: uploadFormData,
+                          })
+
+                          const data = await response.json()
+
+                          if (response.ok && data.url) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              featuredImage: data.url,
+                            }))
+                            showSuccess('Image uploaded successfully!')
+                          } else {
+                            const errorMsg = data.error || 'Failed to upload image'
+                            const suggestion = data.suggestion || ''
+                            showError(errorMsg + (suggestion ? ` ${suggestion}` : ''))
+                          }
+                        } catch (err) {
+                          showError('Failed to upload image: ' + err.message)
+                        } finally {
+                          setUploadingImage(false)
+                          e.target.value = '' // Reset input
+                        }
+                      }}
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                </div>
+                {formData.featuredImage && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <img
+                      src={formData.featuredImage}
+                      alt="Featured preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '200px',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #e5e7eb',
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                )}
+                <p className="admin-helper">Recommended: 1200x630 pixels. Upload from device (requires Firebase Storage enabled) or paste a URL from external sources (Unsplash, Imgur, etc.).</p>
               </div>
             </div>
 

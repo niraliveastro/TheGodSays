@@ -42,7 +42,8 @@ export default function HinduDateCard({
         }
 
         .hinduCard {
-          width: 340px;
+          width: 360px;
+          max-width: 100%;
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(12px);
           border: 1px solid rgba(212, 175, 55, 0.3);
@@ -64,6 +65,21 @@ export default function HinduDateCard({
         .cardBody {
           background: #ffffff;
           padding: 1.25rem 1.5rem;
+          overflow: hidden;
+        }
+
+        .bodyContent {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+          gap: 1rem;
+          min-height: 160px;
+        }
+
+        .leftCol {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
         }
 
         .primaryTitle {
@@ -71,7 +87,19 @@ export default function HinduDateCard({
           font-size: 1.65rem;
           font-weight: 700;
           color: #7c2d12;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0;
+          line-height: 1.2;
+        }
+
+        .rightCol {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
+          min-width: 0;
+          overflow: hidden;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .dayNumber {
@@ -80,21 +108,14 @@ export default function HinduDateCard({
           font-weight: 900;
           color: #d4af37;
           letter-spacing: -0.05em;
-          margin-top: -0.5rem;
+          margin-bottom: 0.25rem;
         }
 
-        .bodyContent {
-          display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
-          align-items: center;
-          gap: 0.75rem;
-          min-height: 140px;
-        }
-
-        .rightCol {
-          text-align: right;
-          max-width: 8.5rem;
-          justify-self: end;
+        .dateSeparator {
+          width: 20px;
+          height: 1px;
+          background: #d4af37;
+          margin: 0.25rem 0 0.5rem auto;
         }
 
         .tithi {
@@ -102,17 +123,25 @@ export default function HinduDateCard({
           font-size: 0.95rem;
           color: #374151;
           line-height: 1.3;
-          word-break: keep-all;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          margin-top: 0.5rem;
         }
 
         .gregDate {
           font-size: 0.8125rem;
           color: #6b7280;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          margin-top: 0.25rem;
         }
 
         .weekday {
           font-size: 0.75rem;
           color: #9ca3af;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          margin-top: 0.25rem;
         }
 
         .rightExtra {
@@ -120,6 +149,8 @@ export default function HinduDateCard({
           font-size: 0.75rem;
           color: #7c2d12;
           font-weight: 500;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .footer {
@@ -133,11 +164,45 @@ export default function HinduDateCard({
           color: #374151;
           line-height: 1.4;
           font-family: 'Inter', sans-serif;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .footerLine strong {
           color: #7c2d12;
           font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+          .hinduCard {
+            width: 100%;
+            max-width: 340px;
+          }
+
+          .bodyContent {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            min-height: auto;
+          }
+
+          .leftCol {
+            align-items: center;
+            text-align: center;
+          }
+
+          .dayNumber {
+            font-size: 6rem;
+            margin: 0 auto 0.25rem;
+          }
+
+          .dateSeparator {
+            margin: 0.25rem auto 0.5rem;
+          }
+
+          .rightCol {
+            align-items: center;
+            text-align: center;
+          }
         }
       `}</style>
 
@@ -149,23 +214,29 @@ export default function HinduDateCard({
 
           {/* Main Body */}
           <div className="cardBody">
-            {/* Primary title */}
-            <div className="primaryTitle">
-              {stableTitle && stableTitle !== '-' ? stableTitle : 'Hindu Date'}
-            </div>
-
             <div className="bodyContent">
-              {/* Huge day number */}
-              <div className="dayNumber">{dayNumber}</div>
-
-              {/* Right column */}
-              <div className="rightCol">
-                <div className="tithi">
-                  {stableTithi && stableTithi !== '-' ? stableTithi : ''}
+              {/* Left column - Primary title */}
+              <div className="leftCol">
+                <div className="primaryTitle">
+                  {stableTitle && stableTitle !== '-' ? stableTitle : 'Hindu Calendar'}
                 </div>
+              </div>
+
+              {/* Right column - Day number and date details */}
+              <div className="rightCol">
+                {/* Huge day number */}
+                <div className="dayNumber">{dayNumber}</div>
+                
+                {/* Small separator dash */}
+                <div className="dateSeparator"></div>
+                
+                {/* Date details stacked vertically */}
                 <div className="gregDate">{gregDate}</div>
                 <div className="weekday">{weekday}</div>
                 {rightExtra && <div className="rightExtra">{rightExtra}</div>}
+                {stableTithi && stableTithi !== '-' && (
+                  <div className="tithi">{stableTithi}</div>
+                )}
               </div>
             </div>
           </div>
@@ -174,10 +245,10 @@ export default function HinduDateCard({
           <div className="cardBody">
             <div className="footer">
               <div className="footerLine">
-                <strong>Vikrama Samvat:</strong> {eraLine.split('Kaliyukta')[0].trim()}
+                <strong>Vikrama Samvat:</strong> {eraLine && eraLine !== '-' ? eraLine.split('Kaliyukta')[0].trim() : '-'}
               </div>
               <div className="footerLine">
-                <strong>Shaka Year:</strong> {shakaLine}
+                <strong>Shaka Year:</strong> {shakaLine && shakaLine !== '-' ? shakaLine : '-'}
               </div>
             </div>
           </div>
