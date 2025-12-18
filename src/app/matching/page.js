@@ -154,6 +154,66 @@ export default function MatchingPage() {
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
+  
+  // Track current form data hash to detect changes
+  const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
+  const previousFormDataHashRef = useRef(null);
+  
+  /**
+   * Generates a unique hash from form data (names, DOB, TOB, place)
+   * This hash is used to identify if form data has changed
+   */
+  const generateFormDataHash = () => {
+    const formData = {
+      femaleName: (female.fullName || '').trim().toUpperCase(),
+      femaleDob: (female.dob || '').trim(),
+      femaleTob: (female.tob || '').trim(),
+      femalePlace: (female.place || '').trim().toUpperCase(),
+      maleName: (male.fullName || '').trim().toUpperCase(),
+      maleDob: (male.dob || '').trim(),
+      maleTob: (male.tob || '').trim(),
+      malePlace: (male.place || '').trim().toUpperCase(),
+    };
+    // Create a consistent hash from the form data
+    const hashString = JSON.stringify(formData);
+    // Simple hash function (you could use a more robust one if needed)
+    let hash = 0;
+    for (let i = 0; i < hashString.length; i++) {
+      const char = hashString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  };
+  
+  /**
+   * Checks if form data has changed and resets chat if needed
+   */
+  const checkAndResetChatOnFormChange = () => {
+    const newHash = generateFormDataHash();
+    
+    // If form is empty, don't reset
+    if (!female.fullName && !male.fullName && !female.dob && !male.dob) {
+      return;
+    }
+    
+    // If hash changed, reset chat
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
+      console.log('[Matching] Form data changed, resetting chat:', {
+        previousHash: previousFormDataHashRef.current,
+        newHash: newHash,
+      });
+      // Reset chat by incrementing session ID
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+      // Clear any existing chat data
+      setChatData(null);
+    }
+    
+    // Update the hash
+    previousFormDataHashRef.current = newHash;
+    setCurrentFormDataHash(newHash);
+  };
 
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
@@ -228,6 +288,13 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
+    
+    // Reset chat when form is cleared
+    setChatSessionId(prev => prev + 1);
+    setShouldResetChat(true);
+    setChatData(null);
+    previousFormDataHashRef.current = null;
+    setCurrentFormDataHash(null);
   };
 
   const loadHistoryIntoForm = (item) => {
@@ -252,6 +319,40 @@ export default function MatchingPage() {
     // Optional: Reset coords so user must re-select or re-run
     setFCoords(null);
     setMCoords(null);
+    
+    // Generate hash for loaded history item to check if chat should be restored
+    const loadedHash = (() => {
+      const formData = {
+        femaleName: (item.femaleName || '').trim().toUpperCase(),
+        femaleDob: (item.femaleDob || '').trim(),
+        femaleTob: (item.femaleTob || '').trim(),
+        femalePlace: (item.femalePlace || '').trim().toUpperCase(),
+        maleName: (item.maleName || '').trim().toUpperCase(),
+        maleDob: (item.maleDob || '').trim(),
+        maleTob: (item.maleTob || '').trim(),
+        malePlace: (item.malePlace || '').trim().toUpperCase(),
+      };
+      const hashString = JSON.stringify(formData);
+      let hash = 0;
+      for (let i = 0; i < hashString.length; i++) {
+        const char = hashString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    })();
+    
+    // If this matches previous hash, don't reset chat (same data)
+    // Otherwise, reset chat (different data loaded)
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+      setChatData(null);
+    }
+    
+    // Update hash reference
+    previousFormDataHashRef.current = loadedHash;
+    setCurrentFormDataHash(loadedHash);
 
     // Scroll to top where the form is
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -513,6 +614,10 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
+    
+    // Check if form data has changed and reset chat if needed
+    checkAndResetChatOnFormChange();
+    
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
     if (
@@ -596,6 +701,82 @@ export default function MatchingPage() {
       if (mCalc.errors && Object.keys(mCalc.errors).length > 0) {
         console.warn('[Matching] Male calculation errors:', mCalc.errors);
       }
+      
+      // If Maha Dasha API call failed, retry separately for each individual
+      const retryMahaDashaIfNeeded = async (calc, payload, gender) => {
+        const mahaError = calc.errors?.["vimsottari/maha-dasas"];
+        const hasMahaData = calc.results?.["vimsottari/maha-dasas"];
+        
+        if (mahaError || !hasMahaData) {
+          console.warn(`[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`, {
+            error: mahaError,
+            hasData: !!hasMahaData,
+          });
+          
+          try {
+            const retryResult = await astrologyAPI.getSingleCalculation(
+              "vimsottari/maha-dasas",
+              payload
+            );
+            
+            if (retryResult && calc.results) {
+              calc.results["vimsottari/maha-dasas"] = retryResult;
+              // Remove error if retry succeeded
+              if (calc.errors && calc.errors["vimsottari/maha-dasas"]) {
+                delete calc.errors["vimsottari/maha-dasas"];
+              }
+              console.log(`[Matching] ${gender} Maha Dasha retry successful`);
+            }
+          } catch (retryError) {
+            console.error(`[Matching] ${gender} Maha Dasha retry failed:`, retryError);
+            // Continue with existing data even if retry fails
+          }
+        }
+      };
+      
+      // Retry Maha Dasha for both if needed
+      await Promise.all([
+        retryMahaDashaIfNeeded(fCalc, fPayload, 'Female'),
+        retryMahaDashaIfNeeded(mCalc, mPayload, 'Male'),
+      ]);
+      
+      // If Vimsottari data is missing, retry separately for each individual
+      const retryVimsottariIfNeeded = async (calc, payload, gender) => {
+        const vimsError = calc.errors?.["vimsottari/dasa-information"];
+        const hasVimsData = calc.results?.["vimsottari/dasa-information"];
+        
+        if (vimsError || !hasVimsData) {
+          console.warn(`[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`, {
+            error: vimsError,
+            hasData: !!hasVimsData,
+          });
+          
+          try {
+            const retryResult = await astrologyAPI.getSingleCalculation(
+              "vimsottari/dasa-information",
+              payload
+            );
+            
+            if (retryResult && calc.results) {
+              calc.results["vimsottari/dasa-information"] = retryResult;
+              // Remove error if retry succeeded
+              if (calc.errors && calc.errors["vimsottari/dasa-information"]) {
+                delete calc.errors["vimsottari/dasa-information"];
+              }
+              console.log(`[Matching] ${gender} Vimsottari retry successful`);
+            }
+          } catch (retryError) {
+            console.error(`[Matching] ${gender} Vimsottari retry failed:`, retryError);
+            // Continue with existing data even if retry fails
+          }
+        }
+      };
+      
+      // Retry Vimsottari for both if needed
+      await Promise.all([
+        retryVimsottariIfNeeded(fCalc, fPayload, 'Female'),
+        retryVimsottariIfNeeded(mCalc, mPayload, 'Male'),
+      ]);
       
       // Log to verify both have vimsottari data (only in development)
       if (process.env.NODE_ENV === 'development') {
@@ -862,11 +1043,18 @@ export default function MatchingPage() {
         prepareChatData();
       }, 100);
 
+      // Update form data hash when results are ready
+      const newHash = generateFormDataHash();
+      setCurrentFormDataHash(newHash);
+      
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
         setChatSessionId(prev => prev + 1);
         setShouldResetChat(false);
       }
+      
+      // Update hash reference after successful submission
+      previousFormDataHashRef.current = newHash;
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
@@ -943,8 +1131,18 @@ export default function MatchingPage() {
 
   /**
    * Prepares the data to be passed to the Chat component.
+   * Ensures ALL data is included: personal details, planet placements, ashtakoot, vimsottari, maha dasas.
    */
   const prepareChatData = () => {
+    // Ensure we have all the data before preparing
+    if (!result || !fDetails || !mDetails) {
+      console.warn('[Matching] prepareChatData called but data is incomplete:', {
+        hasResult: !!result,
+        hasFDetails: !!fDetails,
+        hasMDetails: !!mDetails,
+      });
+    }
+    
     const data = {
       female: {
         input: {
@@ -954,7 +1152,12 @@ export default function MatchingPage() {
           place: female.place,
           coords: fCoords,
         },
-        // Pass the full details object with all data including vimsottari and mahaDasas
+        // Pass the full details object with ALL data:
+        // - currentDasha: Current Dasha chain
+        // - shadbalaRows: Shadbala strength data
+        // - placements: Planetary positions
+        // - vimsottari: Full Vimsottari Dasha data
+        // - mahaDasas: Maha Dasha timeline data
         details: fDetails || null,
       },
       male: {
@@ -965,12 +1168,40 @@ export default function MatchingPage() {
           place: male.place,
           coords: mCoords,
         },
-        // Pass the full details object with all data including vimsottari and mahaDasas
+        // Pass the full details object with ALL data:
+        // - currentDasha: Current Dasha chain
+        // - shadbalaRows: Shadbala strength data
+        // - placements: Planetary positions
+        // - vimsottari: Full Vimsottari Dasha data
+        // - mahaDasas: Maha Dasha timeline data
         details: mDetails || null,
       },
-      // Use "match" key as expected by Chat component (not "matching")
+      // Pass the complete match result with Ashtakoot scores
+      // This includes: total_score, out_of, rasi_kootam, graha_maitri_kootam, yoni_kootam, gana_kootam, nadi_kootam
       match: result || null,
     };
+    
+    // Log data structure for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Matching] Chat data prepared:', {
+        femaleName: data.female.input.name,
+        maleName: data.male.input.name,
+        hasMatch: !!data.match,
+        matchTotalScore: data.match?.total_score,
+        matchOutOf: data.match?.out_of,
+        femaleHasDetails: !!data.female.details,
+        maleHasDetails: !!data.male.details,
+        femaleHasVimsottari: !!data.female.details?.vimsottari,
+        maleHasVimsottari: !!data.male.details?.vimsottari,
+        femaleHasMahaDasas: !!data.female.details?.mahaDasas,
+        maleHasMahaDasas: !!data.male.details?.mahaDasas,
+        femaleHasPlacements: !!data.female.details?.placements,
+        maleHasPlacements: !!data.male.details?.placements,
+        femaleHasShadbala: !!data.female.details?.shadbalaRows,
+        maleHasShadbala: !!data.male.details?.shadbalaRows,
+      });
+    }
+    
     setChatData(data);
     return data;
   };
@@ -1003,8 +1234,43 @@ export default function MatchingPage() {
         match: result,
       };
       setChatData(data);
+      
+      // Update form data hash when results are ready
+      const newHash = generateFormDataHash();
+      setCurrentFormDataHash(newHash);
+      previousFormDataHashRef.current = newHash;
     }
   }, [result, fDetails, mDetails, female, male, fCoords, mCoords]);
+  
+  // Monitor form data changes and reset chat if needed (before submission)
+  useEffect(() => {
+    // Only check if we have some form data filled
+    if (female.fullName || male.fullName || female.dob || male.dob) {
+      const newHash = generateFormDataHash();
+      // Only reset if hash changed and we had a previous hash (not on initial load)
+      if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
+        console.log('[Matching] Form data changed before submission, will reset chat on submit:', {
+          previousHash: previousFormDataHashRef.current,
+          newHash: newHash,
+        });
+        // Don't reset immediately, just mark that it should reset on next submit
+        setShouldResetChat(true);
+      }
+      // Update the hash reference
+      if (previousFormDataHashRef.current === null || previousFormDataHashRef.current !== newHash) {
+        previousFormDataHashRef.current = newHash;
+        setCurrentFormDataHash(newHash);
+      }
+    }
+  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
+  
+  // Monitor form data changes and reset chat if needed
+  useEffect(() => {
+    // Only check if we have some form data filled
+    if (female.fullName || male.fullName || female.dob || male.dob) {
+      checkAndResetChatOnFormChange();
+    }
+  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
 
   /**
    * Scrolls to the chat section smoothly.
@@ -3247,32 +3513,50 @@ export default function MatchingPage() {
               ) : (
                 <div className="chat-window-container">
                   <Chat
-                    key={`matching-chat-${chatSessionId}`}
+                    key={`matching-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
+                    shouldReset={shouldResetChat}
+                    formDataHash={currentFormDataHash}
                     pageTitle="Matching"
                     chatType="matchmaking"
-                    initialData={chatData || {
-                      female: {
-                        input: {
-                          name: female.fullName,
-                          dob: female.dob,
-                          tob: female.tob,
-                          place: female.place,
-                          coords: fCoords,
+                    initialData={(() => {
+                      // Use chatData if available, otherwise build from current state
+                      const data = chatData || {
+                        female: {
+                          input: {
+                            name: female.fullName,
+                            dob: female.dob,
+                            tob: female.tob,
+                            place: female.place,
+                            coords: fCoords,
+                          },
+                          details: fDetails,
                         },
-                        details: fDetails,
-                      },
-                      male: {
-                        input: {
-                          name: male.fullName,
-                          dob: male.dob,
-                          tob: male.tob,
-                          place: male.place,
-                          coords: mCoords,
+                        male: {
+                          input: {
+                            name: male.fullName,
+                            dob: male.dob,
+                            tob: male.tob,
+                            place: male.place,
+                            coords: mCoords,
+                          },
+                          details: mDetails,
                         },
-                        details: mDetails,
-                      },
-                      match: result || null,
-                    }}
+                        match: result || null,
+                      };
+                      
+                      // Log to verify match data is being passed (only in development)
+                      if (process.env.NODE_ENV === 'development' && data.match) {
+                        console.log('[Matching] Passing initialData to Chat component:', {
+                          hasMatch: !!data.match,
+                          matchTotalScore: data.match?.total_score,
+                          matchOutOf: data.match?.out_of,
+                          matchKeys: data.match ? Object.keys(data.match) : [],
+                          matchSample: data.match ? JSON.stringify(data.match).substring(0, 300) : null,
+                        });
+                      }
+                      
+                      return data;
+                    })()}
                     onClose={() => {
                       setChatOpen(false);
                       setIsAssistantMinimized(true);

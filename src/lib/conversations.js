@@ -8,12 +8,13 @@ import { WalletService } from './wallet'
  */
 export class ConversationService {
   /**
-   * Get or create active conversation for a user and chatType
+   * Get or create active conversation for a user, chatType, and formDataHash
    * @param {string} userId - User ID (or null for guest)
    * @param {string} chatType - 'prediction' or 'matchmaking'
+   * @param {string} formDataHash - Hash of form data to identify unique form submissions (optional for backward compatibility)
    * @returns {Promise<Object>} Conversation document
    */
-  static async getActiveConversation(userId, chatType) {
+  static async getActiveConversation(userId, chatType, formDataHash = null) {
     try {
       const db = getFirestore()
       if (!db) {
@@ -25,12 +26,19 @@ export class ConversationService {
         return null
       }
 
-      // Find active conversation for this user and chatType
+      // Find active conversation for this user, chatType, and formDataHash
       const conversationsRef = db.collection('conversations')
-      const snapshot = await conversationsRef
+      let query = conversationsRef
         .where('userId', '==', userId)
         .where('chatType', '==', chatType)
         .where('isActive', '==', true)
+      
+      // If formDataHash is provided, filter by it (unique conversation per form submission)
+      if (formDataHash) {
+        query = query.where('formDataHash', '==', formDataHash)
+      }
+      
+      const snapshot = await query
         .orderBy('updatedAt', 'desc')
         .limit(1)
         .get()
@@ -56,17 +64,23 @@ export class ConversationService {
    * @param {string} userId - User ID
    * @param {string} chatType - 'prediction' or 'matchmaking'
    * @param {Array} initialMessages - Initial messages array
+   * @param {string} formDataHash - Hash of form data to identify unique form submissions (optional)
    * @returns {Promise<Object>} Created conversation
    */
-  static async createConversation(userId, chatType, initialMessages = []) {
+  static async createConversation(userId, chatType, initialMessages = [], formDataHash = null) {
     try {
       const db = getFirestore()
       if (!db) {
         throw new Error('Firestore not initialized')
       }
 
-      // Deactivate any existing active conversations for this user and chatType
-      await this.deactivateAllConversations(userId, chatType)
+      // If formDataHash is provided, only deactivate conversations with the same hash
+      // Otherwise, deactivate all conversations for this user and chatType (backward compatibility)
+      if (formDataHash) {
+        await this.deactivateConversationsByHash(userId, chatType, formDataHash)
+      } else {
+        await this.deactivateAllConversations(userId, chatType)
+      }
 
       const conversationRef = db.collection('conversations').doc()
       const now = new Date()
@@ -78,6 +92,11 @@ export class ConversationService {
         isActive: true,
         createdAt: now,
         updatedAt: now
+      }
+      
+      // Include formDataHash if provided
+      if (formDataHash) {
+        conversationData.formDataHash = formDataHash
       }
 
       await conversationRef.set(conversationData)
@@ -146,6 +165,42 @@ export class ConversationService {
       }
     } catch (error) {
       console.error('Error deactivating conversations:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Deactivate conversations for a specific formDataHash
+   * @param {string} userId - User ID
+   * @param {string} chatType - 'prediction' or 'matchmaking'
+   * @param {string} formDataHash - Hash of form data
+   * @returns {Promise<void>}
+   */
+  static async deactivateConversationsByHash(userId, chatType, formDataHash) {
+    try {
+      const db = getFirestore()
+      if (!db) {
+        throw new Error('Firestore not initialized')
+      }
+
+      const conversationsRef = db.collection('conversations')
+      const snapshot = await conversationsRef
+        .where('userId', '==', userId)
+        .where('chatType', '==', chatType)
+        .where('formDataHash', '==', formDataHash)
+        .where('isActive', '==', true)
+        .get()
+
+      const batch = db.batch()
+      snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { isActive: false })
+      })
+
+      if (snapshot.docs.length > 0) {
+        await batch.commit()
+      }
+    } catch (error) {
+      console.error('Error deactivating conversations by hash:', error)
       throw error
     }
   }

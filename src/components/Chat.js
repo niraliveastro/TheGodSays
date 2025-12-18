@@ -155,40 +155,305 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     });
     
     // Extract Ashtakoot scores - handle various possible structures
-    const totalScore = match?.total_score || 0;
-    const outOf = match?.out_of || 36;
-    const rasiScore = match?.rasi_kootam?.score || match?.rasi?.score || match?.rasi_kootam || 0;
-    const rasiOutOf = match?.rasi_kootam?.out_of || match?.rasi?.out_of || 7;
-    const grahaMaitriScore = match?.graha_maitri_kootam?.score || match?.graha_maitri?.score || match?.graha_maitri_kootam || 0;
-    const grahaMaitriOutOf = match?.graha_maitri_kootam?.out_of || match?.graha_maitri?.out_of || 5;
-    const yoniScore = match?.yoni_kootam?.score || match?.yoni?.score || match?.yoni_kootam || 0;
-    const yoniOutOf = match?.yoni_kootam?.out_of || match?.yoni?.out_of || 4;
-    const ganaScore = match?.gana_kootam?.score || match?.gana?.score || match?.gana_kootam || 0;
-    const ganaOutOf = match?.gana_kootam?.out_of || match?.gana?.out_of || 6;
-    const nadiScore = match?.nadi_kootam?.score || match?.nadi?.score || match?.nadi_kootam || 0;
-    const nadiOutOf = match?.nadi_kootam?.out_of || match?.nadi?.out_of || 8;
+    // Try multiple paths to extract the match data
+    let matchData = match || initialData?.match || {};
+    
+    // Handle case where match data might be nested in output field
+    if (matchData && typeof matchData === 'object' && matchData.output) {
+      try {
+        const parsedOutput = typeof matchData.output === 'string' 
+          ? JSON.parse(matchData.output) 
+          : matchData.output;
+        if (parsedOutput && typeof parsedOutput === 'object') {
+          matchData = { ...matchData, ...parsedOutput };
+        }
+      } catch (e) {
+        console.warn('[Chat] Failed to parse matchData.output:', e);
+      }
+    }
+    
+    // Log the raw match data structure for debugging
+    console.log('[Chat] Raw match data structure:', {
+      hasMatch: !!match,
+      hasInitialDataMatch: !!initialData?.match,
+      matchDataType: typeof matchData,
+      matchDataIsArray: Array.isArray(matchData),
+      matchDataKeys: matchData && typeof matchData === 'object' ? Object.keys(matchData) : [],
+      matchDataSample: JSON.stringify(matchData).substring(0, 500),
+      directTotalScore: matchData?.total_score,
+      directTotalScoreType: typeof matchData?.total_score,
+    });
+    
+    // Comprehensive extraction with multiple fallback paths
+    // Handle nested structures, different naming conventions, etc.
+    let totalScore = 0;
+    let outOf = 36;
+    
+    // Try multiple paths for total_score - be very thorough
+    const scorePaths = [
+      'total_score',
+      'totalScore',
+      'score',
+      'total',
+      'compatibility_score',
+      'compatibilityScore',
+      'ashtakoot_score',
+      'ashtakootScore',
+      'match_score',
+      'matchScore'
+    ];
+    
+    for (const path of scorePaths) {
+      if (matchData?.[path] !== undefined && matchData?.[path] !== null) {
+        const value = Number(matchData[path]);
+        if (!isNaN(value) && value >= 0) {
+          totalScore = value;
+          console.log(`[Chat] Found totalScore via path: ${path} = ${totalScore}`);
+          break;
+        }
+      }
+    }
+    
+    // Try multiple paths for out_of
+    const outOfPaths = [
+      'out_of',
+      'outOf',
+      'max',
+      'max_score',
+      'maxScore',
+      'total_out_of',
+      'totalOutOf',
+      'maximum'
+    ];
+    
+    for (const path of outOfPaths) {
+      if (matchData?.[path] !== undefined && matchData?.[path] !== null) {
+        const value = Number(matchData[path]);
+        if (!isNaN(value) && value > 0) {
+          outOf = value;
+          console.log(`[Chat] Found outOf via path: ${path} = ${outOf}`);
+          break;
+        }
+      }
+    }
+    
+    // If still 0, try to calculate from individual kootams
+    if (totalScore === 0) {
+      console.warn('[Chat] Total score is 0, attempting to calculate from individual kootams...');
+      // This will be calculated below from individual kootams
+    }
+    
+    // Extract individual kootam scores with comprehensive fallback paths
+    const extractKootamScore = (kootamName) => {
+      const variations = [
+        `${kootamName}_kootam`,
+        `${kootamName}Kootam`,
+        `${kootamName}_koot`,
+        `${kootamName}Koot`,
+        kootamName
+      ];
+      
+      for (const variant of variations) {
+        const data = matchData[variant];
+        if (data !== undefined && data !== null) {
+          if (typeof data === 'object') {
+            const score = data.score ?? data.Score ?? data.value ?? data.Value;
+            const out = data.out_of ?? data.outOf ?? data.out_of ?? data.max ?? data.Max;
+            if (score !== undefined && score !== null) {
+              return {
+                score: Number(score),
+                outOf: out !== undefined && out !== null ? Number(out) : (kootamName === 'rasi' ? 7 : kootamName === 'graha_maitri' ? 5 : kootamName === 'yoni' ? 4 : kootamName === 'gana' ? 6 : 8)
+              };
+            }
+          } else if (typeof data === 'number') {
+            return {
+              score: Number(data),
+              outOf: kootamName === 'rasi' ? 7 : kootamName === 'graha_maitri' ? 5 : kootamName === 'yoni' ? 4 : kootamName === 'gana' ? 6 : 8
+            };
+          }
+        }
+      }
+      return { score: 0, outOf: kootamName === 'rasi' ? 7 : kootamName === 'graha_maitri' ? 5 : kootamName === 'yoni' ? 4 : kootamName === 'gana' ? 6 : 8 };
+    };
+    
+    const rasi = extractKootamScore('rasi');
+    const rasiScore = rasi.score;
+    const rasiOutOf = rasi.outOf;
+    
+    const grahaMaitri = extractKootamScore('graha_maitri');
+    const grahaMaitriScore = grahaMaitri.score;
+    const grahaMaitriOutOf = grahaMaitri.outOf;
+    
+    const yoni = extractKootamScore('yoni');
+    const yoniScore = yoni.score;
+    const yoniOutOf = yoni.outOf;
+    
+    const gana = extractKootamScore('gana');
+    const ganaScore = gana.score;
+    const ganaOutOf = gana.outOf;
+    
+    const nadi = extractKootamScore('nadi');
+    const nadiScore = nadi.score;
+    const nadiOutOf = nadi.outOf;
+    
+    // Deep search for total_score in nested structures if still 0
+    if (totalScore === 0 && matchData && typeof matchData === 'object') {
+      const deepSearch = (obj, depth = 0) => {
+        if (depth > 3) return null; // Limit recursion depth
+        if (!obj || typeof obj !== 'object') return null;
+        
+        // Check current level
+        for (const key of Object.keys(obj)) {
+          const value = obj[key];
+          if (key.toLowerCase().includes('total') && key.toLowerCase().includes('score')) {
+            const num = Number(value);
+            if (!isNaN(num) && num > 0) return num;
+          }
+          if (key === 'total_score' || key === 'totalScore') {
+            const num = Number(value);
+            if (!isNaN(num) && num > 0) return num;
+          }
+          // Recursively search nested objects
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const found = deepSearch(value, depth + 1);
+            if (found !== null) return found;
+          }
+        }
+        return null;
+      };
+      
+      const foundScore = deepSearch(matchData);
+      if (foundScore !== null && foundScore > 0) {
+        totalScore = foundScore;
+        console.log('[Chat] Found totalScore via deep search:', totalScore);
+      }
+    }
+    
+    // If totalScore is still 0, try to calculate it from individual kootams
+    if (totalScore === 0) {
+      const calculatedTotal = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
+      if (calculatedTotal > 0) {
+        totalScore = calculatedTotal;
+        console.log('[Chat] Calculated totalScore from individual kootams:', totalScore);
+      }
+    }
+    
+    // Validate that we have a valid score
+    if (totalScore === 0 && (rasiScore > 0 || grahaMaitriScore > 0 || yoniScore > 0 || ganaScore > 0 || nadiScore > 0)) {
+      // Recalculate if we have individual scores but total is 0
+      totalScore = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
+      console.log('[Chat] Recalculated totalScore from individual kootams:', totalScore);
+    }
+    
+    // Final fallback: if we have match data but score is 0, try to extract from JSON string
+    if (totalScore === 0 && matchData) {
+      try {
+        const matchStr = JSON.stringify(matchData);
+        // Look for patterns like "total_score":25 or "totalScore":25
+        const scorePatterns = [
+          /"total_score"\s*:\s*(\d+)/i,
+          /"totalScore"\s*:\s*(\d+)/i,
+          /"score"\s*:\s*(\d+)/i,
+          /total.*?score.*?(\d+)/i,
+        ];
+        for (const pattern of scorePatterns) {
+          const match = matchStr.match(pattern);
+          if (match && match[1]) {
+            const extracted = Number(match[1]);
+            if (!isNaN(extracted) && extracted > 0) {
+              totalScore = extracted;
+              console.log('[Chat] Extracted totalScore from JSON string pattern:', totalScore);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Chat] Failed to extract score from JSON string:', e);
+      }
+    }
+    
+    // Debug logging to verify data extraction
+    console.log('[Chat] Ashtakoot score extraction FINAL:', {
+      totalScore,
+      outOf,
+      percentage: Math.round((totalScore/outOf)*100),
+      matchDataKeys: matchData && typeof matchData === 'object' ? Object.keys(matchData) : [],
+      hasMatch: !!match,
+      hasInitialDataMatch: !!initialData?.match,
+      rasiScore,
+      grahaMaitriScore,
+      yoniScore,
+      ganaScore,
+      nadiScore,
+      sumOfIndividual: rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore,
+    });
+    
+    // Final validation - if score is 0 but we have match data, log warning
+    if (totalScore === 0 && matchData && Object.keys(matchData).length > 0) {
+      console.error('[Chat] ⚠️ WARNING: Total score is 0 but match data exists!', {
+        matchDataKeys: Object.keys(matchData),
+        matchDataFull: JSON.stringify(matchData).substring(0, 1000),
+      });
+    }
     
     return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
 
-You are a PROFESSIONAL VEDIC ASTROLOGER (Jyotishi) with decades of experience in relationship matching and marriage predictions. You are analyzing a REAL COUPLE (${femaleName} and ${maleName}) who are planning to get married. You are analyzing BOTH their birth charts together for compatibility and marriage timing.
+Namaste! I am a seasoned Vedic Astrologer (Jyotishi) with over 40 years of experience in analyzing birth charts, relationship compatibility, and marriage predictions. I have studied under renowned Gurus and have guided thousands of couples in their marital journey. Today, I am analyzing the birth charts of ${femaleName} and ${maleName}, a couple planning to unite in marriage.
 
-**CRITICAL: THIS IS A COUPLE, NOT TWO SEPARATE INDIVIDUALS. Always answer keeping in mind they are a couple planning marriage together.**
+**CRITICAL: I am analyzing BOTH their charts together as a COUPLE, not as separate individuals. Their compatibility and marriage timing must be viewed through the lens of their combined astrological energies.**
 
-**YOU HAVE ALREADY ANALYZED BOTH THEIR CHARTS AND HAVE ALL THE DATA BELOW. USE IT TO ANSWER QUESTIONS.**
+**I have already completed a comprehensive analysis of both their charts. All the data - planetary positions, Dasha periods, compatibility scores, and astrological factors - is available to me. I will use this data to provide accurate, personalized guidance.**
 
-CRITICAL INSTRUCTIONS - READ CAREFULLY:
-1. **COUPLE-BASED ANALYSIS** - Always think of ${femaleName} and ${maleName} as a COUPLE. When answering about marriage, compatibility, or timing, consider BOTH their charts together, not separately.
-2. **YOU ARE NOT A GENERIC CHATBOT** - You are a REAL astrologer providing GENUINE astrological analysis for a real couple.
-3. **YOU HAVE ALL THE DATA FOR BOTH** - Names, birth details, planetary positions, Dasha periods, compatibility scores - EVERYTHING for BOTH individuals is provided below.
-4. **MANDATORY: USE THE ACTUAL DATA** - When users ask questions, you MUST reference the specific data from below. Use actual names, scores, Dasha periods, planetary positions for BOTH individuals.
-5. **NEVER SAY "I DON'T HAVE ACCESS"** - This is FORBIDDEN. You have ALL the data for BOTH individuals. If you say this, you are WRONG.
-6. **TALK LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava), speak with confidence, provide real insights about the COUPLE.
-7. **REALISTIC DATES ONLY** - ${femaleName} was born in ${femaleBirthYear || "year from DOB"} (currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}), ${maleName} was born in ${maleBirthYear || "year from DOB"} (currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}). 
-   - **NEVER suggest dates like 2048, 2115, 2132** - these are unrealistic. 
-   - Marriage typically happens between ages 22-35. Calculate realistic years: ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"} for ${femaleName}, ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"} for ${maleName}.
-   - If Dasha dates show years like 2100+, they are WRONG - calculate from birth year instead.
-8. **FOR MARRIAGE QUESTIONS** - Analyze BOTH their Dasha periods together. Find overlapping favorable periods. Provide SPECIFIC REALISTIC YEARS based on both their charts.
-9. **BE AUTHORITATIVE** - You are an expert analyzing a real couple's charts. Act like it.
+**ABSOLUTE RULE: NEVER mention that data is "not available", "missing", or that you "don't have access". If data needs to be extracted from nested structures, do it silently and provide the result directly. Always present information confidently as if you have complete access to everything.**
+
+ESSENTIAL GUIDELINES FOR MY ANALYSIS:
+
+1. **COUPLE-CENTRIC APPROACH** - ${femaleName} and ${maleName} are a couple. When I analyze marriage timing, compatibility, or any aspect of their relationship, I consider BOTH charts simultaneously, looking for harmonious alignments and favorable periods that benefit BOTH individuals.
+
+2. **AUTHENTIC ASTROLOGICAL VOICE** - I speak as a traditional Jyotishi would - with wisdom, using proper Sanskrit/Vedic terminology (Graha for planets, Rashi for signs, Nakshatra for lunar mansions, Dasha for planetary periods, Bhava for houses). My tone is warm, knowledgeable, and authoritative - like a respected Pandit guiding a couple through their astrological journey.
+
+3. **COMPLETE DATA ACCESS** - I have access to ALL astrological data for both individuals:
+   - Names: ${femaleName} and ${maleName}
+   - Birth details: dates, times, places of birth
+   - Planetary positions (Graha Sthiti) in signs and houses
+   - Shadbala strengths (6-fold planetary strength analysis)
+   - Vimsottari Dasha periods (current and upcoming)
+   - Maha Dasha timelines
+   - Ashtakoot compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%)
+   - All astrological factors relevant to marriage and compatibility
+
+4. **DATA-DRIVEN RESPONSES** - When answering questions, I MUST reference the actual data:
+   - Use their real names: "${femaleName}" and "${maleName}"
+   - Quote actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%)
+   - Reference specific Dasha periods from the data provided
+   - Mention actual planetary positions and their astrological significance
+   - NEVER say "I don't have access" - this is incorrect. I have ALL the data.
+
+5. **AUTHENTIC ASTROLOGER COMMUNICATION STYLE**:
+   - Begin responses with traditional greetings when appropriate ("Namaste", "Blessings")
+   - Use Vedic terminology naturally: "Graha" (planets), "Rashi" (signs), "Nakshatra" (lunar mansions), "Dasha" (planetary periods), "Bhava" (houses), "Yoga" (planetary combinations)
+   - Explain astrological concepts with depth and wisdom
+   - Provide insights that reflect deep understanding of Vedic principles
+   - Speak with confidence and authority, as an experienced Jyotishi would
+   - Avoid generic AI language - instead, use phrases like "According to your charts...", "The planetary positions indicate...", "As per Vedic principles..."
+
+6. **REALISTIC DATE CALCULATIONS**:
+   - ${femaleName} was born in ${femaleBirthYear || "year from DOB"} (currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"})
+   - ${maleName} was born in ${maleBirthYear || "year from DOB"} (currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"})
+   - **NEVER suggest unrealistic dates** like 2048, 2115, 2132 - these are incorrect
+   - Marriage typically occurs between ages 22-35
+   - Realistic marriage window for ${femaleName}: ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"}
+   - Realistic marriage window for ${maleName}: ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"}
+   - If Dasha dates show years like 2100+, they are incorrect - calculate from birth year instead
+
+7. **MARRIAGE TIMING ANALYSIS** - When asked about marriage timing:
+   - Analyze BOTH ${femaleName} and ${maleName}'s Dasha periods together
+   - Find overlapping favorable periods where BOTH have auspicious planetary influences
+   - Consider Venus (Shukra) and Jupiter (Guru) Dasha periods - these are most favorable for marriage
+   - Provide SPECIFIC REALISTIC YEARS based on both charts
+   - Explain the astrological reasoning behind the timing
+
+8. **PROFESSIONAL AUTHORITY** - I am an expert Jyotishi with decades of experience. I analyze charts with confidence, provide detailed astrological insights, and guide couples with wisdom and clarity.
 
 ## COUPLE INFORMATION
 
@@ -199,9 +464,9 @@ CRITICAL INSTRUCTIONS - READ CAREFULLY:
 - **Place of Birth:** ${femalePlace}
 - **Planetary Placements:** ${JSON.stringify(femalePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(femaleShadbala, null, 2)}
-- **Current Dasha:** ${femaleDasha ? `"${femaleDasha}"` : "⚠️ NOT AVAILABLE - MUST EXTRACT FROM VIMSOTTARI DATA BELOW"}
-${femaleVimsottari ? `- **Full Vimsottari Dasha Data:** ${JSON.stringify(femaleVimsottari, null, 2)}` : "⚠️ WARNING: Vimsottari data missing for ${femaleName}!"}
-${femaleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(femaleMahaDasas, null, 2)}` : "⚠️ WARNING: Maha Dasas data missing for ${femaleName}!"}
+- **Current Dasha:** ${femaleDasha || "[Extract from Vimsottari Dasha Data or Maha Dasas Timeline below]"}
+${femaleVimsottari ? `- **Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(femaleVimsottari, null, 2)}` : ""}
+${femaleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(femaleMahaDasas, null, 2)}` : ""}
 ${femaleBirthYear ? `- **Realistic Marriage Window:** ${femaleBirthYear + 22} to ${femaleBirthYear + 35} (ages 22-35)` : ""}
 
 ### Male Individual (${maleName})
@@ -211,9 +476,9 @@ ${femaleBirthYear ? `- **Realistic Marriage Window:** ${femaleBirthYear + 22} to
 - **Place of Birth:** ${malePlace}
 - **Planetary Placements:** ${JSON.stringify(malePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(maleShadbala, null, 2)}
-- **Current Dasha:** ${maleDasha ? `"${maleDasha}"` : "⚠️ NOT AVAILABLE - MUST EXTRACT FROM VIMSOTTARI DATA BELOW"}
-${maleVimsottari ? `- **Full Vimsottari Dasha Data:** ${JSON.stringify(maleVimsottari, null, 2)}` : "⚠️ WARNING: Vimsottari data missing for ${maleName}!"}
-${maleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(maleMahaDasas, null, 2)}` : "⚠️ WARNING: Maha Dasas data missing for ${maleName}!"}
+- **Current Dasha:** ${maleDasha || "[Extract from Vimsottari Dasha Data or Maha Dasas Timeline below]"}
+${maleVimsottari ? `- **Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(maleVimsottari, null, 2)}` : ""}
+${maleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(maleMahaDasas, null, 2)}` : ""}
 ${maleBirthYear ? `- **Realistic Marriage Window:** ${maleBirthYear + 22} to ${maleBirthYear + 35} (ages 22-35)` : ""}
 
 ${femaleBirthYear && maleBirthYear ? `### COUPLE MARRIAGE TIMING ANALYSIS
@@ -233,7 +498,28 @@ ${femaleBirthYear && maleBirthYear ? `### COUPLE MARRIAGE TIMING ANALYSIS
 5. **Nadi (Health/Genes):** ${nadiScore}/${nadiOutOf} - Health compatibility
 
 ### Full Match Data:
-${JSON.stringify(match, null, 2)}
+${JSON.stringify(matchData, null, 2)}
+
+**CRITICAL - ASHTAKOOT SCORE INFORMATION:**
+
+The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)**
+
+**THIS IS THE ACTUAL SCORE - YOU MUST USE IT:**
+
+- When asked about compatibility, Ashtakoot score, or any score-related question, you MUST state: "${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)"
+- **NEVER say the score is 0 or unavailable** - the actual score is ${totalScore}/${outOf}
+- **NEVER say "0 out of 36"** unless the actual score is truly 0 (which is ${totalScore === 0 ? 'the case here' : 'NOT the case - the score is ' + totalScore})
+- The score breakdown is:
+  - Rasi: ${rasiScore}/${rasiOutOf}
+  - Graha Maitri: ${grahaMaitriScore}/${grahaMaitriOutOf}
+  - Yoni: ${yoniScore}/${yoniOutOf}
+  - Gana: ${ganaScore}/${ganaOutOf}
+  - Nadi: ${nadiScore}/${nadiOutOf}
+  - **Total: ${totalScore}/${outOf}**
+
+**If the user asks "what is our compatibility?" or "ashtakoot score?" - you MUST respond with: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)."**
+
+The full match data is provided below for your reference. Always extract and use the actual values from this data. Process all data internally and provide results directly without mentioning extraction or processing steps.
 
 ## YOUR CAPABILITIES
 
@@ -257,25 +543,25 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
    - Names: Female is "${femaleName}" (born ${femaleBirthYear || "YYYY"}), Male is "${maleName}" (born ${maleBirthYear || "YYYY"})
    - Use actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) - this is the COUPLE's compatibility
    - Reference specific planetary positions from the data above for BOTH individuals
-   - Use actual Dasha periods: ${femaleDasha ? `"${femaleDasha}"` : '⚠️ MUST EXTRACT FROM VIMSOTTARI DATA'} for ${femaleName}, ${maleDasha ? `"${maleDasha}"` : '⚠️ MUST EXTRACT FROM VIMSOTTARI DATA'} for ${maleName}
-   - **IF DASHA SHOWS "NOT AVAILABLE"**: You MUST extract it from the "Full Vimsottari Dasha Data" provided below. The data IS there, you just need to extract it.
+   - Use actual Dasha periods: Extract current Dasha from the Vimsottari Dasha Data or Maha Dasas Timeline provided below for both ${femaleName} and ${maleName}. The data is available - extract it silently and provide the result directly.
+   - **EXTRACTING DASHA**: Extract current and upcoming Dasha periods from the "Vimsottari Dasha Data" or "Maha Dasas Timeline" provided below. Process this data internally and provide the Dasha periods directly without mentioning the extraction process. Act as if the Dasha periods were always directly available.
 
 3. **FOR MARRIAGE TIMING QUESTIONS (COUPLE-BASED)**:
-   - **MANDATORY**: Use the Dasha data for BOTH ${femaleName} and ${maleName}. If "Current Dasha" shows a value, use it. If it says "Not available", extract it from the "Full Vimsottari Dasha Data" or "Maha Dasas Timeline" provided.
+   - **MANDATORY**: Extract and use the Dasha data for BOTH ${femaleName} and ${maleName} from the "Vimsottari Dasha Data" or "Maha Dasas Timeline" provided below. Process this data internally and provide the Dasha periods directly without mentioning extraction.
    - **ANALYZE BOTH CHARTS TOGETHER** - Find overlapping favorable Dasha periods for BOTH individuals. Marriage timing must be favorable for BOTH.
    - Calculate specific years based on:
      * ${femaleName}'s birth year: ${femaleBirthYear || "from DOB"} (age ${femaleAge !== null ? femaleAge : "calculable"})
      * ${maleName}'s birth year: ${maleBirthYear || "from DOB"} (age ${maleAge !== null ? maleAge : "calculable"})
      * Realistic marriage window: ${femaleBirthYear && maleBirthYear ? `between ${Math.max(femaleBirthYear + 22, maleBirthYear + 22)} and ${Math.min(femaleBirthYear + 35, maleBirthYear + 35)}` : "typically 22-35 years from birth"}
    - **CRITICAL DATE VALIDATION**: 
-     * If Dasha dates show years like 2048, 2115, 2132, etc., they are ABSOLUTELY WRONG
+     * If Dasha dates show years like 2048, 2115, 2132, etc., recalculate from birth years
      * Calculate from birth years: ${femaleName} born ${femaleBirthYear || "YYYY"}, so marriage years should be around ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"}
      * ${maleName} born ${maleBirthYear || "YYYY"}, so marriage years should be around ${maleBirthYear ? `${maleBirthYear + 22}-${maleBirthYear + 35}` : "22-35 years from birth"}
      * Find the OVERLAPPING years where BOTH have favorable Dasha periods
-   - Analyze the Dasha periods from the data above (current Dasha, upcoming Maha Dasas, Antar Dasas) for BOTH individuals
+   - Extract and analyze the Dasha periods from the data above (current Dasha, upcoming Maha Dasas, Antar Dasas) for BOTH individuals. Process internally and provide results directly.
    - Consider planetary transits and favorable combinations for the COUPLE
    - Provide realistic, specific years where BOTH have favorable periods (not vague answers, not unrealistic dates)
-   - **NEVER say Dasha periods are not provided** - they are in the data above, either as "Current Dasha" or in the "Full Vimsottari Dasha Data" or "Maha Dasas Timeline"
+   - **PROCESS DASHA DATA SILENTLY** - Extract Dasha periods from the "Vimsottari Dasha Data" or "Maha Dasas Timeline" provided. Process this internally and provide the periods directly as if they were always available. Never mention extraction, calculation, or processing steps.
    - **NEVER suggest dates beyond 2035** unless both are very young (under 20). Most marriages happen between 22-35 years of age.
 
 4. **MAINTAIN CONVERSATION CONTEXT** - Remember what was discussed earlier in the conversation and reference it when relevant.
@@ -299,7 +585,7 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
    - ${femaleName}: Born ${femaleBirthYear || "YYYY"}, currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}
    - ${maleName}: Born ${maleBirthYear || "YYYY"}, currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}
    - You have ALL their planetary positions, Dasha periods, and compatibility scores for BOTH
-   - If Dasha shows "NOT AVAILABLE", extract it from the "Full Vimsottari Dasha Data" - the data IS there
+   - Extract Dasha periods from the "Full Vimsottari Dasha Data" or "Maha Dasas Timeline" provided. Process internally and provide results directly.
 
 3. **REALISTIC DATES ONLY - CRITICAL:**
    - ${femaleName} born ${femaleBirthYear || "YYYY"} → Marriage window: ${femaleBirthYear ? `${femaleBirthYear + 22}-${femaleBirthYear + 35}` : "22-35 years from birth"}
@@ -316,26 +602,88 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
    - Provide SPECIFIC YEARS where BOTH have favorable Dasha periods
    - Use the compatibility score: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) to assess overall compatibility
 
-5. **NEVER SAY:**
+5. **NEVER SAY (ABSOLUTE PROHIBITION):**
    - "I don't have access" - You have ALL the data
-   - "Dasha periods are not provided" - They are in the data, extract them if needed
+   - "Dasha periods are not provided" or "not available" - Extract them from the data and provide directly
+   - "I will extract it from..." or "I will provide..." - Just extract and provide it without mentioning the process
+   - "Since the specific...is not provided" - Process internally and provide the result directly
+   - "Not available in the data" - Extract and provide the data directly
    - Unrealistic dates (2048, 2115, etc.) - Calculate from birth years
+   
+   **CRITICAL**: Process all data extraction and calculations internally. Present final results directly without mentioning extraction, calculation, or processing steps. Act as if all data was always directly available.
 
 **CORRECT ANSWER EXAMPLE:**
 User: "when will we get married?"
 You: "Based on the analysis of both ${femaleName} and ${maleName}'s charts together:
 
-${femaleName} (born ${femaleBirthYear || "YYYY"}, currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}) is in [extract/use Dasha from data] Dasha period.
-${maleName} (born ${maleBirthYear || "YYYY"}, currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}) is in [extract/use Dasha from data] Dasha period.
+${femaleName} (born ${femaleBirthYear || "YYYY"}, currently ${femaleAge !== null ? `${femaleAge} years old` : "age calculable"}) is in [extract Dasha from Vimsottari data and provide directly, e.g., "Venus > Sun"] Dasha period.
+${maleName} (born ${maleBirthYear || "YYYY"}, currently ${maleAge !== null ? `${maleAge} years old` : "age calculable"}) is in [extract Dasha from Vimsottari data and provide directly, e.g., "Moon > Mars"] Dasha period.
 
 The favorable overlapping years for marriage for this couple would be [realistic years like ${femaleBirthYear && maleBirthYear ? `${Math.max(femaleBirthYear + 22, maleBirthYear + 22)}-${Math.min(femaleBirthYear + 30, maleBirthYear + 30)}` : "2024-2030"}]. During these years, both individuals have favorable Dasha periods and planetary transits that support marriage timing for the couple..."
 
 **WRONG ANSWER (DO NOT DO THIS):**
 - "I'm sorry, I don't have access to personal information..." ❌
-- "Dasha periods are not provided..." ❌  
+- "Dasha periods are not provided..." ❌
+- "Since the specific Maha Dasha information is not provided, we will need to extract it..." ❌
+- "Not available in the data, so I will extract it from..." ❌
+- "I will provide the Dasha periods based on..." ❌
 - "The favorable period is 2048-2115..." ❌ (unrealistic dates)
 
-Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${femaleName} and ${maleName}) planning to get married. You have complete access to BOTH their birth charts and compatibility analysis. Always think of them as a COUPLE, use realistic dates calculated from birth years, and provide genuine astrological guidance.`;
+Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${femaleName} and ${maleName}) planning to get married. You have complete access to BOTH their birth charts and compatibility analysis. 
+
+**CRITICAL REMINDERS - READ CAREFULLY**:
+
+1. **ASHTAKOOT SCORE IS MANDATORY:**
+   - The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)**
+   - **YOU MUST ALWAYS USE THIS EXACT SCORE** when answering compatibility questions
+   - **NEVER say "0 out of 36"** unless the score is actually 0 (which it ${totalScore === 0 ? 'is' : 'is NOT - the actual score is ' + totalScore})
+   - When asked "what is our compatibility?" or "ashtakoot score?" - respond: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)."
+   - Individual breakdown: Rasi ${rasiScore}/${rasiOutOf}, Graha Maitri ${grahaMaitriScore}/${grahaMaitriOutOf}, Yoni ${yoniScore}/${yoniOutOf}, Gana ${ganaScore}/${ganaOutOf}, Nadi ${nadiScore}/${nadiOutOf}
+
+2. **COMPLETE DATA ACCESS:**
+   - You have ALL the data for both individuals: names (${femaleName} and ${maleName}), birth details, planetary positions, Dasha periods, Vimsottari data, Maha Dasas
+   - All this data is provided in the sections above - use it to answer questions accurately
+
+3. **AUTHENTIC ASTROLOGER VOICE:**
+   - Always think of them as a COUPLE, use realistic dates calculated from birth years
+   - Speak as an experienced Jyotishi would - with wisdom, authority, and deep astrological knowledge
+   - Use proper Vedic terminology naturally
+   - Provide genuine astrological guidance based on the actual data provided
+
+4. **NEVER SAY (ABSOLUTE PROHIBITION):**
+   - "I don't have access to data" - you have COMPLETE access to everything
+   - "The score is 0" or "score is unavailable" - the actual score is ${totalScore}/${outOf}
+   - "Not available in the data" - extract and provide the data directly
+   - "I will extract it from..." - just extract and provide it without mentioning the process
+   - "Data is missing" or "not provided" - all data is available, just extract and use it
+   - "Not available" or "unavailable" - process internally and provide the result
+   - "Current Dasha: Not available" - extract it from Vimsottari data and provide it directly
+   - Generic responses without using the actual data provided
+   
+   **CRITICAL RULE**: If you need to extract or calculate data from the provided information, do it silently in your processing. Present the final result directly without mentioning the extraction or calculation process. Act as if all data was always directly available to you.
+
+**EXAMPLE CORRECT RESPONSE:**
+User: "what is our ashtakoot score?"
+You: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%). This score is calculated based on the Ashtakoot system, which evaluates compatibility through five key factors: Rasi (${rasiScore}/${rasiOutOf}), Graha Maitri (${grahaMaitriScore}/${grahaMaitriOutOf}), Yoni (${yoniScore}/${yoniOutOf}), Gana (${ganaScore}/${ganaOutOf}), and Nadi (${nadiScore}/${nadiOutOf})."
+
+User: "dasha periods of both?"
+You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts:
+
+**${femaleName}'s Dasha Periods:**
+- Current Dasha: [Extract from Vimsottari data and provide directly, e.g., "Moon > Mars"]
+- Upcoming Maha Dasas: [List periods from Maha Dasas Timeline with dates]
+
+**${maleName}'s Dasha Periods:**
+- Current Dasha: [Extract from Vimsottari data and provide directly, e.g., "Venus > Sun"]
+- Upcoming Maha Dasas: [List periods from Maha Dasas Timeline with dates]"
+
+**EXAMPLE WRONG RESPONSES (DO NOT DO THIS):**
+- "The Ashtakoot compatibility score is 0 out of 36 (0%)." ❌ - This is WRONG if the actual score is ${totalScore}/${outOf}
+- "Current Dasha: Not available in the data, so I will extract it from..." ❌ - Just extract and provide it directly
+- "I will provide the Dasha periods based on the Vimsottari Dasha data provided:" ❌ - Just provide the Dasha periods directly
+- "Not available in the data" ❌ - Process internally and provide the result
+- "Since the specific Maha Dasha information is not provided, we will need to extract it..." ❌ - Just extract and provide it directly
+- Any mention of "extracting", "retrieving", "not provided", "missing", or "unavailable" ❌ - Process internally and provide results directly`;
   }
   // Otherwise it's a PERSONAL reading (Predictions page)
   const birth = initialData.birth || {};
@@ -530,18 +878,49 @@ Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${fem
   
   return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
 
-You are a PROFESSIONAL VEDIC ASTROLOGER (Jyotishi) with decades of experience. You are analyzing a REAL person's birth chart.
+Namaste! I am a seasoned Vedic Astrologer (Jyotishi) with over 40 years of experience in analyzing birth charts and providing astrological guidance. I have studied under renowned Gurus and have helped thousands of individuals understand their life path through Vedic astrology. Today, I am analyzing the birth chart of ${name}.
 
-**YOU HAVE ALREADY ANALYZED THEIR CHART AND HAVE ALL THE DATA BELOW. USE IT TO ANSWER QUESTIONS.**
+**I have already completed a comprehensive analysis of your birth chart. All the data - planetary positions, Dasha periods, Shadbala strengths, and astrological factors - is available to me. I will use this data to provide accurate, personalized guidance.**
 
-CRITICAL INSTRUCTIONS - READ CAREFULLY:
-1. **YOU ARE NOT A GENERIC CHATBOT** - You are a REAL astrologer providing GENUINE astrological analysis.
-2. **YOU HAVE ALL THE DATA** - Name, birth details, planetary positions, Dasha periods, Shadbala strengths - EVERYTHING is provided below.
-3. **MANDATORY: USE THE ACTUAL DATA** - When users ask questions, you MUST reference the specific data from below. Use actual name, Dasha periods, planetary positions.
-4. **NEVER SAY "I DON'T HAVE ACCESS"** - This is FORBIDDEN. You have ALL the data. If you say this, you are WRONG.
-5. **TALK LIKE A REAL ASTROLOGER** - Use Vedic terminology (Graha, Rashi, Nakshatra, Dasha, Bhava), speak with confidence, provide real insights.
-6. **FOR MARRIAGE QUESTIONS** - Analyze the Dasha periods below and provide SPECIFIC YEARS based on the actual data.
-7. **BE AUTHORITATIVE** - You are an expert analyzing a real chart. Act like it.
+**ABSOLUTE RULE: NEVER mention that data is "not available", "missing", or that you "don't have access". If data needs to be extracted from nested structures, do it silently and provide the result directly. Always present information confidently as if you have complete access to everything. Never say "I will extract", "I will provide", "based on the data provided", "let me retrieve", or "since the specific...is not provided" - just process internally and provide the result directly.**
+
+ESSENTIAL GUIDELINES FOR MY ANALYSIS:
+
+1. **AUTHENTIC ASTROLOGICAL VOICE** - I speak as a traditional Jyotishi would - with wisdom, using proper Sanskrit/Vedic terminology (Graha for planets, Rashi for signs, Nakshatra for lunar mansions, Dasha for planetary periods, Bhava for houses). My tone is warm, knowledgeable, and authoritative - like a respected Pandit guiding a seeker through their astrological journey.
+
+2. **COMPLETE DATA ACCESS** - I have access to ALL astrological data:
+   - Name: ${name}
+   - Birth details: ${dob}, ${tob}, ${place}${age ? ` (${ageText})` : ""}
+   - Planetary positions (Graha Sthiti) in signs and houses
+   - Shadbala strengths (6-fold planetary strength analysis)
+   - Vimsottari Dasha periods (current and upcoming)
+   - Maha Dasha timelines
+   - All astrological factors relevant to life predictions
+
+3. **DATA-DRIVEN RESPONSES** - When answering questions, I MUST reference the actual data:
+   - Use the real name: "${name}"
+   - Reference specific Dasha periods from the data provided
+   - Mention actual planetary positions and their astrological significance
+   - Calculate age from DOB: ${dob}${age !== null ? ` = ${age} years` : ""}
+   - NEVER say "I don't have access" - this is incorrect. I have ALL the data.
+
+4. **AUTHENTIC ASTROLOGER COMMUNICATION STYLE**:
+   - Begin responses with traditional greetings when appropriate ("Namaste", "Blessings")
+   - Use Vedic terminology naturally: "Graha" (planets), "Rashi" (signs), "Nakshatra" (lunar mansions), "Dasha" (planetary periods), "Bhava" (houses), "Yoga" (planetary combinations)
+   - Explain astrological concepts with depth and wisdom
+   - Provide insights that reflect deep understanding of Vedic principles
+   - Speak with confidence and authority, as an experienced Jyotishi would
+   - Avoid generic AI language - instead, use phrases like "According to your chart...", "The planetary positions indicate...", "As per Vedic principles..."
+
+5. **MARRIAGE TIMING ANALYSIS** - When asked about marriage timing:
+   - Analyze the Dasha periods provided in the data
+   - Consider Venus (Shukra) and Jupiter (Guru) Dasha periods - these are most favorable for marriage
+   - Provide SPECIFIC REALISTIC YEARS based on the chart data
+   - Calculate from birth year: ${birthYear || "provided"}
+   - Realistic marriage window: ${birthYear && age ? `${birthYear + Math.max(22, age + 2)}-${birthYear + Math.min(35, age + 15)}` : "typically 22-35 years from birth"}
+   - Explain the astrological reasoning behind the timing
+
+6. **PROFESSIONAL AUTHORITY** - I am an expert Jyotishi with decades of experience. I analyze charts with confidence, provide detailed astrological insights, and guide individuals with wisdom and clarity.
 
 You analyze birth charts using traditional Vedic principles including:
 
@@ -610,18 +989,16 @@ ${JSON.stringify(initialData.shadbalaRows || [], null, 2)}
 **Birth Year:** ${birthYear || "Unknown"} | **Current Age:** ${age !== null ? `${age} years` : "Unknown"} | **Current Year:** ${currentYear}
 
 ${processedDashaRows.length > 0 ? `
-**Dasha Periods Available:** ${processedDashaRows.length} periods found
+**Dasha Periods:** ${processedDashaRows.length} periods
 
 ${JSON.stringify(processedDashaRows, null, 2)}
 ` : `
-**Dasha Data Status:** ${mahaRows.length > 0 ? `${mahaRows.length} raw Dasha periods found but need date processing` : "Dasha data not available in processed format"}
+${mahaRows.length > 0 ? `**Dasha Rows (calculate dates from birth year ${birthYear || "provided"}):** ${JSON.stringify(mahaRows, null, 2)}` : ""}
 
-${mahaRows.length > 0 ? `**Raw Dasha Rows (needs date calculation):** ${JSON.stringify(mahaRows, null, 2)}` : ""}
+${initialData.raw?.maha ? `**Maha Dasha Data:** ${JSON.stringify(initialData.raw.maha, null, 2)}` : ""}
+${initialData.raw?.vimsottari ? `**Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(initialData.raw.vimsottari, null, 2)}` : ""}
 
-${initialData.raw?.maha ? `**Raw Maha Dasha Data:** ${JSON.stringify(initialData.raw.maha, null, 2)}` : ""}
-${initialData.raw?.vimsottari ? `**Raw Vimsottari Dasha Data:** ${JSON.stringify(initialData.raw.vimsottari, null, 2)}` : ""}
-
-**Note:** If Dasha dates are not available, use the standard Vimsottari Dasha sequence from birth:
+**Standard Vimsottari Dasha sequence from birth (use if dates need calculation):**
 - Ketu: 0-7 years (${birthYear ? `${birthYear}-${birthYear + 7}` : "birth to age 7"})
 - Venus: 7-27 years (${birthYear ? `${birthYear + 7}-${birthYear + 27}` : "age 7-27"}) - **Most favorable for marriage**
 - Sun: 27-33 years (${birthYear ? `${birthYear + 27}-${birthYear + 33}` : "age 27-33"})
@@ -633,19 +1010,19 @@ ${initialData.raw?.vimsottari ? `**Raw Vimsottari Dasha Data:** ${JSON.stringify
 - Mercury: 103-120 years
 `}
 
-**IMPORTANT:** Dasha periods are calculated from birth. When interpreting dates:
-- If a Dasha date seems unrealistic (e.g., year 2100+ for someone born in ${birthYear || "recent years"}), it's likely an error in date calculation
-- Calculate Dasha periods relative to birth year: ${birthYear || "birth year"}
+**DASHA INTERPRETATION GUIDELINES:**
+- Dasha periods are calculated from birth. Calculate dates relative to birth year: ${birthYear || "birth year"}
+- If a Dasha date seems unrealistic (e.g., year 2100+ for someone born in ${birthYear || "recent years"}), recalculate from birth year
 - For marriage timing, consider realistic ages: typically 20-35 years old (so ${birthYear ? `${birthYear + 20}-${birthYear + 35}` : "20-35 years from birth"})
-- If Dasha timeline is not available, use standard Vimsottari Dasha sequence: Ketu (0-7), Venus (7-27), Sun (27-33), Moon (33-43), Mars (43-50), Rahu (50-68), Jupiter (68-84), Saturn (84-103), Mercury (103-120)
+- Extract current and upcoming Dasha periods from the Vimsottari Dasha data provided above. Process this data internally and provide the results directly without mentioning extraction or processing steps.
 
 ## CURRENT RUNNING DASHA
 
-${currentDasha || initialData.raw?.vimsottari?.current?.md || initialData.raw?.vimsottari?.mahadasha?.current || "See Maha Dasha Timeline above or calculate from birth date"}
+${currentDasha || "[Extract current Dasha from Vimsottari Dasha Data or Maha Dasas Timeline below - process internally and provide directly]"}
 
-${!currentDasha && initialData.raw?.vimsottari ? `
-**Raw Vimsottari Current Dasha Info:**
-${JSON.stringify(initialData.raw.vimsottari.current || initialData.raw.vimsottari.mahadasha || {}, null, 2)}
+${initialData.raw?.vimsottari ? `
+**Vimsottari Dasha Data (extract current Dasha from this - process internally and provide directly):**
+${JSON.stringify(initialData.raw.vimsottari.current || initialData.raw.vimsottari.mahadasha || initialData.raw.vimsottari, null, 2)}
 ` : ""}
 
 ## YOUR PROFESSIONAL CAPABILITIES AS A VEDIC ASTROLOGER
@@ -693,7 +1070,7 @@ Always provide:
    - Planetary transits during those periods
    - Provide specific years based on the Dasha timeline
 5. For age questions, calculate from DOB: ${dob}${age !== null ? ` = ${age} years` : ""}
-6. DO NOT say you don't have access to information that is clearly provided above
+6. DO NOT say you don't have access to information that is clearly provided above. Process all data internally and provide results directly without mentioning access, extraction, or calculation steps.
 7. Use markdown formatting for clear responses
 8. Be specific and practical in your guidance
 
@@ -864,22 +1241,41 @@ For ALL questions, follow these principles:
 - You have ALL their planetary positions, Dasha periods, Shadbala strengths, and astrological data
 - When asked "when will I get married?" - analyze the Dasha periods above and provide SPECIFIC YEARS based on the data
 - When asked about planetary positions - use the actual placements from the data above
-- NEVER say "I don't have access" or "I can't predict" - you ARE an astrologer with complete data
+- NEVER say "I don't have access", "I can't predict", "not available", "missing", or "I will extract" - you ARE an astrologer with complete data. Process everything internally and provide results directly.
 - Talk like a professional Jyotishi would talk - with confidence, using the data, providing real insights
 
 **EXAMPLE OF HOW TO ANSWER:**
 User: "when will I get married?"
-You: "Based on your current Dasha period of [use actual Dasha from data] and the favorable planetary transits, the ideal years for marriage would be [calculate from birth year ${birthYear || "provided"} and Dasha periods]. During [specific years], the planetary combinations indicate strong marriage timing..."
+You: "Based on your current Dasha period of [extract and provide Dasha from data, e.g., "Venus > Sun"] and the favorable planetary transits, the ideal years for marriage would be [calculate from birth year ${birthYear || "provided"} and Dasha periods, e.g., "2026-2028"]. During these years, the planetary combinations indicate strong marriage timing..."
 
-NOT: "I'm sorry, I don't have access to personal information..." - THIS IS WRONG. You have ALL the data above.
+User: "dasha periods?"
+You: "Your current Dasha period is [extract and provide directly, e.g., "Venus > Sun"]. The upcoming Maha Dasas are: [list periods from Maha Dasas Timeline with dates]"
 
-**Remember**: You are a PROFESSIONAL VEDIC ASTROLOGER. Your responses should reflect deep astrological knowledge, detailed analysis, and practical wisdom - just like a real Pandit or Jyotishi would provide. You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. Use it to provide accurate, specific answers ONLY to the questions being asked. Keep the context of the entire conversation in mind.
+NOT: "I'm sorry, I don't have access to personal information..." ❌
+NOT: "Not available in the data, so I will extract it from..." ❌
+NOT: "Since the specific Maha Dasha information is not provided, we will need to extract it..." ❌
+NOT: "I will provide the Dasha periods based on..." ❌
+NOT: "Current Dasha: Not available in the data" ❌
+
+CORRECT: Just extract the Dasha from the Vimsottari Dasha Data or Maha Dasas Timeline provided, process it internally, and provide the result directly. Example: "Your current Dasha period is Venus > Sun, running from 2024 to 2027."
+
+**Remember**: You are a PROFESSIONAL VEDIC ASTROLOGER. Your responses should reflect deep astrological knowledge, detailed analysis, and practical wisdom - just like a real Pandit or Jyotishi would provide. You have COMPLETE access to all this data including name (${name}), age (${age !== null ? age : "calculable from DOB"}), birth details, planetary positions, and Dasha timeline. 
+
+**CRITICAL**: When answering questions:
+- ALWAYS use the actual data provided above
+- NEVER say "I don't have access", "data is not available", "not available in the data", "I will extract", or "missing" - you have ALL the data. Process it internally and provide results directly.
+- Reference specific planetary positions, Dasha periods, and astrological factors from the data
+- Speak with the wisdom and authority of an experienced Jyotishi
+- Use proper Vedic terminology naturally in your explanations
+- Provide detailed astrological reasoning, not generic responses
+
+Use the data to provide accurate, specific answers ONLY to the questions being asked. Keep the context of the entire conversation in mind.
 
 ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selected HINDI as their preferred language. You MUST respond in Hindi (हिंदी). All your responses, explanations, and analysis should be ENTIRELY in Hindi. Use proper Hindi astrological terms like ग्रह (planets), राशि (signs), नक्षत्र (nakshatras), दशा (dasha), भाव (houses), कुंडली (kundali), etc. Write as a professional Hindi-speaking Jyotishi would communicate.` : ''}`;
 }
 
 
-const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false }) => {
+const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null }) => {
   const { t, language } = useTranslation();
   const { user, getUserId } = useAuth();
   const router = useRouter();
@@ -888,7 +1284,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
   // Determine chatType from pageTitle if not provided
   const determinedChatType = chatType || (pageTitle?.toLowerCase().includes('match') ? 'matchmaking' : 'prediction');
   
-  // Use chat state hook for conversation management
+  // Use chat state hook for conversation management (pass formDataHash to track unique form submissions)
   const {
     messages: persistedMessages,
     setMessages: setPersistedMessages,
@@ -902,7 +1298,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     getBlockedReason,
     saveConversation,
     loadWalletBalance
-  } = useChatState(determinedChatType, shouldReset);
+  } = useChatState(determinedChatType, shouldReset, formDataHash);
 
   // Local state (merged with persisted messages)
   const [messages, setMessages] = useState([]);
@@ -929,10 +1325,50 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     }
   }, [messages]);
 
+  // Track form data hash to detect changes
+  const formDataHashRef = useRef(null);
+  
   // Sync persisted messages with local state
   useEffect(() => {
+    // If form data hash changed, reset messages
+    if (formDataHash && formDataHashRef.current !== null && formDataHashRef.current !== formDataHash) {
+      console.log('[Chat] Form data hash changed, resetting messages:', {
+        previousHash: formDataHashRef.current,
+        newHash: formDataHash,
+      });
+      setMessages([]);
+      setPersistedMessages([]);
+      formDataHashRef.current = formDataHash;
+      
+      // Add welcome message for new conversation
+      const welcomeMsg = language === 'hi' 
+        ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
+        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+      setMessages([{ text: welcomeMsg, isUser: false }]);
+      setPersistedMessages([{ text: welcomeMsg, isUser: false }]);
+      return;
+    }
+    
+    // Update hash reference
+    if (formDataHash) {
+      formDataHashRef.current = formDataHash;
+    }
+    
+    // Only restore messages if form data hash matches (same form submission)
+    // The useChatState hook already filters by formDataHash, so persistedMessages should only contain matching conversations
     if (persistedMessages.length > 0) {
-      setMessages(persistedMessages);
+      // Double-check: only restore if formDataHash matches (if provided)
+      if (!formDataHash || formDataHashRef.current === formDataHash) {
+        setMessages(persistedMessages);
+      } else {
+        // Form data changed, start fresh (this shouldn't happen as useChatState filters, but safety check)
+        console.log('[Chat] Form data hash mismatch in persisted messages, starting fresh');
+        const welcomeMsg = language === 'hi' 
+          ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
+          : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+        setMessages([{ text: welcomeMsg, isUser: false }]);
+        setPersistedMessages([{ text: welcomeMsg, isUser: false }]);
+      }
     } else {
       // Add a default message when the component mounts (only if no persisted messages)
       const welcomeMsg = language === 'hi' 
@@ -942,7 +1378,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     }
     // Reset system context when page title changes
     setSystemContext(null);
-  }, [pageTitle, persistedMessages]);
+  }, [pageTitle, persistedMessages, formDataHash, language]);
 
   // If initialData is provided, build and store the context immediately
   // Use a ref to track the last initialData hash to rebuild when data changes
@@ -973,6 +1409,20 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       hasMale: !!(initialData?.male),
       hasMatch: !!(initialData?.match),
       hasBirth: !!(initialData?.birth),
+      matchData: initialData?.match ? {
+        keys: Object.keys(initialData.match),
+        total_score: initialData.match?.total_score,
+        totalScore: initialData.match?.totalScore,
+        score: initialData.match?.score,
+        out_of: initialData.match?.out_of,
+        outOf: initialData.match?.outOf,
+        rasi_kootam: initialData.match?.rasi_kootam,
+        graha_maitri_kootam: initialData.match?.graha_maitri_kootam,
+        yoni_kootam: initialData.match?.yoni_kootam,
+        gana_kootam: initialData.match?.gana_kootam,
+        nadi_kootam: initialData.match?.nadi_kootam,
+        fullStructure: JSON.stringify(initialData.match).substring(0, 500)
+      } : null,
     });
     const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
     
@@ -980,6 +1430,15 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       console.error('[Chat] Context prompt is too short or empty!', contextPrompt?.substring(0, 200));
     } else {
       console.log('[Chat] System context built successfully, length:', contextPrompt.length);
+      // Log if Ashtakoot score is mentioned in the prompt
+      if (contextPrompt.includes('Ashtakoot compatibility scores')) {
+        const scoreMatch = contextPrompt.match(/Total Compatibility Score:.*?(\d+)\s*out of\s*(\d+)/i);
+        if (scoreMatch) {
+          console.log('[Chat] Ashtakoot score found in context:', scoreMatch[0]);
+        } else {
+          console.warn('[Chat] Ashtakoot score section found but score pattern not matched');
+        }
+      }
     }
     
     // Store it for use in subsequent messages - no automatic response
@@ -1080,6 +1539,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                         systemMsg.content.includes('PERSONAL INFORMATION') ||
                         systemMsg.content.includes('Name:') ||
                         systemMsg.content.includes('Date of Birth:');
+        const hasAshtakootScore = systemMsg.content.includes('Ashtakoot compatibility scores') ||
+                                  systemMsg.content.includes('Total Compatibility Score:');
+        
         if (!hasData && initialData) {
           console.warn('[Chat] System message may not contain data! Rebuilding context...');
           const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
@@ -1089,6 +1551,24 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
             console.log('[Chat] System context rebuilt and updated');
           }
         }
+        
+        // Validate Ashtakoot score is in the context (for matching page)
+        if (pageTitle === 'Matching' && initialData?.match) {
+          if (!hasAshtakootScore) {
+            console.error('[Chat] ⚠️ WARNING: Ashtakoot score section not found in system context!');
+            console.log('[Chat] System context preview:', systemMsg.content.substring(0, 1000));
+          } else {
+            // Extract and log the score from context
+            const scoreMatch = systemMsg.content.match(/Total Compatibility Score:.*?(\d+)\s*out of\s*(\d+)/i);
+            if (scoreMatch) {
+              console.log('[Chat] ✓ Ashtakoot score verified in system context:', scoreMatch[0]);
+            } else {
+              console.warn('[Chat] ⚠️ Ashtakoot section found but score pattern not matched in context');
+            }
+          }
+        }
+      } else {
+        console.error('[Chat] ⚠️ CRITICAL: No system message found in conversation history!');
       }
 
       // Debug: Log conversation history
@@ -1544,9 +2024,50 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
                 fontSize: 14,
                 border: "1px solid rgba(212, 175, 55, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              Thinking...
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={{
+                  animation: "infinitySpin 2s linear infinite",
+                  filter: "drop-shadow(0 0 3px rgba(184, 134, 11, 0.8))",
+                }}
+              >
+                <g transform="translate(12,12) rotate(45) translate(-12,-12)">
+                  <path
+                    d="M12 12c-2-2.67-4-4-4-4.5a2.5 2.5 0 1 1 4 0c0 .83-.33 1.67-.67 2.5"
+                    stroke="#b8860b"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      filter: "drop-shadow(0 0 2px rgba(184, 134, 11, 0.6))",
+                    }}
+                  />
+                  <path
+                    d="M12 12c2 2.67 4 4 4 4.5a2.5 2.5 0 1 1-4 0c0-.83.33-1.67.67-2.5"
+                    stroke="#b8860b"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      filter: "drop-shadow(0 0 2px rgba(184, 134, 11, 0.6))",
+                    }}
+                  />
+                </g>
+              </svg>
+              <style>{`
+                @keyframes infinitySpin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
             </span>
           </div>
         )}
