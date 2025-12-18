@@ -14,7 +14,6 @@ import {
   Sun,
   X,
   Loader2,
-  Cpu,
   RotateCcw,
   Trash2,
 } from "lucide-react";
@@ -81,12 +80,67 @@ export default function PredictionsPage() {
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
+  
+  // Form data hash for chat conversation management
+  const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
+  const previousFormDataHashRef = useRef(null);
 
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
       ...prevState,
       [id]: !prevState[id], // Toggle visibility for specific address
     }));
+  };
+
+  /**
+   * Generates a unique hash from form data (name, gender, DOB, TOB, place)
+   * This hash is used to identify if form data has changed
+   */
+  const generateFormDataHash = () => {
+    const formData = {
+      fullName: (fullName || '').trim().toUpperCase(),
+      gender: (gender || '').trim().toUpperCase(),
+      dob: (dob || '').trim(),
+      tob: (tob || '').trim(),
+      place: (place || '').trim().toUpperCase(),
+    };
+    // Create a consistent hash from the form data
+    const hashString = JSON.stringify(formData);
+    // Simple hash function (you could use a more robust one if needed)
+    let hash = 0;
+    for (let i = 0; i < hashString.length; i++) {
+      const char = hashString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  };
+
+  /**
+   * Checks if form data has changed and resets chat if needed
+   */
+  const checkAndResetChatOnFormChange = () => {
+    const newHash = generateFormDataHash();
+    
+    // If form is empty, don't reset
+    if (!fullName && !dob && !tob && !place) {
+      return;
+    }
+    
+    // If hash changed, reset chat
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
+      console.log('[Predictions] Form data changed, resetting chat:', {
+        previousHash: previousFormDataHashRef.current,
+        newHash: newHash,
+      });
+      // Reset chat by incrementing session ID
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+    }
+    
+    // Update the hash
+    previousFormDataHashRef.current = newHash;
+    setCurrentFormDataHash(newHash);
   };
 
 
@@ -133,6 +187,36 @@ export default function PredictionsPage() {
     setSuggestions([]);
     setError("");
     setResult(null); // optional: clear old result so user explicitly re-runs
+    
+    // Generate hash for loaded history item to check if chat should be restored
+    const loadedHash = (() => {
+      const formData = {
+        fullName: (item.fullName || '').trim().toUpperCase(),
+        gender: (item.gender || '').trim().toUpperCase(),
+        dob: (item.dob || '').trim(),
+        tob: (item.tob || '').trim(),
+        place: (item.place || '').trim().toUpperCase(),
+      };
+      const hashString = JSON.stringify(formData);
+      let hash = 0;
+      for (let i = 0; i < hashString.length; i++) {
+        const char = hashString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    })();
+    
+    // If this matches previous hash, don't reset chat (same data)
+    // Otherwise, reset chat (different data loaded)
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+    }
+    
+    // Update hash reference
+    previousFormDataHashRef.current = loadedHash;
+    setCurrentFormDataHash(loadedHash);
   };
 
 
@@ -206,6 +290,18 @@ export default function PredictionsPage() {
       setShowHistory(true);
     }
   }, []);
+
+  // Monitor form field changes to detect when form data changes
+  // This ensures chat resets when user changes form inputs before submitting
+  useEffect(() => {
+    // Only check if form has some data (not empty)
+    // This will detect changes as user types, but checkAndResetChatOnFormChange
+    // only resets if the hash actually changed, so it's safe
+    if (fullName || dob || tob || place) {
+      checkAndResetChatOnFormChange();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullName, gender, dob, tob, place]);
 
   // Auto-submit effect - runs after form fields are populated
   useEffect(() => {
@@ -425,6 +521,10 @@ export default function PredictionsPage() {
     e.preventDefault();
     setError("");
     setResult(null);
+    
+    // Check if form data has changed and reset chat if needed
+    checkAndResetChatOnFormChange();
+    
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
 
@@ -1610,15 +1710,24 @@ export default function PredictionsPage() {
                       className="results-header"
                       style={{ marginBottom: "1rem" }}
                     >
-                      <Cpu style={{ color: "#ca8a04" }} />
-                      <h3 className="results-title">AI Astrologer</h3>
+                      <img
+                        src="/infinity-symbol.svg"
+                        alt="Infinity"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          transform: "rotate(-45deg)",
+                          transformOrigin: "center center",
+                        }}
+                      />
+                      <h3 className="results-title">Astrologer</h3>
                     </div>
 
                     <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get a Personalized AI Reading
+                      Get a Personalized Reading
                     </h3>
                     <p className="text-sm text-gray-70 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas
+                      Let our Astrologer interpret your birth chart, dashas
                       and planetary strengths in simple, practical language
                       tailored just for you.
                     </p>
@@ -1633,19 +1742,20 @@ export default function PredictionsPage() {
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to AI Astrologer
+                      Talk to Astrologer
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="chat-window-container">
                   <Chat 
-                    key={`predictions-chat-${chatSessionId}`} 
+                    key={`predictions-chat-${chatSessionId}-${currentFormDataHash || 'new'}`} 
                     pageTitle="Predictions" 
                     initialData={chatData}
                     onClose={() => setChatOpen(false)}
                     chatType="prediction"
-                    shouldReset={false}
+                    shouldReset={shouldResetChat}
+                    formDataHash={currentFormDataHash}
                   />
                 </div>
               )}
@@ -2044,8 +2154,8 @@ export default function PredictionsPage() {
           onClose={() => setPredictionsOpen(false)}
           title={
             selectedPlanetForPredictions
-              ? `AI Predictions - ${selectedPlanetForPredictions} Maha Dasha`
-              : "AI Predictions"
+              ? `Predictions - ${selectedPlanetForPredictions} Maha Dasha`
+              : "Predictions"
           }
           position="center"
         >
@@ -2053,7 +2163,7 @@ export default function PredictionsPage() {
             <div className="py-12 text-center">
               <Loader2 className="w-8 h-8 text-gold animate-spin mx-auto mb-3" />
               <div className="text-sm text-gray-600">
-                Generating AI predictions...
+                Generating predictions...
               </div>
             </div>
           ) : predictionsError ? (
@@ -2140,37 +2250,19 @@ export default function PredictionsPage() {
               e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
             }}
           >
-            {/* Combined Astrologer + AI Icon */}
-            <div style={{ position: "relative", width: "40px", height: "40px" }}>
-              {/* Star (Astrologer) */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                style={{ position: "absolute", top: 0, left: 0 }}
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              {/* Circuit/AI Pattern Overlay */}
-              <div
+            {/* Golden Infinity Icon (tilted 45 degrees) */}
+            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src="/infinity-symbol.svg"
+                alt="Infinity"
                 style={{
-                  position: "absolute",
-                  top: "8px",
-                  left: "8px",
-                  width: "24px",
-                  height: "24px",
-                  background: "rgba(255, 255, 255, 0.2)",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  transform: "rotate(-45deg)",
+                  transformOrigin: "center center",
+                  filter: "brightness(0) invert(1)",
                 }}
-              >
-                <Cpu size={16} color="white" />
-              </div>
+              />
             </div>
             {/* Pulsing indicator */}
             <div
@@ -2286,7 +2378,17 @@ export default function PredictionsPage() {
                 boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
               }}
             >
-              <Cpu className="w-6 h-6 text-white" />
+              <img
+                src="/infinity-symbol.svg"
+                alt="Infinity"
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  transform: "rotate(-45deg)",
+                  transformOrigin: "center center",
+                  filter: "brightness(0) invert(1)",
+                }}
+              />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3
@@ -2302,7 +2404,7 @@ export default function PredictionsPage() {
                   backgroundClip: "text",
                 }}
               >
-                AI Astrologer Assistant
+                Astrologer Assistant
               </h3>
               <p
                 style={{

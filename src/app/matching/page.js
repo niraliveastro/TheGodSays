@@ -13,7 +13,6 @@ import {
   Clock,
   MapPin,
   Trash2,
-  Cpu,
   X,
   LoaderCircle,
   Star,
@@ -155,6 +154,66 @@ export default function MatchingPage() {
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
 
+  // Track current form data hash to detect changes
+  const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
+  const previousFormDataHashRef = useRef(null);
+  
+  /**
+   * Generates a unique hash from form data (names, DOB, TOB, place)
+   * This hash is used to identify if form data has changed
+   */
+  const generateFormDataHash = () => {
+    const formData = {
+      femaleName: (female.fullName || '').trim().toUpperCase(),
+      femaleDob: (female.dob || '').trim(),
+      femaleTob: (female.tob || '').trim(),
+      femalePlace: (female.place || '').trim().toUpperCase(),
+      maleName: (male.fullName || '').trim().toUpperCase(),
+      maleDob: (male.dob || '').trim(),
+      maleTob: (male.tob || '').trim(),
+      malePlace: (male.place || '').trim().toUpperCase(),
+    };
+    // Create a consistent hash from the form data
+    const hashString = JSON.stringify(formData);
+    // Simple hash function (you could use a more robust one if needed)
+    let hash = 0;
+    for (let i = 0; i < hashString.length; i++) {
+      const char = hashString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  };
+  
+  /**
+   * Checks if form data has changed and resets chat if needed
+   */
+  const checkAndResetChatOnFormChange = () => {
+    const newHash = generateFormDataHash();
+    
+    // If form is empty, don't reset
+    if (!female.fullName && !male.fullName && !female.dob && !male.dob) {
+      return;
+    }
+    
+    // If hash changed, reset chat
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
+      console.log('[Matching] Form data changed, resetting chat:', {
+        previousHash: previousFormDataHashRef.current,
+        newHash: newHash,
+      });
+      // Reset chat by incrementing session ID
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+      // Clear any existing chat data
+      setChatData(null);
+    }
+    
+    // Update the hash
+    previousFormDataHashRef.current = newHash;
+    setCurrentFormDataHash(newHash);
+  };
+
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
   const [history, setHistory] = useState([]); // Array of history entries
@@ -228,6 +287,13 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
+    
+    // Reset chat when form is cleared
+    setChatSessionId(prev => prev + 1);
+    setShouldResetChat(true);
+    setChatData(null);
+    previousFormDataHashRef.current = null;
+    setCurrentFormDataHash(null);
   };
 
   const loadHistoryIntoForm = (item) => {
@@ -252,6 +318,40 @@ export default function MatchingPage() {
     // Optional: Reset coords so user must re-select or re-run
     setFCoords(null);
     setMCoords(null);
+    
+    // Generate hash for loaded history item to check if chat should be restored
+    const loadedHash = (() => {
+      const formData = {
+        femaleName: (item.femaleName || '').trim().toUpperCase(),
+        femaleDob: (item.femaleDob || '').trim(),
+        femaleTob: (item.femaleTob || '').trim(),
+        femalePlace: (item.femalePlace || '').trim().toUpperCase(),
+        maleName: (item.maleName || '').trim().toUpperCase(),
+        maleDob: (item.maleDob || '').trim(),
+        maleTob: (item.maleTob || '').trim(),
+        malePlace: (item.malePlace || '').trim().toUpperCase(),
+      };
+      const hashString = JSON.stringify(formData);
+      let hash = 0;
+      for (let i = 0; i < hashString.length; i++) {
+        const char = hashString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    })();
+    
+    // If this matches previous hash, don't reset chat (same data)
+    // Otherwise, reset chat (different data loaded)
+    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
+      setChatSessionId(prev => prev + 1);
+      setShouldResetChat(true);
+      setChatData(null);
+    }
+    
+    // Update hash reference
+    previousFormDataHashRef.current = loadedHash;
+    setCurrentFormDataHash(loadedHash);
 
     // Scroll to top where the form is
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -513,6 +613,10 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
+    
+    // Check if form data has changed and reset chat if needed
+    checkAndResetChatOnFormChange();
+    
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
     if (
@@ -596,6 +700,82 @@ export default function MatchingPage() {
       if (mCalc.errors && Object.keys(mCalc.errors).length > 0) {
         console.warn('[Matching] Male calculation errors:', mCalc.errors);
       }
+      
+      // If Maha Dasha API call failed, retry separately for each individual
+      const retryMahaDashaIfNeeded = async (calc, payload, gender) => {
+        const mahaError = calc.errors?.["vimsottari/maha-dasas"];
+        const hasMahaData = calc.results?.["vimsottari/maha-dasas"];
+        
+        if (mahaError || !hasMahaData) {
+          console.warn(`[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`, {
+            error: mahaError,
+            hasData: !!hasMahaData,
+          });
+          
+          try {
+            const retryResult = await astrologyAPI.getSingleCalculation(
+              "vimsottari/maha-dasas",
+              payload
+            );
+            
+            if (retryResult && calc.results) {
+              calc.results["vimsottari/maha-dasas"] = retryResult;
+              // Remove error if retry succeeded
+              if (calc.errors && calc.errors["vimsottari/maha-dasas"]) {
+                delete calc.errors["vimsottari/maha-dasas"];
+              }
+              console.log(`[Matching] ${gender} Maha Dasha retry successful`);
+            }
+          } catch (retryError) {
+            console.error(`[Matching] ${gender} Maha Dasha retry failed:`, retryError);
+            // Continue with existing data even if retry fails
+          }
+        }
+      };
+      
+      // Retry Maha Dasha for both if needed
+      await Promise.all([
+        retryMahaDashaIfNeeded(fCalc, fPayload, 'Female'),
+        retryMahaDashaIfNeeded(mCalc, mPayload, 'Male'),
+      ]);
+      
+      // If Vimsottari data is missing, retry separately for each individual
+      const retryVimsottariIfNeeded = async (calc, payload, gender) => {
+        const vimsError = calc.errors?.["vimsottari/dasa-information"];
+        const hasVimsData = calc.results?.["vimsottari/dasa-information"];
+        
+        if (vimsError || !hasVimsData) {
+          console.warn(`[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`, {
+            error: vimsError,
+            hasData: !!hasVimsData,
+          });
+          
+          try {
+            const retryResult = await astrologyAPI.getSingleCalculation(
+              "vimsottari/dasa-information",
+              payload
+            );
+            
+            if (retryResult && calc.results) {
+              calc.results["vimsottari/dasa-information"] = retryResult;
+              // Remove error if retry succeeded
+              if (calc.errors && calc.errors["vimsottari/dasa-information"]) {
+                delete calc.errors["vimsottari/dasa-information"];
+              }
+              console.log(`[Matching] ${gender} Vimsottari retry successful`);
+            }
+          } catch (retryError) {
+            console.error(`[Matching] ${gender} Vimsottari retry failed:`, retryError);
+            // Continue with existing data even if retry fails
+          }
+        }
+      };
+      
+      // Retry Vimsottari for both if needed
+      await Promise.all([
+        retryVimsottariIfNeeded(fCalc, fPayload, 'Female'),
+        retryVimsottariIfNeeded(mCalc, mPayload, 'Male'),
+      ]);
       
       // Log to verify both have vimsottari data (only in development)
       if (process.env.NODE_ENV === 'development') {
@@ -862,11 +1042,18 @@ export default function MatchingPage() {
         prepareChatData();
       }, 100);
 
+      // Update form data hash when results are ready
+      const newHash = generateFormDataHash();
+      setCurrentFormDataHash(newHash);
+
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
         setChatSessionId(prev => prev + 1);
         setShouldResetChat(false);
       }
+      
+      // Update hash reference after successful submission
+      previousFormDataHashRef.current = newHash;
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
@@ -943,8 +1130,18 @@ export default function MatchingPage() {
 
   /**
    * Prepares the data to be passed to the Chat component.
+   * Ensures ALL data is included: personal details, planet placements, ashtakoot, vimsottari, maha dasas.
    */
   const prepareChatData = () => {
+    // Ensure we have all the data before preparing
+    if (!result || !fDetails || !mDetails) {
+      console.warn('[Matching] prepareChatData called but data is incomplete:', {
+        hasResult: !!result,
+        hasFDetails: !!fDetails,
+        hasMDetails: !!mDetails,
+      });
+    }
+    
     const data = {
       female: {
         input: {
@@ -954,7 +1151,12 @@ export default function MatchingPage() {
           place: female.place,
           coords: fCoords,
         },
-        // Pass the full details object with all data including vimsottari and mahaDasas
+        // Pass the full details object with ALL data:
+        // - currentDasha: Current Dasha chain
+        // - shadbalaRows: Shadbala strength data
+        // - placements: Planetary positions
+        // - vimsottari: Full Vimsottari Dasha data
+        // - mahaDasas: Maha Dasha timeline data
         details: fDetails || null,
       },
       male: {
@@ -965,12 +1167,40 @@ export default function MatchingPage() {
           place: male.place,
           coords: mCoords,
         },
-        // Pass the full details object with all data including vimsottari and mahaDasas
+        // Pass the full details object with ALL data:
+        // - currentDasha: Current Dasha chain
+        // - shadbalaRows: Shadbala strength data
+        // - placements: Planetary positions
+        // - vimsottari: Full Vimsottari Dasha data
+        // - mahaDasas: Maha Dasha timeline data
         details: mDetails || null,
       },
-      // Use "match" key as expected by Chat component (not "matching")
+      // Pass the complete match result with Ashtakoot scores
+      // This includes: total_score, out_of, rasi_kootam, graha_maitri_kootam, yoni_kootam, gana_kootam, nadi_kootam
       match: result || null,
     };
+    
+    // Log data structure for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Matching] Chat data prepared:', {
+        femaleName: data.female.input.name,
+        maleName: data.male.input.name,
+        hasMatch: !!data.match,
+        matchTotalScore: data.match?.total_score,
+        matchOutOf: data.match?.out_of,
+        femaleHasDetails: !!data.female.details,
+        maleHasDetails: !!data.male.details,
+        femaleHasVimsottari: !!data.female.details?.vimsottari,
+        maleHasVimsottari: !!data.male.details?.vimsottari,
+        femaleHasMahaDasas: !!data.female.details?.mahaDasas,
+        maleHasMahaDasas: !!data.male.details?.mahaDasas,
+        femaleHasPlacements: !!data.female.details?.placements,
+        maleHasPlacements: !!data.male.details?.placements,
+        femaleHasShadbala: !!data.female.details?.shadbalaRows,
+        maleHasShadbala: !!data.male.details?.shadbalaRows,
+      });
+    }
+    
     setChatData(data);
     return data;
   };
@@ -1003,8 +1233,43 @@ export default function MatchingPage() {
         match: result,
       };
       setChatData(data);
+      
+      // Update form data hash when results are ready
+      const newHash = generateFormDataHash();
+      setCurrentFormDataHash(newHash);
+      previousFormDataHashRef.current = newHash;
     }
   }, [result, fDetails, mDetails, female, male, fCoords, mCoords]);
+  
+  // Monitor form data changes and reset chat if needed (before submission)
+  useEffect(() => {
+    // Only check if we have some form data filled
+    if (female.fullName || male.fullName || female.dob || male.dob) {
+      const newHash = generateFormDataHash();
+      // Only reset if hash changed and we had a previous hash (not on initial load)
+      if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
+        console.log('[Matching] Form data changed before submission, will reset chat on submit:', {
+          previousHash: previousFormDataHashRef.current,
+          newHash: newHash,
+        });
+        // Don't reset immediately, just mark that it should reset on next submit
+        setShouldResetChat(true);
+      }
+      // Update the hash reference
+      if (previousFormDataHashRef.current === null || previousFormDataHashRef.current !== newHash) {
+        previousFormDataHashRef.current = newHash;
+        setCurrentFormDataHash(newHash);
+      }
+    }
+  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
+  
+  // Monitor form data changes and reset chat if needed
+  useEffect(() => {
+    // Only check if we have some form data filled
+    if (female.fullName || male.fullName || female.dob || male.dob) {
+      checkAndResetChatOnFormChange();
+    }
+  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
 
   /**
    * Scrolls to the chat section smoothly.
@@ -3197,15 +3462,24 @@ export default function MatchingPage() {
                       className="results-header"
                       style={{ marginBottom: "1rem" }}
                     >
-                      <Cpu style={{ color: "#ca8a04" }} />
-                      <h3 className="results-title">AI Astrologer</h3>
+                      <img
+                        src="/infinity-symbol.svg"
+                        alt="Infinity"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          transform: "rotate(-45deg)",
+                          transformOrigin: "center center",
+                        }}
+                      />
+                      <h3 className="results-title">Astrologer</h3>
                     </div>
 
                     <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get a Personalized AI Reading
+                      Get a Personalized Reading
                     </h3>
                     <p className="text-sm text-gray-70 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas
+                      Let our Astrologer interpret your birth chart, dashas
                       and planetary strengths in simple, practical language
                       tailored just for you.
                     </p>
@@ -3240,17 +3514,21 @@ export default function MatchingPage() {
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to AI Astrologer
+                      Talk to Astrologer
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="chat-window-container">
                   <Chat
-                    key={`matching-chat-${chatSessionId}`}
+                    key={`matching-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
+                    shouldReset={shouldResetChat}
+                    formDataHash={currentFormDataHash}
                     pageTitle="Matching"
                     chatType="matchmaking"
-                    initialData={chatData || {
+                    initialData={(() => {
+                      // Use chatData if available, otherwise build from current state
+                      const data = chatData || {
                       female: {
                         input: {
                           name: female.fullName,
@@ -3272,7 +3550,21 @@ export default function MatchingPage() {
                         details: mDetails,
                       },
                       match: result || null,
-                    }}
+                      };
+                      
+                      // Log to verify match data is being passed (only in development)
+                      if (process.env.NODE_ENV === 'development' && data.match) {
+                        console.log('[Matching] Passing initialData to Chat component:', {
+                          hasMatch: !!data.match,
+                          matchTotalScore: data.match?.total_score,
+                          matchOutOf: data.match?.out_of,
+                          matchKeys: data.match ? Object.keys(data.match) : [],
+                          matchSample: data.match ? JSON.stringify(data.match).substring(0, 300) : null,
+                        });
+                      }
+                      
+                      return data;
+                    })()}
                     onClose={() => {
                       setChatOpen(false);
                       setIsAssistantMinimized(true);
@@ -3842,37 +4134,19 @@ export default function MatchingPage() {
               e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
             }}
           >
-            {/* Combined Astrologer + AI Icon */}
-            <div style={{ position: "relative", width: "40px", height: "40px" }}>
-              {/* Star (Astrologer) */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                style={{ position: "absolute", top: 0, left: 0 }}
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              {/* Circuit/AI Pattern Overlay */}
-              <div
+            {/* Golden Infinity Icon (tilted 45 degrees) */}
+            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src="/infinity-symbol.svg"
+                alt="Infinity"
                 style={{
-                  position: "absolute",
-                  top: "8px",
-                  left: "8px",
-                  width: "24px",
-                  height: "24px",
-                  background: "rgba(255, 255, 255, 0.2)",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  transform: "rotate(-45deg)",
+                  transformOrigin: "center center",
+                  filter: "brightness(0) invert(1)",
                 }}
-              >
-                <Cpu size={16} color="white" />
-              </div>
+              />
             </div>
             {/* Pulsing indicator */}
             <div
@@ -3992,7 +4266,17 @@ export default function MatchingPage() {
                   boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
                 }}
               >
-                <Cpu className="w-6 h-6 text-white" />
+                <img
+                  src="/infinity-symbol.svg"
+                  alt="Infinity"
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    transform: "rotate(-45deg)",
+                    transformOrigin: "center center",
+                    filter: "brightness(0) invert(1)",
+                  }}
+                />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h3
@@ -4008,7 +4292,7 @@ export default function MatchingPage() {
                     backgroundClip: "text",
                   }}
                 >
-                  AI Astrologer Assistant
+                  Astrologer Assistant
                 </h3>
                 <p
                   style={{

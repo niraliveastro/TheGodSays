@@ -154,14 +154,24 @@ export default function MonthlyCalendar({
         .navBtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
         .monthTitle{font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:#7c2d12;}
 
-        .weekdayHeader{display:grid;grid-template-columns:60px repeat(7,1fr);gap:.5rem;margin-top:1rem;}
-        @media(max-width:640px){.weekdayHeader{grid-template-columns:48px repeat(7,1fr);gap:.375rem;}}
-        .weekdayCell{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:.75rem;text-align:center;padding:.5rem 0;font-weight:600;color:#374151;font-size:.875rem;}
+        .calendarScrollWrapper{width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#d4af37 #f1f5f9;}
+        .calendarScrollWrapper::-webkit-scrollbar{height:8px;}
+        .calendarScrollWrapper::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px;}
+        .calendarScrollWrapper::-webkit-scrollbar-thumb{background:#d4af37;border-radius:4px;}
+        .calendarScrollWrapper::-webkit-scrollbar-thumb:hover{background:#b8972e;}
+        @media(min-width:641px){.calendarScrollWrapper{overflow-x:visible;}}
+
+        .calendarInnerWrapper{min-width:min-content;}
+
+        .weekdayHeader{display:grid;grid-template-columns:60px repeat(7,1fr);gap:.5rem;margin-top:1rem;min-width:min-content;}
+        @media(max-width:640px){.weekdayHeader{grid-template-columns:48px repeat(7,1fr);gap:.375rem;min-width:600px;}}
+        @media(max-width:480px){.weekdayHeader{min-width:520px;}}
+        .weekdayCell{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:.75rem;text-align:center;padding:.5rem 0;font-weight:600;color:#374151;font-size:.875rem;min-width:0;}
         .weekdayHi{font-size:.625rem;color:#6b7280;margin-top:.125rem;}
 
-        .calendarGrid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:.75rem;margin-top:.75rem;}
-        @media(max-width:640px){.calendarGrid{grid-template-columns:48px repeat(7,1fr);gap:.5rem;}}
-        @media(max-width:480px){.calendarGrid{grid-template-columns:40px repeat(7,1fr);gap:.375rem;}}
+        .calendarGrid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:.75rem;margin-top:.75rem;min-width:min-content;}
+        @media(max-width:640px){.calendarGrid{grid-template-columns:48px repeat(7,1fr);gap:.5rem;min-width:600px;}}
+        @media(max-width:480px){.calendarGrid{grid-template-columns:40px repeat(7,1fr);gap:.375rem;min-width:520px;}}
 
         .rowLabel{background:#fefce8;border:1.5px solid var(--color-gold);border-radius:.75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8125rem;font-weight:600;color:#7c2d12;padding:.25rem 0;}
         .rowLabelHi{font-size:.625rem;color:var(--color-gold-dark);}
@@ -230,19 +240,22 @@ export default function MonthlyCalendar({
           <button className="navBtn" onClick={onNext} disabled={!onNext} aria-label="Next"><ChevronRight style={{ width: 18, height: 18 }} /></button>
         </div>
 
-        {/* Weekday header */}
-        <div className="weekdayHeader">
-          <div /> {/* corner */}
-          {weekdays.map(w => (
-            <div key={w.en} className="weekdayCell">
-              <div>{w.en}</div>
-              <div className="weekdayHi">{w.hi}</div>
+        {/* Scrollable calendar container for mobile */}
+        <div className="calendarScrollWrapper">
+          <div className="calendarInnerWrapper">
+            {/* Weekday header */}
+            <div className="weekdayHeader">
+              <div /> {/* corner */}
+              {weekdays.map(w => (
+                <div key={w.en} className="weekdayCell">
+                  <div>{w.en}</div>
+                  <div className="weekdayHi">{w.hi}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Calendar grid – 8 columns (label + 7 days) */}
-        <div className="calendarGrid">
+            {/* Calendar grid – 8 columns (label + 7 days) */}
+            <div className="calendarGrid">
           {month.rows.map((week, wIdx) => (
             <React.Fragment key={wIdx}>
               {/* Row label (SUN, MON…) */}
@@ -309,6 +322,8 @@ export default function MonthlyCalendar({
               })}
             </React.Fragment>
           ))}
+            </div>
+          </div>
         </div>
 
         {/* ──────────────────────  Modal (unchanged)  ────────────────────── */}

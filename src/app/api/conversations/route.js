@@ -15,6 +15,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const chatType = searchParams.get('chatType')
+    const formDataHash = searchParams.get('formDataHash') || null
 
     if (!chatType || !['prediction', 'matchmaking'].includes(chatType)) {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function GET(request) {
       return NextResponse.json({ conversation: null })
     }
 
-    const conversation = await ConversationService.getActiveConversation(userId, chatType)
+    const conversation = await ConversationService.getActiveConversation(userId, chatType, formDataHash)
     return NextResponse.json({ conversation })
   } catch (error) {
     console.error('Error in GET /api/conversations:', error)
@@ -47,7 +48,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { userId, chatType, messages } = body
+    const { userId, chatType, messages, formDataHash } = body
 
     if (!chatType || !['prediction', 'matchmaking'].includes(chatType)) {
       return NextResponse.json(
@@ -70,19 +71,19 @@ export async function POST(request) {
       )
     }
 
-    // Get or create active conversation
-    let conversation = await ConversationService.getActiveConversation(userId, chatType)
+    // Get or create active conversation (with formDataHash if provided)
+    let conversation = await ConversationService.getActiveConversation(userId, chatType, formDataHash || null)
     
     if (conversation) {
-      // Update existing conversation
+      // Update existing conversation (only if formDataHash matches)
       await ConversationService.updateConversation(conversation.id, messages)
       conversation = {
         ...conversation,
         messages
       }
     } else {
-      // Create new conversation
-      conversation = await ConversationService.createConversation(userId, chatType, messages)
+      // Create new conversation (with formDataHash if provided)
+      conversation = await ConversationService.createConversation(userId, chatType, messages, formDataHash || null)
     }
 
     return NextResponse.json({ conversation })

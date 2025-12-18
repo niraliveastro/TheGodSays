@@ -4,7 +4,8 @@
  * Light theme only - matches Rahunow theme with gold accents
  */
 
-import { getBlogBySlug, getAllBlogSlugs } from '@/lib/blog'
+import { getBlogBySlug, getAllBlogSlugs, getPublishedBlogs } from '@/lib/blog'
+import { generateExcerpt } from '@/lib/blog-utils'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -90,6 +91,12 @@ export default async function BlogPostPage({ params }) {
   if (!blog) {
     notFound()
   }
+
+  // Fetch related blogs (exclude current blog)
+  const allBlogs = await getPublishedBlogs()
+  const relatedBlogs = allBlogs
+    .filter(b => b.id !== blog.id && b.slug !== slug)
+    .slice(0, 6) // Show up to 6 related blogs
 
   const publishedDate = blog.publishedAt
     ? new Date(blog.publishedAt).toLocaleDateString('en-US', {
@@ -179,6 +186,70 @@ export default async function BlogPostPage({ params }) {
         {/* Article Content */}
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: content }} />
       </div>
+
+      {/* Related Blogs Section */}
+      {relatedBlogs.length > 0 && (
+        <div className="related-blogs-section">
+          <div className="related-blogs-container">
+            <h2 className="related-blogs-title">More Articles</h2>
+            <p className="related-blogs-subtitle">Continue reading our latest astrology insights</p>
+            
+            <div className="related-blogs-grid">
+              {relatedBlogs.map((relatedBlog) => {
+                const excerpt = generateExcerpt(relatedBlog.content || relatedBlog.excerpt || '', 120)
+                const relatedPublishedDate = relatedBlog.publishedAt
+                  ? new Date(relatedBlog.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : ''
+
+                return (
+                  <Link key={relatedBlog.id} href={`/blog/${relatedBlog.slug}`} className="related-blog-card">
+                    {/* Featured Image */}
+                    {relatedBlog.featuredImage && (
+                      <div className="related-blog-image">
+                        <Image
+                          src={relatedBlog.featuredImage}
+                          alt={relatedBlog.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      </div>
+                    )}
+
+                    {/* Content */}
+                    <div className="related-blog-content">
+                      {/* Tags */}
+                      {relatedBlog.tags && relatedBlog.tags.length > 0 && (
+                        <div className="related-blog-tags">
+                          {relatedBlog.tags.slice(0, 2).map((tag, idx) => (
+                            <span key={idx} className="related-blog-tag">{tag}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Title */}
+                      <h3 className="related-blog-title">{relatedBlog.title}</h3>
+
+                      {/* Excerpt */}
+                      {excerpt && <p className="related-blog-excerpt">{excerpt}</p>}
+
+                      {/* Meta Info */}
+                      <div className="related-blog-meta">
+                        {relatedPublishedDate && <span>{relatedPublishedDate}</span>}
+                        {relatedBlog.author && <span className="related-blog-author">By {relatedBlog.author}</span>}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Schema.org JSON-LD for BlogPosting */}
       <script

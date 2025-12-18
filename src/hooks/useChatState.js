@@ -11,8 +11,9 @@ import {
  * Custom hook for managing chat state with credits and guest tracking
  * @param {string} chatType - 'prediction' or 'matchmaking'
  * @param {boolean} shouldReset - Flag to reset conversation (e.g., on new form submission)
+ * @param {string} formDataHash - Hash of form data to identify unique form submissions
  */
-export function useChatState(chatType, shouldReset = false) {
+export function useChatState(chatType, shouldReset = false, formDataHash = null) {
   const { user, getUserId } = useAuth()
   const userId = getUserId()
   const [messages, setMessages] = useState([])
@@ -21,6 +22,7 @@ export function useChatState(chatType, shouldReset = false) {
   const [walletBalance, setWalletBalance] = useState(null)
   const [loading, setLoading] = useState(true)
   const resetTriggerRef = useRef(false)
+  const previousFormDataHashRef = useRef(null)
 
   // Track if this is a guest user
   const isGuest = !userId
@@ -29,6 +31,54 @@ export function useChatState(chatType, shouldReset = false) {
   const guestUsage = isGuest ? getGuestUsage(chatType) : 0
   const canAsk = isGuest ? canGuestAskQuestion(chatType) : true
   const remainingGuestQuestions = isGuest ? getRemainingGuestQuestions(chatType) : null
+
+  // Define loadConversation function before useEffects that use it
+  const loadConversation = async (forceNew = false, hashToUse = formDataHash) => {
+    try {
+      setLoading(true)
+
+      if (!userId || forceNew) {
+        // Guest or force new conversation - start fresh
+        setMessages([])
+        setConversationId(null)
+        setLoading(false)
+        return
+      }
+
+      // If formDataHash is provided, only load conversation with matching hash
+      // This ensures each unique form submission has its own conversation
+      const url = `/api/conversations?userId=${userId}&chatType=${chatType}${hashToUse ? `&formDataHash=${hashToUse}` : ''}`
+      const response = await fetch(url)
+      const data = await response.json()
+
+      if (data.conversation && data.conversation.messages) {
+        // Only load if formDataHash matches (if formDataHash is provided)
+        // If formDataHash is null, load any conversation (backward compatibility)
+        if (!hashToUse || data.conversation.formDataHash === hashToUse) {
+        setMessages(data.conversation.messages)
+        setConversationId(data.conversation.id)
+      } else {
+          // Form data changed, start fresh - don't load old conversation
+          console.log('[useChatState] Form data hash mismatch, starting fresh conversation:', {
+            expectedHash: hashToUse,
+            conversationHash: data.conversation.formDataHash
+          })
+          setMessages([])
+          setConversationId(null)
+        }
+      } else {
+        // No conversation found for this formDataHash, start fresh
+        setMessages([])
+        setConversationId(null)
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error)
+      setMessages([])
+      setConversationId(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load conversation from Firestore on mount or when userId changes
   useEffect(() => {
@@ -43,6 +93,21 @@ export function useChatState(chatType, shouldReset = false) {
       resetTriggerRef.current = false
     }
   }, [shouldReset])
+  
+  // Detect formDataHash changes and reset conversation
+  useEffect(() => {
+    if (formDataHash && previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== formDataHash) {
+      // Form data hash changed, reset conversation
+      console.log('[useChatState] Form data hash changed, resetting conversation:', {
+        previousHash: previousFormDataHashRef.current,
+        newHash: formDataHash
+      })
+      setMessages([])
+      setConversationId(null)
+      loadConversation(true, formDataHash) // Force new conversation with new hash
+    }
+    previousFormDataHashRef.current = formDataHash
+  }, [formDataHash])
 
   // Load conversation and pricing
   useEffect(() => {
@@ -53,39 +118,7 @@ export function useChatState(chatType, shouldReset = false) {
     } else {
       setWalletBalance(null)
     }
-  }, [userId, chatType])
-
-  const loadConversation = async (forceNew = false) => {
-    try {
-      setLoading(true)
-
-      if (!userId || forceNew) {
-        // Guest or force new conversation - start fresh
-        setMessages([])
-        setConversationId(null)
-        setLoading(false)
-        return
-      }
-
-      // Load active conversation for logged-in user
-      const response = await fetch(`/api/conversations?userId=${userId}&chatType=${chatType}`)
-      const data = await response.json()
-
-      if (data.conversation && data.conversation.messages) {
-        setMessages(data.conversation.messages)
-        setConversationId(data.conversation.id)
-      } else {
-        setMessages([])
-        setConversationId(null)
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error)
-      setMessages([])
-      setConversationId(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [userId, chatType, formDataHash])
 
   const loadPricing = async () => {
     try {
@@ -127,9 +160,9 @@ export function useChatState(chatType, shouldReset = false) {
   // Save conversation to Firestore
   const saveConversation = async (updatedMessages) => {
     if (!userId) {
-      // Guest users - save to sessionStorage as backup
+      // Guest users - save to sessionStorage as backup (with formDataHash if provided)
       try {
-        const key = `tgs:guest_chat:${chatType}`
+        const key = `tgs:guest_chat:${chatType}${formDataHash ? `:${formDataHash}` : ''}`
         sessionStorage.setItem(key, JSON.stringify(updatedMessages))
       } catch (error) {
         console.error('Error saving guest chat to sessionStorage:', error)
@@ -144,7 +177,8 @@ export function useChatState(chatType, shouldReset = false) {
         body: JSON.stringify({
           userId,
           chatType,
-          messages: updatedMessages
+          messages: updatedMessages,
+          formDataHash: formDataHash || null
         })
       })
 
