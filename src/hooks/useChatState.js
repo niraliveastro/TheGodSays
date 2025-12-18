@@ -55,9 +55,9 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
         // Only load if formDataHash matches (if formDataHash is provided)
         // If formDataHash is null, load any conversation (backward compatibility)
         if (!hashToUse || data.conversation.formDataHash === hashToUse) {
-          setMessages(data.conversation.messages)
-          setConversationId(data.conversation.id)
-        } else {
+        setMessages(data.conversation.messages)
+        setConversationId(data.conversation.id)
+      } else {
           // Form data changed, start fresh - don't load old conversation
           console.log('[useChatState] Form data hash mismatch, starting fresh conversation:', {
             expectedHash: hashToUse,

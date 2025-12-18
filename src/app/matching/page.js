@@ -13,7 +13,6 @@ import {
   Clock,
   MapPin,
   Trash2,
-  Cpu,
   X,
   LoaderCircle,
   Star,
@@ -154,7 +153,7 @@ export default function MatchingPage() {
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
-  
+
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
@@ -1046,7 +1045,7 @@ export default function MatchingPage() {
       // Update form data hash when results are ready
       const newHash = generateFormDataHash();
       setCurrentFormDataHash(newHash);
-      
+
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
         setChatSessionId(prev => prev + 1);
@@ -3463,15 +3462,24 @@ export default function MatchingPage() {
                       className="results-header"
                       style={{ marginBottom: "1rem" }}
                     >
-                      <Cpu style={{ color: "#ca8a04" }} />
-                      <h3 className="results-title">AI Astrologer</h3>
+                      <img
+                        src="/infinity-symbol.svg"
+                        alt="Infinity"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          transform: "rotate(-45deg)",
+                          transformOrigin: "center center",
+                        }}
+                      />
+                      <h3 className="results-title">Astrologer</h3>
                     </div>
 
                     <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get a Personalized AI Reading
+                      Get a Personalized Reading
                     </h3>
                     <p className="text-sm text-gray-70 max-w-xl">
-                      Let our AI Astrologer interpret your birth chart, dashas
+                      Let our Astrologer interpret your birth chart, dashas
                       and planetary strengths in simple, practical language
                       tailored just for you.
                     </p>
@@ -3506,7 +3514,7 @@ export default function MatchingPage() {
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
                       <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to AI Astrologer
+                      Talk to Astrologer
                     </button>
                   </div>
                 </div>
@@ -3521,27 +3529,27 @@ export default function MatchingPage() {
                     initialData={(() => {
                       // Use chatData if available, otherwise build from current state
                       const data = chatData || {
-                        female: {
-                          input: {
-                            name: female.fullName,
-                            dob: female.dob,
-                            tob: female.tob,
-                            place: female.place,
-                            coords: fCoords,
-                          },
-                          details: fDetails,
+                      female: {
+                        input: {
+                          name: female.fullName,
+                          dob: female.dob,
+                          tob: female.tob,
+                          place: female.place,
+                          coords: fCoords,
                         },
-                        male: {
-                          input: {
-                            name: male.fullName,
-                            dob: male.dob,
-                            tob: male.tob,
-                            place: male.place,
-                            coords: mCoords,
-                          },
-                          details: mDetails,
+                        details: fDetails,
+                      },
+                      male: {
+                        input: {
+                          name: male.fullName,
+                          dob: male.dob,
+                          tob: male.tob,
+                          place: male.place,
+                          coords: mCoords,
                         },
-                        match: result || null,
+                        details: mDetails,
+                      },
+                      match: result || null,
                       };
                       
                       // Log to verify match data is being passed (only in development)
@@ -4126,37 +4134,19 @@ export default function MatchingPage() {
               e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
             }}
           >
-            {/* Combined Astrologer + AI Icon */}
-            <div style={{ position: "relative", width: "40px", height: "40px" }}>
-              {/* Star (Astrologer) */}
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                style={{ position: "absolute", top: 0, left: 0 }}
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              {/* Circuit/AI Pattern Overlay */}
-              <div
+            {/* Golden Infinity Icon (tilted 45 degrees) */}
+            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src="/infinity-symbol.svg"
+                alt="Infinity"
                 style={{
-                  position: "absolute",
-                  top: "8px",
-                  left: "8px",
-                  width: "24px",
-                  height: "24px",
-                  background: "rgba(255, 255, 255, 0.2)",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  transform: "rotate(-45deg)",
+                  transformOrigin: "center center",
+                  filter: "brightness(0) invert(1)",
                 }}
-              >
-                <Cpu size={16} color="white" />
-              </div>
+              />
             </div>
             {/* Pulsing indicator */}
             <div
@@ -4276,7 +4266,17 @@ export default function MatchingPage() {
                   boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
                 }}
               >
-                <Cpu className="w-6 h-6 text-white" />
+                <img
+                  src="/infinity-symbol.svg"
+                  alt="Infinity"
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    transform: "rotate(-45deg)",
+                    transformOrigin: "center center",
+                    filter: "brightness(0) invert(1)",
+                  }}
+                />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h3
@@ -4292,7 +4292,7 @@ export default function MatchingPage() {
                     backgroundClip: "text",
                   }}
                 >
-                  AI Astrologer Assistant
+                  Astrologer Assistant
                 </h3>
                 <p
                   style={{

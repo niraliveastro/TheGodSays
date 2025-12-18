@@ -79,7 +79,7 @@ export class ConversationService {
       if (formDataHash) {
         await this.deactivateConversationsByHash(userId, chatType, formDataHash)
       } else {
-        await this.deactivateAllConversations(userId, chatType)
+      await this.deactivateAllConversations(userId, chatType)
       }
 
       const conversationRef = db.collection('conversations').doc()
