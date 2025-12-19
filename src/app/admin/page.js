@@ -12,9 +12,9 @@ import './admin.css'
 export default function AdminPage() {
   const router = useRouter()
 
-  // Auto-redirect to blog admin for now
+  // Auto-redirect to admin dashboard
   useEffect(() => {
-    router.push('/admin/blog')
+    router.push('/admin/dashboard')
   }, [router])
 
   return (

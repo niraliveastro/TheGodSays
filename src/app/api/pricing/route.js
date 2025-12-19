@@ -18,6 +18,37 @@ if (!getApps().length) {
   }
 }
 
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const astrologerId = searchParams.get('astrologerId')
+    const action = searchParams.get('action') || 'get-all-pricing'
+
+    if (action === 'get-pricing' && astrologerId) {
+      try {
+        const pricing = await PricingService.getPricing(astrologerId)
+        return NextResponse.json({ success: true, pricing })
+      } catch (error) {
+        console.error('Error getting pricing:', error)
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+    } else if (action === 'get-all-pricing') {
+      try {
+        const allPricing = await PricingService.getAllPricing()
+        return NextResponse.json({ success: true, pricing: allPricing })
+      } catch (error) {
+        console.error('Error getting all pricing:', error)
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+    }
+
+    return NextResponse.json({ error: 'Invalid action or missing astrologerId' }, { status: 400 })
+  } catch (error) {
+    console.error('Error in pricing API GET:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(request) {
   try {
     const { action, astrologerId, pricingType, basePrice, discountPercent, callDurationMins } = await request.json()
