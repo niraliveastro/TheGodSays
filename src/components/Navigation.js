@@ -95,6 +95,7 @@ const Navigation = () => {
         { href: "/profile/user", label: t.profile.myProfile, icon: User },
         { href: "/wallet", label: t.nav.wallet, icon: Wallet },
         { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
+        { href: "/admin/dashboard", label: "Admin Dashboard", icon: LayoutDashboard },
       ],
     },
   ], [language, t]);
