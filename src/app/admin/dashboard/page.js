@@ -24,6 +24,7 @@ import {
   MessageSquare,
   CreditCard,
   Download,
+  Lock,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -40,6 +41,10 @@ const CACHE_KEYS = {
 
 // Cache TTL (5 minutes)
 const CACHE_TTL = 5 * 60 * 1000
+
+// Admin Passcode
+const ADMIN_PASSCODE = 'Spacenos.nxt@global'
+const PASSCODE_STORAGE_KEY = 'admin_passcode_verified'
 
 // Cache helper functions
 const getCachedData = (key) => {
@@ -109,10 +114,27 @@ export default function AdminDashboard() {
   const [astrologers, setAstrologers] = useState([])
   const [loadingCalls, setLoadingCalls] = useState(false)
   const [editingPricing, setEditingPricing] = useState(null)
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false)
+  const [passcodeInput, setPasscodeInput] = useState('')
+  const [passcodeError, setPasscodeError] = useState('')
+  const [isPasscodeVerified, setIsPasscodeVerified] = useState(false)
 
-  // Load cached data on mount
+  // Check passcode on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
+    
+    // Check if passcode is already verified in this session
+    const verified = sessionStorage.getItem(PASSCODE_STORAGE_KEY)
+    if (verified === 'true') {
+      setIsPasscodeVerified(true)
+    } else {
+      setShowPasscodeModal(true)
+    }
+  }, [])
+
+  // Load cached data on mount (only after passcode verification)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isPasscodeVerified) return
     
     // Load from cache immediately
     const cachedStats = getCachedData(CACHE_KEYS.STATS)
@@ -134,10 +156,11 @@ export default function AdminDashboard() {
     if (cachedStats || cachedCalls || cachedBlogs) {
       setLoading(false)
     }
-  }, [])
+  }, [isPasscodeVerified])
 
-  // Check if user is admin
+  // Check if user is admin (only after passcode verification)
   useEffect(() => {
+    if (!isPasscodeVerified) return
     if (authLoading) return
     if (!user) {
       router.push('/auth/user')
@@ -148,7 +171,7 @@ export default function AdminDashboard() {
       fetchData(false)
     }
     fixPendingCalls()
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, isPasscodeVerified])
 
   // Fix pending calls that timed out
   const fixPendingCalls = useCallback(async () => {
@@ -523,6 +546,21 @@ export default function AdminDashboard() {
     })
   }
 
+  const handlePasscodeSubmit = (e) => {
+    e.preventDefault()
+    setPasscodeError('')
+    
+    if (passcodeInput === ADMIN_PASSCODE) {
+      setIsPasscodeVerified(true)
+      setShowPasscodeModal(false)
+      sessionStorage.setItem(PASSCODE_STORAGE_KEY, 'true')
+      setPasscodeInput('')
+    } else {
+      setPasscodeError('Incorrect passcode. Please try again.')
+      setPasscodeInput('')
+    }
+  }
+
   const handleDownloadPDF = () => {
     try {
       const doc = new jsPDF('landscape', 'pt', 'a4')
@@ -737,7 +775,48 @@ export default function AdminDashboard() {
     }
   }
 
-  if (authLoading || (loading && !stats && !calls.length && !blogs.length)) {
+  // Show passcode modal if not verified
+  if (showPasscodeModal) {
+    return (
+      <div className="admin-dashboard">
+        <div className="admin-passcode-modal-overlay">
+          <div className="admin-passcode-modal">
+            <div className="admin-passcode-header">
+              <Lock size={32} className="admin-passcode-icon" />
+              <h2>Admin Access Required</h2>
+              <p>Please enter the security passcode to access the admin dashboard</p>
+            </div>
+            <form onSubmit={handlePasscodeSubmit} className="admin-passcode-form">
+              <div className="admin-form-group">
+                <label htmlFor="passcode">Security Passcode</label>
+                <input
+                  id="passcode"
+                  type="password"
+                  value={passcodeInput}
+                  onChange={(e) => {
+                    setPasscodeInput(e.target.value)
+                    setPasscodeError('')
+                  }}
+                  className={`admin-input ${passcodeError ? 'admin-input-error' : ''}`}
+                  placeholder="Enter passcode"
+                  autoFocus
+                  autoComplete="off"
+                />
+                {passcodeError && (
+                  <p className="admin-error-message">{passcodeError}</p>
+                )}
+              </div>
+              <button type="submit" className="admin-btn admin-btn-primary admin-btn-full">
+                Verify & Access
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (authLoading || (loading && !stats && !calls.length && !blogs.length && isPasscodeVerified)) {
     return (
       <div className="admin-dashboard-loading">
         <div className="admin-spinner"></div>

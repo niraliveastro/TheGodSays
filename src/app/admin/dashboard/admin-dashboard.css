@@ -45,6 +45,77 @@
   font-size: 1rem;
 }
 
+/* Passcode Modal */
+.admin-passcode-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.admin-passcode-modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+.admin-passcode-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.admin-passcode-icon {
+  color: #d4af37;
+  margin-bottom: 1rem;
+}
+
+.admin-passcode-header h2 {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-passcode-header p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.admin-passcode-form {
+  margin-top: 1.5rem;
+}
+
+.admin-input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.admin-error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.admin-btn-full {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 /* Merged Header with Stats */
 .admin-dashboard-header-merged {
   background: rgba(255, 255, 255, 0.95);
