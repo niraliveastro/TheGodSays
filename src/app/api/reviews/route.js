@@ -6,34 +6,39 @@ import { getFirestore } from 'firebase-admin/firestore';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  try {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      })
-    })
-  } catch (error) {
-    console.warn('Firebase Admin initialization failed:', error.message)
-  }
-}
+// Lazy Firebase initialization function
+function getFirestoreDB() {
+  // Initialize Firebase Admin if not already initialized
+  if (!getApps().length) {
+    try {
+      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-const db = getFirestore()
+      if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Firebase environment variables are not set');
+      }
+
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'),
+        })
+      });
+    } catch (error) {
+      console.error('Firebase Admin initialization failed:', error.message);
+      throw error;
+    }
+  }
+
+  return getFirestore();
+}
 
 export async function GET(request) {
   try {
-    // Check if db is initialized (might be null during build/prerender)
-    if (!db) {
-      console.error('Reviews API: Database not initialized. Check Firebase Admin configuration.');
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Database not initialized. Please check server configuration.',
-        reviews: [] 
-      }, { status: 503 });
-    }
+    // Initialize Firebase only when the route is called
+    const db = getFirestoreDB();
 
     const { searchParams } = new URL(request.url);
     const astrologerId = searchParams.get('astrologerId');
@@ -103,10 +108,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Check if db is initialized (might be null during build/prerender)
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
-    }
+    // Initialize Firebase only when the route is called
+    const db = getFirestoreDB();
 
     const { astrologerId, userId, rating, comment } = await request.json();
 
@@ -149,10 +152,8 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    // Check if db is initialized (might be null during build/prerender)
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Database not initialized.' }, { status: 503 });
-    }
+    // Initialize Firebase only when the route is called
+    const db = getFirestoreDB();
 
     const { searchParams } = new URL(request.url);
     const astrologerId = searchParams.get('astrologerId');

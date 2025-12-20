@@ -1,10 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Component } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { ArrowLeft, PhoneOff, Video } from "lucide-react";
+
+// Error Boundary to catch and suppress track-related errors
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Suppress track array errors that are common during LiveKit initialization
+    if (error.message && (error.message.includes("not part of the array") || error.message.includes("camera_placeholder"))) {
+      console.warn("VideoConference track warning (suppressed):", error.message);
+      return { hasError: false, error: null };
+    }
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Only log non-track-related errors
+    if (!error.message || (!error.message.includes("not part of the array") && !error.message.includes("camera_placeholder"))) {
+      console.error("VideoConference error:", error, errorInfo);
+    }
+  }
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      return (
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          height: "100%",
+          color: "white",
+          padding: "2rem"
+        }}>
+          <div style={{ textAlign: "center" }}>
+            <p>Video conference error. Please refresh the page.</p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: "1rem",
+                padding: "0.5rem 1rem",
+                background: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+              }}
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function VideoCallRoom() {
   const params = useParams();
@@ -450,11 +509,34 @@ export default function VideoCallRoom() {
             serverUrl={wsUrl}
             token={token}
             onDisconnected={handleDisconnect}
-            onError={(err) => setError(`Video call error: ${err.message}`)}
-            onConnected={() => setError("")}
+            onError={(err) => {
+              console.error("LiveKit error:", err);
+              // Ignore track-related errors that are common during initialization
+              if (err.message && (err.message.includes("not part of the array") || err.message.includes("camera_placeholder"))) {
+                console.warn("Track initialization warning (can be ignored):", err.message);
+                return;
+              }
+              setError(`Video call error: ${err.message}`);
+            }}
+            onConnected={() => {
+              setError("");
+              console.log("Video call connected successfully");
+            }}
+            connectOptions={{
+              autoSubscribe: true,
+              publishDefaults: {
+                videoResolution: {
+                  width: 1280,
+                  height: 720,
+                },
+                videoCodec: "vp8",
+              },
+            }}
             style={{ height: "100%", width: "100%" }}
           >
-            <VideoConference />
+            <ErrorBoundary>
+              <VideoConference />
+            </ErrorBoundary>
           </LiveKitRoom>
 
           {/* Bottom Control Bar - Inside video container */}

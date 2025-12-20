@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import {
   doc,
+  getDoc,
   updateDoc,
   onSnapshot,
   collection,
@@ -222,6 +223,43 @@ function AstrologerDashboardContent() {
               }
             }
 
+            // Sort calls by timestamp (most recent first)
+            // Helper function to get timestamp value for sorting
+            const getCallTimestamp = (call) => {
+              // Try different timestamp fields in order of preference
+              const timestamps = [
+                call.completedAt,
+                call.acceptedAt,
+                call.createdAt,
+                call.updatedAt,
+              ];
+
+              for (const ts of timestamps) {
+                if (!ts) continue;
+                
+                // Handle Firestore Timestamp
+                if (ts.seconds) {
+                  return ts.seconds * 1000 + (ts.nanoseconds || 0) / 1000000;
+                }
+                
+                // Handle ISO string or Date
+                const date = new Date(ts);
+                if (!isNaN(date.getTime())) {
+                  return date.getTime();
+                }
+              }
+              
+              // Fallback to 0 if no valid timestamp found
+              return 0;
+            };
+
+            // Sort calls by timestamp in descending order (newest first)
+            callsList.sort((a, b) => {
+              const timestampA = getCallTimestamp(a);
+              const timestampB = getCallTimestamp(b);
+              return timestampB - timestampA; // Descending order
+            });
+
             setCalls(callsList);
             setQueue(queueList);
             if (newIncomingCall) setIncomingCall(newIncomingCall);
@@ -256,6 +294,43 @@ function AstrologerDashboardContent() {
             const newIncomingCall = callsList.find(
               (call) => call.status === "pending"
             );
+
+            // Sort calls by timestamp (most recent first)
+            // Helper function to get timestamp value for sorting
+            const getCallTimestamp = (call) => {
+              // Try different timestamp fields in order of preference
+              const timestamps = [
+                call.completedAt,
+                call.acceptedAt,
+                call.createdAt,
+                call.updatedAt,
+              ];
+
+              for (const ts of timestamps) {
+                if (!ts) continue;
+                
+                // Handle Firestore Timestamp
+                if (ts.seconds) {
+                  return ts.seconds * 1000 + (ts.nanoseconds || 0) / 1000000;
+                }
+                
+                // Handle ISO string or Date
+                const date = new Date(ts);
+                if (!isNaN(date.getTime())) {
+                  return date.getTime();
+                }
+              }
+              
+              // Fallback to 0 if no valid timestamp found
+              return 0;
+            };
+
+            // Sort calls by timestamp in descending order (newest first)
+            callsList.sort((a, b) => {
+              const timestampA = getCallTimestamp(a);
+              const timestampB = getCallTimestamp(b);
+              return timestampB - timestampA; // Descending order
+            });
 
             setCalls(callsList);
             setQueue(queueList);
@@ -420,7 +495,7 @@ function AstrologerDashboardContent() {
       
       // CRITICAL: Check current call status before accepting
       if (action === "active") {
-        const callSnapshot = await callRef.get();
+        const callSnapshot = await getDoc(callRef);
         if (!callSnapshot.exists) {
           alert("Call not found. It may have been cancelled.");
           setIncomingCall(null);
@@ -467,28 +542,64 @@ function AstrologerDashboardContent() {
         await updateStatus("busy");
         setIncomingCall(null);
 
-        const call = calls.find((c) => c.id === callId) || incomingCall;
+        // Get fresh call data after update to ensure we have the latest roomName
+        const updatedCallSnapshot = await getDoc(callRef);
+        const updatedCallData = updatedCallSnapshot.exists ? updatedCallSnapshot.data() : null;
+        
+        const call = updatedCallData 
+          ? { id: callId, ...updatedCallData }
+          : calls.find((c) => c.id === callId) || incomingCall;
         if (!call) {
+          console.error("[Call Accept] Call not found:", callId);
+          alert("Call not found. Please refresh and try again.");
+          await updateStatus("online");
+          return;
+        }
+
+        // Get the actual user ID from the call
+        const actualUserId = call.userId;
+        if (!actualUserId) {
+          console.error("[Call Accept] User ID missing from call:", call);
+          alert("Call data is incomplete. Please refresh and try again.");
+          await updateStatus("online");
+          return;
+        }
+
+        // Use roomName from updated call data or fallback to updateData
+        const roomName = call.roomName || updateData.roomName;
+        if (!roomName) {
+          console.error("[Call Accept] Room name missing after update");
+          alert("Failed to create call room. Please try again.");
           await updateStatus("online");
           return;
         }
 
         const route =
           call.callType === "voice"
-            ? `/talk-to-astrologer/voice/${updateData.roomName}`
-            : `/talk-to-astrologer/room/${updateData.roomName}`;
+            ? `/talk-to-astrologer/voice/${roomName}`
+            : `/talk-to-astrologer/room/${roomName}`;
 
         localStorage.setItem("tgs:role", "astrologer");
         localStorage.setItem("tgs:astrologerId", astrologerId);
         localStorage.setItem("tgs:userId", astrologerId);
+        localStorage.setItem("tgs:callId", callId);
+
+        console.log("[Call Accept] Creating LiveKit session:", {
+          astrologerId,
+          userId: actualUserId,
+          roomName: roomName,
+          callType: call.callType,
+          callId: callId,
+        });
 
         const sessionResponse = await fetch("/api/livekit/create-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             astrologerId,
-            userId: astrologerId,
-            roomName: updateData.roomName,
+            userId: actualUserId, // FIXED: Use actual user ID from call
+            callId: callId,
+            roomName: roomName,
             callType: call.callType || "video",
             role: "astrologer",
             displayName: userProfile?.name || "Astrologer",
@@ -496,9 +607,12 @@ function AstrologerDashboardContent() {
         });
 
         if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          console.log("[Call Accept] Session created successfully:", sessionData);
           router.push(route);
         } else {
-          const error = await sessionResponse.json().catch(() => ({}));
+          const error = await sessionResponse.json().catch(() => ({ error: "Unknown error" }));
+          console.error("[Call Accept] Session creation failed:", error);
           alert(`Failed to join call: ${error.error || "Try again."}`);
           await updateStatus("online");
         }
@@ -1222,8 +1336,16 @@ function AstrologerDashboardContent() {
                           <>
                             <button
                               onClick={async () => {
-                                if (!call.roomName)
-                                  return alert("Room not ready.");
+                                if (!call.roomName) {
+                                  alert("Room not ready.");
+                                  return;
+                                }
+
+                                const actualUserId = call.userId;
+                                if (!actualUserId) {
+                                  alert("Call data is incomplete. Please refresh.");
+                                  return;
+                                }
 
                                 localStorage.setItem("tgs:role", "astrologer");
                                 localStorage.setItem(
@@ -1234,6 +1356,14 @@ function AstrologerDashboardContent() {
                                   "tgs:userId",
                                   astrologerId
                                 );
+                                localStorage.setItem("tgs:callId", call.id);
+
+                                console.log("[Call Join] Creating LiveKit session:", {
+                                  astrologerId,
+                                  userId: actualUserId,
+                                  roomName: call.roomName,
+                                  callType: call.callType,
+                                });
 
                                 const res = await fetch(
                                   "/api/livekit/create-session",
@@ -1244,7 +1374,8 @@ function AstrologerDashboardContent() {
                                     },
                                     body: JSON.stringify({
                                       astrologerId,
-                                      userId: astrologerId,
+                                      userId: actualUserId, // FIXED: Use actual user ID from call
+                                      callId: call.id,
                                       roomName: call.roomName,
                                       callType: call.callType || "video",
                                       role: "astrologer",
@@ -1255,13 +1386,17 @@ function AstrologerDashboardContent() {
                                 );
 
                                 if (res.ok) {
+                                  const sessionData = await res.json();
+                                  console.log("[Call Join] Session created successfully:", sessionData);
                                   router.push(
                                     call.callType === "voice"
                                       ? `/talk-to-astrologer/voice/${call.roomName}`
                                       : `/talk-to-astrologer/room/${call.roomName}`
                                   );
                                 } else {
-                                  alert("Failed to join call.");
+                                  const error = await res.json().catch(() => ({ error: "Unknown error" }));
+                                  console.error("[Call Join] Session creation failed:", error);
+                                  alert(`Failed to join call: ${error.error || "Try again."}`);
                                 }
                               }}
                               className="btn btn-primary"
