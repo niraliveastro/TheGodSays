@@ -16,6 +16,7 @@ import {
   X,
   LoaderCircle,
   Star,
+  Info,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import Chat from "@/components/Chat";
@@ -153,6 +154,25 @@ export default function MatchingPage() {
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
+  const [showInfoModal, setShowInfoModal] = useState(false); // Info modal visibility
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  // localStorage key for info modal preference
+  const INFO_MODAL_KEY = "matching_info_modal_dismissed";
+
+  // Check if user has dismissed the info modal on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem(INFO_MODAL_KEY);
+      if (!dismissed) {
+        // Show modal on first visit (with small delay for better UX)
+        const timer = setTimeout(() => {
+          setShowInfoModal(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
 
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
@@ -2742,6 +2762,40 @@ export default function MatchingPage() {
           color: #9ca3af;
           font-size: 0.875rem;
         }
+        /* ---------- System Charts / Explanation Block ---------- */
+        .system-charts-card {
+          background: var(--color-white);
+          max-width: 100%;
+          margin: 0 auto;
+          border: 1px solid var(--color-gray-200);
+          border-radius: 0.75rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          padding: 1.5rem;
+          overflow: hidden;
+        }
+        @media (max-width: 640px) {
+          .system-charts-card {
+            padding: 1rem;
+          }
+        }
+        .system-charts-title {
+          font-family: var(--font-heading);
+          font-size: 1.75rem;
+          font-weight: 600;
+          color: var(--color-gray-900);
+          border-bottom: 2px solid var(--color-gold);
+          padding-bottom: 0.75rem;
+          margin-bottom: 1.5rem;
+          position: relative;
+        }
+        .system-charts-description {
+          font-size: 0.875rem;
+          color: var(--color-gray-700);
+          font-style: normal;
+          margin-bottom: 1.5rem;
+          font-family: var(--font-body);
+          line-height: 1.6;
+        }
       `}</style>
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
@@ -2804,12 +2858,44 @@ export default function MatchingPage() {
               <div className="form-header">
                 <Moon className="w-6 h-6" style={{ color: "#ca8a04" }} />
                 <div>
-                  <h3 className="form-title">{t.matching.birthDetails}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <h3 className="form-title">{t.matching.birthDetails}</h3>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowInfoModal(true);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        color: "#d4af37",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.1)";
+                        e.currentTarget.style.color = "#b8972e";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
+                        e.currentTarget.style.color = "#d4af37";
+                      }}
+                      title="Learn more about compatibility matching"
+                    >
+                      <Info size={18} />
+                    </button>
+                  </div>
                   <p className="form-subtitle">
                     {t.matching.enterBothDetails}
                   </p>
                 </div>
               </div>
+              
               {/* Grid */}
               <div 
                 className="form-sections-container"
@@ -4377,6 +4463,175 @@ export default function MatchingPage() {
               >
                 {submitting ? "Loading..." : "Start Chat"}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Info Modal */}
+        {showInfoModal && (
+          <div 
+            className="info-modal-overlay" 
+            onClick={() => setShowInfoModal(false)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "1rem",
+            }}
+          >
+            <div 
+              className="info-modal" 
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "rgba(255, 255, 255, 0.98)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "1rem",
+                maxWidth: "420px",
+                width: "100%",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.2)",
+                border: "1px solid rgba(212, 175, 55, 0.3)",
+              }}
+            >
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "1.5rem",
+                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+              }}>
+                <h2 style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: 0,
+                }}>
+                  Understanding Compatibility Matching
+                </h2>
+                <button
+                  onClick={() => setShowInfoModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.5rem",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    padding: 0,
+                    width: "30px",
+                    height: "30px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "0.5rem",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+                    e.currentTarget.style.color = "#1f2937";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "none";
+                    e.currentTarget.style.color = "#6b7280";
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ padding: "1.5rem" }}>
+                <p style={{
+                  fontSize: "0.875rem",
+                  color: "#374151",
+                  fontStyle: "normal",
+                  marginBottom: "1.5rem",
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: 1.6,
+                }}>
+                  The <strong>Ashtakoot System</strong> (8-Point Matching) evaluates compatibility across eight key dimensions: <strong>Varna</strong> (spiritual compatibility), <strong>Vashya</strong> (mutual attraction), <strong>Tara</strong> (birth star compatibility), <strong>Yoni</strong> (nature compatibility), <strong>Graha Maitri</strong> (planetary friendship), <strong>Gana</strong> (temperament), <strong>Bhakoot</strong> (emotional compatibility), and <strong>Nadi</strong> (health compatibility). Each dimension contributes points to the total compatibility score, with higher scores indicating better alignment between partners.
+                </p>
+                
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.5rem",
+                }}>
+                  <input
+                    type="checkbox"
+                    id="dontShowAgainMatching"
+                    checked={dontShowAgain}
+                    onChange={(e) => setDontShowAgain(e.target.checked)}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      cursor: "pointer",
+                      accentColor: "#d4af37",
+                    }}
+                  />
+                  <label
+                    htmlFor="dontShowAgainMatching"
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#374151",
+                      cursor: "pointer",
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    Don't show this again
+                  </label>
+                </div>
+
+                <div style={{
+                  display: "flex",
+                  gap: "0.75rem",
+                  justifyContent: "flex-end",
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (dontShowAgain) {
+                        localStorage.setItem(INFO_MODAL_KEY, "true");
+                      } else {
+                        // If unchecked, clear the preference so it shows again on next visit
+                        localStorage.removeItem(INFO_MODAL_KEY);
+                      }
+                      setShowInfoModal(false);
+                      setDontShowAgain(false);
+                    }}
+                    style={{
+                      padding: "0.625rem 1.25rem",
+                      background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                      border: "none",
+                      borderRadius: "0.5rem",
+                      color: "#1f2937",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.5)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(212, 175, 55, 0.3)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

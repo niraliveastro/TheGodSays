@@ -16,6 +16,7 @@ import {
   Loader2,
   RotateCcw,
   Trash2,
+  Info,
 } from "lucide-react";
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -25,7 +26,21 @@ export default function PredictionsPage() {
   const { t } = useTranslation();
       // Track page view on mount
   useEffect(() => {
-    trackPageView('/predictions', 'AI Predictions');
+    trackPageView('/predictions', 'Astrological Predictions');
+  }, []);
+
+  // Check if user has dismissed the info modal on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem(INFO_MODAL_KEY);
+      if (!dismissed) {
+        // Show modal on first visit (with small delay for better UX)
+        const timer = setTimeout(() => {
+          setShowInfoModal(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
   }, []);
   
   const [dob, setDob] = useState("");
@@ -80,6 +95,11 @@ export default function PredictionsPage() {
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  
+  // localStorage key for info modal preference
+  const INFO_MODAL_KEY = "predictions_info_modal_dismissed";
   
   // Form data hash for chat conversation management
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
@@ -1110,7 +1130,7 @@ export default function PredictionsPage() {
       );
       setAiPredictions(predictions);
     } catch (e) {
-      setPredictionsError(e?.message || "Failed to generate AI predictions.");
+      setPredictionsError(e?.message || "Failed to generate personalized astrological predictions.");
     } finally {
       setPredictionsLoading(false);
     }
@@ -1323,10 +1343,42 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
-                <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowInfoModal(true);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "0.25rem",
+                      display: "flex",
+                      alignItems: "center",
+                      color: "#d4af37",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "scale(1.1)";
+                      e.currentTarget.style.color = "#b8972e";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.color = "#d4af37";
+                    }}
+                    title="Learn more about predictions"
+                  >
+                    <Info size={18} />
+                  </button>
+                </div>
                 <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
             </div>
+            
             {/* ---- Birth Details Section ---- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
               {/* Full Name */}
@@ -1690,7 +1742,7 @@ export default function PredictionsPage() {
               </div>
             ) : null}
 
-            {/* AI Astrologer CTA / Chat Window */}
+            {/* Expert Astrologer CTA / Chat Window */}
             <div 
               className="card mt-8 ai-astrologer-section"
               style={{ 
@@ -1724,12 +1776,10 @@ export default function PredictionsPage() {
                     </div>
 
                     <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get a Personalized Reading
+                      Get Expert Astrological Guidance
                     </h3>
                     <p className="text-sm text-gray-70 max-w-xl">
-                      Let our Astrologer interpret your birth chart, dashas
-                      and planetary strengths in simple, practical language
-                      tailored just for you.
+                      Consult with our experienced Vedic astrologer who will interpret your birth chart, dashas, and planetary strengths using time-tested traditional methods. Receive clear, practical insights based on authentic Vedic astrology principles, personalized to your unique birth details.
                     </p>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-3">
@@ -2148,7 +2198,7 @@ export default function PredictionsPage() {
             </div>
           )}
         </Modal>
-        {/* AI Predictions Modal */}
+        {/* Astrological Predictions Modal */}
         <Modal
           open={predictionsOpen}
           onClose={() => setPredictionsOpen(false)}
@@ -2163,7 +2213,7 @@ export default function PredictionsPage() {
             <div className="py-12 text-center">
               <Loader2 className="w-8 h-8 text-gold animate-spin mx-auto mb-3" />
               <div className="text-sm text-gray-600">
-                Generating predictions...
+                Analyzing your birth chart and generating personalized predictions...
               </div>
             </div>
           ) : predictionsError ? (
@@ -2219,7 +2269,7 @@ export default function PredictionsPage() {
         }}
       >
         {(!result || isAssistantMinimized) ? (
-          // Minimized Icon - Astrologer + AI Assistant
+          // Minimized Icon - Astrologer Assistant
           <button
             onClick={() => {
               if (result) {
@@ -2414,7 +2464,7 @@ export default function PredictionsPage() {
                   lineHeight: "1.5",
                 }}
               >
-                Get personalized insights about your birth chart, planetary positions, and astrological predictions
+                Consult with our expert Vedic astrologer for trusted insights about your birth chart, planetary positions, and personalized astrological guidance
               </p>
             </div>
           </div>
@@ -2491,6 +2541,175 @@ export default function PredictionsPage() {
             </button>
           </div>
         </div>
+        )}
+
+        {/* Info Modal */}
+        {showInfoModal && (
+          <div 
+            className="info-modal-overlay" 
+            onClick={() => setShowInfoModal(false)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "1rem",
+            }}
+          >
+            <div 
+              className="info-modal" 
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "rgba(255, 255, 255, 0.98)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "1rem",
+                maxWidth: "420px",
+                width: "100%",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.2)",
+                border: "1px solid rgba(212, 175, 55, 0.3)",
+              }}
+            >
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "1.5rem",
+                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+              }}>
+                <h2 style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: 0,
+                }}>
+                  Understanding Your Predictions
+                </h2>
+                <button
+                  onClick={() => setShowInfoModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.5rem",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    padding: 0,
+                    width: "30px",
+                    height: "30px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "0.5rem",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+                    e.currentTarget.style.color = "#1f2937";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "none";
+                    e.currentTarget.style.color = "#6b7280";
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ padding: "1.5rem" }}>
+                <p style={{
+                  fontSize: "0.875rem",
+                  color: "#374151",
+                  fontStyle: "normal",
+                  marginBottom: "1.5rem",
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: 1.6,
+                }}>
+                  Your birth chart is calculated using <strong>Vedic Astrology</strong> principles based on your exact birth details. The system generates <strong>Planetary Positions</strong> showing where each planet was at your time of birth, <strong>Shadbala Analysis</strong> measuring planetary strength and influence, <strong>Dasha Periods</strong> (Vimsottari system) indicating life phases and timing, and <strong>Expert Astrological Insights</strong> providing personalized predictions based on your complete astrological profile, guided by traditional Vedic wisdom and modern computational precision.
+                </p>
+                
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.5rem",
+                }}>
+                  <input
+                    type="checkbox"
+                    id="dontShowAgain"
+                    checked={dontShowAgain}
+                    onChange={(e) => setDontShowAgain(e.target.checked)}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      cursor: "pointer",
+                      accentColor: "#d4af37",
+                    }}
+                  />
+                  <label
+                    htmlFor="dontShowAgain"
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#374151",
+                      cursor: "pointer",
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    Don't show this again
+                  </label>
+                </div>
+
+                <div style={{
+                  display: "flex",
+                  gap: "0.75rem",
+                  justifyContent: "flex-end",
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (dontShowAgain) {
+                        localStorage.setItem(INFO_MODAL_KEY, "true");
+                      } else {
+                        // If unchecked, clear the preference so it shows again on next visit
+                        localStorage.removeItem(INFO_MODAL_KEY);
+                      }
+                      setShowInfoModal(false);
+                      setDontShowAgain(false);
+                    }}
+                    style={{
+                      padding: "0.625rem 1.25rem",
+                      background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                      border: "none",
+                      borderRadius: "0.5rem",
+                      color: "#1f2937",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.5)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(212, 175, 55, 0.3)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
