@@ -827,18 +827,14 @@
   flex: 1;
 }
 
-/* Smooth scroll and hide ugly scrollbar in WebKit */
+/* Hide scrollbar but keep scrolling functionality */
+.history-list {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
 .history-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.history-list::-webkit-scrollbar-thumb {
-  background: rgba(200, 160, 40, 0.4);
-  border-radius: 4px;
-}
-
-.history-list::-webkit-scrollbar-track {
-  background: transparent;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .history-actions {
@@ -898,6 +894,13 @@
     margin-left: 0 !important;
     margin-right: 0 !important; /* override mx-auto */
     min-width: 0; /* allow it to shrink if table is wide */
+  }
+
+  .birth-history-layout > .card {
+    flex: 0 0 60%;
+    max-width: 60%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .birth-history-layout .history-side {

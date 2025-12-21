@@ -16,7 +16,6 @@ import {
   Loader2,
   RotateCcw,
   Trash2,
-  Info,
 } from "lucide-react";
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -29,19 +28,6 @@ export default function PredictionsPage() {
     trackPageView('/predictions', 'Astrological Predictions');
   }, []);
 
-  // Check if user has dismissed the info modal on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const dismissed = localStorage.getItem(INFO_MODAL_KEY);
-      if (!dismissed) {
-        // Show modal on first visit (with small delay for better UX)
-        const timer = setTimeout(() => {
-          setShowInfoModal(true);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []);
   
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
@@ -95,11 +81,6 @@ export default function PredictionsPage() {
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  
-  // localStorage key for info modal preference
-  const INFO_MODAL_KEY = "predictions_info_modal_dismissed";
   
   // Form data hash for chat conversation management
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
@@ -1343,38 +1324,7 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <h3 className="form-title">{t.predictions.enterDetails}</h3>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowInfoModal(true);
-                    }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "0.25rem",
-                      display: "flex",
-                      alignItems: "center",
-                      color: "#d4af37",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "scale(1.1)";
-                      e.currentTarget.style.color = "#b8972e";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "scale(1)";
-                      e.currentTarget.style.color = "#d4af37";
-                    }}
-                    title="Learn more about predictions"
-                  >
-                    <Info size={18} />
-                  </button>
-                </div>
+                <h3 className="form-title">{t.predictions.enterDetails}</h3>
                 <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
             </div>
@@ -1639,6 +1589,49 @@ export default function PredictionsPage() {
             </div>
           </section>
           )}
+        </div>
+
+        {/* Explanation Card - Below form and history */}
+        <div className="birth-history-layout" style={{ marginTop: "2rem" }}>
+          <div 
+            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+            style={{
+              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+              borderColor: "rgba(212, 175, 55, 0.3)",
+              maxWidth: "100%",
+            }}
+          >
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "1.5rem",
+            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+            marginBottom: "1.5rem",
+          }}>
+            <h2 style={{
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#1f2937",
+              margin: 0,
+            }}>
+              Understanding Your Predictions
+            </h2>
+          </div>
+          <div style={{ padding: 0 }}>
+            <p style={{
+              fontSize: "0.875rem",
+              color: "#374151",
+              fontStyle: "normal",
+              marginBottom: 0,
+              fontFamily: "'Inter', sans-serif",
+              lineHeight: 1.6,
+            }}>
+              Your birth chart is calculated using <strong>Vedic Astrology</strong> principles based on your exact birth details. The system generates <strong>Planetary Positions</strong> showing where each planet was at your time of birth, <strong>Shadbala Analysis</strong> measuring planetary strength and influence, <strong>Dasha Periods</strong> (Vimsottari system) indicating life phases and timing, and <strong>Expert Astrological Insights</strong> providing personalized predictions based on your complete astrological profile, guided by traditional Vedic wisdom and modern computational precision.
+            </p>
+          </div>
+        </div>
         </div>
 
         {/* Results */}
@@ -2543,174 +2536,6 @@ export default function PredictionsPage() {
         </div>
         )}
 
-        {/* Info Modal */}
-        {showInfoModal && (
-          <div 
-            className="info-modal-overlay" 
-            onClick={() => setShowInfoModal(false)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
-              backdropFilter: "blur(4px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
-              padding: "1rem",
-            }}
-          >
-            <div 
-              className="info-modal" 
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: "rgba(255, 255, 255, 0.98)",
-                backdropFilter: "blur(12px)",
-                borderRadius: "1rem",
-                maxWidth: "420px",
-                width: "100%",
-                maxHeight: "80vh",
-                overflowY: "auto",
-                boxShadow: "0 20px 50px rgba(0, 0, 0, 0.2)",
-                border: "1px solid rgba(212, 175, 55, 0.3)",
-              }}
-            >
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "1.5rem",
-                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-              }}>
-                <h2 style={{
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                  color: "#1f2937",
-                  margin: 0,
-                }}>
-                  Understanding Your Predictions
-                </h2>
-                <button
-                  onClick={() => setShowInfoModal(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "1.5rem",
-                    color: "#6b7280",
-                    cursor: "pointer",
-                    padding: 0,
-                    width: "30px",
-                    height: "30px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "0.5rem",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
-                    e.currentTarget.style.color = "#1f2937";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "none";
-                    e.currentTarget.style.color = "#6b7280";
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              <div style={{ padding: "1.5rem" }}>
-                <p style={{
-                  fontSize: "0.875rem",
-                  color: "#374151",
-                  fontStyle: "normal",
-                  marginBottom: "1.5rem",
-                  fontFamily: "'Inter', sans-serif",
-                  lineHeight: 1.6,
-                }}>
-                  Your birth chart is calculated using <strong>Vedic Astrology</strong> principles based on your exact birth details. The system generates <strong>Planetary Positions</strong> showing where each planet was at your time of birth, <strong>Shadbala Analysis</strong> measuring planetary strength and influence, <strong>Dasha Periods</strong> (Vimsottari system) indicating life phases and timing, and <strong>Expert Astrological Insights</strong> providing personalized predictions based on your complete astrological profile, guided by traditional Vedic wisdom and modern computational precision.
-                </p>
-                
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginBottom: "1.5rem",
-                }}>
-                  <input
-                    type="checkbox"
-                    id="dontShowAgain"
-                    checked={dontShowAgain}
-                    onChange={(e) => setDontShowAgain(e.target.checked)}
-                    style={{
-                      width: "18px",
-                      height: "18px",
-                      cursor: "pointer",
-                      accentColor: "#d4af37",
-                    }}
-                  />
-                  <label
-                    htmlFor="dontShowAgain"
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "#374151",
-                      cursor: "pointer",
-                      fontFamily: "'Inter', sans-serif",
-                    }}
-                  >
-                    Don't show this again
-                  </label>
-                </div>
-
-                <div style={{
-                  display: "flex",
-                  gap: "0.75rem",
-                  justifyContent: "flex-end",
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (dontShowAgain) {
-                        localStorage.setItem(INFO_MODAL_KEY, "true");
-                      } else {
-                        // If unchecked, clear the preference so it shows again on next visit
-                        localStorage.removeItem(INFO_MODAL_KEY);
-                      }
-                      setShowInfoModal(false);
-                      setDontShowAgain(false);
-                    }}
-                    style={{
-                      padding: "0.625rem 1.25rem",
-                      background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                      border: "none",
-                      borderRadius: "0.5rem",
-                      color: "#1f2937",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.5)";
-                      e.currentTarget.style.transform = "translateY(-1px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(212, 175, 55, 0.3)";
-                      e.currentTarget.style.transform = "translateY(0)";
-                    }}
-                  >
-                    Acknowledge
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
