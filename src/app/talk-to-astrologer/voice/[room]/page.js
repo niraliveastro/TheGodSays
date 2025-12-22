@@ -5,10 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   LiveKitRoom, 
   AudioConference,
-  useLocalParticipant
+  useLocalParticipant,
+  useRemoteParticipants
 } from "@livekit/components-react";
-import { Track, Room, DataPacket_Kind, RemoteParticipant } from "livekit-client";
+import { Track, Room, DataPacket_Kind, RemoteParticipant, RoomEvent, ParticipantEvent, ConnectionQuality } from "livekit-client";
 import "@livekit/components-styles";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   ArrowLeft,
   PhoneOff,
@@ -20,6 +23,124 @@ import {
   Send,
   ChevronDown,
 } from "lucide-react";
+
+// Mic Button Component - Inside LiveKitRoom context
+function MicButton({ onMuteChange }) {
+  const { localParticipant } = useLocalParticipant();
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Sync with actual track state
+  useEffect(() => {
+    if (!localParticipant) return;
+    
+    const updateMuteState = () => {
+      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+      let muted = false;
+      
+      if (micPublication) {
+        muted = micPublication.isMuted;
+      } else {
+        muted = !localParticipant.isMicrophoneEnabled;
+      }
+      
+      setIsMuted(muted);
+      if (onMuteChange) onMuteChange(muted);
+    };
+    
+    updateMuteState();
+    
+    // Listen for changes
+    const handleTrackMuted = (pub) => {
+      if (pub?.source === Track.Source.Microphone) {
+        updateMuteState();
+      }
+    };
+    const handleTrackUnmuted = (pub) => {
+      if (pub?.source === Track.Source.Microphone) {
+        updateMuteState();
+      }
+    };
+    
+    localParticipant.on(ParticipantEvent.TrackMuted, handleTrackMuted);
+    localParticipant.on(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
+    
+    return () => {
+      localParticipant.off(ParticipantEvent.TrackMuted, handleTrackMuted);
+      localParticipant.off(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
+    };
+  }, [localParticipant, onMuteChange]);
+
+  const handleToggleMute = async () => {
+    if (!localParticipant) {
+      console.warn("Local participant not available");
+      return;
+    }
+    
+    try {
+      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+      const currentMuted = micPublication?.isMuted ?? !localParticipant.isMicrophoneEnabled;
+      const newMutedState = !currentMuted;
+      
+      console.log(`🎤 Toggling mute: ${currentMuted ? 'unmuting' : 'muting'}`);
+      
+      // Update optimistically
+      setIsMuted(newMutedState);
+      
+      if (micPublication && micPublication.track) {
+        // Use track methods
+        if (newMutedState) {
+          await micPublication.track.mute();
+        } else {
+          await micPublication.track.unmute();
+        }
+      } else {
+        // Use setMicrophoneEnabled
+        await localParticipant.setMicrophoneEnabled(!newMutedState);
+      }
+      
+      console.log(`✅ Microphone ${newMutedState ? 'muted' : 'unmuted'}`);
+    } catch (error) {
+      console.error("❌ Error toggling mute:", error);
+      // Revert on error
+      const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      setIsMuted(micPub?.isMuted ?? !localParticipant.isMicrophoneEnabled);
+    }
+  };
+
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🎤 Mic button clicked!");
+        handleToggleMute();
+      }}
+      className="btn"
+      style={{
+        width: "3.5rem",
+        height: "3.5rem",
+        borderRadius: "50%",
+        border: isMuted ? "none" : "2px solid #e5e7eb",
+        background: isMuted ? "#ef4444" : "#ffffff",
+        color: isMuted ? "white" : "#374151",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        boxShadow: isMuted ? "0 2px 8px rgba(239, 68, 68, 0.3)" : "0 2px 4px rgba(0, 0, 0, 0.1)",
+        flexShrink: 0,
+      }}
+      title={isMuted ? "Click to Unmute" : "Click to Mute"}
+    >
+      {isMuted ? (
+        <MicOff style={{ width: "1.5rem", height: "1.5rem" }} />
+      ) : (
+        <Mic style={{ width: "1.5rem", height: "1.5rem" }} />
+      )}
+    </button>
+  );
+}
 
 // Inner component to access LiveKit hooks
 function VoiceCallControls({ onDisconnect, onToggleMute, isMuted }) {
@@ -93,10 +214,207 @@ function VoiceCallControls({ onDisconnect, onToggleMute, isMuted }) {
   );
 }
 
-// Wrapper to access LiveKit hooks
-function VoiceCallChatWrapper({ room }) {
+// Participant Status Component - WhatsApp/Zoom Style
+function VoiceCallParticipantStatus() {
   const { localParticipant } = useLocalParticipant();
-  return <VoiceCallChat room={room} localParticipant={localParticipant} />;
+  const remoteParticipants = useRemoteParticipants();
+  const userRole = localStorage.getItem("tgs:role") || "user";
+  const isAstrologer = userRole === "astrologer";
+  const [waveformHeights, setWaveformHeights] = useState([40, 50, 60, 50, 40]);
+
+  // Animate waveform
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWaveformHeights([
+        Math.random() * 60 + 40,
+        Math.random() * 60 + 40,
+        Math.random() * 60 + 40,
+        Math.random() * 60 + 40,
+        Math.random() * 60 + 40,
+      ]);
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Always show both user and astrologer, even if remote participant hasn't joined yet
+  const allParticipants = [];
+  
+  // Add local participant (You)
+  if (localParticipant?.localParticipant) {
+    allParticipants.push({
+      participant: localParticipant.localParticipant,
+      isLocal: true,
+      name: isAstrologer ? "Astrologer" : "You",
+      displayName: isAstrologer ? "Astrologer" : "You",
+      avatarLetter: isAstrologer ? "A" : "U"
+    });
+  }
+  
+  // Add remote participants
+  remoteParticipants.forEach(p => {
+    const isRemoteAstrologer = p.identity.includes("astrologer");
+    allParticipants.push({
+      participant: p,
+      isLocal: false,
+      name: p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
+      displayName: p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
+      avatarLetter: isRemoteAstrologer ? "A" : "U"
+    });
+  });
+  
+  // If no remote participants yet, show placeholder for the other person
+  if (remoteParticipants.length === 0) {
+    const otherPersonIsAstrologer = !isAstrologer;
+    allParticipants.push({
+      participant: null,
+      isLocal: false,
+      name: otherPersonIsAstrologer ? "Astrologer" : "User",
+      displayName: otherPersonIsAstrologer ? "Astrologer" : "User",
+      avatarLetter: otherPersonIsAstrologer ? "A" : "U",
+      isPlaceholder: true
+    });
+  }
+
+  return (
+    <div style={{ 
+      display: "flex", 
+      flexDirection: "column",
+      gap: "1rem",
+      width: "100%",
+      maxWidth: "400px",
+    }}>
+      {allParticipants.map(({ participant, isLocal, name, displayName, avatarLetter, isPlaceholder }, index) => {
+        // Handle placeholder (when other person hasn't joined yet)
+        const micPublication = participant?.getTrackPublication(Track.Source.Microphone);
+        const isAudioMuted = isPlaceholder ? false : (micPublication?.isMuted ?? !participant?.isMicrophoneEnabled);
+        
+        return (
+          <div
+            key={participant?.identity || `placeholder-${index}` || index}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+              padding: "1rem",
+              background: "#f9fafb",
+              borderRadius: "0.75rem",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            {/* Avatar */}
+            <div
+              style={{
+                width: "3rem",
+                height: "3rem",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                flexShrink: 0,
+              }}
+            >
+              {avatarLetter || displayName.charAt(0).toUpperCase()}
+            </div>
+            
+            {/* Name and Status */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ 
+                fontSize: "1rem", 
+                fontWeight: 600, 
+                color: "#374151",
+                marginBottom: "0.25rem",
+              }}>
+                {isLocal ? "You" : displayName}
+              </div>
+              <div style={{ 
+                fontSize: "0.875rem", 
+                color: "#6b7280",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}>
+                {isPlaceholder ? (
+                  <>
+                    <div style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "#9ca3af" }}></div>
+                    <span>Connecting...</span>
+                  </>
+                ) : isAudioMuted ? (
+                  <>
+                    <MicOff style={{ width: "0.875rem", height: "0.875rem", color: "#ef4444" }} />
+                    <span>Muted</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic style={{ width: "0.875rem", height: "0.875rem", color: "#22c55e" }} />
+                    <span>Speaking</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Audio Waveform Indicator */}
+            {!isPlaceholder && !isAudioMuted && (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                height: "1.5rem",
+              }}>
+                {waveformHeights.map((height, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: "0.25rem",
+                      height: `${height}%`,
+                      background: "#22c55e",
+                      borderRadius: "0.125rem",
+                      transition: "height 0.2s ease",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Wrapper to access LiveKit hooks
+function VoiceCallChatWrapper() {
+  const { localParticipant } = useLocalParticipant();
+  const room = localParticipant?.localParticipant?.room || null;
+  
+  useEffect(() => {
+    if (room) {
+      console.log("✅ Chat: Room available:", room.name);
+    } else {
+      console.log("⏳ Chat: Waiting for room...");
+    }
+  }, [room]);
+  
+  if (!room) {
+    return (
+      <div style={{ 
+        padding: "1rem", 
+        color: "#6b7280", 
+        fontSize: "0.875rem", 
+        textAlign: "center",
+        background: "#f9fafb",
+        borderRadius: "0.5rem",
+        margin: "1rem 0"
+      }}>
+        Connecting to chat...
+      </div>
+    );
+  }
+  
+  return <VoiceCallChat room={room} localParticipant={localParticipant?.localParticipant} />;
 }
 
 // Chat component for LiveKit room
@@ -109,35 +427,57 @@ function VoiceCallChat({ room, localParticipant }) {
 
   // Listen for incoming messages via room events
   useEffect(() => {
-    if (!room) return;
+    if (!room) {
+      console.log("Chat: Room not available yet");
+      return;
+    }
+
+    console.log("Chat: Setting up message listener for room:", room.name);
 
     const handleDataReceived = (payload, participant, kind, topic) => {
       if (kind === DataPacket_Kind.RELIABLE && topic === undefined) {
         try {
           const data = JSON.parse(new TextDecoder().decode(payload));
+          
+          // Handle call-ended signal
+          if (data.type === "call-ended") {
+            console.log("Received call-ended signal from other party");
+            return;
+          }
+          
+          // Handle chat messages
           if (data.type === "chat" && data.message) {
             const isFromMe = participant?.identity === localParticipant?.identity;
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                text: data.message,
-                sender: data.sender || (isFromMe ? (isAstrologer ? "Astrologer" : "User") : participant?.name || "Unknown"),
-                isUser: isFromMe,
-                timestamp: new Date(),
-              },
-            ]);
+            console.log("Chat: Received message from", isFromMe ? "me" : participant?.name, ":", data.message);
+            // Only add if not from me (we already added it locally)
+            if (!isFromMe) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + Math.random(),
+                  text: data.message,
+                  sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
+                  isUser: false,
+                  timestamp: new Date(),
+                },
+              ]);
+            }
           }
         } catch (error) {
-          console.error("Error parsing chat message:", error);
+          console.error("Error parsing data message:", error);
         }
       }
     };
 
-    room.on("dataReceived", handleDataReceived);
+    // Use RoomEvent.DataReceived
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    console.log("Chat: Message listener attached");
 
     return () => {
-      room.off("dataReceived", handleDataReceived);
+      if (room) {
+        room.off(RoomEvent.DataReceived, handleDataReceived);
+        console.log("Chat: Message listener removed");
+      }
     };
   }, [room, localParticipant, isAstrologer]);
 
@@ -150,7 +490,20 @@ function VoiceCallChat({ room, localParticipant }) {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!input.trim() || !room || !localParticipant) return;
+    if (!input.trim()) {
+      console.warn("Cannot send empty message");
+      return;
+    }
+    
+    if (!room) {
+      console.error("Room not available for sending message");
+      return;
+    }
+    
+    if (!room.localParticipant) {
+      console.error("Local participant not available for sending message");
+      return;
+    }
 
     const messageData = {
       type: "chat",
@@ -162,7 +515,21 @@ function VoiceCallChat({ room, localParticipant }) {
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify(messageData));
       room.localParticipant.publishData(data, DataPacket_Kind.RELIABLE);
+      
+      // Add message to local state immediately for better UX
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          text: input.trim(),
+          sender: isAstrologer ? "Astrologer" : "User",
+          isUser: true,
+          timestamp: new Date(),
+        },
+      ]);
+      
       setInput("");
+      console.log("Message sent successfully");
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -320,8 +687,13 @@ export default function VoiceCallRoom() {
   const [isConnected, setIsConnected] = useState(false);
   const [permissionError, setPermissionError] = useState("");
   const [room, setRoom] = useState(null);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const roomRef = useRef(null);
   const callIdRef = useRef(null);
+  const isDisconnectingRef = useRef(false);
+  const firebaseUnsubscribeRef = useRef(null);
+  const mediaTracksRef = useRef([]);
 
   // Request microphone permission before connecting
   useEffect(() => {
@@ -423,6 +795,48 @@ export default function VoiceCallRoom() {
     }
   }, [isConnected]);
 
+  // Firebase real-time listener for call status changes
+  useEffect(() => {
+    const callId = callIdRef.current || 
+                  localStorage.getItem("tgs:currentCallId") || 
+                  localStorage.getItem("tgs:callId");
+    
+    if (!callId) return;
+
+    // Listen for call status changes in Firebase
+    const callRef = doc(db, "calls", callId);
+    firebaseUnsubscribeRef.current = onSnapshot(
+      callRef,
+      (snapshot) => {
+        if (!snapshot.exists()) return;
+        
+        const callData = snapshot.data();
+        
+        // If call is completed, cancelled, or rejected, disconnect immediately
+        if (callData.status === "completed" || 
+            callData.status === "cancelled" || 
+            callData.status === "rejected") {
+          
+          if (!isDisconnectingRef.current) {
+            console.log(`Call ${callId} ended by other party. Status: ${callData.status}`);
+            // Auto-disconnect when other party ends call
+            handleDisconnect();
+          }
+        }
+      },
+      (error) => {
+        console.error("Firebase call listener error:", error);
+      }
+    );
+
+    return () => {
+      if (firebaseUnsubscribeRef.current) {
+        firebaseUnsubscribeRef.current();
+        firebaseUnsubscribeRef.current = null;
+      }
+    };
+  }, [isConnected]); // Re-run when connection status changes
+
   const updateCallStatus = async (status, durationMinutes = null) => {
     try {
       const callId = callIdRef.current || 
@@ -461,13 +875,22 @@ export default function VoiceCallRoom() {
     }
   };
 
-  const handleDisconnect = async () => {
-    try {
-      // Disconnect from LiveKit room first
-      if (room) {
-        await room.disconnect();
-      }
+  const handleDisconnect = async (forceExit = false) => {
+    // If force exit, allow it even if already disconnecting (user manually clicked)
+    if (!forceExit && isDisconnectingRef.current) {
+      console.log("Already disconnecting, ignoring duplicate call");
+      return;
+    }
+    
+    // Show disconnecting state
+    setIsDisconnecting(true);
+    
+    // Set flag to prevent multiple simultaneous disconnects
+    if (!isDisconnectingRef.current) {
+      isDisconnectingRef.current = true;
+    }
 
+    try {
       const callId = callIdRef.current || 
                     localStorage.getItem("tgs:currentCallId") || 
                     localStorage.getItem("tgs:callId");
@@ -475,31 +898,104 @@ export default function VoiceCallRoom() {
 
       console.log(`Ending voice call ${callId} with duration ${durationMinutes} minutes`);
 
-      // Update call status to completed
-      await updateCallStatus("completed", durationMinutes);
-
-      // Finalize billing
-      if (callId && durationMinutes > 0) {
+      // CRITICAL: Send disconnect signal via LiveKit data channel FIRST
+      // This ensures the other party gets immediate notification
+      if (roomRef.current) {
         try {
-          const billingResponse = await fetch("/api/billing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "immediate-settlement",
+          // Try to send signal even if room state is not perfect
+          const roomState = roomRef.current.state;
+          if (roomState === "connected" || roomState === "connecting") {
+            const disconnectSignal = {
+              type: "call-ended",
               callId: callId,
-              durationMinutes: durationMinutes,
-            }),
-          });
-
-          const billingResult = await billingResponse.json();
-          if (billingResult.success) {
-            console.log(`✅ Voice billing finalized: ₹${billingResult.finalAmount} charged`);
+              timestamp: new Date().toISOString(),
+            };
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify(disconnectSignal));
+            await roomRef.current.localParticipant.publishData(data, DataPacket_Kind.RELIABLE);
+            console.log("Disconnect signal sent via LiveKit");
+            
+            // Give a moment for the signal to be sent
+            await new Promise(resolve => setTimeout(resolve, 100));
           } else {
-            console.error("❌ Voice billing finalization failed:", billingResult.error);
+            console.log(`Room state is ${roomState}, skipping data channel signal`);
           }
-        } catch (billingError) {
-          console.error("Error finalizing billing:", billingError);
+        } catch (e) {
+          console.warn("Error sending disconnect signal:", e);
+          // Continue with disconnect even if signal fails
         }
+      }
+
+      // Update call status to completed BEFORE disconnecting
+      // This ensures Firebase listener on other party picks it up immediately
+      if (callId) {
+        try {
+          await updateCallStatus("completed", durationMinutes);
+          console.log("Call status updated to completed in Firebase");
+        } catch (e) {
+          console.warn("Error updating call status:", e);
+        }
+
+        // Finalize billing
+        if (durationMinutes > 0) {
+          try {
+            const billingResponse = await fetch("/api/billing", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "immediate-settlement",
+                callId: callId,
+                durationMinutes: durationMinutes,
+              }),
+            });
+
+            const billingResult = await billingResponse.json();
+            if (billingResult.success) {
+              console.log(`✅ Voice billing finalized: ₹${billingResult.finalAmount} charged`);
+            } else {
+              console.error("❌ Voice billing finalization failed:", billingResult.error);
+            }
+          } catch (billingError) {
+            console.error("Error finalizing billing:", billingError);
+          }
+        }
+      }
+
+      // Small delay to ensure Firebase update propagates (only if not force exit)
+      if (!forceExit) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // Stop all media tracks
+      mediaTracksRef.current.forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.warn("Error stopping track:", e);
+        }
+      });
+      mediaTracksRef.current = [];
+
+      // Disconnect from LiveKit room (try even if already disconnected)
+      if (roomRef.current) {
+        try {
+          const roomState = roomRef.current.state;
+          if (roomState !== "disconnected") {
+            await roomRef.current.disconnect();
+          } else {
+            console.log("Room already disconnected");
+          }
+        } catch (e) {
+          console.warn("Error disconnecting from room:", e);
+          // Continue even if disconnect fails
+        }
+        roomRef.current = null;
+      }
+
+      // Unsubscribe from Firebase listener
+      if (firebaseUnsubscribeRef.current) {
+        firebaseUnsubscribeRef.current();
+        firebaseUnsubscribeRef.current = null;
       }
 
       // Clear stored call IDs
@@ -507,52 +1003,317 @@ export default function VoiceCallRoom() {
       localStorage.removeItem("tgs:callId");
     } catch (error) {
       console.error("Error finalizing voice call:", error);
+      // Even if there's an error, ensure user can exit
     } finally {
-      // Navigate away
-      const role = localStorage.getItem("tgs:role");
-      const path = role === "astrologer" ? "/astrologer-dashboard" : "/talk-to-astrologer";
-      router.push(path);
+      // Always navigate away, even if there were errors
+      // Use a timeout to ensure navigation happens
+      setTimeout(() => {
+        const role = localStorage.getItem("tgs:role");
+        const path = role === "astrologer" ? "/astrologer-dashboard" : "/talk-to-astrologer";
+        router.push(path);
+      }, forceExit ? 0 : 100);
     }
   };
 
-  const handleLeave = async () => {
-    try {
-      // CRITICAL: Disconnect from LiveKit room first
-      if (room) {
-        await room.disconnect();
-        setRoom(null);
-      }
+  // Force exit function - always works, even if room is disconnected
+  const handleForceExit = () => {
+    console.log("Force exit requested by user");
+    // Show disconnecting state
+    setIsDisconnecting(true);
+    // Clear the disconnecting flag to allow exit
+    isDisconnectingRef.current = false;
+    // Call disconnect with force flag
+    handleDisconnect(true);
+  };
 
-      const callId = callIdRef.current || 
-                    localStorage.getItem("tgs:currentCallId") || 
-                    localStorage.getItem("tgs:callId");
+  // Set up room event listeners when room is available
+  useEffect(() => {
+    const currentRoom = roomRef.current || room;
+    
+    if (!currentRoom || !isConnected) return;
+
+    // Listen for call-ended signals via data channel
+    const handleDataReceived = (payload, participant, kind, topic) => {
+      if (kind === DataPacket_Kind.RELIABLE && topic === undefined) {
+        try {
+          const data = JSON.parse(new TextDecoder().decode(payload));
+          if (data.type === "call-ended" && !isDisconnectingRef.current) {
+            console.log("✅ Received call-ended signal from other party - disconnecting now");
+            isDisconnectingRef.current = true;
+            // Disconnect immediately when other party ends call
+            // Use immediate execution instead of setTimeout for faster response
+            handleDisconnect();
+          }
+        } catch (error) {
+          console.error("Error parsing disconnect signal:", error);
+        }
+      }
+    };
+
+    // Set up participant disconnect listeners
+    const handleParticipantDisconnected = (participant) => {
+      console.log("Participant disconnected:", participant.identity);
       
-      if (callId) {
-        // Update call status to completed - this will notify the other party
-        await updateCallStatus("completed");
+      // Check if there are any other participants left
+      const otherParticipants = Array.from(currentRoom.remoteParticipants.values());
+      
+      // If no other participants, the other party left
+      if (otherParticipants.length === 0 && !isDisconnectingRef.current) {
+        console.log("Other party disconnected. Ending call...");
+        // Auto-disconnect when other party leaves
+        handleDisconnect();
       }
+    };
 
-      // Clear stored call IDs
-      localStorage.removeItem("tgs:currentCallId");
-      localStorage.removeItem("tgs:callId");
-    } catch (error) {
-      console.error("Error handling leave:", error);
-    } finally {
-      // Navigate away
-      const role = localStorage.getItem("tgs:role");
-      const path = role === "astrologer" ? "/astrologer-dashboard" : "/talk-to-astrologer";
-      router.push(path);
+    const handleDisconnected = () => {
+      console.log("Room disconnected event received");
+      // When room disconnects, allow user to exit manually if needed
+      // Don't auto-call handleDisconnect here to avoid conflicts
+      // The user can still click the button to exit
+    };
+
+    // Monitor connection quality
+    const handleConnectionQualityChanged = (quality, participant) => {
+      if (participant === currentRoom.localParticipant) {
+        // Log connection quality for debugging
+        const qualityLevels = {
+          [ConnectionQuality.Excellent]: "Excellent",
+          [ConnectionQuality.Good]: "Good",
+          [ConnectionQuality.Poor]: "Poor",
+          [ConnectionQuality.Lost]: "Lost",
+        };
+        console.log(`Connection quality: ${qualityLevels[quality] || quality}`);
+        
+        // If connection is lost, attempt reconnection
+        if (quality === ConnectionQuality.Lost) {
+          console.warn("Connection lost, attempting to maintain call...");
+        }
+      }
+    };
+
+    // Listen for data received (for call-ended signals)
+    currentRoom.on(RoomEvent.DataReceived, handleDataReceived);
+    
+    // Listen for participant disconnect events
+    currentRoom.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+    currentRoom.on(RoomEvent.Disconnected, handleDisconnected);
+    currentRoom.on(RoomEvent.ConnectionQualityChanged, handleConnectionQualityChanged);
+
+    // Store media tracks for cleanup
+    currentRoom.localParticipant.audioTrackPublications.forEach((publication) => {
+      if (publication.track && !mediaTracksRef.current.includes(publication.track)) {
+        mediaTracksRef.current.push(publication.track);
+      }
+    });
+
+    // Sync mute state with actual track state
+    const updateMuteState = () => {
+      const localParticipant = currentRoom.localParticipant;
+      if (localParticipant) {
+        const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+        const micMuted = micPublication?.isMuted ?? !localParticipant.isMicrophoneEnabled;
+        setIsMuted(micMuted);
+      }
+    };
+
+    // Update state initially
+    updateMuteState();
+
+    // Listen for track changes
+    const handleTrackMuted = (publication) => {
+      if (publication && publication.source === Track.Source.Microphone) {
+        console.log("📢 Track muted event received");
+        updateMuteState();
+      }
+    };
+    const handleTrackUnmuted = (publication) => {
+      if (publication && publication.source === Track.Source.Microphone) {
+        console.log("📢 Track unmuted event received");
+        updateMuteState();
+      }
+    };
+    const handleTrackPublished = (publication) => {
+      if (publication && publication.source === Track.Source.Microphone) {
+        console.log("📢 Track published event received");
+        updateMuteState();
+      }
+    };
+    
+    // Listen for track subscriptions
+    const handleLocalTrackSubscribed = (track, publication, participant) => {
+      if (participant === currentRoom.localParticipant && publication?.source === Track.Source.Microphone) {
+        console.log("📢 Local microphone track subscribed");
+        updateMuteState();
+      }
+    };
+
+    currentRoom.localParticipant.on(ParticipantEvent.TrackMuted, handleTrackMuted);
+    currentRoom.localParticipant.on(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
+    currentRoom.localParticipant.on(ParticipantEvent.TrackPublished, handleTrackPublished);
+    currentRoom.on(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
+
+    // Cleanup function
+    return () => {
+      if (currentRoom) {
+        currentRoom.off(RoomEvent.DataReceived, handleDataReceived);
+        currentRoom.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+        currentRoom.off(RoomEvent.Disconnected, handleDisconnected);
+        currentRoom.off(RoomEvent.ConnectionQualityChanged, handleConnectionQualityChanged);
+        
+        // Cleanup track listeners
+        const localParticipant = currentRoom.localParticipant;
+        if (localParticipant) {
+          localParticipant.off(ParticipantEvent.TrackMuted, handleTrackMuted);
+          localParticipant.off(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
+          localParticipant.off(ParticipantEvent.TrackPublished, handleTrackPublished);
+        }
+        currentRoom.off(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
+        currentRoom.off(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
+      }
+    };
+  }, [room, isConnected]); // Re-run when room or connection status changes
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Cleanup on component unmount
+      if (roomRef.current && !isDisconnectingRef.current) {
+        roomRef.current.disconnect().catch(console.error);
+      }
+      
+      // Stop all media tracks
+      mediaTracksRef.current.forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.warn("Error stopping track on unmount:", e);
+        }
+      });
+      
+      // Unsubscribe from Firebase
+      if (firebaseUnsubscribeRef.current) {
+        firebaseUnsubscribeRef.current();
+      }
+    };
+  }, []);
+
+  const handleToggleMute = async () => {
+    const currentRoom = roomRef.current || room;
+    
+    if (!currentRoom) {
+      console.warn("Room not available, cannot toggle mute");
+      return;
     }
-  };
-
-  const handleToggleMute = () => {
-    setIsMuted(!isMuted);
+    
+    if (!isConnected) {
+      console.warn("Not connected yet, cannot toggle mute");
+      return;
+    }
+    
+    try {
+      const localParticipant = currentRoom.localParticipant;
+      if (!localParticipant) {
+        console.warn("Local participant not available");
+        return;
+      }
+      
+      // Get current mute state
+      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+      let currentMuted = false;
+      
+      if (micPublication) {
+        currentMuted = micPublication.isMuted;
+      } else {
+        // If no publication, check if microphone is enabled
+        currentMuted = !localParticipant.isMicrophoneEnabled;
+      }
+      
+      const newMutedState = !currentMuted;
+      
+      console.log(`🎤 Toggling microphone: current=${currentMuted} (muted), new=${newMutedState} (muted)`);
+      
+      try {
+        // Update state optimistically first for immediate UI feedback
+        setIsMuted(newMutedState);
+        
+        // Method 1: If track exists and is a LocalTrack, use track.mute()/unmute()
+        if (micPublication && micPublication.track) {
+          console.log("🎤 Using track.mute()/unmute() method");
+          const track = micPublication.track;
+          
+          if (newMutedState) {
+            // Mute the track
+            if (track.mute) {
+              await track.mute();
+              console.log("✅ Track muted via track.mute()");
+            } else {
+              // Fallback: use setMicrophoneEnabled
+              await localParticipant.setMicrophoneEnabled(false);
+              console.log("✅ Microphone disabled via setMicrophoneEnabled(false)");
+            }
+          } else {
+            // Unmute the track
+            if (track.unmute) {
+              await track.unmute();
+              console.log("✅ Track unmuted via track.unmute()");
+            } else {
+              // Fallback: use setMicrophoneEnabled
+              await localParticipant.setMicrophoneEnabled(true);
+              console.log("✅ Microphone enabled via setMicrophoneEnabled(true)");
+            }
+          }
+        } 
+        // Method 2: If no track, use setMicrophoneEnabled
+        else {
+          console.log("🎤 Using setMicrophoneEnabled() method (no track yet)");
+          const enabled = !newMutedState; // enabled = not muted
+          const result = await localParticipant.setMicrophoneEnabled(enabled);
+          console.log(`✅ setMicrophoneEnabled(${enabled}) result:`, result);
+          
+          if (!result) {
+            console.warn("⚠️ setMicrophoneEnabled returned false - permission may be denied");
+          }
+        }
+        
+        // Verify state after operation with multiple checks
+        setTimeout(() => {
+          const updatedMicPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+          let actualMuted = false;
+          
+          if (updatedMicPub) {
+            actualMuted = updatedMicPub.isMuted;
+            console.log("📊 Mic publication state:", {
+              isMuted: updatedMicPub.isMuted,
+              hasTrack: !!updatedMicPub.track,
+              trackMuted: updatedMicPub.track?.isMuted
+            });
+          } else {
+            actualMuted = !localParticipant.isMicrophoneEnabled;
+            console.log("📊 No mic publication, using isMicrophoneEnabled:", localParticipant.isMicrophoneEnabled);
+          }
+          
+          setIsMuted(actualMuted);
+          console.log(`✅ Microphone state verified: ${actualMuted ? 'MUTED 🔴' : 'UNMUTED 🟢'}`);
+        }, 300);
+        
+      } catch (error) {
+        console.error("❌ Error toggling mute:", error);
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        // Revert state on error
+        setIsMuted(currentMuted);
+      }
+    } catch (error) {
+      console.error("❌ Error toggling mute:", error);
+    }
   };
 
   const handleBack = () => {
-    const role = localStorage.getItem("tgs:role");
-    const path = role === "astrologer" ? "/astrologer-dashboard" : "/talk-to-astrologer";
-    router.push(path);
+    // Back button should work same as End Call - disconnect properly
+    handleForceExit();
   };
 
   const formatDuration = (s) => {
@@ -771,12 +1532,13 @@ export default function VoiceCallRoom() {
 
       {/* Header */}
       <header
+        className="voice-call-header"
         style={{
           background: "rgba(255, 255, 255, 0.8)",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
           borderBottom: "1px solid rgba(212, 175, 55, 0.2)",
-          padding: "1rem 1.5rem",
+          padding: "0.75rem 1rem",
           position: "relative",
           zIndex: 10,
         }}
@@ -787,13 +1549,24 @@ export default function VoiceCallRoom() {
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            gap: "1rem",
+            gap: "0.75rem",
+            width: "100%",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div 
+            className="voice-call-header-left"
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem", 
+              flex: "1 1 auto", 
+              minWidth: 0 
+            }}
+          >
             <button
               onClick={handleBack}
-              className="btn btn-ghost"
+              disabled={isDisconnecting}
+              className="btn btn-ghost voice-call-back-btn"
               style={{
                 color: "#374151",
                 border: "1px solid rgba(212, 175, 55, 0.3)",
@@ -802,40 +1575,60 @@ export default function VoiceCallRoom() {
                 alignItems: "center",
                 gap: "0.5rem",
                 background: "white",
+                cursor: isDisconnecting ? "not-allowed" : "pointer",
+                opacity: isDisconnecting ? 0.6 : 1,
+                minWidth: "44px",
+                minHeight: "44px",
+                flexShrink: 0,
               }}
             >
-              <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
-              <span>Back</span>
+              {isDisconnecting ? (
+                <>
+                  <Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} />
+                  <span className="voice-call-btn-text">Disconnecting...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeft style={{ width: "1rem", height: "1rem" }} />
+                  <span className="voice-call-btn-text">Back</span>
+                </>
+              )}
             </button>
-            <div>
-              <p style={{ color: "#374151", fontSize: "0.875rem", margin: 0, fontWeight: 600 }}>
+            <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+              <p 
+                className="voice-call-duration"
+                style={{ 
+                  color: "#374151", 
+                  fontSize: "0.875rem", 
+                  margin: 0, 
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
                 Duration: {formatDuration(callDuration)}
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <div 
+            className="voice-call-controls"
+            style={{ 
+              display: "flex", 
+              gap: "0.5rem", 
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
             <button
-              onClick={handleToggleMute}
-              className="btn btn-ghost"
+              onClick={handleForceExit}
+              disabled={isDisconnecting}
+              className="btn voice-call-end-btn"
               style={{
-                color: isMuted ? "#dc2626" : "#374151",
-                border: `1px solid ${isMuted ? "rgba(220, 38, 38, 0.3)" : "rgba(212, 175, 55, 0.3)"}`,
-                background: isMuted ? "rgba(239, 68, 68, 0.1)" : "white",
-                padding: "0.5rem 1rem",
-              }}
-            >
-              {isMuted ? (
-                <MicOff style={{ width: "1.25rem", height: "1.25rem" }} />
-              ) : (
-                <Mic style={{ width: "1.25rem", height: "1.25rem" }} />
-              )}
-            </button>
-            <button
-              onClick={handleDisconnect}
-              className="btn"
-              style={{
-                background: "linear-gradient(135deg, #dc2626, #991b1b)",
+                background: isDisconnecting 
+                  ? "linear-gradient(135deg, #991b1b, #7f1d1d)" 
+                  : "linear-gradient(135deg, #dc2626, #991b1b)",
                 color: "white",
                 border: "none",
                 boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)",
@@ -843,10 +1636,23 @@ export default function VoiceCallRoom() {
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
+                cursor: isDisconnecting ? "not-allowed" : "pointer",
+                opacity: isDisconnecting ? 0.8 : 1,
+                minHeight: "44px",
+                whiteSpace: "nowrap",
               }}
             >
-              <PhoneOff style={{ width: "1rem", height: "1rem" }} />
-              <span>End Call</span>
+              {isDisconnecting ? (
+                <>
+                  <Loader2 style={{ width: "1rem", height: "1rem", animation: "spin 1s linear infinite" }} />
+                  <span className="voice-call-btn-text">Disconnecting...</span>
+                </>
+              ) : (
+                <>
+                  <PhoneOff style={{ width: "1rem", height: "1rem" }} />
+                  <span className="voice-call-btn-text">End Call</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -854,18 +1660,21 @@ export default function VoiceCallRoom() {
 
       {/* Main Content */}
       <div
+        className="voice-call-main-content"
         style={{
           flex: 1,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          padding: "2rem 1.5rem",
+          padding: "1rem",
           position: "relative",
           zIndex: 1,
+          minHeight: 0,
+          overflow: "auto",
         }}
       >
         <div
-          className="card"
+          className="card voice-call-card"
           style={{
             width: "100%",
             maxWidth: "40rem",
@@ -875,8 +1684,10 @@ export default function VoiceCallRoom() {
             display: "flex",
             flexDirection: "column",
             minHeight: "32rem",
-            padding: "2rem",
+            padding: "1.5rem",
             border: "1px solid rgba(212, 175, 55, 0.2)",
+            maxHeight: "calc(100vh - 120px)",
+            overflow: "auto",
           }}
         >
           {/* Audio Conference */}
@@ -893,41 +1704,91 @@ export default function VoiceCallRoom() {
                   setError(`Voice call error: ${err.message}`);
                 }
               }}
-              onConnected={(room) => {
+              onConnected={async (room) => {
                 setIsConnected(true);
                 setError("");
-                setRoom(room);
-                roomRef.current = room;
+                
+                // Store room reference - room might be undefined, so check first
+                if (room) {
+                  setRoom(room);
+                  roomRef.current = room;
+                  isDisconnectingRef.current = false;
+                  
+                  // Explicitly enable microphone after connection
+                  try {
+                    console.log("Enabling microphone after connection...");
+                    const localParticipant = room.localParticipant;
+                    const micEnabled = await localParticipant.setMicrophoneEnabled(true);
+                    console.log("Microphone enabled:", micEnabled);
+                    
+                    if (!micEnabled) {
+                      console.warn("Failed to enable microphone - may need user permission");
+                    }
+                  } catch (permError) {
+                    console.error("Error enabling microphone:", permError);
+                    setPermissionError("Please allow microphone access to use voice call");
+                  }
+                } else {
+                  // If room is not provided, we'll set up listeners in useEffect
+                  console.warn("Room not provided in onConnected callback");
+                }
               }}
               connectOptions={{
                 autoSubscribe: true,
+                adaptiveStream: true, // Enable adaptive streaming to reduce lag
+                dynacast: true, // Enable dynamic casting for better performance
+                publishDefaults: {
+                  audioPreset: {
+                    maxBitrate: 32000, // Optimize audio bitrate
+                  },
+                },
               }}
               audio={true}
               video={false}
               style={{ width: "100%", height: "100%" }}
             >
               <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                {/* Audio Conference */}
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}>
+                {/* Audio Conference - Handles audio playback */}
+                <div style={{ 
+                  position: "absolute",
+                  width: 0,
+                  height: 0,
+                  overflow: "hidden",
+                }}>
                   <AudioConference />
                 </div>
+                
+                {/* Participant Status Cards - Clean Voice Chat Style */}
+                <div style={{ 
+                  flex: 1, 
+                  display: "flex", 
+                  flexDirection: "column",
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  gap: "2rem",
+                  padding: "2rem 1rem",
+                }}>
+                  <VoiceCallParticipantStatus />
+                </div>
 
-                {/* Controls - must be inside LiveKitRoom context */}
-                <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
-                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <VoiceCallControls
-                      onDisconnect={handleDisconnect}
-                      onToggleMute={handleToggleMute}
-                      isMuted={isMuted}
-                    />
+                {/* Bottom Controls - WhatsApp/Zoom Style */}
+                <div style={{ 
+                  borderTop: "1px solid #e5e7eb", 
+                  paddingTop: "1.5rem", 
+                  marginTop: "auto",
+                  background: "white",
+                }}>
+                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", justifyContent: "center", alignItems: "center" }}>
+                    {/* Mic Button - Inside LiveKitRoom context */}
+                    <MicButton onMuteChange={(muted) => setIsMuted(muted)} />
                     <button
-                      onClick={() => {}}
+                      onClick={() => setShowChat(!showChat)}
                       className="btn"
                       style={{
                         flex: 1,
-                        background: "white",
-                        color: "#6b7280",
-                        border: "2px solid #e5e7eb",
+                        background: showChat ? "rgba(59, 130, 246, 0.1)" : "white",
+                        color: showChat ? "#3b82f6" : "#6b7280",
+                        border: `2px solid ${showChat ? "#3b82f6" : "#e5e7eb"}`,
                         padding: "0.875rem 1.25rem",
                         fontSize: "0.95rem",
                         fontWeight: 600,
@@ -935,71 +1796,95 @@ export default function VoiceCallRoom() {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "0.5rem",
-                        cursor: "default",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
                       }}
                     >
                       <MessageSquare style={{ width: "1.125rem", height: "1.125rem" }} />
                       <span>Chat</span>
                     </button>
+                    <button
+                      onClick={handleForceExit}
+                      className="btn"
+                      style={{
+                        background: "linear-gradient(135deg, #dc2626, #991b1b)",
+                        color: "white",
+                        border: "none",
+                        padding: "0.875rem 1.25rem",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.5rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <PhoneOff style={{ width: "1.125rem", height: "1.125rem" }} />
+                      <span>Leave</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Chat Component */}
-                <VoiceCallChatWrapper room={roomRef.current} />
+                {/* Chat Component - Show/Hide */}
+                {showChat && (
+                  <div style={{ 
+                    borderTop: "1px solid #e5e7eb",
+                    marginTop: "1rem",
+                    paddingTop: "1rem",
+                  }}>
+                    <VoiceCallChatWrapper />
+                  </div>
+                )}
               </div>
             </LiveKitRoom>
           </div>
 
-          {/* Status Bar */}
-          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "1.5rem" }}>
-            <div
-              style={{
-                background: "linear-gradient(135deg, #fef3c7, #fde68a)",
-                borderRadius: "0.5rem",
-                padding: "0.75rem 1rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                border: "1px solid rgba(212, 175, 55, 0.2)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Volume2 style={{ width: "1rem", height: "1rem", color: "#d4af37" }} />
-                <span style={{ fontSize: "0.875rem", color: "#92400e", fontWeight: 500 }}>
-                  Voice Call Active
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <div
-                  style={{
-                    width: "0.5rem",
-                    height: "0.5rem",
-                    borderRadius: "50%",
-                    background: isMuted ? "#ef4444" : "#22c55e",
-                  }}
-                ></div>
-                <span style={{ fontSize: "0.875rem", color: "#92400e", fontWeight: 500 }}>
-                  {isMuted ? "Muted" : "Unmuted"}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Mobile responsive adjustments */}
+      {/* Disconnecting Overlay */}
+      {isDisconnecting && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            flexDirection: "column",
+            gap: "1rem",
+          }}
+        >
+          <Loader2
+            style={{
+              width: "3rem",
+              height: "3rem",
+              color: "white",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <p
+            style={{
+              color: "white",
+              fontSize: "1.25rem",
+              fontWeight: 600,
+              margin: 0,
+            }}
+          >
+            Disconnecting call...
+          </p>
+        </div>
+      )}
+
+      {/* Comprehensive Responsive Styles */}
       <style jsx>{`
-        @media (max-width: 768px) {
-          header > div {
-            flex-direction: column !important;
-            align-items: stretch !important;
-          }
-          header > div > div:last-child {
-            width: 100% !important;
-            justify-content: space-between !important;
-            margin-top: 0.5rem !important;
-          }
-        }
         @keyframes spin {
           from {
             transform: rotate(0deg);
@@ -1007,6 +1892,173 @@ export default function VoiceCallRoom() {
           to {
             transform: rotate(360deg);
           }
+        }
+
+        /* Mobile First - Base styles */
+        .voice-call-header {
+          padding: 0.75rem 1rem !important;
+        }
+
+        .voice-call-btn-text {
+          display: inline;
+        }
+
+        .voice-call-duration {
+          font-size: 0.875rem !important;
+        }
+
+        .voice-call-card {
+          padding: 1.5rem !important;
+          min-height: auto !important;
+          max-height: calc(100vh - 100px) !important;
+        }
+
+        .voice-call-main-content {
+          padding: 0.75rem !important;
+        }
+
+        /* Small Mobile (max-width: 480px) */
+        @media (max-width: 480px) {
+          .voice-call-header {
+            padding: 0.5rem 0.75rem !important;
+          }
+
+          .voice-call-header > div {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.5rem !important;
+          }
+
+          .voice-call-header > div > div:first-child {
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+
+          .voice-call-header > div > div:last-child {
+            width: 100% !important;
+            justify-content: space-between !important;
+            gap: 0.5rem !important;
+          }
+
+          .voice-call-back-btn,
+          .voice-call-mute-btn,
+          .voice-call-end-btn {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+          }
+
+          .voice-call-btn-text {
+            font-size: 0.75rem !important;
+          }
+
+          .voice-call-duration {
+            font-size: 0.75rem !important;
+          }
+
+          .voice-call-card {
+            padding: 1rem !important;
+            border-radius: 0.75rem !important;
+            max-height: calc(100vh - 140px) !important;
+          }
+
+          .voice-call-main-content {
+            padding: 0.5rem !important;
+          }
+        }
+
+        /* Mobile (max-width: 640px) */
+        @media (max-width: 640px) {
+          .voice-call-header > div {
+            gap: 0.75rem !important;
+          }
+
+          .voice-call-controls {
+            gap: 0.5rem !important;
+          }
+
+          .voice-call-card {
+            padding: 1.25rem !important;
+            max-height: calc(100vh - 120px) !important;
+          }
+
+          .voice-call-main-content {
+            padding: 0.5rem !important;
+          }
+        }
+
+        /* Tablet (641px - 1024px) */
+        @media (min-width: 641px) and (max-width: 1024px) {
+          .voice-call-header {
+            padding: 1rem 1.25rem !important;
+          }
+
+          .voice-call-card {
+            padding: 1.75rem !important;
+            max-width: 36rem !important;
+          }
+
+          .voice-call-main-content {
+            padding: 1.5rem !important;
+          }
+        }
+
+        /* Desktop (1024px+) */
+        @media (min-width: 1025px) {
+          .voice-call-header {
+            padding: 1rem 1.5rem !important;
+          }
+
+          .voice-call-card {
+            padding: 2rem !important;
+          }
+
+          .voice-call-main-content {
+            padding: 2rem 1.5rem !important;
+          }
+        }
+
+        /* Landscape Mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+          .voice-call-header {
+            padding: 0.5rem 1rem !important;
+          }
+
+          .voice-call-card {
+            padding: 1rem !important;
+            min-height: auto !important;
+            max-height: calc(100vh - 80px) !important;
+          }
+
+          .voice-call-main-content {
+            padding: 0.5rem !important;
+          }
+
+          .voice-call-btn-text {
+            display: none !important;
+          }
+
+          .voice-call-back-btn,
+          .voice-call-mute-btn,
+          .voice-call-end-btn {
+            padding: 0.5rem !important;
+          }
+        }
+
+        /* Touch-friendly buttons */
+        @media (hover: none) and (pointer: coarse) {
+          .voice-call-back-btn,
+          .voice-call-mute-btn,
+          .voice-call-end-btn {
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
+        }
+
+        /* Prevent text overflow */
+        .voice-call-duration {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       `}</style>
     </div>
