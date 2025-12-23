@@ -265,17 +265,38 @@ function VoiceCallParticipantStatus() {
 
           console.log("Fetching profiles for voice call:", { userId, astrologerId });
 
-          // Fetch user profile
+          // Fetch user profile - try multiple collections
           if (userId) {
             try {
-              const userDoc = await getDoc(doc(db, "users", userId));
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
+              const collectionNames = ['users', 'user', 'user_profiles', 'profiles'];
+              let userFound = false;
+              
+              for (const collectionName of collectionNames) {
+                try {
+                  const userDoc = await getDoc(doc(db, collectionName, userId));
+                  if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    profiles[userId] = {
+                      name: userData.name || userData.displayName || userData.fullName || userData.email?.split("@")[0] || "User",
+                      picture: userData.profilePicture || userData.photoURL || userData.avatar || null,
+                    };
+                    console.log(`✅ User profile fetched from ${collectionName}:`, profiles[userId]);
+                    userFound = true;
+                    break;
+                  }
+                } catch (e) {
+                  console.warn(`Error checking ${collectionName} for user:`, e);
+                  // Continue to next collection
+                }
+              }
+              
+              if (!userFound) {
+                console.warn("User document not found in any collection:", userId);
+                // Set a fallback with partial ID
                 profiles[userId] = {
-                  name: userData.name || userData.displayName || userData.email?.split("@")[0] || "User",
-                  picture: userData.profilePicture || userData.photoURL || userData.avatar || null,
+                  name: `User ${userId.substring(0, 8)}`,
+                  picture: null,
                 };
-                console.log("User profile fetched:", profiles[userId]);
               }
             } catch (e) {
               console.warn("Error fetching user profile:", e);
@@ -350,26 +371,39 @@ function VoiceCallParticipantStatus() {
   
   // Add remote participants
   remoteParticipants.forEach(p => {
-    const isRemoteAstrologer = p.identity.includes("astrologer");
+    // Determine if this remote participant is astrologer or user based on identity and call data
+    const isRemoteAstrologer = p.identity?.includes("astrologer") || remoteParticipantId === callData?.astrologerId;
+    
+    // Get the correct profile - check both remoteParticipantProfile and participantProfiles
+    const profile = isRemoteAstrologer 
+      ? (callData?.astrologerId ? participantProfiles[callData.astrologerId] : null)
+      : (callData?.userId ? participantProfiles[callData.userId] : null);
+    
+    // Use profile name first, then remoteParticipantProfile, then participant name, then fallback
+    const displayName = profile?.name || remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User");
+    
     allParticipants.push({
       participant: p,
       isLocal: false,
-      name: remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
-      displayName: remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
-      avatarLetter: (remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User")).charAt(0).toUpperCase(),
-      profilePicture: remoteParticipantProfile?.picture || null,
+      name: displayName,
+      displayName: displayName,
+      avatarLetter: displayName.charAt(0).toUpperCase(),
+      profilePicture: profile?.picture || remoteParticipantProfile?.picture || null,
     });
   });
   
   // If no remote participants yet, show placeholder for the other person
   if (remoteParticipants.length === 0) {
     const otherPersonIsAstrologer = !isAstrologer;
+    // Use the fetched profile name if available
+    const placeholderName = remoteParticipantProfile?.name || (otherPersonIsAstrologer ? "Astrologer" : "User");
+    
     allParticipants.push({
       participant: null,
       isLocal: false,
-      name: remoteParticipantProfile?.name || (otherPersonIsAstrologer ? "Astrologer" : "User"),
-      displayName: remoteParticipantProfile?.name || (otherPersonIsAstrologer ? "Astrologer" : "User"),
-      avatarLetter: (remoteParticipantProfile?.name || (otherPersonIsAstrologer ? "Astrologer" : "User")).charAt(0).toUpperCase(),
+      name: placeholderName,
+      displayName: placeholderName,
+      avatarLetter: placeholderName.charAt(0).toUpperCase(),
       profilePicture: remoteParticipantProfile?.picture || null,
       isPlaceholder: true
     });
@@ -908,12 +942,68 @@ export default function VoiceCallRoom() {
     if (params.room && !permissionError) initializeRoom();
   }, [params.room, permissionError]);
 
-  // Call duration timer
+  // Server-side duration sync - fetch from server every second
   useEffect(() => {
-    if (isConnected) {
-      const timer = setInterval(() => setCallDuration((p) => p + 1), 1000);
-      return () => clearInterval(timer);
-    }
+    if (!isConnected) return;
+    
+    const callId = callIdRef.current || 
+      localStorage.getItem("tgs:currentCallId") || 
+      localStorage.getItem("tgs:callId");
+    
+    if (!callId) return;
+
+    // Mark call as connected when we join (only once)
+    const markConnected = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "mark-connected",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Voice call marked as connected:", data);
+        }
+      } catch (error) {
+        console.error("Error marking voice call as connected:", error);
+      }
+    };
+
+    // Mark connected immediately
+    markConnected();
+
+    // Sync duration from server every second
+    const syncDuration = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get-duration",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.durationSeconds !== undefined) {
+            setCallDuration(data.durationSeconds);
+          }
+        }
+      } catch (error) {
+        console.error("Error syncing voice call duration:", error);
+      }
+    };
+
+    // Initial sync
+    syncDuration();
+    
+    // Sync every second
+    const interval = setInterval(syncDuration, 1000);
+    
+    return () => clearInterval(interval);
   }, [isConnected]);
 
   // Firebase real-time listener for call status changes
@@ -1047,37 +1137,43 @@ export default function VoiceCallRoom() {
         }
       }
 
-      // Update call status to completed BEFORE disconnecting
-      // This ensures Firebase listener on other party picks it up immediately
+      // Complete call with server-side duration calculation and billing
+      // This ensures both parties see the same duration and billing is accurate
       if (callId) {
         try {
-          await updateCallStatus("completed", durationMinutes);
-          console.log("Call status updated to completed in Firebase");
-        } catch (e) {
-          console.warn("Error updating call status:", e);
-        }
+          // Use complete-call endpoint which handles duration calculation and billing
+          const completeResponse = await fetch("/api/calls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "complete-call",
+              callId: callId,
+            }),
+          });
 
-        // Finalize billing
-        if (durationMinutes > 0) {
-          try {
-            const billingResponse = await fetch("/api/billing", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "immediate-settlement",
-                callId: callId,
-                durationMinutes: durationMinutes,
-              }),
+          if (completeResponse.ok) {
+            const completeData = await completeResponse.json();
+            console.log("✅ Voice call completed with server-calculated duration:", {
+              durationSeconds: completeData.durationSeconds,
+              durationMinutes: completeData.durationMinutes,
+              billing: completeData.billing
             });
-
-            const billingResult = await billingResponse.json();
-            if (billingResult.success) {
-              console.log(`✅ Voice billing finalized: ₹${billingResult.finalAmount} charged`);
-            } else {
-              console.error("❌ Voice billing finalization failed:", billingResult.error);
+            
+            if (completeData.billing) {
+              console.log(`✅ Voice billing finalized: ₹${completeData.billing.finalAmount} charged`);
             }
-          } catch (billingError) {
-            console.error("Error finalizing billing:", billingError);
+          } else {
+            console.warn("⚠️ Error completing voice call, trying fallback");
+            // Fallback to old method if new endpoint fails
+            await updateCallStatus("completed", durationMinutes);
+          }
+        } catch (e) {
+          console.warn("Error completing voice call:", e);
+          // Fallback to old method
+          try {
+            await updateCallStatus("completed", durationMinutes);
+          } catch (fallbackError) {
+            console.error("Fallback also failed:", fallbackError);
           }
         }
       }

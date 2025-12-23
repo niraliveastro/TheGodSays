@@ -4,10 +4,87 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Phone, PhoneOff, X } from 'lucide-react'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
-export default function CallNotification({ call, onAccept, onReject, onClose }) {
+export default function CallNotification({ call, onAccept, onReject, onClose, userName: propUserName }) {
   const [timeLeft, setTimeLeft] = useState(30) // 30 seconds to respond
   const [isVisible, setIsVisible] = useState(true)
+  const [userName, setUserName] = useState(propUserName || null)
+
+  // Update userName when prop changes (from GlobalCallNotification)
+  useEffect(() => {
+    if (propUserName && propUserName !== userName) {
+      console.log(`CallNotification: Received name from prop: ${propUserName}`);
+      setUserName(propUserName);
+    }
+  }, [propUserName]);
+
+  // Fetch user name if not provided - with retry logic
+  useEffect(() => {
+    if (userName || !call?.userId) {
+      if (userName) {
+        console.log(`CallNotification: Name already set: ${userName}`);
+      }
+      return;
+    }
+
+    console.log(`CallNotification: Fetching name for userId: ${call.userId}`);
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const fetchUserName = async () => {
+      try {
+        const collectionNames = ['users', 'user', 'user_profiles', 'profiles'];
+        let foundName = null;
+
+        for (const collectionName of collectionNames) {
+          try {
+            console.log(`  Checking ${collectionName} for ${call.userId}`);
+            const userDoc = await getDoc(doc(db, collectionName, call.userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              console.log(`  ✅ Found user in ${collectionName}:`, userData);
+              
+              foundName = userData.name || 
+                         userData.displayName || 
+                         userData.fullName || 
+                         userData.firstName ||
+                         userData.username ||
+                         (userData.email ? userData.email.split('@')[0] : null);
+              
+              if (foundName) {
+                console.log(`✅ CallNotification: Found name in ${collectionName}: ${foundName}`);
+                setUserName(foundName);
+                return; // Success, exit
+              } else {
+                console.warn(`  ⚠️ User found but no name field. Available fields:`, Object.keys(userData));
+              }
+            } else {
+              console.log(`  ❌ User not found in ${collectionName}`);
+            }
+          } catch (e) {
+            console.warn(`  ⚠️ Error checking ${collectionName}:`, e.message);
+            // Continue to next collection
+          }
+        }
+
+        // If not found and retries left, try again after a delay
+        if (!foundName && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`  🔄 Retrying name fetch (attempt ${retryCount}/${maxRetries})...`);
+          setTimeout(fetchUserName, 500 * retryCount); // Exponential backoff
+        } else if (!foundName) {
+          console.warn(`  ❌ Could not fetch user name after ${maxRetries} retries for ${call.userId}`);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user name:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchUserName();
+  }, [call?.userId, userName]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,7 +138,15 @@ export default function CallNotification({ call, onAccept, onReject, onClose }) 
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Incoming Call</h3>
-                <p className="text-sm text-gray-600">From Astrologer {call.userId}</p>
+                <p className="text-sm text-gray-600">
+                  {userName ? (
+                    <>From {userName}</>
+                  ) : call.userId ? (
+                    <>From User {call.userId.substring(0, 8)}</>
+                  ) : (
+                    <>From Unknown User</>
+                  )}
+                </p>
               </div>
             </div>
             <Button

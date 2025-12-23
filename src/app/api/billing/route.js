@@ -120,6 +120,14 @@ export async function POST(request) {
 
         try {
           const result = await BillingService.cancelCallBilling(callId)
+          // If cancellation failed, return error response
+          if (!result.success) {
+            return NextResponse.json({ 
+              success: false, 
+              error: result.error || 'Failed to cancel call billing' 
+            }, { status: 400 })
+          }
+          // Success - return result (may include message about no record found)
           return NextResponse.json({ success: true, ...result })
         } catch (error) {
           console.error('Error cancelling call billing:', error)

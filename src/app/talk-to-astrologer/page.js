@@ -300,17 +300,9 @@ export default function TalkToAstrologer() {
         status: call.status,
       });
 
-      /* ---- Init billing ---- */
-      await fetch("/api/billing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "initialize-call",
-          callId: call.id,
-          userId,
-          astrologerId,
-        }),
-      }).catch(() => {});
+      /* ---- Billing will be initialized when call is actually connected ---- */
+      /* ---- This prevents charging for calls that never connect ---- */
+      console.log("Call created. Billing will initialize when call connects.");
 
       /* ---- Poll status ---- */
       let timeoutId;

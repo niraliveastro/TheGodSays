@@ -544,12 +544,17 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
               if (astroDoc.exists()) {
                 const astroData = astroDoc.data();
                 profiles[astrologerId] = {
-                  name: astroData.name || astroData.displayName || "Astrologer",
+                  name: astroData.name || astroData.displayName || astroData.fullName || "Astrologer",
                   picture: astroData.profilePicture || astroData.photoURL || astroData.avatar || null,
                 };
-                console.log("Astrologer profile fetched:", profiles[astrologerId]);
+                console.log("✅ Astrologer profile fetched:", profiles[astrologerId]);
               } else {
                 console.warn("Astrologer document not found:", astrologerId);
+                // Set a fallback
+                profiles[astrologerId] = {
+                  name: "Astrologer",
+                  picture: null,
+                };
               }
             } catch (e) {
               console.warn("Error fetching astrologer profile:", e);
@@ -567,7 +572,10 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
     };
 
     fetchProfiles();
-  }, []);
+  }, []); // Run once on mount
+
+  // Re-compute allParticipants when profiles are fetched
+  // This ensures names update when profiles are loaded
 
   // Get current user profile from AuthContext first, then fallback to fetched profiles
   const currentUserId = localStorage.getItem("tgs:userId");
@@ -604,6 +612,7 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
     callData,
   });
 
+  // Build participants array with proper name resolution
   const allParticipants = [
     { 
       participant: localParticipant.localParticipant, 
@@ -611,12 +620,44 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
       name: currentUserProfile?.name || (isAstrologer ? "Astrologer" : "User"),
       profilePicture: currentUserProfile?.picture || null,
     },
-    ...remoteParticipants.map(p => ({ 
-      participant: p, 
-      isLocal: false, 
-      name: remoteParticipantProfile?.name || p.name || (p.identity.includes("astrologer") ? "Astrologer" : "User"),
-      profilePicture: remoteParticipantProfile?.picture || null,
-    }))
+    ...remoteParticipants.map(p => {
+      // Determine if this remote participant is astrologer or user
+      const isRemoteAstrologer = p.identity?.includes("astrologer") || remoteParticipantId === callData?.astrologerId;
+      
+      // Get the correct profile based on participant identity - check both ways
+      let profile = null;
+      if (isRemoteAstrologer && callData?.astrologerId) {
+        profile = participantProfiles[callData.astrologerId];
+      } else if (!isRemoteAstrologer && callData?.userId) {
+        profile = participantProfiles[callData.userId];
+      }
+      
+      // Also check remoteParticipantProfile as fallback
+      if (!profile && remoteParticipantProfile?.name) {
+        profile = remoteParticipantProfile;
+      }
+      
+      // Use profile name first, then remoteParticipantProfile, then participant name, then generic label
+      // NEVER show user ID - always use a name or generic label
+      const displayName = profile?.name || remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User");
+      
+      console.log("Participant name resolution:", {
+        participantId: p.identity,
+        isRemoteAstrologer,
+        remoteParticipantId,
+        profileName: profile?.name,
+        remoteProfileName: remoteParticipantProfile?.name,
+        participantName: p.name,
+        finalName: displayName
+      });
+      
+      return {
+        participant: p, 
+        isLocal: false, 
+        name: displayName, // Always use resolved name, never ID
+        profilePicture: profile?.picture || remoteParticipantProfile?.picture || null,
+      };
+    })
   ];
 
   // Handle expand/collapse
@@ -1437,11 +1478,69 @@ export default function VideoCallRoom() {
     };
   }, [params.room]); // Re-run when room changes
 
-  // Call duration timer
+  // Server-side duration sync - fetch from server every second
   useEffect(() => {
-    const timer = setInterval(() => setCallDuration((p) => p + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (!isConnected) return;
+    
+    const callId = callIdRef.current || 
+      localStorage.getItem("tgs:currentCallId") || 
+      localStorage.getItem("tgs:callId");
+    
+    if (!callId) return;
+
+    // Mark call as connected when we join (only once)
+    const markConnected = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "mark-connected",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Call marked as connected:", data);
+        }
+      } catch (error) {
+        console.error("Error marking call as connected:", error);
+      }
+    };
+
+    // Mark connected immediately
+    markConnected();
+
+    // Sync duration from server every second
+    const syncDuration = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get-duration",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.durationSeconds !== undefined) {
+            setCallDuration(data.durationSeconds);
+          }
+        }
+      } catch (error) {
+        console.error("Error syncing duration:", error);
+      }
+    };
+
+    // Initial sync
+    syncDuration();
+    
+    // Sync every second
+    const interval = setInterval(syncDuration, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   // Set up room event listeners when room is available
   useEffect(() => {
@@ -1699,7 +1798,31 @@ export default function VideoCallRoom() {
         localStorage.getItem("tgs:currentCallId") ||
         localStorage.getItem("tgs:callId") ||
         params.room;
-      const durationMinutes = Math.max(1, Math.ceil(callDuration / 60)); // Convert seconds to minutes, minimum 1 minute
+      // Use server-side duration calculation instead of client-side
+      let durationMinutes = 0;
+      try {
+        const durationResponse = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get-duration",
+            callId: callId,
+          }),
+        });
+        if (durationResponse.ok) {
+          const durationData = await durationResponse.json();
+          durationMinutes = Math.max(1, durationData.durationMinutes || 1);
+          console.log(`✅ Server-calculated duration: ${durationMinutes} minutes`);
+        } else {
+          // Fallback to client duration if server fails
+          durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
+          console.warn("⚠️ Using fallback client duration:", durationMinutes);
+        }
+      } catch (error) {
+        // Fallback to client duration if server fails
+        durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
+        console.warn("⚠️ Error getting server duration, using fallback:", error);
+      }
 
       console.log(
         `Ending call ${callId} with duration ${durationMinutes} minutes`

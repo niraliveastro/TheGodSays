@@ -105,54 +105,74 @@ export default function GlobalCallNotification() {
     };
   }, [isAstrologer, astrologerId, isCallPage, incomingCall?.id]);
 
-  // Fetch user names for display
+  // Fetch user names for display - IMPROVED VERSION
   useEffect(() => {
     if (!incomingCall?.userId) return;
 
-    const fetchUserName = async () => {
-      if (userNames[incomingCall.userId]) return;
+    // If name already cached, skip fetching
+    if (userNames[incomingCall.userId]) {
+      console.log(`GlobalCallNotification: Name already cached: ${userNames[incomingCall.userId]}`);
+      return;
+    }
 
+    console.log(`GlobalCallNotification: Fetching name for userId: ${incomingCall.userId}`);
+
+    const fetchUserName = async () => {
       try {
         const collectionNames = ["users", "user", "user_profiles", "profiles"];
         let userName = null;
 
         for (const collectionName of collectionNames) {
           try {
+            console.log(`  Checking ${collectionName} for ${incomingCall.userId}`);
             const userDoc = await getDoc(
               doc(db, collectionName, incomingCall.userId)
             );
             if (userDoc.exists()) {
               const userData = userDoc.data();
+              console.log(`  ✅ Found user in ${collectionName}:`, userData);
+              
               userName =
                 userData.name ||
                 userData.displayName ||
-                userData.email ||
-                userData.fullName;
+                userData.fullName ||
+                userData.firstName ||
+                userData.username ||
+                (userData.email ? userData.email.split("@")[0] : null);
+              
               if (userName) {
                 if (userName.includes("@")) {
                   userName = userName.split("@")[0];
                 }
-                break;
+                console.log(`✅ GlobalCallNotification: Resolved name: ${userName}`);
+                setUserNames((prev) => ({
+                  ...prev,
+                  [incomingCall.userId]: userName,
+                }));
+                return; // Success, exit
+              } else {
+                console.warn(`  ⚠️ User found but no name field. Available fields:`, Object.keys(userData));
               }
+            } else {
+              console.log(`  ❌ User not found in ${collectionName}`);
             }
           } catch (collectionError) {
+            console.warn(`  ⚠️ Error checking ${collectionName}:`, collectionError.message);
             // Continue to next collection
           }
         }
 
-        if (userName) {
-          setUserNames((prev) => ({
-            ...prev,
-            [incomingCall.userId]: userName,
-          }));
+        if (!userName) {
+          console.warn(`❌ GlobalCallNotification: Could not find name for ${incomingCall.userId}`);
         }
       } catch (error) {
-        console.warn("Error fetching user name:", error);
+        console.error("❌ GlobalCallNotification: Error fetching user name:", error);
       }
     };
 
     fetchUserName();
-  }, [incomingCall?.userId, userNames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingCall?.userId]); // Only depend on userId, not userNames to avoid loops
 
   const handleCallAction = async (callId, action) => {
     try {
@@ -316,6 +336,7 @@ export default function GlobalCallNotification() {
       {incomingCall.callType === "voice" ? (
         <VoiceCallNotification
           call={incomingCall}
+          userName={userNames[incomingCall.userId] || null}
           onAccept={() => handleCallAction(incomingCall.id, "active")}
           onReject={() => handleCallAction(incomingCall.id, "rejected")}
           onClose={() => setIncomingCall(null)}
@@ -323,6 +344,7 @@ export default function GlobalCallNotification() {
       ) : (
         <CallNotification
           call={incomingCall}
+          userName={userNames[incomingCall.userId] || null}
           onAccept={() => handleCallAction(incomingCall.id, "active")}
           onReject={() => handleCallAction(incomingCall.id, "rejected")}
           onClose={() => setIncomingCall(null)}

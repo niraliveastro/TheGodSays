@@ -442,29 +442,41 @@ function AstrologerDashboardContent() {
     if (calls.length === 0) return;
 
     const fetchUserNames = async () => {
+      console.log("🔄 Fetching user names for calls:", calls.length);
       const newUserNames = { ...userNames };
       let hasNewNames = false;
 
       for (const call of calls) {
         if (call.userId && !newUserNames[call.userId]) {
+          console.log(`  Fetching name for call ${call.id}, userId: ${call.userId}`);
           try {
-            newUserNames[call.userId] = await getUserName(call.userId);
+            const name = await getUserName(call.userId);
+            newUserNames[call.userId] = name;
             hasNewNames = true;
+            console.log(`  ✅ Cached name for ${call.userId}: ${name}`);
           } catch (error) {
-            console.warn("Error fetching user name for:", call.userId, error);
+            console.warn("❌ Error fetching user name for:", call.userId, error);
             newUserNames[call.userId] = `User ${call.userId.substring(0, 8)}`;
             hasNewNames = true;
           }
+        } else if (call.userId && newUserNames[call.userId]) {
+          console.log(`  ⏭️ Name already cached for ${call.userId}: ${newUserNames[call.userId]}`);
         }
       }
 
       if (hasNewNames) {
+        console.log("✅ Updating userNames state:", newUserNames);
         setUserNames(newUserNames);
+      } else {
+        console.log("⏭️ No new names to update");
       }
     };
 
-    fetchUserNames();
-  }, [calls]); // Dependencies: re-run if calls change
+    if (calls.length > 0) {
+      fetchUserNames();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calls]); // Re-run when calls change - userNames intentionally excluded to avoid loops
 
   /**
    * Update astrologer status in Firestore.
@@ -699,39 +711,56 @@ function AstrologerDashboardContent() {
    * @returns {Promise<string>} Resolved user name or fallback
    */
   const getUserName = async (userId) => {
-    if (!userId) return "Anonymous User";
+    if (!userId) {
+      console.warn("getUserName called with empty userId");
+      return "Anonymous User";
+    }
+
+    console.log(`🔍 Fetching name for userId: ${userId}`);
 
     try {
-      // Try multiple collection names
+      // Try multiple collection names using Firestore client SDK
       const collectionNames = ["users", "user", "user_profiles", "profiles"];
 
       for (const collectionName of collectionNames) {
         try {
-          const userDoc = await db.collection(collectionName).doc(userId).get();
-          if (userDoc.exists) {
+          console.log(`  Checking collection: ${collectionName}`);
+          const userDoc = await getDoc(doc(db, collectionName, userId));
+          if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log(`  ✅ Found user in ${collectionName}:`, userData);
+            
+            // Try multiple name fields
             const userName =
               userData.name ||
               userData.displayName ||
-              userData.email ||
-              userData.fullName;
+              userData.fullName ||
+              userData.firstName ||
+              userData.username ||
+              (userData.email ? userData.email.split("@")[0] : null);
+            
             if (userName) {
               // If email, extract username part
-              if (userName.includes("@")) {
-                return userName.split("@")[0];
-              }
-              return userName;
+              const finalName = userName.includes("@") ? userName.split("@")[0] : userName;
+              console.log(`  ✅ Resolved name: ${finalName}`);
+              return finalName;
+            } else {
+              console.warn(`  ⚠️ User found in ${collectionName} but no name field exists. Data:`, Object.keys(userData));
             }
+          } else {
+            console.log(`  ❌ User not found in ${collectionName}`);
           }
         } catch (collectionError) {
           // Continue to next collection
+          console.warn(`  ⚠️ Error checking ${collectionName}:`, collectionError.message);
         }
       }
 
       // Fallback to partial userId
+      console.warn(`  ❌ Could not find name for userId ${userId}, using fallback`);
       return `User ${userId.substring(0, 8)}`;
     } catch (error) {
-      console.error("Error fetching user name:", error);
+      console.error("❌ Error fetching user name:", error);
       return `User ${userId.substring(0, 8)}`;
     }
   };
@@ -756,6 +785,7 @@ function AstrologerDashboardContent() {
         (incomingCall.callType === "voice" ? (
           <VoiceCallNotification
             call={incomingCall}
+            userName={userNames[incomingCall.userId]}
             onAccept={() => handleCallAction(incomingCall.id, "active")}
             onReject={() => handleCallAction(incomingCall.id, "rejected")}
             onClose={() => setIncomingCall(null)}
@@ -769,6 +799,7 @@ function AstrologerDashboardContent() {
         ) : (
           <CallNotification
             call={incomingCall}
+            userName={userNames[incomingCall.userId]}
             onAccept={() => handleCallAction(incomingCall.id, "active")}
             onReject={() => handleCallAction(incomingCall.id, "rejected")}
             onClose={() => setIncomingCall(null)}
