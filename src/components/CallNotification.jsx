@@ -50,7 +50,7 @@ export default function CallNotification({ call, onAccept, onReject, onClose }) 
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" style={{ zIndex: 99999 }}>
       <Card className="max-w-md w-full mx-4 bg-white shadow-2xl border-2 border-blue-200">
         <div className="p-6">
           {/* Header */}
