@@ -3,6 +3,7 @@ import admin from 'firebase-admin'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { BillingService } from '@/lib/billing'
+import { CallStateService } from '@/lib/callState'
 
 // Prevent static generation - this is a dynamic API route
 export const dynamic = 'force-dynamic';
@@ -42,10 +43,36 @@ export async function POST(request) {
     // Initialize Firebase only when the route is called
     const db = getFirestoreDB();
 
-    const { action, astrologerId, callId, userId, status, callType = 'video', durationMinutes } = await request.json()
+    // Safely parse JSON with error handling
+    let body;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === '') {
+        return NextResponse.json({ error: 'Request body is empty' }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      return NextResponse.json({ 
+        error: 'Invalid JSON in request body', 
+        details: parseError.message 
+      }, { status: 400 });
+    }
+
+    const { action, astrologerId, callId, userId, status, callType = 'video', durationMinutes } = body;
 
     // Validate action
-    const validActions = ['create-call', 'update-call-status', 'finalize-call', 'get-queue', 'get-astrologer-calls']
+    const validActions = [
+      'create-call', 
+      'update-call-status', 
+      'finalize-call', 
+      'get-queue', 
+      'get-astrologer-calls',
+      'mark-connected',
+      'get-duration',
+      'complete-call',
+      'check-connection'
+    ]
     if (!validActions.includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
@@ -259,12 +286,126 @@ export async function POST(request) {
         const astrologerCalls = astrologerCallsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         return NextResponse.json({ success: true, calls: astrologerCalls })
 
+      case 'mark-connected':
+        if (!callId) {
+          return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
+        }
+        try {
+          const result = await CallStateService.markCallConnected(callId)
+          
+          // Only initialize billing when call is actually connected (not when created)
+          // This prevents charging for calls that never connect
+          if (!result.alreadyConnected) {
+            try {
+              // Get call data to get userId and astrologerId
+              const callDoc = await db.collection('calls').doc(callId).get()
+              if (callDoc.exists) {
+                const callData = callDoc.data()
+                const callUserId = callData.userId
+                const callAstrologerId = callData.astrologerId
+                
+                if (callUserId && callAstrologerId) {
+                  // Initialize billing now that call is connected
+                  const billingResult = await BillingService.initializeCallBilling(
+                    callId, 
+                    callUserId, 
+                    callAstrologerId
+                  )
+                  console.log(`✅ Billing initialized for connected call ${callId}:`, billingResult)
+                  return NextResponse.json({ 
+                    success: true, 
+                    ...result,
+                    billingInitialized: true,
+                    billing: billingResult
+                  })
+                }
+              }
+            } catch (billingError) {
+              console.error('Error initializing billing for connected call:', billingError)
+              // Don't fail the connection if billing fails - log and continue
+              return NextResponse.json({ 
+                success: true, 
+                ...result,
+                billingError: billingError.message
+              })
+            }
+          }
+          
+          return NextResponse.json({ success: true, ...result })
+        } catch (error) {
+          console.error('Error marking call as connected:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
+      case 'get-duration':
+        if (!callId) {
+          return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
+        }
+        try {
+          const duration = await CallStateService.getCallDuration(callId)
+          return NextResponse.json({ success: true, ...duration })
+        } catch (error) {
+          console.error('Error getting call duration:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
+      case 'complete-call':
+        if (!callId) {
+          return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
+        }
+        try {
+          const result = await CallStateService.completeCall(callId)
+          // Finalize billing with server-calculated duration
+          if (result.durationMinutes > 0) {
+            try {
+              const billingResult = await BillingService.immediateCallSettlement(callId, result.durationMinutes)
+              return NextResponse.json({ 
+                success: true, 
+                ...result,
+                billing: billingResult
+              })
+            } catch (billingError) {
+              console.error('Error finalizing billing:', billingError)
+              return NextResponse.json({ 
+                success: true, 
+                ...result,
+                billingError: billingError.message
+              })
+            }
+          }
+          return NextResponse.json({ success: true, ...result })
+        } catch (error) {
+          console.error('Error completing call:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
+      case 'check-connection':
+        if (!callId) {
+          return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
+        }
+        try {
+          const status = await CallStateService.checkConnectionStatus(callId)
+          return NextResponse.json({ success: true, ...status })
+        } catch (error) {
+          console.error('Error checking connection status:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
     console.error('Error in calls API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Provide more detailed error information for debugging
+    const errorMessage = error instanceof SyntaxError && error.message.includes('JSON')
+      ? `JSON parsing error: ${error.message}`
+      : error.message || 'Internal server error'
+    
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 })
   }
 }
 

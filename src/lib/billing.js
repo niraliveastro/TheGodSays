@@ -58,7 +58,7 @@ export class BillingService {
       // Hold money in wallet
       await WalletService.holdMoney(userId, holdAmount, callId)
 
-      // Create call billing record
+      // Create call billing record with connectedAt timestamp
       const db = getDb()
       const billingRef = db.collection('call_billing').doc(callId)
       await billingRef.set({
@@ -67,7 +67,8 @@ export class BillingService {
         astrologerId,
         pricing: pricing,
         status: 'active',
-        startTime: new Date(),
+        startTime: admin.firestore.FieldValue.serverTimestamp(), // Use server timestamp for accuracy
+        connectedAt: admin.firestore.FieldValue.serverTimestamp(), // Track when billing actually started
         endTime: null,
         initialHoldAmount: holdAmount,
         totalCost: 0,
@@ -75,8 +76,8 @@ export class BillingService {
         durationMinutes: 0,
         billingType: pricing.pricingType,
         estimatedMinutes: pricing.pricingType === 'per_minute' ? 5 : pricing.callDurationMins || 30,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       })
 
       return {
@@ -215,34 +216,65 @@ export class BillingService {
    static async cancelCallBilling(callId) {
      try {
        const db = getDb()
-       const billingRef = db.collection('call_billing').doc(callId)
-       const billingDoc = await billingRef.get()
+      const billingRef = db.collection('call_billing').doc(callId)
+      const billingDoc = await billingRef.get()
 
-       if (!billingDoc.exists) {
-         throw new Error('Call billing record not found')
-       }
+      // If billing record doesn't exist, it's already cancelled or never initialized
+      // Return success (idempotent operation)
+      if (!billingDoc.exists) {
+        console.log(`Billing record not found for call ${callId}, assuming already cancelled or never initialized`)
+        return {
+          success: true,
+          releasedAmount: 0,
+          message: 'No billing record found - call may have been cancelled before billing initialization'
+        }
+      }
 
-       const billingData = billingDoc.data()
-       const { userId, initialHoldAmount } = billingData
+      const billingData = billingDoc.data()
+      
+      // If already cancelled, return success (idempotent)
+      if (billingData.status === 'cancelled') {
+        console.log(`Billing record for call ${callId} is already cancelled`)
+        return {
+          success: true,
+          releasedAmount: billingData.initialHoldAmount || 0,
+          message: 'Billing already cancelled'
+        }
+      }
 
-       // Release held money (full refund for cancelled calls)
-       await WalletService.releaseHold(userId, callId)
+      const { userId, initialHoldAmount } = billingData
 
-       // Update billing record
-       await billingRef.update({
-         status: 'cancelled',
-         endTime: new Date(),
-         updatedAt: new Date()
-       })
+      // Release held money (full refund for cancelled calls)
+      // Only release if there's actually a hold
+      if (initialHoldAmount && initialHoldAmount > 0) {
+        try {
+          await WalletService.releaseHold(userId, callId)
+        } catch (walletError) {
+          // If hold doesn't exist, log but don't fail - the call might have been cancelled before hold
+          console.warn(`Could not release hold for call ${callId}:`, walletError.message)
+        }
+      }
 
-       return {
-         success: true,
-         releasedAmount: initialHoldAmount
-       }
-     } catch (error) {
-       console.error('Error cancelling call billing:', error)
-       throw new Error('Failed to cancel call billing')
-     }
+      // Update billing record
+      await billingRef.update({
+        status: 'cancelled',
+        endTime: new Date(),
+        updatedAt: new Date()
+      })
+
+      return {
+        success: true,
+        releasedAmount: initialHoldAmount || 0
+      }
+    } catch (error) {
+      console.error('Error cancelling call billing:', error)
+      // Don't throw - return error response instead
+      return {
+        success: false,
+        error: error.message || 'Failed to cancel call billing',
+        releasedAmount: 0
+      }
+    }
    }
 
   /**

@@ -10,8 +10,9 @@ import {
 } from "@livekit/components-react";
 import { Track, Room, DataPacket_Kind, RemoteParticipant, RoomEvent, ParticipantEvent, ConnectionQuality } from "livekit-client";
 import "@livekit/components-styles";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
   PhoneOff,
@@ -221,6 +222,9 @@ function VoiceCallParticipantStatus() {
   const userRole = localStorage.getItem("tgs:role") || "user";
   const isAstrologer = userRole === "astrologer";
   const [waveformHeights, setWaveformHeights] = useState([40, 50, 60, 50, 40]);
+  const [participantProfiles, setParticipantProfiles] = useState({});
+  const [callData, setCallData] = useState(null);
+  const { userProfile } = useAuth();
 
   // Animate waveform
   useEffect(() => {
@@ -236,6 +240,120 @@ function VoiceCallParticipantStatus() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch participant profiles
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const profiles = {};
+      
+      // Get call ID to fetch user IDs
+      const callId = localStorage.getItem("tgs:currentCallId") || localStorage.getItem("tgs:callId");
+      if (!callId) {
+        console.warn("No call ID found for profile fetching");
+        return;
+      }
+
+      try {
+        // Fetch call data to get userId and astrologerId
+        const callDocRef = doc(db, "calls", callId);
+        const callSnap = await getDoc(callDocRef);
+        
+        if (callSnap.exists()) {
+          const data = callSnap.data();
+          setCallData(data);
+          const userId = data.userId;
+          const astrologerId = data.astrologerId;
+
+          console.log("Fetching profiles for voice call:", { userId, astrologerId });
+
+          // Fetch user profile - try multiple collections
+          if (userId) {
+            try {
+              const collectionNames = ['users', 'user', 'user_profiles', 'profiles'];
+              let userFound = false;
+              
+              for (const collectionName of collectionNames) {
+                try {
+                  const userDoc = await getDoc(doc(db, collectionName, userId));
+                  if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    profiles[userId] = {
+                      name: userData.name || userData.displayName || userData.fullName || userData.email?.split("@")[0] || "User",
+                      picture: userData.profilePicture || userData.photoURL || userData.avatar || null,
+                    };
+                    console.log(`✅ User profile fetched from ${collectionName}:`, profiles[userId]);
+                    userFound = true;
+                    break;
+                  }
+                } catch (e) {
+                  console.warn(`Error checking ${collectionName} for user:`, e);
+                  // Continue to next collection
+                }
+              }
+              
+              if (!userFound) {
+                console.warn("User document not found in any collection:", userId);
+                // Set a fallback with partial ID
+                profiles[userId] = {
+                  name: `User ${userId.substring(0, 8)}`,
+                  picture: null,
+                };
+              }
+            } catch (e) {
+              console.warn("Error fetching user profile:", e);
+            }
+          }
+
+          // Fetch astrologer profile
+          if (astrologerId) {
+            try {
+              const astroDoc = await getDoc(doc(db, "astrologers", astrologerId));
+              if (astroDoc.exists()) {
+                const astroData = astroDoc.data();
+                profiles[astrologerId] = {
+                  name: astroData.name || astroData.displayName || "Astrologer",
+                  picture: astroData.profilePicture || astroData.photoURL || astroData.avatar || null,
+                };
+                console.log("Astrologer profile fetched:", profiles[astrologerId]);
+              }
+            } catch (e) {
+              console.warn("Error fetching astrologer profile:", e);
+            }
+          }
+        }
+
+        console.log("All profiles for voice call:", profiles);
+        setParticipantProfiles(profiles);
+      } catch (error) {
+        console.error("Error fetching participant profiles:", error);
+      }
+    };
+
+    fetchProfiles();
+  }, []);
+
+  // Get current user profile from AuthContext first, then fallback to fetched profiles
+  const currentUserId = localStorage.getItem("tgs:userId");
+  const currentAstrologerId = localStorage.getItem("tgs:astrologerId");
+  const currentUserProfile = userProfile ? {
+    name: userProfile.name || userProfile.displayName || (isAstrologer ? "Astrologer" : "User"),
+    picture: userProfile.profilePicture || userProfile.photoURL || userProfile.avatar || null,
+  } : (isAstrologer 
+    ? participantProfiles[currentAstrologerId] 
+    : participantProfiles[currentUserId]);
+
+  // Get remote participant ID (the other person)
+  let remoteParticipantId = null;
+  if (callData) {
+    if (isAstrologer) {
+      // If I'm astrologer, remote is user
+      remoteParticipantId = callData.userId;
+    } else {
+      // If I'm user, remote is astrologer
+      remoteParticipantId = callData.astrologerId;
+    }
+  }
+  const remoteParticipantProfile = remoteParticipantId ? participantProfiles[remoteParticipantId] : {};
+
   // Always show both user and astrologer, even if remote participant hasn't joined yet
   const allParticipants = [];
   
@@ -244,33 +362,49 @@ function VoiceCallParticipantStatus() {
     allParticipants.push({
       participant: localParticipant.localParticipant,
       isLocal: true,
-      name: isAstrologer ? "Astrologer" : "You",
-      displayName: isAstrologer ? "Astrologer" : "You",
-      avatarLetter: isAstrologer ? "A" : "U"
+      name: currentUserProfile?.name || (isAstrologer ? "Astrologer" : "You"),
+      displayName: currentUserProfile?.name || (isAstrologer ? "Astrologer" : "You"),
+      avatarLetter: (currentUserProfile?.name || (isAstrologer ? "Astrologer" : "You")).charAt(0).toUpperCase(),
+      profilePicture: currentUserProfile?.picture || null,
     });
   }
   
   // Add remote participants
   remoteParticipants.forEach(p => {
-    const isRemoteAstrologer = p.identity.includes("astrologer");
+    // Determine if this remote participant is astrologer or user based on identity and call data
+    const isRemoteAstrologer = p.identity?.includes("astrologer") || remoteParticipantId === callData?.astrologerId;
+    
+    // Get the correct profile - check both remoteParticipantProfile and participantProfiles
+    const profile = isRemoteAstrologer 
+      ? (callData?.astrologerId ? participantProfiles[callData.astrologerId] : null)
+      : (callData?.userId ? participantProfiles[callData.userId] : null);
+    
+    // Use profile name first, then remoteParticipantProfile, then participant name, then fallback
+    const displayName = profile?.name || remoteParticipantProfile?.name || p.name || (isRemoteAstrologer ? "Astrologer" : "User");
+    
     allParticipants.push({
       participant: p,
       isLocal: false,
-      name: p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
-      displayName: p.name || (isRemoteAstrologer ? "Astrologer" : "User"),
-      avatarLetter: isRemoteAstrologer ? "A" : "U"
+      name: displayName,
+      displayName: displayName,
+      avatarLetter: displayName.charAt(0).toUpperCase(),
+      profilePicture: profile?.picture || remoteParticipantProfile?.picture || null,
     });
   });
   
   // If no remote participants yet, show placeholder for the other person
   if (remoteParticipants.length === 0) {
     const otherPersonIsAstrologer = !isAstrologer;
+    // Use the fetched profile name if available
+    const placeholderName = remoteParticipantProfile?.name || (otherPersonIsAstrologer ? "Astrologer" : "User");
+    
     allParticipants.push({
       participant: null,
       isLocal: false,
-      name: otherPersonIsAstrologer ? "Astrologer" : "User",
-      displayName: otherPersonIsAstrologer ? "Astrologer" : "User",
-      avatarLetter: otherPersonIsAstrologer ? "A" : "U",
+      name: placeholderName,
+      displayName: placeholderName,
+      avatarLetter: placeholderName.charAt(0).toUpperCase(),
+      profilePicture: remoteParticipantProfile?.picture || null,
       isPlaceholder: true
     });
   }
@@ -283,7 +417,7 @@ function VoiceCallParticipantStatus() {
       width: "100%",
       maxWidth: "400px",
     }}>
-      {allParticipants.map(({ participant, isLocal, name, displayName, avatarLetter, isPlaceholder }, index) => {
+      {allParticipants.map(({ participant, isLocal, name, displayName, avatarLetter, isPlaceholder, profilePicture }, index) => {
         // Handle placeholder (when other person hasn't joined yet)
         const micPublication = participant?.getTrackPublication(Track.Source.Microphone);
         const isAudioMuted = isPlaceholder ? false : (micPublication?.isMuted ?? !participant?.isMicrophoneEnabled);
@@ -301,14 +435,35 @@ function VoiceCallParticipantStatus() {
               border: "1px solid #e5e7eb",
             }}
           >
-            {/* Avatar */}
+            {/* Avatar with Profile Picture */}
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt={displayName}
+                style={{
+                  width: "3rem",
+                  height: "3rem",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "2px solid rgba(255, 255, 255, 0.3)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                  flexShrink: 0,
+                }}
+                onError={(e) => {
+                  // Fallback to initial if image fails to load
+                  e.target.style.display = "none";
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = "flex";
+                }}
+              />
+            ) : null}
             <div
               style={{
                 width: "3rem",
                 height: "3rem",
                 borderRadius: "50%",
                 background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                display: "flex",
+                display: profilePicture ? "none" : "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "white",
@@ -787,12 +942,68 @@ export default function VoiceCallRoom() {
     if (params.room && !permissionError) initializeRoom();
   }, [params.room, permissionError]);
 
-  // Call duration timer
+  // Server-side duration sync - fetch from server every second
   useEffect(() => {
-    if (isConnected) {
-      const timer = setInterval(() => setCallDuration((p) => p + 1), 1000);
-      return () => clearInterval(timer);
-    }
+    if (!isConnected) return;
+    
+    const callId = callIdRef.current || 
+      localStorage.getItem("tgs:currentCallId") || 
+      localStorage.getItem("tgs:callId");
+    
+    if (!callId) return;
+
+    // Mark call as connected when we join (only once)
+    const markConnected = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "mark-connected",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Voice call marked as connected:", data);
+        }
+      } catch (error) {
+        console.error("Error marking voice call as connected:", error);
+      }
+    };
+
+    // Mark connected immediately
+    markConnected();
+
+    // Sync duration from server every second
+    const syncDuration = async () => {
+      try {
+        const response = await fetch("/api/calls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get-duration",
+            callId: callId,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.durationSeconds !== undefined) {
+            setCallDuration(data.durationSeconds);
+          }
+        }
+      } catch (error) {
+        console.error("Error syncing voice call duration:", error);
+      }
+    };
+
+    // Initial sync
+    syncDuration();
+    
+    // Sync every second
+    const interval = setInterval(syncDuration, 1000);
+    
+    return () => clearInterval(interval);
   }, [isConnected]);
 
   // Firebase real-time listener for call status changes
@@ -926,37 +1137,43 @@ export default function VoiceCallRoom() {
         }
       }
 
-      // Update call status to completed BEFORE disconnecting
-      // This ensures Firebase listener on other party picks it up immediately
+      // Complete call with server-side duration calculation and billing
+      // This ensures both parties see the same duration and billing is accurate
       if (callId) {
         try {
-          await updateCallStatus("completed", durationMinutes);
-          console.log("Call status updated to completed in Firebase");
-        } catch (e) {
-          console.warn("Error updating call status:", e);
-        }
+          // Use complete-call endpoint which handles duration calculation and billing
+          const completeResponse = await fetch("/api/calls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "complete-call",
+              callId: callId,
+            }),
+          });
 
-        // Finalize billing
-        if (durationMinutes > 0) {
-          try {
-            const billingResponse = await fetch("/api/billing", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "immediate-settlement",
-                callId: callId,
-                durationMinutes: durationMinutes,
-              }),
+          if (completeResponse.ok) {
+            const completeData = await completeResponse.json();
+            console.log("✅ Voice call completed with server-calculated duration:", {
+              durationSeconds: completeData.durationSeconds,
+              durationMinutes: completeData.durationMinutes,
+              billing: completeData.billing
             });
-
-            const billingResult = await billingResponse.json();
-            if (billingResult.success) {
-              console.log(`✅ Voice billing finalized: ₹${billingResult.finalAmount} charged`);
-            } else {
-              console.error("❌ Voice billing finalization failed:", billingResult.error);
+            
+            if (completeData.billing) {
+              console.log(`✅ Voice billing finalized: ₹${completeData.billing.finalAmount} charged`);
             }
-          } catch (billingError) {
-            console.error("Error finalizing billing:", billingError);
+          } else {
+            console.warn("⚠️ Error completing voice call, trying fallback");
+            // Fallback to old method if new endpoint fails
+            await updateCallStatus("completed", durationMinutes);
+          }
+        } catch (e) {
+          console.warn("Error completing voice call:", e);
+          // Fallback to old method
+          try {
+            await updateCallStatus("completed", durationMinutes);
+          } catch (fallbackError) {
+            console.error("Fallback also failed:", fallbackError);
           }
         }
       }
