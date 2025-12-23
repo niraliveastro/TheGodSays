@@ -6,6 +6,7 @@
 
 import { getBlogBySlug, getAllBlogSlugs, getPublishedBlogs } from '@/lib/blog'
 import { generateExcerpt } from '@/lib/blog-utils'
+import { transformBlogContentImages, getOptimizedImageUrl } from '@/lib/image-optimize'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -114,7 +115,13 @@ export default async function BlogPostPage({ params }) {
       })
     : null
 
-  const content = blog.content || ''
+  // Transform content to use optimized images
+  const content = transformBlogContentImages(blog.content || '')
+  
+  // Get optimized featured image URL (use desktop variant for featured image)
+  const optimizedFeaturedImage = blog.featuredImage 
+    ? getOptimizedImageUrl(blog.featuredImage, 'desktop')
+    : null
 
   return (
     <div className="blog-detail-page">
@@ -128,10 +135,10 @@ export default async function BlogPostPage({ params }) {
         </Link>
 
         {/* Featured Image */}
-        {blog.featuredImage && (
+        {optimizedFeaturedImage && (
           <div className="blog-featured-image">
             <Image
-              src={blog.featuredImage}
+              src={optimizedFeaturedImage}
               alt={blog.title}
               fill
               className="object-cover"
@@ -211,7 +218,7 @@ export default async function BlogPostPage({ params }) {
                     {relatedBlog.featuredImage && (
                       <div className="related-blog-image">
                         <Image
-                          src={relatedBlog.featuredImage}
+                          src={getOptimizedImageUrl(relatedBlog.featuredImage, 'mobile')}
                           alt={relatedBlog.title}
                           fill
                           className="object-cover"

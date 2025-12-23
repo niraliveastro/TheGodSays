@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import admin from 'firebase-admin'
+import sharp from 'sharp'
 
 // Initialize Firebase Admin Storage
 function getStorage() {
@@ -136,42 +137,162 @@ export async function POST(request) {
       }
     }
 
-    // Generate unique filename
+    // Generate unique filename (without extension - we'll add it based on format)
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const fileExtension = file.name.split('.').pop() || 'jpg'
-    const fileName = `${type}/${timestamp}-${randomString}.${fileExtension}`
+    const baseFileName = `${type}/${timestamp}-${randomString}`
 
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const originalBuffer = Buffer.from(arrayBuffer)
 
-    // Upload to Firebase Storage
-    const fileRef = bucket.file(fileName)
-    await fileRef.save(buffer, {
-      metadata: {
-        contentType: file.type,
+    // Process image with Sharp to create optimized variants
+    let sharpImage
+    let metadata
+    try {
+      sharpImage = sharp(originalBuffer)
+      metadata = await sharpImage.metadata()
+      
+      if (!metadata.format) {
+        throw new Error('Unable to detect image format')
+      }
+    } catch (error) {
+      console.error('Error processing image:', error)
+      // Fallback: upload original file without optimization
+      const fallbackExtension = file.name.split('.').pop() || 'jpg'
+      const fallbackFileName = `${type}/${timestamp}-${randomString}.${fallbackExtension}`
+      const fallbackFileRef = bucket.file(fallbackFileName)
+      await fallbackFileRef.save(originalBuffer, {
         metadata: {
-          originalName: file.name,
-          uploadedAt: new Date().toISOString(),
+          contentType: file.type,
+          metadata: {
+            originalName: file.name,
+            uploadedAt: new Date().toISOString(),
+            optimized: 'false',
+          },
         },
-      },
-      public: true, // Make file publicly accessible
-    })
+        public: true,
+      })
+      const fallbackUrl = `https://storage.googleapis.com/${bucket.name}/${fallbackFileName}`
+      return NextResponse.json({
+        success: true,
+        url: fallbackUrl,
+        fileName: fallbackFileName,
+        optimized: false,
+      })
+    }
+    
+    // Determine output format - prefer WebP for better compression
+    const shouldConvertToWebP = metadata.format !== 'gif' && metadata.format !== 'svg'
+    const outputFormat = shouldConvertToWebP ? 'webp' : (metadata.format || 'jpeg')
+    const outputMimeType = shouldConvertToWebP ? 'image/webp' : file.type
 
-    // Get public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`
+    // Image size configurations
+    const variants = {
+      desktop: { width: 1920, quality: 85, suffix: 'desktop' },
+      mobile: { width: 768, quality: 80, suffix: 'mobile' },
+      thumbnail: { width: 400, quality: 75, suffix: 'thumb' },
+    }
 
-    // Alternative: Get signed URL (if public access is not enabled)
-    // const [url] = await fileRef.getSignedUrl({
-    //   action: 'read',
-    //   expires: '03-09-2491', // Far future date
-    // })
+    const uploadPromises = []
+    const urls = {}
 
+    // Upload optimized variants
+    for (const [key, config] of Object.entries(variants)) {
+      try {
+        // Resize and optimize image
+        let optimizedBuffer
+        if (metadata.format === 'svg' || metadata.format === 'gif') {
+          // For SVG/GIF, upload original (no optimization)
+          if (key === 'desktop') {
+            optimizedBuffer = originalBuffer
+          } else {
+            continue // Skip other variants for SVG/GIF
+          }
+        } else {
+          // Resize maintaining aspect ratio
+          const resizedImage = sharpImage.clone().resize(config.width, null, {
+            withoutEnlargement: true, // Don't enlarge small images
+            fit: 'inside',
+          })
+
+          // Apply format-specific optimizations
+          if (outputFormat === 'webp') {
+            optimizedBuffer = await resizedImage.webp({ quality: config.quality }).toBuffer()
+          } else if (outputFormat === 'jpeg' || outputFormat === 'jpg') {
+            optimizedBuffer = await resizedImage.jpeg({ quality: config.quality, progressive: true }).toBuffer()
+          } else if (outputFormat === 'png') {
+            optimizedBuffer = await resizedImage.png({ quality: config.quality, compressionLevel: 9 }).toBuffer()
+          } else {
+            optimizedBuffer = await resizedImage.toBuffer()
+          }
+        }
+
+        // Generate filename for this variant
+        const extension = outputFormat === 'webp' ? 'webp' : (file.name.split('.').pop() || 'jpg')
+        const variantFileName = `${baseFileName}-${config.suffix}.${extension}`
+
+        // Upload to Firebase Storage
+        const variantFileRef = bucket.file(variantFileName)
+        uploadPromises.push(
+          variantFileRef.save(optimizedBuffer, {
+            metadata: {
+              contentType: key === 'desktop' && (metadata.format === 'svg' || metadata.format === 'gif') 
+                ? file.type 
+                : outputMimeType,
+              cacheControl: 'public, max-age=31536000, immutable', // Cache for 1 year
+              metadata: {
+                originalName: file.name,
+                uploadedAt: new Date().toISOString(),
+                variant: key,
+                optimized: 'true',
+              },
+            },
+            public: true,
+          }).then(() => {
+            urls[key] = `https://storage.googleapis.com/${bucket.name}/${variantFileName}`
+          })
+        )
+      } catch (error) {
+        console.error(`Error processing ${key} variant:`, error)
+        // Continue with other variants even if one fails
+      }
+    }
+
+    // Wait for all uploads to complete
+    await Promise.all(uploadPromises)
+
+    // If no variants were uploaded successfully, upload original as fallback
+    if (Object.keys(urls).length === 0) {
+      const fallbackExtension = file.name.split('.').pop() || 'jpg'
+      const fallbackFileName = `${baseFileName}.${fallbackExtension}`
+      const fallbackFileRef = bucket.file(fallbackFileName)
+      await fallbackFileRef.save(originalBuffer, {
+        metadata: {
+          contentType: file.type,
+          metadata: {
+            originalName: file.name,
+            uploadedAt: new Date().toISOString(),
+          },
+        },
+        public: true,
+      })
+      urls.desktop = `https://storage.googleapis.com/${bucket.name}/${fallbackFileName}`
+      urls.mobile = urls.desktop
+      urls.thumbnail = urls.desktop
+    } else {
+      // Ensure all required variants exist (use desktop as fallback)
+      if (!urls.mobile) urls.mobile = urls.desktop
+      if (!urls.thumbnail) urls.thumbnail = urls.desktop
+    }
+
+    // Return URLs - desktop URL is the primary one for backward compatibility
     return NextResponse.json({
       success: true,
-      url: publicUrl,
-      fileName: fileName,
+      url: urls.desktop || urls.mobile, // Primary URL (backward compatible)
+      fileName: baseFileName,
+      urls: urls, // All variant URLs
+      optimized: true,
     })
   } catch (error) {
     console.error('Error uploading image:', error)

@@ -12,6 +12,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
+import { getOptimizedImageUrl } from '@/lib/image-optimize'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
@@ -108,7 +109,7 @@ export default function BlogPage() {
                     {blog.featuredImage && (
                       <div className="blog-image">
                         <Image
-                          src={blog.featuredImage}
+                          src={getOptimizedImageUrl(blog.featuredImage, 'mobile')}
                           alt={blog.title}
                           fill
                           className="object-cover"

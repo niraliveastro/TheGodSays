@@ -164,6 +164,24 @@
   height: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: block;
+  /* Optimize image rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Loading optimization */
+  content-visibility: auto;
+}
+
+/* Responsive image optimization for mobile */
+@media (max-width: 768px) {
+  .blog-content img {
+    width: 100%;
+    height: auto;
+    margin: 1.5rem auto;
+  }
+  
+  .blog-featured-image {
+    height: 250px;
+  }
 }
 
 .blog-content figure {
