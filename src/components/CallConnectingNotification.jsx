@@ -2,6 +2,8 @@
 
 import React from "react";
 import { Phone, Video, XCircle, X } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 // Simplified Modal component
 function Modal({ open, onClose, children }) {
@@ -28,16 +30,48 @@ export default function CallConnectingNotification({
   onTimeout = () => {},
   onCancel = () => {},
   status = "connecting",
+  astrologerId = null,
 }) {
   const [timeoutCounter, setTimeoutCounter] = React.useState(60);
   const [isClosing, setIsClosing] = React.useState(false);
   const [message, setMessage] = React.useState({ title: "", body: "" });
+  const [astrologerName, setAstrologerName] = React.useState(null);
+
+  // Fetch astrologer name when astrologerId is available
+  React.useEffect(() => {
+    if (!astrologerId || astrologerName) return;
+
+    const fetchAstrologerName = async () => {
+      try {
+        console.log(`CallConnectingNotification: Fetching astrologer name for ${astrologerId}`);
+        const astrologerDoc = await getDoc(doc(db, "astrologers", astrologerId));
+        if (astrologerDoc.exists()) {
+          const astrologerData = astrologerDoc.data();
+          const name = astrologerData.name || 
+                       astrologerData.displayName || 
+                       astrologerData.fullName ||
+                       `Astrologer ${astrologerId.substring(0, 8)}`;
+          console.log(`CallConnectingNotification: Found astrologer name: ${name}`);
+          setAstrologerName(name);
+        } else {
+          console.warn(`CallConnectingNotification: Astrologer not found for ${astrologerId}`);
+          setAstrologerName(`Astrologer ${astrologerId.substring(0, 8)}`);
+        }
+      } catch (error) {
+        console.error("CallConnectingNotification: Error fetching astrologer name:", error);
+        setAstrologerName(astrologerId ? `Astrologer ${astrologerId.substring(0, 8)}` : "Astrologer");
+      }
+    };
+
+    fetchAstrologerName();
+  }, [astrologerId, astrologerName]);
 
   // Handle visibility states and animations
   React.useEffect(() => {
     if (!isOpen) {
       setTimeoutCounter(60);
       setIsClosing(false);
+      setAstrologerName(null); // Reset name when closed
       return;
     }
 
@@ -46,7 +80,9 @@ export default function CallConnectingNotification({
       case "rejected":
         setMessage({
           title: "Call Rejected",
-          body: "The astrologer has declined your call request",
+          body: astrologerName 
+            ? `${astrologerName} has declined your call request`
+            : "The astrologer has declined your call request",
         });
         setIsClosing(true);
         break;
@@ -62,7 +98,9 @@ export default function CallConnectingNotification({
       case "connecting":
       default:
         setMessage({
-          title: "Connecting to Astrologer",
+          title: astrologerName 
+            ? `Connecting to ${astrologerName}`
+            : "Connecting to Astrologer",
           body: `Please wait while we establish your ${type} call`,
         });
         setIsClosing(false);
@@ -82,7 +120,7 @@ export default function CallConnectingNotification({
 
       return () => clearInterval(timer);
     }
-  }, [isOpen, status, type, onTimeout]);
+  }, [isOpen, status, type, onTimeout, astrologerName]);
 
   const handleCancel = () => {
     onCancel?.();

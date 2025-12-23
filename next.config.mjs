@@ -1,27 +1,53 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Allow images from ANY URL/site (maximum flexibility)
-    // This disables Next.js image optimization but allows any external image
+    // We use our custom image optimization API (/api/image-optimize) for better control
+    // Keep unoptimized: true to allow external images, but our custom API handles optimization
     unoptimized: true,
     
-    // Alternative: If you want optimization, use remotePatterns for specific domains
-    // Uncomment the remotePatterns below and set unoptimized: false
-    // remotePatterns: [
-    //   { protocol: 'https', hostname: 'images.unsplash.com' },
-    //   { protocol: 'https', hostname: 'i.imgur.com' },
-    //   { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
-    //   // Add more domains as needed
-    // ],
+    // Allow Firebase Storage and other image domains
+    remotePatterns: [
+      { 
+        protocol: 'https', 
+        hostname: 'storage.googleapis.com',
+        pathname: '/**',
+      },
+      { 
+        protocol: 'https', 
+        hostname: '**.firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      { 
+        protocol: 'https', 
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      { 
+        protocol: 'https', 
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      { 
+        protocol: 'https', 
+        hostname: 'i.imgur.com',
+        pathname: '/**',
+      },
+    ],
     
-    // Keep domains for backward compatibility (optional)
+    // Keep domains for backward compatibility
     domains: [
       'localhost',
       'rahunow.com',
       'www.rahunow.com',
       'json.freeastrologyapi.com',
-      'images.unsplash.com'
+      'images.unsplash.com',
+      'storage.googleapis.com',
+      'firebasestorage.googleapis.com',
     ],
+    
+    // Image quality settings
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Enable production optimizations
   compiler: {
