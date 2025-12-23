@@ -29,7 +29,7 @@
  * @module AstrologerDashboard
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -145,7 +145,7 @@ function AstrologerDashboardContent() {
             for (const doc of snapshot.docs) {
               let call = { id: doc.id, ...doc.data() };
 
-              // CRITICAL: Skip cancelled and rejected calls entirely
+              // Handle cancelled and rejected calls - show them in recent calls but clear incoming call
               if (call.status === "cancelled" || call.status === "rejected") {
                 // If this was the current incoming call, clear it immediately
                 if (incomingCall && incomingCall.id === doc.id) {
@@ -167,7 +167,7 @@ function AstrologerDashboardContent() {
                     }
                   }
                 }
-                continue; // Skip this call entirely
+                // Don't skip - add to callsList to show in recent calls
               }
 
               // For completed calls, fetch billing info if missing
@@ -285,7 +285,23 @@ function AstrologerDashboardContent() {
       try {
         const response = await fetch(`/api/calls?astrologerId=${astrologerId}`);
         if (response.ok) {
-          const data = await response.json();
+          // Check content type before parsing JSON
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            console.warn("Non-JSON response from API:", text);
+            return;
+          }
+          
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            const text = await response.text();
+            console.error("Failed to parse JSON response:", text, jsonError);
+            return;
+          }
+          
           if (data.success && data.calls) {
             const callsList = data.calls;
             const queueList = callsList.filter(
@@ -434,49 +450,94 @@ function AstrologerDashboardContent() {
   }, [astrologerId]); // Dependencies: re-run if astrologerId changes
 
   /**
+   * Memoize the set of user IDs from calls and queue.
+   * This creates a stable reference for the dependency array.
+   * We track user IDs as a sorted string to detect changes reliably.
+   */
+  const userIdsToFetch = useMemo(() => {
+    const allCalls = [...calls, ...queue];
+    const userIds = new Set();
+    allCalls.forEach(call => {
+      if (call.userId) {
+        userIds.add(call.userId);
+      }
+    });
+    // Create a stable string representation sorted by user ID
+    // Include call count to ensure we detect when calls change
+    const userIdsStr = Array.from(userIds).sort().join(',');
+    return `${userIdsStr}|${calls.length}|${queue.length}`;
+  }, [
+    // Use JSON.stringify of user IDs to create stable dependency
+    JSON.stringify([...calls, ...queue].map(c => c.userId).filter(Boolean).sort())
+  ]);
+
+  /**
    * Effect: Fetch and cache user names for calls.
    * Resolves names from Firestore and updates display cache.
-   * Runs when calls array changes.
+   * Runs when user IDs that need fetching change.
    */
   useEffect(() => {
-    if (calls.length === 0) return;
+    if (!userIdsToFetch) return;
+
+    // Extract user IDs from the string (before the | separator)
+    const userIdsStr = userIdsToFetch.split('|')[0];
+    const userIds = userIdsStr.split(',').filter(Boolean);
+    if (userIds.length === 0) return;
 
     const fetchUserNames = async () => {
-      console.log("🔄 Fetching user names for calls:", calls.length);
-      const newUserNames = { ...userNames };
-      let hasNewNames = false;
-
-      for (const call of calls) {
-        if (call.userId && !newUserNames[call.userId]) {
-          console.log(`  Fetching name for call ${call.id}, userId: ${call.userId}`);
-          try {
-            const name = await getUserName(call.userId);
-            newUserNames[call.userId] = name;
-            hasNewNames = true;
-            console.log(`  ✅ Cached name for ${call.userId}: ${name}`);
-          } catch (error) {
-            console.warn("❌ Error fetching user name for:", call.userId, error);
-            newUserNames[call.userId] = `User ${call.userId.substring(0, 8)}`;
-            hasNewNames = true;
-          }
-        } else if (call.userId && newUserNames[call.userId]) {
-          console.log(`  ⏭️ Name already cached for ${call.userId}: ${newUserNames[call.userId]}`);
+      console.log("🔄 Fetching user names for", userIds.length, "users");
+      
+      // Use functional update to get latest userNames without including it in deps
+      setUserNames(prevUserNames => {
+        // Filter out user IDs that already have names
+        const userIdsNeedingFetch = userIds.filter(userId => !prevUserNames[userId]);
+        
+        if (userIdsNeedingFetch.length === 0) {
+          console.log("⏭️ All names already cached");
+          return prevUserNames;
         }
-      }
 
-      if (hasNewNames) {
-        console.log("✅ Updating userNames state:", newUserNames);
-        setUserNames(newUserNames);
-      } else {
-        console.log("⏭️ No new names to update");
-      }
+        console.log(`  📋 Need to fetch ${userIdsNeedingFetch.length} names:`, userIdsNeedingFetch);
+
+        // Fetch all names in parallel
+        Promise.all(
+          userIdsNeedingFetch.map(async (userId) => {
+            try {
+              console.log(`  Fetching name for userId: ${userId}`);
+              const name = await getUserName(userId);
+              console.log(`  ✅ Cached name for ${userId}: ${name}`);
+              return { userId, name };
+            } catch (error) {
+              console.warn("❌ Error fetching user name for:", userId, error);
+              return { userId, name: `User ${userId.substring(0, 8)}` };
+            }
+          })
+        ).then(results => {
+          // Update state with all fetched names at once
+          setUserNames(currentNames => {
+            const updated = { ...currentNames };
+            let hasUpdates = false;
+            results.forEach(({ userId, name }) => {
+              if (updated[userId] !== name) {
+                updated[userId] = name;
+                hasUpdates = true;
+              }
+            });
+            if (hasUpdates) {
+              console.log("✅ Updated userNames state with", results.length, "names");
+            }
+            return updated;
+          });
+        }).catch(error => {
+          console.error("❌ Error in Promise.all for fetching names:", error);
+        });
+
+        return prevUserNames; // Return unchanged immediately, will update via Promise
+      });
     };
 
-    if (calls.length > 0) {
-      fetchUserNames();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calls]); // Re-run when calls change - userNames intentionally excluded to avoid loops
+    fetchUserNames();
+  }, [userIdsToFetch]); // Stable string dependency
 
   /**
    * Update astrologer status in Firestore.
@@ -619,11 +680,43 @@ function AstrologerDashboardContent() {
         });
 
         if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
+          // Check content type before parsing JSON
+          const contentType = sessionResponse.headers.get("content-type");
+          let sessionData;
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              sessionData = await sessionResponse.json();
+            } catch (jsonError) {
+              const text = await sessionResponse.text();
+              console.error("[Call Accept] Failed to parse JSON:", text, jsonError);
+              alert("Failed to join call: Invalid response from server.");
+              await updateStatus("online");
+              return;
+            }
+          } else {
+            const text = await sessionResponse.text();
+            console.error("[Call Accept] Non-JSON response:", text);
+            alert("Failed to join call: Invalid response from server.");
+            await updateStatus("online");
+            return;
+          }
           console.log("[Call Accept] Session created successfully:", sessionData);
           router.push(route);
         } else {
-          const error = await sessionResponse.json().catch(() => ({ error: "Unknown error" }));
+          // Handle error response safely
+          const contentType = sessionResponse.headers.get("content-type");
+          let error;
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              error = await sessionResponse.json();
+            } catch (jsonError) {
+              const text = await sessionResponse.text();
+              error = { error: text || "Unknown error" };
+            }
+          } else {
+            const text = await sessionResponse.text();
+            error = { error: text || "Unknown error" };
+          }
           console.error("[Call Accept] Session creation failed:", error);
           alert(`Failed to join call: ${error.error || "Try again."}`);
           await updateStatus("online");
@@ -1278,6 +1371,30 @@ function AstrologerDashboardContent() {
                                   : ""}
                               </p>
                             )}
+                          {call.status === "cancelled" && call.cancelledAt && (
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#f97316",
+                                  margin: "0.25rem 0 0",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Cancelled at {formatTime(call.cancelledAt)}
+                              </p>
+                            )}
+                          {call.status === "rejected" && (
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#ef4444",
+                                  margin: "0.25rem 0 0",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Call was rejected
+                              </p>
+                            )}
                         </div>
                       </div>
 
@@ -1417,7 +1534,24 @@ function AstrologerDashboardContent() {
                                 );
 
                                 if (res.ok) {
-                                  const sessionData = await res.json();
+                                  // Check content type before parsing JSON
+                                  const contentType = res.headers.get("content-type");
+                                  let sessionData;
+                                  if (contentType && contentType.includes("application/json")) {
+                                    try {
+                                      sessionData = await res.json();
+                                    } catch (jsonError) {
+                                      const text = await res.text();
+                                      console.error("[Call Join] Failed to parse JSON:", text, jsonError);
+                                      alert("Failed to join call: Invalid response from server.");
+                                      return;
+                                    }
+                                  } else {
+                                    const text = await res.text();
+                                    console.error("[Call Join] Non-JSON response:", text);
+                                    alert("Failed to join call: Invalid response from server.");
+                                    return;
+                                  }
                                   console.log("[Call Join] Session created successfully:", sessionData);
                                   router.push(
                                     call.callType === "voice"
@@ -1425,7 +1559,20 @@ function AstrologerDashboardContent() {
                                       : `/talk-to-astrologer/room/${call.roomName}`
                                   );
                                 } else {
-                                  const error = await res.json().catch(() => ({ error: "Unknown error" }));
+                                  // Handle error response safely
+                                  const contentType = res.headers.get("content-type");
+                                  let error;
+                                  if (contentType && contentType.includes("application/json")) {
+                                    try {
+                                      error = await res.json();
+                                    } catch (jsonError) {
+                                      const text = await res.text();
+                                      error = { error: text || "Unknown error" };
+                                    }
+                                  } else {
+                                    const text = await res.text();
+                                    error = { error: text || "Unknown error" };
+                                  }
                                   console.error("[Call Join] Session creation failed:", error);
                                   alert(`Failed to join call: ${error.error || "Try again."}`);
                                 }

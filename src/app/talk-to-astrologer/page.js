@@ -39,6 +39,7 @@ export default function TalkToAstrologer() {
   const [astrologers, setAstrologers] = useState([]);
   const [fetchingAstrologers, setFetchingAstrologers] = useState(true);
   const [connectingCallType, setConnectingCallType] = useState(null); // 'video' | 'voice' | null
+  const [connectingAstrologerId, setConnectingAstrologerId] = useState(null); // Store astrologer ID for connecting call
   const [callStatus, setCallStatus] = useState("connecting");
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [balanceMessage, setBalanceMessage] = useState("");
@@ -241,6 +242,7 @@ export default function TalkToAstrologer() {
       }
 
       setConnectingCallType(type);
+      setConnectingAstrologerId(astrologerId);
 
       /* ---- Availability ---- */
       const statusRes = await fetch(
@@ -267,6 +269,7 @@ export default function TalkToAstrologer() {
           call_type: type,
         });
         setConnectingCallType(null);
+        setConnectingAstrologerId(null);
         setLoading(false);
         return;
       }
@@ -353,6 +356,7 @@ export default function TalkToAstrologer() {
             });
 
             setConnectingCallType(null);
+            setConnectingAstrologerId(null);
             setLoading(false);
             router.push(
               type === "video"
@@ -366,6 +370,7 @@ export default function TalkToAstrologer() {
               call_id: call.id,
             });
             setConnectingCallType(null);
+            setConnectingAstrologerId(null);
             setLoading(false);
             alert("Failed to join room.");
           }
@@ -389,6 +394,7 @@ export default function TalkToAstrologer() {
           setCallStatus("rejected");
           setTimeout(() => {
             setConnectingCallType(null);
+            setConnectingAstrologerId(null);
             setCallStatus("connecting");
             setLoading(false);
           }, 2000);
@@ -406,6 +412,7 @@ export default function TalkToAstrologer() {
           });
 
           setConnectingCallType(null);
+          setConnectingAstrologerId(null);
           setCallStatus("connecting");
           setLoading(false);
         }
@@ -428,6 +435,7 @@ export default function TalkToAstrologer() {
           body: JSON.stringify({ action: "cancel-call", callId: call.id }),
         }).catch(() => {});
         setConnectingCallType(null);
+        setConnectingAstrologerId(null);
         setLoading(false);
         alert("Astrologer not responding.");
       }, 60_000);
@@ -440,6 +448,7 @@ export default function TalkToAstrologer() {
         astrologer_id: astrologerId,
       });
       setConnectingCallType(null);
+      setConnectingAstrologerId(null);
       setLoading(false);
       alert(e.message || "Call failed.");
     }
@@ -515,8 +524,10 @@ export default function TalkToAstrologer() {
         isOpen={!!connectingCallType}
         status={callStatus}
         type={connectingCallType}
+        astrologerId={connectingAstrologerId}
         onTimeout={() => {
           setConnectingCallType(null);
+          setConnectingAstrologerId(null);
           setCallStatus("connecting");
           setLoading(false);
           alert("Connection timed out.");
@@ -550,6 +561,7 @@ export default function TalkToAstrologer() {
             localStorage.removeItem("tgs:astrologerId");
           }
           setConnectingCallType(null);
+          setConnectingAstrologerId(null);
           setCallStatus("connecting");
           setLoading(false);
         }}
