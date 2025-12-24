@@ -29,7 +29,7 @@
  * @module AstrologerDashboard
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -45,6 +45,7 @@ import {
   doc,
   getDoc,
   updateDoc,
+  setDoc,
   onSnapshot,
   collection,
   query,
@@ -145,8 +146,8 @@ function AstrologerDashboardContent() {
             for (const doc of snapshot.docs) {
               let call = { id: doc.id, ...doc.data() };
 
-              // Handle cancelled and rejected calls - show them in recent calls but clear incoming call
-              if (call.status === "cancelled" || call.status === "rejected") {
+              // Handle cancelled, rejected, and active calls - clear incoming call if status changed
+              if (call.status === "cancelled" || call.status === "rejected" || call.status === "active") {
                 // If this was the current incoming call, clear it immediately
                 if (incomingCall && incomingCall.id === doc.id) {
                   setIncomingCall(null);
@@ -262,7 +263,42 @@ function AstrologerDashboardContent() {
 
             setCalls(callsList);
             setQueue(queueList);
-            if (newIncomingCall) setIncomingCall(newIncomingCall);
+            
+            // Only set incoming call if it's different from current one and status is pending
+            if (newIncomingCall && newIncomingCall.status === "pending") {
+              setIncomingCall(prev => {
+                // Don't update if it's the same call
+                if (prev && prev.id === newIncomingCall.id) {
+                  return prev;
+                }
+                // Only set if there's no current incoming call or it's a different call
+                if (!prev || prev.id !== newIncomingCall.id) {
+                  return newIncomingCall;
+                }
+                return prev;
+              });
+              
+              // Immediately fetch name for incoming call
+              if (newIncomingCall.userId && !userNames[newIncomingCall.userId]) {
+                getUserName(newIncomingCall.userId).then(name => {
+                  setUserNames(prev => ({ ...prev, [newIncomingCall.userId]: name }));
+                }).catch(err => {
+                  console.error("Error fetching name for incoming call:", err);
+                });
+              }
+            } else if (!newIncomingCall) {
+              // Clear incoming call if no pending calls found
+              setIncomingCall(prev => {
+                // Only clear if the current call is no longer pending
+                if (prev) {
+                  const stillPending = callsList.find(c => c.id === prev.id && c.status === "pending");
+                  if (!stillPending) {
+                    return null;
+                  }
+                }
+                return prev;
+              });
+            }
             setLoading(false);
             isConnected = true;
             setConnectionStatus("connected");
@@ -350,11 +386,20 @@ function AstrologerDashboardContent() {
 
             setCalls(callsList);
             setQueue(queueList);
+            
+            // Only set incoming call if it's different and status is pending
             if (
-              newIncomingCall &&
+              newIncomingCall && 
+              newIncomingCall.status === "pending" &&
               (!incomingCall || incomingCall.id !== newIncomingCall.id)
             ) {
-              setIncomingCall(newIncomingCall);
+              setIncomingCall(prev => {
+                // Don't update if it's the same call
+                if (prev && prev.id === newIncomingCall.id) {
+                  return prev;
+                }
+                return newIncomingCall;
+              });
 
               // Enhanced notifications for voice calls
               if (newIncomingCall.callType === "voice") {
@@ -450,6 +495,79 @@ function AstrologerDashboardContent() {
   }, [astrologerId]); // Dependencies: re-run if astrologerId changes
 
   /**
+   * Fetch user name from Firestore by userId.
+   * Tries multiple collection names as fallback, and creates profile if missing.
+   * @param {string} userId - User ID to resolve name for
+   * @returns {Promise<string>} Resolved user name or fallback
+   */
+  const getUserName = useCallback(async (userId) => {
+    if (!userId) {
+      console.warn("getUserName called with empty userId");
+      return "Anonymous User";
+    }
+
+    console.log(`🔍 Fetching name for userId: ${userId}`);
+
+    try {
+      // Use server-side API endpoint to bypass Firestore security rules
+      // This ensures astrologers can read user names even if client-side rules block it
+      const response = await fetch(`/api/users/name?userId=${encodeURIComponent(userId)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.name) {
+          console.log(`  ✅ Fetched name via API: "${data.name}" for userId: ${userId}`);
+          return data.name;
+        }
+      } else {
+        console.warn(`  ⚠️ API request failed with status ${response.status}, falling back to client-side fetch`);
+      }
+    } catch (apiError) {
+      console.warn(`  ⚠️ API request failed:`, apiError.message, '- falling back to client-side fetch');
+    }
+
+    // Fallback to client-side Firestore read (in case API is unavailable)
+    if (!db) {
+      console.error("❌ Firestore db is not initialized!");
+      return `User ${userId.substring(0, 8)}`;
+    }
+
+    try {
+      console.log(`  Trying client-side Firestore read for userId: ${userId}`);
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const name = userData.name || 
+                    userData.displayName || 
+                    userData.fullName || 
+                    userData.firstName ||
+                    userData.username;
+        
+        if (name) {
+          console.log(`  ✅ Found name in client-side read: "${name}"`);
+          return name.trim();
+        }
+        
+        // Try to extract from email
+        if (userData.email) {
+          const emailName = userData.email.split("@")[0];
+          const generatedName = emailName.charAt(0).toUpperCase() + emailName.slice(1).replace(/[._-]/g, " ");
+          console.log(`  📧 Generated name from email: ${generatedName}`);
+          return generatedName;
+        }
+      }
+    } catch (clientError) {
+      console.warn(`  ⚠️ Client-side read failed:`, clientError.message);
+    }
+
+    // Final fallback
+    console.warn(`  ❌ Could not fetch name for userId ${userId}, using fallback`);
+    return `User ${userId.substring(0, 8)}`;
+  }, [db]); // Include db in deps
+
+  /**
    * Memoize the set of user IDs from calls and queue.
    * This creates a stable reference for the dependency array.
    * We track user IDs as a sorted string to detect changes reliably.
@@ -499,20 +617,46 @@ function AstrologerDashboardContent() {
 
         console.log(`  📋 Need to fetch ${userIdsNeedingFetch.length} names:`, userIdsNeedingFetch);
 
-        // Fetch all names in parallel
-        Promise.all(
-          userIdsNeedingFetch.map(async (userId) => {
-            try {
-              console.log(`  Fetching name for userId: ${userId}`);
-              const name = await getUserName(userId);
-              console.log(`  ✅ Cached name for ${userId}: ${name}`);
-              return { userId, name };
-            } catch (error) {
-              console.warn("❌ Error fetching user name for:", userId, error);
-              return { userId, name: `User ${userId.substring(0, 8)}` };
+        // Try batch API first for better performance, then fallback to individual requests
+        (async () => {
+          let batchResults = null;
+          try {
+            console.log(`  📦 Attempting batch API fetch for ${userIdsNeedingFetch.length} users`);
+            const batchResponse = await fetch('/api/users/name', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userIds: userIdsNeedingFetch })
+            });
+            
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              if (batchData.success && batchData.names) {
+                console.log(`  ✅ Batch API returned ${Object.keys(batchData.names).length} names`);
+                batchResults = userIdsNeedingFetch.map(userId => ({
+                  userId,
+                  name: batchData.names[userId] || `User ${userId.substring(0, 8)}`
+                }));
+              }
             }
-          })
-        ).then(results => {
+          } catch (batchError) {
+            console.warn(`  ⚠️ Batch API failed, falling back to individual requests:`, batchError.message);
+          }
+
+          // If batch API worked, use those results, otherwise fetch individually
+          const results = batchResults || await Promise.all(
+            userIdsNeedingFetch.map(async (userId) => {
+              try {
+                console.log(`  Fetching name for userId: ${userId}`);
+                const name = await getUserName(userId);
+                console.log(`  ✅ Cached name for ${userId}: ${name}`);
+                return { userId, name };
+              } catch (error) {
+                console.warn("❌ Error fetching user name for:", userId, error);
+                return { userId, name: `User ${userId.substring(0, 8)}` };
+              }
+            })
+          );
+
           // Update state with all fetched names at once
           setUserNames(currentNames => {
             const updated = { ...currentNames };
@@ -528,16 +672,17 @@ function AstrologerDashboardContent() {
             }
             return updated;
           });
-        }).catch(error => {
-          console.error("❌ Error in Promise.all for fetching names:", error);
+        })().catch(error => {
+          console.error("❌ Error in batch/individual fetch:", error);
         });
 
-        return prevUserNames; // Return unchanged immediately, will update via Promise
+        // Return unchanged immediately, will update via Promise
+        return prevUserNames;
       });
     };
 
     fetchUserNames();
-  }, [userIdsToFetch]); // Stable string dependency
+  }, [userIdsToFetch, getUserName]); // Include getUserName in dependencies
 
   /**
    * Update astrologer status in Firestore.
@@ -604,6 +749,11 @@ function AstrologerDashboardContent() {
         }
       }
       
+      // Clear incoming call BEFORE updating to prevent duplicate notifications
+      if (action === "active" || action === "rejected") {
+        setIncomingCall(null);
+      }
+      
       const updateData = { status: action };
       if (action === "active") {
         updateData.roomName = `astro-${astrologerId}-${Date.now()}`;
@@ -613,7 +763,6 @@ function AstrologerDashboardContent() {
 
       if (action === "active") {
         await updateStatus("busy");
-        setIncomingCall(null);
 
         // Get fresh call data after update to ensure we have the latest roomName
         const updatedCallSnapshot = await getDoc(callRef);
@@ -797,67 +946,6 @@ function AstrologerDashboardContent() {
     return date ? date.toLocaleTimeString() : fallback;
   };
 
-  /**
-   * Fetch user name from Firestore by userId.
-   * Tries multiple collection names as fallback.
-   * @param {string} userId - User ID to resolve name for
-   * @returns {Promise<string>} Resolved user name or fallback
-   */
-  const getUserName = async (userId) => {
-    if (!userId) {
-      console.warn("getUserName called with empty userId");
-      return "Anonymous User";
-    }
-
-    console.log(`🔍 Fetching name for userId: ${userId}`);
-
-    try {
-      // Try multiple collection names using Firestore client SDK
-      const collectionNames = ["users", "user", "user_profiles", "profiles"];
-
-      for (const collectionName of collectionNames) {
-        try {
-          console.log(`  Checking collection: ${collectionName}`);
-          const userDoc = await getDoc(doc(db, collectionName, userId));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            console.log(`  ✅ Found user in ${collectionName}:`, userData);
-            
-            // Try multiple name fields
-            const userName =
-              userData.name ||
-              userData.displayName ||
-              userData.fullName ||
-              userData.firstName ||
-              userData.username ||
-              (userData.email ? userData.email.split("@")[0] : null);
-            
-            if (userName) {
-              // If email, extract username part
-              const finalName = userName.includes("@") ? userName.split("@")[0] : userName;
-              console.log(`  ✅ Resolved name: ${finalName}`);
-              return finalName;
-            } else {
-              console.warn(`  ⚠️ User found in ${collectionName} but no name field exists. Data:`, Object.keys(userData));
-            }
-          } else {
-            console.log(`  ❌ User not found in ${collectionName}`);
-          }
-        } catch (collectionError) {
-          // Continue to next collection
-          console.warn(`  ⚠️ Error checking ${collectionName}:`, collectionError.message);
-        }
-      }
-
-      // Fallback to partial userId
-      console.warn(`  ❌ Could not find name for userId ${userId}, using fallback`);
-      return `User ${userId.substring(0, 8)}`;
-    } catch (error) {
-      console.error("❌ Error fetching user name:", error);
-      return `User ${userId.substring(0, 8)}`;
-    }
-  };
-
   // Render loading spinner
   if (loading) {
     return (
@@ -874,13 +962,21 @@ function AstrologerDashboardContent() {
   return (
     <>
       {/* Incoming Call Notification - Enhanced with better props for styling */}
-      {incomingCall &&
+      {incomingCall && incomingCall.status === "pending" &&
         (incomingCall.callType === "voice" ? (
           <VoiceCallNotification
             call={incomingCall}
             userName={userNames[incomingCall.userId]}
-            onAccept={() => handleCallAction(incomingCall.id, "active")}
-            onReject={() => handleCallAction(incomingCall.id, "rejected")}
+            onAccept={() => {
+              const callId = incomingCall.id;
+              setIncomingCall(null); // Clear immediately
+              handleCallAction(callId, "active");
+            }}
+            onReject={() => {
+              const callId = incomingCall.id;
+              setIncomingCall(null); // Clear immediately
+              handleCallAction(callId, "rejected");
+            }}
             onClose={() => setIncomingCall(null)}
             // Suggested props for improved style (pass to your component)
             theme="golden" // Custom theme for astrologer app
@@ -893,8 +989,16 @@ function AstrologerDashboardContent() {
           <CallNotification
             call={incomingCall}
             userName={userNames[incomingCall.userId]}
-            onAccept={() => handleCallAction(incomingCall.id, "active")}
-            onReject={() => handleCallAction(incomingCall.id, "rejected")}
+            onAccept={() => {
+              const callId = incomingCall.id;
+              setIncomingCall(null); // Clear immediately
+              handleCallAction(callId, "active");
+            }}
+            onReject={() => {
+              const callId = incomingCall.id;
+              setIncomingCall(null); // Clear immediately
+              handleCallAction(callId, "rejected");
+            }}
             onClose={() => setIncomingCall(null)}
             // Suggested props for improved style
             theme="golden"
@@ -1338,10 +1442,14 @@ function AstrologerDashboardContent() {
                               ? "Voice Call"
                               : "Video Call"}{" "}
                             from{" "}
-                            {userNames[call.userId] ||
-                              `User ${
-                                call.userId?.substring(0, 8) || "Unknown"
-                              }`}
+                            {(() => {
+                              const name = userNames[call.userId];
+                              if (!name && call.userId) {
+                                // Debug: log when name is missing
+                                console.log(`⚠️ Missing name for userId: ${call.userId}, userNames keys:`, Object.keys(userNames));
+                              }
+                              return name || `User ${call.userId?.substring(0, 8) || "Unknown"}`;
+                            })()}
                           </p>
                           <p
                             style={{

@@ -176,6 +176,21 @@ export default function TalkToAstrologer() {
     return () => clearInterval(id);
   }, []);
 
+  // Auto-start call if coming from profile page
+  useEffect(() => {
+    const profileCallAstrologerId = localStorage.getItem("tgs:profileCallAstrologerId");
+    const profileCallType = localStorage.getItem("tgs:profileCallType");
+    
+    if (profileCallAstrologerId && profileCallType && !connectingCallType && astrologers.length > 0) {
+      // Clear the localStorage values immediately to prevent re-triggering
+      localStorage.removeItem("tgs:profileCallAstrologerId");
+      localStorage.removeItem("tgs:profileCallType");
+      
+      // Start the call
+      startCall(profileCallType, profileCallAstrologerId);
+    }
+  }, [astrologers.length]); // Run after astrologers are loaded
+
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
   /* --------------------------------------------------------------- */

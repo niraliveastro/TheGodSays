@@ -154,10 +154,10 @@ export default function VoiceCallNotification({ call, onAccept, onReject, onClos
             <div>
               <h3 className="modal-title" style={{ marginBottom: '0.25rem' }}>Voice Call</h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', margin: 0 }}>
-                {userName ? (
+                {userName && userName !== `User ${call.userId?.substring(0, 8)}` ? (
                   <>From {userName}</>
                 ) : call.userId ? (
-                  <>Loading name...</>
+                  <>From User {call.userId.substring(0, 8)}</>
                 ) : (
                   <>From Unknown User</>
                 )}

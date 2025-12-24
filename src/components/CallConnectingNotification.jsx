@@ -66,6 +66,12 @@ export default function CallConnectingNotification({
     fetchAstrologerName();
   }, [astrologerId, astrologerName]);
 
+  // Store onTimeout in a ref to avoid dependency issues
+  const onTimeoutRef = React.useRef(onTimeout);
+  React.useEffect(() => {
+    onTimeoutRef.current = onTimeout;
+  }, [onTimeout]);
+
   // Handle visibility states and animations
   React.useEffect(() => {
     if (!isOpen) {
@@ -111,7 +117,10 @@ export default function CallConnectingNotification({
       const timer = setInterval(() => {
         setTimeoutCounter((prev) => {
           if (prev <= 1) {
-            onTimeout?.();
+            // Defer the callback to avoid updating parent during render
+            setTimeout(() => {
+              onTimeoutRef.current?.();
+            }, 0);
             return 0;
           }
           return prev - 1;
@@ -120,7 +129,7 @@ export default function CallConnectingNotification({
 
       return () => clearInterval(timer);
     }
-  }, [isOpen, status, type, onTimeout, astrologerName]);
+  }, [isOpen, status, type, astrologerName]); // Removed onTimeout from deps
 
   const handleCancel = () => {
     onCancel?.();

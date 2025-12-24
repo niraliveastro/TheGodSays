@@ -2,13 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ShieldX, ArrowLeft } from "lucide-react";
+import { ShieldX, ArrowLeft, LayoutDashboard } from "lucide-react";
 
 export default function Unauthorized() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { userProfile } = useAuth();
+  
+  // Check if user is an astrologer
+  const isAstrologer = userProfile?.collection === 'astrologers' || 
+    (typeof window !== 'undefined' && localStorage.getItem('tgs:role') === 'astrologer');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -19,8 +25,9 @@ export default function Unauthorized() {
             Access Denied
           </h1>
           <p className="text-gray-600">
-            You don't have permission to access this page. Please contact
-            support if you believe this is an error.
+            {isAstrologer 
+              ? "This page is for users only. Please use your astrologer dashboard to access your features."
+              : "You don't have permission to access this page. Please contact support if you believe this is an error."}
           </p>
         </div>
 
@@ -30,13 +37,24 @@ export default function Unauthorized() {
             Go Back
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => router.push("/")}
-            className="w-full"
-          >
-            Go to Home
-          </Button>
+          {isAstrologer ? (
+            <Button
+              variant="outline"
+              onClick={() => router.push("/astrologer-dashboard")}
+              className="w-full"
+            >
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Go to Dashboard
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              className="w-full"
+            >
+              Go to Home
+            </Button>
+          )}
         </div>
       </Card>
     </div>
