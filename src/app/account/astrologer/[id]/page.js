@@ -446,12 +446,27 @@ export default function AstrologerProfile() {
     },
   ];
 
-  const handleStartCall = (type) => {
+  const handleStartCall = async (type) => {
     if (!isOnline) return;
-    window.open(
-      `/talk-to-astrologer/${type}?astrologerId=${astrologer.id}`,
-      "_blank"
-    );
+    
+    try {
+      const userId = localStorage.getItem("tgs:userId");
+      if (!userId) {
+        alert("Please log in first.");
+        router.push("/auth/user");
+        return;
+      }
+
+      // Store astrologer ID and call type for the main page to pick up
+      localStorage.setItem("tgs:profileCallAstrologerId", astrologer.id);
+      localStorage.setItem("tgs:profileCallType", type);
+      
+      // Navigate to talk-to-astrologer page which will handle the call
+      router.push("/talk-to-astrologer");
+    } catch (error) {
+      console.error("Error starting call:", error);
+      alert(error.message || "Failed to start call. Please try again.");
+    }
   };
 
   /**

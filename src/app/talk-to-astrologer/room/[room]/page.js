@@ -518,22 +518,63 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
 
           console.log("Fetching profiles for:", { userId, astrologerId });
 
-          // Fetch user profile
+          // Fetch user profile - try multiple collections and API endpoint
           if (userId) {
             try {
-              const userDoc = await getDoc(doc(db, "users", userId));
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
-                profiles[userId] = {
-                  name: userData.name || userData.displayName || userData.email?.split("@")[0] || "User",
-                  picture: userData.profilePicture || userData.photoURL || userData.avatar || null,
-                };
-                console.log("User profile fetched:", profiles[userId]);
-              } else {
-                console.warn("User document not found:", userId);
+              // Try API endpoint first (bypasses security rules)
+              try {
+                const apiResponse = await fetch(`/api/users/name?userId=${userId}`);
+                if (apiResponse.ok) {
+                  const apiData = await apiResponse.json();
+                  if (apiData.success && apiData.name) {
+                    profiles[userId] = {
+                      name: apiData.name,
+                      picture: null, // API doesn't return picture yet
+                    };
+                    console.log("✅ User profile fetched from API:", profiles[userId]);
+                  }
+                }
+              } catch (apiError) {
+                console.warn("API fetch failed, trying Firestore:", apiError);
+              }
+              
+              // If API didn't work, try Firestore collections
+              if (!profiles[userId]) {
+                const collectionNames = ['users', 'user'];
+                let userFound = false;
+                
+                for (const collectionName of collectionNames) {
+                  try {
+                    const userDoc = await getDoc(doc(db, collectionName, userId));
+                    if (userDoc.exists()) {
+                      const userData = userDoc.data();
+                      profiles[userId] = {
+                        name: userData.name || userData.displayName || userData.fullName || userData.email?.split("@")[0] || "User",
+                        picture: userData.profilePicture || userData.photoURL || userData.avatar || null,
+                      };
+                      console.log(`✅ User profile fetched from ${collectionName}:`, profiles[userId]);
+                      userFound = true;
+                      break;
+                    }
+                  } catch (e) {
+                    console.warn(`Error checking ${collectionName} for user:`, e);
+                  }
+                }
+                
+                if (!userFound) {
+                  console.warn("User document not found in any collection:", userId);
+                  profiles[userId] = {
+                    name: `User ${userId.substring(0, 8)}`,
+                    picture: null,
+                  };
+                }
               }
             } catch (e) {
               console.warn("Error fetching user profile:", e);
+              profiles[userId] = {
+                name: `User ${userId.substring(0, 8)}`,
+                picture: null,
+              };
             }
           }
 

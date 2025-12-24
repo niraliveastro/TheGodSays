@@ -139,7 +139,7 @@ export default function CallNotification({ call, onAccept, onReject, onClose, us
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Incoming Call</h3>
                 <p className="text-sm text-gray-600">
-                  {userName ? (
+                  {userName && userName !== `User ${call.userId?.substring(0, 8)}` ? (
                     <>From {userName}</>
                   ) : call.userId ? (
                     <>From User {call.userId.substring(0, 8)}</>
