@@ -85,6 +85,9 @@ export default function AdminDashboard() {
   const [calls, setCalls] = useState([])
   const [filteredCalls, setFilteredCalls] = useState([])
   const [blogs, setBlogs] = useState([])
+  const [publishedBlogs, setPublishedBlogs] = useState([])
+  const [draftBlogs, setDraftBlogs] = useState([])
+  const [blogActiveTab, setBlogActiveTab] = useState('published') // 'published' or 'drafts'
   const [searchTerm, setSearchTerm] = useState('')
   const [searchSuggestions, setSearchSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -148,7 +151,14 @@ export default function AdminDashboard() {
       setCalls(cachedCalls)
       setFilteredCalls(cachedCalls)
     }
-    if (cachedBlogs) setBlogs(cachedBlogs)
+    if (cachedBlogs) {
+      setBlogs(cachedBlogs)
+      // Separate published and drafts from cached data
+      const published = cachedBlogs.filter(b => b.status === 'published')
+      const drafts = cachedBlogs.filter(b => b.status === 'draft')
+      setPublishedBlogs(published)
+      setDraftBlogs(drafts)
+    }
     if (cachedPricing) setPricingData(cachedPricing)
     if (cachedChatPricing) setChatPricing(cachedChatPricing)
     
@@ -172,6 +182,80 @@ export default function AdminDashboard() {
     }
     fixPendingCalls()
   }, [user, authLoading, router, isPasscodeVerified])
+
+  // Function to fetch only blogs (without other data)
+  const fetchBlogsOnly = useCallback(async () => {
+    try {
+      const ADMIN_PASSCODE = 'Spacenos.nxt@global'
+      const fetchWithTimeout = (url, timeout = 10000) => {
+        return Promise.race([
+          fetch(url, { 
+            cache: 'no-store',
+            headers: {
+              'Authorization': `Bearer ${ADMIN_PASSCODE}`,
+            }
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), timeout)
+          )
+        ])
+      }
+
+      const [publishedBlogsRes, draftBlogsRes] = await Promise.allSettled([
+        fetchWithTimeout('/api/blog?status=published', 10000),
+        fetchWithTimeout('/api/blog?status=draft', 10000),
+      ])
+
+      // Process published blogs
+      let publishedArray = []
+      if (publishedBlogsRes.status === 'fulfilled' && publishedBlogsRes.value.ok) {
+        try {
+          const blogsData = await publishedBlogsRes.value.json()
+          if (blogsData.blogs && Array.isArray(blogsData.blogs)) {
+            publishedArray = blogsData.blogs
+          } else if (Array.isArray(blogsData)) {
+            publishedArray = blogsData
+          }
+          setPublishedBlogs(publishedArray)
+          console.log('Published blogs refreshed:', publishedArray.length)
+        } catch (parseError) {
+          console.error('Error parsing published blogs response:', parseError)
+        }
+      }
+
+      // Process draft blogs
+      let draftArray = []
+      if (draftBlogsRes.status === 'fulfilled' && draftBlogsRes.value.ok) {
+        try {
+          const blogsData = await draftBlogsRes.value.json()
+          if (blogsData.blogs && Array.isArray(blogsData.blogs)) {
+            draftArray = blogsData.blogs
+          } else if (Array.isArray(blogsData)) {
+            draftArray = blogsData
+          }
+          setDraftBlogs(draftArray)
+          console.log('Draft blogs refreshed:', draftArray.length)
+        } catch (parseError) {
+          console.error('Error parsing draft blogs response:', parseError)
+        }
+      }
+
+      // Update combined blogs and cache
+      const allBlogs = [...publishedArray, ...draftArray]
+      setBlogs(allBlogs)
+      setCachedData(CACHE_KEYS.BLOGS, allBlogs)
+    } catch (error) {
+      console.error('Error refreshing blogs:', error)
+    }
+  }, [])
+
+  // Refresh blogs when blog tab is activated
+  useEffect(() => {
+    if (activeTab === 'blog' && isPasscodeVerified) {
+      // Refresh blogs when switching to blog tab
+      fetchBlogsOnly()
+    }
+  }, [activeTab, isPasscodeVerified, fetchBlogsOnly])
 
   // Fix pending calls that timed out
   const fixPendingCalls = useCallback(async () => {
@@ -208,9 +292,15 @@ export default function AdminDashboard() {
 
       // Fetch other data in parallel with timeout
       // Calls API needs more time due to nested data fetching
-      const fetchWithTimeout = (url, timeout = 10000) => {
+      const fetchWithTimeout = (url, timeout = 10000, headers = {}) => {
         return Promise.race([
-          fetch(url, { cache: 'no-store' }),
+          fetch(url, { 
+            cache: 'no-store',
+            headers: {
+              'Authorization': `Bearer ${ADMIN_PASSCODE}`,
+              ...headers
+            }
+          }),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Request timeout')), timeout)
           )
@@ -218,9 +308,10 @@ export default function AdminDashboard() {
       }
 
       setLoadingCalls(true)
-      const [callsRes, blogsRes, pricingRes, chatPricingRes, astrologersRes] = await Promise.allSettled([
+      const [callsRes, publishedBlogsRes, draftBlogsRes, pricingRes, chatPricingRes, astrologersRes] = await Promise.allSettled([
         fetchWithTimeout('/api/admin/calls?limit=500', 30000), // 30 seconds for calls
-        fetchWithTimeout('/api/blog', 10000),
+        fetchWithTimeout('/api/blog?status=published', 10000),
+        fetchWithTimeout('/api/blog?status=draft', 10000),
         fetchWithTimeout('/api/pricing?action=get-all-pricing', 10000),
         fetchWithTimeout('/api/admin/pricing', 10000),
         fetchWithTimeout('/api/admin/astrologers', 10000),
@@ -276,40 +367,69 @@ export default function AdminDashboard() {
         }
       }
 
-      // Process blogs
-      if (blogsRes.status === 'fulfilled' && blogsRes.value.ok) {
+      // Process published blogs
+      let publishedArray = []
+      if (publishedBlogsRes.status === 'fulfilled' && publishedBlogsRes.value.ok) {
         try {
-          const blogsData = await blogsRes.value.json()
-          console.log('Blogs API response:', blogsData)
-          // Handle both response formats: { blogs: [...] } or [...]
-          let blogsArray = []
+          const blogsData = await publishedBlogsRes.value.json()
           if (blogsData.blogs && Array.isArray(blogsData.blogs)) {
-            blogsArray = blogsData.blogs
+            publishedArray = blogsData.blogs
           } else if (Array.isArray(blogsData)) {
-            blogsArray = blogsData
+            publishedArray = blogsData
           }
-          
-          if (blogsArray.length > 0 || Array.isArray(blogsArray)) {
-            setBlogs(blogsArray)
-            setCachedData(CACHE_KEYS.BLOGS, blogsArray)
-            console.log('Blogs loaded:', blogsArray.length)
-          } else {
-            console.warn('No blogs found in response')
-            setBlogs([])
-          }
+          setPublishedBlogs(publishedArray)
+          console.log('Published blogs loaded:', publishedArray.length)
         } catch (parseError) {
-          console.error('Error parsing blogs response:', parseError)
-          setBlogs([])
+          console.error('Error parsing published blogs response:', parseError)
+          setPublishedBlogs([])
         }
       } else {
-        const errorMsg = blogsRes.status === 'rejected' ? blogsRes.reason?.message : 'Unknown error'
-        console.error('Failed to fetch blogs:', errorMsg)
-        // Try to use cached blogs if available
-        const cachedBlogs = getCachedData(CACHE_KEYS.BLOGS)
-        if (cachedBlogs) {
-          setBlogs(cachedBlogs)
-        }
+        console.error('Failed to fetch published blogs')
+        setPublishedBlogs([])
       }
+
+      // Process draft blogs
+      let draftArray = []
+      if (draftBlogsRes.status === 'fulfilled' && draftBlogsRes.value.ok) {
+        try {
+          const blogsData = await draftBlogsRes.value.json()
+          console.log('Draft blogs API response:', blogsData)
+          if (blogsData.blogs && Array.isArray(blogsData.blogs)) {
+            draftArray = blogsData.blogs
+          } else if (Array.isArray(blogsData)) {
+            draftArray = blogsData
+          }
+          setDraftBlogs(draftArray)
+          console.log('Draft blogs loaded:', draftArray.length)
+        } catch (parseError) {
+          console.error('Error parsing draft blogs response:', parseError)
+          setDraftBlogs([])
+        }
+      } else {
+        const errorMsg = draftBlogsRes.status === 'rejected' ? draftBlogsRes.reason?.message : 'Unknown error'
+        const responseStatus = draftBlogsRes.status === 'fulfilled' ? draftBlogsRes.value.status : 'N/A'
+        console.error('Failed to fetch draft blogs:', {
+          status: draftBlogsRes.status,
+          responseStatus,
+          error: errorMsg,
+          reason: draftBlogsRes.reason
+        })
+        // Try to get error details from response if available
+        if (draftBlogsRes.status === 'fulfilled' && !draftBlogsRes.value.ok) {
+          try {
+            const errorData = await draftBlogsRes.value.json()
+            console.error('Draft blogs error details:', errorData)
+          } catch (e) {
+            console.error('Could not parse error response')
+          }
+        }
+        setDraftBlogs([])
+      }
+
+      // Combine for backward compatibility
+      const allBlogs = [...publishedArray, ...draftArray]
+      setBlogs(allBlogs)
+      setCachedData(CACHE_KEYS.BLOGS, allBlogs)
 
       // Process pricing
       let fetchedPricingArray = []
@@ -940,7 +1060,13 @@ export default function AdminDashboard() {
           </button>
           <button
             className={`admin-tab ${activeTab === 'blog' ? 'active' : ''}`}
-            onClick={() => setActiveTab('blog')}
+            onClick={() => {
+              setActiveTab('blog')
+              // Refresh blogs when switching to blog tab
+              if (isPasscodeVerified) {
+                setTimeout(() => fetchBlogsOnly(), 100)
+              }
+            }}
           >
             <BookOpen size={18} />
             Blog Management
@@ -1177,23 +1303,122 @@ export default function AdminDashboard() {
         {activeTab === 'blog' && (
           <div className="admin-blog-section">
             <div className="admin-blog-header">
-              <h2>Blog Posts ({blogs.length})</h2>
-              <button
-                className="admin-action-btn admin-action-btn-create"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push('/admin/blog')
-                }}
-                title="Create Post"
-              >
-                <FileText size={16} />
-              </button>
+              <h2>Blog Posts ({blogActiveTab === 'published' ? publishedBlogs.length : draftBlogs.length})</h2>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => setBlogActiveTab('published')}
+                    style={{
+                      padding: '0.5rem 1.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      background: blogActiveTab === 'published' ? '#d4af37' : 'white',
+                      color: blogActiveTab === 'published' ? 'white' : '#374151',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    Published ({publishedBlogs.length})
+                  </button>
+                  <button
+                    onClick={() => setBlogActiveTab('drafts')}
+                    style={{
+                      padding: '0.5rem 1.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #d1d5db',
+                      background: blogActiveTab === 'drafts' ? '#d4af37' : 'white',
+                      color: blogActiveTab === 'drafts' ? 'white' : '#374151',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    Drafts ({draftBlogs.length})
+                  </button>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    fetchBlogsOnly()
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.625rem 1rem',
+                    background: 'white',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'white'
+                  }}
+                  title="Refresh Blogs"
+                >
+                  <RefreshCw size={18} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push('/admin/blog')
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.625rem 1.25rem',
+                    background: 'linear-gradient(135deg, #d4af37, #b8972e)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(212, 175, 55, 0.3)',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(212, 175, 55, 0.4)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(212, 175, 55, 0.3)'
+                  }}
+                  title="Create Post"
+                >
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Post
+                </button>
+              </div>
             </div>
             <div className="admin-blog-grid">
-              {blogs.length === 0 ? (
+              {blogActiveTab === 'published' && publishedBlogs.length === 0 ? (
                 <div className="admin-empty-state">
                   <BookOpen size={48} />
-                  <p>No blog posts yet</p>
+                  <p>No published blog posts yet</p>
+                  <button
+                    className="admin-btn admin-btn-primary"
+                    onClick={() => router.push('/admin/blog')}
+                  >
+                    Create First Post
+                  </button>
+                </div>
+              ) : blogActiveTab === 'drafts' && draftBlogs.length === 0 ? (
+                <div className="admin-empty-state">
+                  <BookOpen size={48} />
+                  <p>No draft blog posts yet</p>
                   <button
                     className="admin-btn admin-btn-primary"
                     onClick={() => router.push('/admin/blog')}
@@ -1202,11 +1427,16 @@ export default function AdminDashboard() {
                   </button>
                 </div>
               ) : (
-                blogs.map((blog) => (
+                (blogActiveTab === 'published' ? publishedBlogs : draftBlogs).map((blog) => (
                   <div 
                     key={blog.id} 
                     className="admin-blog-card admin-blog-card-clickable"
-                    onClick={() => router.push(`/blog/${blog.slug}`)}
+                    onClick={() => {
+                      // Only navigate to blog if published, drafts can't be viewed publicly
+                      if (blog.status === 'published') {
+                        router.push(`/blog/${blog.slug}`)
+                      }
+                    }}
                   >
                     {blog.featuredImage && (
                       <img
@@ -1226,16 +1456,18 @@ export default function AdminDashboard() {
                         {blog.author} • {blog.publishedAt ? formatDate(blog.publishedAt) : 'Draft'}
                       </p>
                       <div className="admin-blog-actions">
-                        <button
-                          className="admin-action-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/blog/${blog.slug}`)
-                          }}
-                          title="View"
-                        >
-                          <Eye size={16} />
-                        </button>
+                        {blog.status === 'published' && (
+                          <button
+                            className="admin-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/blog/${blog.slug}`)
+                            }}
+                            title="View"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
                         <button
                           className="admin-action-btn"
                           onClick={(e) => {

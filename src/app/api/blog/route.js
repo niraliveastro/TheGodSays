@@ -6,6 +6,7 @@
 import { getFirestore } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { generateSlug } from '@/lib/blog-utils'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 const BLOGS_COLLECTION = 'blogs'
 
@@ -21,19 +22,50 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // 'published', 'draft', or null (all)
+    const statusParam = searchParams.get('status') // 'published', 'draft', or null (all)
+    
+    // Check if user is admin
+    const { isAdmin } = await verifyAdminAuth(request)
+    console.log(`[Blog API] Admin check: isAdmin=${isAdmin}, statusParam=${statusParam}`)
+    
+    // If not admin, only show published blogs (ignore status param for non-admins)
+    const status = isAdmin ? statusParam : (statusParam === 'published' ? 'published' : 'published')
+    console.log(`[Blog API] Final status filter: ${status}`)
 
     let query = db.collection(BLOGS_COLLECTION)
 
+    // Always filter by status - default to 'published' for public users
     if (status) {
       query = query.where('status', '==', status)
+    } else if (!isAdmin) {
+      // For non-admin users, default to published only
+      query = query.where('status', '==', 'published')
     }
 
     // Try with orderBy first, fallback to without orderBy if index not ready
     let snapshot
     try {
-      // Try to order by publishedAt
-      snapshot = await query.orderBy('publishedAt', 'desc').get()
+      // For published blogs, order by publishedAt; for drafts, order by updatedAt or createdAt
+      if (status === 'published') {
+        snapshot = await query.orderBy('publishedAt', 'desc').get()
+      } else if (status === 'draft') {
+        // Try updatedAt first, fallback to createdAt if updatedAt doesn't exist
+        try {
+          snapshot = await query.orderBy('updatedAt', 'desc').get()
+        } catch (updatedAtError) {
+          // If updatedAt index doesn't exist, try createdAt
+          try {
+            snapshot = await query.orderBy('createdAt', 'desc').get()
+          } catch (createdAtError) {
+            // If neither works, query without orderBy
+            console.log('[Blog API] Cannot order drafts by updatedAt or createdAt, querying without orderBy')
+            snapshot = await query.get()
+          }
+        }
+      } else {
+        // For all blogs (admin only), try publishedAt first, fallback to updatedAt
+        snapshot = await query.orderBy('publishedAt', 'desc').get()
+      }
     } catch (indexError) {
       // If composite index not ready, query without orderBy and sort in memory
       console.log('[Blog API] Index not ready, querying without orderBy:', indexError.message)
@@ -56,14 +88,20 @@ export async function GET(request) {
         ...data,
         publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
       })
     })
 
     // If we couldn't use orderBy, sort in memory
     if (blogs.length > 0) {
       blogs.sort((a, b) => {
-        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0
-        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0
+        // For published blogs, use publishedAt; for drafts, use updatedAt or createdAt
+        const dateA = status === 'published' 
+          ? (a.publishedAt ? new Date(a.publishedAt).getTime() : 0)
+          : (a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0))
+        const dateB = status === 'published'
+          ? (b.publishedAt ? new Date(b.publishedAt).getTime() : 0)
+          : (b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0))
         return dateB - dateA // Descending order
       })
     }
@@ -86,9 +124,16 @@ export async function GET(request) {
   }
 }
 
-// POST: Create a new blog post
+// POST: Create a new blog post (Admin only)
 export async function POST(request) {
   try {
+    // Verify admin authentication
+    const body = await request.json()
+    const authError = await requireAdminAuth(request, body)
+    if (authError) {
+      return authError
+    }
+
     const db = getFirestore()
     if (!db || typeof db.collection !== 'function') {
       return Response.json(
@@ -96,8 +141,6 @@ export async function POST(request) {
         { status: 500 }
       )
     }
-
-    const body = await request.json()
     const {
       title,
       slug,
