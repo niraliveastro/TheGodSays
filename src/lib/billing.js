@@ -461,4 +461,166 @@ export class BillingService {
       throw new Error('Failed to fetch earnings')
     }
   }
+
+  /**
+   * Get astrologer's earnings with detailed transaction history
+   */
+  static async getAstrologerEarningsWithHistory(astrologerId, limitCount = 50) {
+    try {
+      const db = getDb()
+      const earningsSnapshot = await db.collection('call_billing')
+        .where('astrologerId', '==', astrologerId)
+        .where('status', '==', 'completed')
+        .orderBy('endTime', 'desc')
+        .limit(limitCount)
+        .get()
+
+      let totalEarnings = 0
+      const transactions = []
+
+      earningsSnapshot.forEach((doc) => {
+        const data = doc.data()
+        const earnings = data.finalAmount || 0
+        totalEarnings += earnings
+        
+        // Parse endTime safely
+        let endTime = null
+        if (data.endTime) {
+          if (data.endTime.toDate) {
+            endTime = data.endTime.toDate()
+          } else if (typeof data.endTime === 'string') {
+            endTime = new Date(data.endTime)
+          } else if (data.endTime.seconds) {
+            endTime = new Date(data.endTime.seconds * 1000)
+          }
+        }
+
+        transactions.push({
+          id: doc.id,
+          type: 'earnings',
+          amount: earnings,
+          callId: data.callId,
+          userId: data.userId,
+          durationMinutes: data.durationMinutes || 0,
+          callType: data.callType || 'video',
+          timestamp: endTime || data.createdAt || new Date(),
+          status: 'completed',
+          description: `Earnings from ${data.callType || 'video'} call (${data.durationMinutes || 0} min)`
+        })
+      })
+
+      // Get redeemed transactions from astrologer_earnings collection if it exists
+      try {
+        const redeemedSnapshot = await db.collection('astrologer_earnings')
+          .where('astrologerId', '==', astrologerId)
+          .where('type', '==', 'redemption')
+          .orderBy('timestamp', 'desc')
+          .limit(limitCount)
+          .get()
+
+        let redeemedAmount = 0
+        redeemedSnapshot.forEach((doc) => {
+          const data = doc.data()
+          redeemedAmount += data.amount || 0
+          
+          let timestamp = null
+          if (data.timestamp) {
+            if (data.timestamp.toDate) {
+              timestamp = data.timestamp.toDate()
+            } else if (typeof data.timestamp === 'string') {
+              timestamp = new Date(data.timestamp)
+            } else if (data.timestamp.seconds) {
+              timestamp = new Date(data.timestamp.seconds * 1000)
+            }
+          }
+
+          transactions.push({
+            id: doc.id,
+            type: 'redemption',
+            amount: -(data.amount || 0),
+            timestamp: timestamp || new Date(),
+            status: data.status || 'completed',
+            description: data.description || 'Earnings redemption',
+            redemptionId: data.redemptionId
+          })
+        })
+
+        const availableEarnings = totalEarnings - redeemedAmount
+
+        return {
+          totalEarnings,
+          availableEarnings: Math.max(0, availableEarnings),
+          redeemedEarnings: redeemedAmount,
+          transactions: transactions.sort((a, b) => {
+            const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime()
+            const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime()
+            return timeB - timeA
+          })
+        }
+      } catch (redeemedError) {
+        // If astrologer_earnings collection doesn't exist, return without redemption data
+        console.log('No redemption history found, returning earnings only')
+        return {
+          totalEarnings,
+          availableEarnings: totalEarnings,
+          redeemedEarnings: 0,
+          transactions
+        }
+      }
+    } catch (error) {
+      console.error('Error getting astrologer earnings with history:', error)
+      throw new Error('Failed to fetch earnings history')
+    }
+  }
+
+  /**
+   * Redeem astrologer earnings (withdraw to bank/wallet)
+   */
+  static async redeemAstrologerEarnings(astrologerId, amount, bankDetails) {
+    try {
+      const db = getDb()
+      
+      // Get current earnings
+      const earningsData = await this.getAstrologerEarningsWithHistory(astrologerId)
+      
+      if (earningsData.availableEarnings < amount) {
+        throw new Error('Insufficient earnings to redeem')
+      }
+
+      const MINIMUM_REDEMPTION = 500 // Minimum ₹500
+      if (amount < MINIMUM_REDEMPTION) {
+        throw new Error(`Minimum redemption amount is ₹${MINIMUM_REDEMPTION}`)
+      }
+
+      // Create redemption record
+      const redemptionId = `redeem_${astrologerId}_${Date.now()}`
+      const redemptionRef = db.collection('astrologer_earnings').doc(redemptionId)
+      
+      await redemptionRef.set({
+        astrologerId,
+        type: 'redemption',
+        amount,
+        status: 'pending', // Will be updated to 'completed' when processed
+        bankDetails: {
+          accountNumber: bankDetails.accountNumber?.replace(/\d(?=\d{4})/g, '*'), // Mask account number
+          ifscCode: bankDetails.ifscCode,
+          accountHolderName: bankDetails.accountHolderName,
+          bankName: bankDetails.bankName
+        },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        redemptionId
+      })
+
+      return {
+        success: true,
+        redemptionId,
+        amount,
+        message: 'Redemption request submitted successfully. It will be processed within 3-5 business days.'
+      }
+    } catch (error) {
+      console.error('Error redeeming astrologer earnings:', error)
+      throw error
+    }
+  }
 }

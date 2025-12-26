@@ -21,7 +21,9 @@ if (!getApps().length) {
 
 export async function POST(request) {
   try {
-    const { action, callId, userId, astrologerId, durationMinutes } = await request.json()
+    // Read request body once
+    const body = await request.json()
+    const { action, callId, userId, astrologerId, durationMinutes, limit, amount, bankDetails } = body
 
     // Validate action
      const validActions = [
@@ -33,7 +35,9 @@ export async function POST(request) {
        'cancel-call',
        'get-call-billing',
        'get-user-history',
-       'get-earnings'
+       'get-earnings',
+       'get-earnings-history',
+       'redeem-earnings'
      ]
     if (!validActions.includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
@@ -173,6 +177,39 @@ export async function POST(request) {
           return NextResponse.json({ success: true, earnings })
         } catch (error) {
           console.error('Error getting astrologer earnings:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
+      case 'get-earnings-history':
+        if (!astrologerId) {
+          return NextResponse.json({ error: 'Astrologer ID is required' }, { status: 400 })
+        }
+
+        try {
+          const earningsData = await BillingService.getAstrologerEarningsWithHistory(astrologerId, limit || 50)
+          return NextResponse.json({ success: true, ...earningsData })
+        } catch (error) {
+          console.error('Error getting astrologer earnings history:', error)
+          return NextResponse.json({ error: error.message }, { status: 400 })
+        }
+
+      case 'redeem-earnings':
+        if (!astrologerId) {
+          return NextResponse.json({ error: 'Astrologer ID is required' }, { status: 400 })
+        }
+
+        try {
+          if (!amount || amount <= 0) {
+            return NextResponse.json({ error: 'Invalid redemption amount' }, { status: 400 })
+          }
+          if (!bankDetails || !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.accountHolderName) {
+            return NextResponse.json({ error: 'Bank details are required' }, { status: 400 })
+          }
+
+          const result = await BillingService.redeemAstrologerEarnings(astrologerId, amount, bankDetails)
+          return NextResponse.json({ success: true, ...result })
+        } catch (error) {
+          console.error('Error redeeming astrologer earnings:', error)
           return NextResponse.json({ error: error.message }, { status: 400 })
         }
 
