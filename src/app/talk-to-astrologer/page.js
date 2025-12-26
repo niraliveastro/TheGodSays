@@ -723,84 +723,96 @@ export default function TalkToAstrologer() {
               </div>
             </div>
 
-            {/* Loading skeletons – Responsive grid */}
-            {fetchingAstrologers && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="card"
-                    style={{
-                      padding: "1.5rem",
-                      animation:
-                        "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                    }}
-                  >
+            {/* Astrologers Card Container */}
+            <div className="card" style={{ marginTop: "1.5rem", padding: "1.5rem" }}>
+              {/* Loading skeletons – Responsive grid */}
+              {fetchingAstrologers && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
                     <div
+                      key={i}
+                      className="card"
                       style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "1rem",
-                        marginBottom: "1rem",
+                        padding: "1.5rem",
+                        animation:
+                          "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                       }}
                     >
                       <div
                         style={{
-                          width: "4rem",
-                          height: "4rem",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "1rem",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "4rem",
+                            height: "4rem",
+                            background: "var(--color-gray-200)",
+                            borderRadius: "50%",
+                          }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              height: "1.25rem",
+                              background: "var(--color-gray-200)",
+                              borderRadius: "0.25rem",
+                              width: "8rem",
+                              marginBottom: "0.5rem",
+                            }}
+                          />
+                          <div
+                            style={{
+                              height: "1rem",
+                              background: "var(--color-gray-200)",
+                              borderRadius: "0.25rem",
+                              width: "6rem",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          height: "1rem",
                           background: "var(--color-gray-200)",
-                          borderRadius: "50%",
+                          borderRadius: "0.25rem",
+                          marginBottom: "0.5rem",
                         }}
                       />
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            height: "1.25rem",
-                            background: "var(--color-gray-200)",
-                            borderRadius: "0.25rem",
-                            width: "8rem",
-                            marginBottom: "0.5rem",
-                          }}
-                        />
-                        <div
-                          style={{
-                            height: "1rem",
-                            background: "var(--color-gray-200)",
-                            borderRadius: "0.25rem",
-                            width: "6rem",
-                          }}
-                        />
-                      </div>
+                      <div
+                        style={{
+                          height: "1rem",
+                          background: "var(--color-gray-200)",
+                          borderRadius: "0.25rem",
+                          width: "75%",
+                        }}
+                      />
                     </div>
-                    <div
-                      style={{
-                        height: "1rem",
-                        background: "var(--color-gray-200)",
-                        borderRadius: "0.25rem",
-                        marginBottom: "0.5rem",
-                      }}
-                    />
-                    <div
-                      style={{
-                        height: "1rem",
-                        background: "var(--color-gray-200)",
-                        borderRadius: "0.25rem",
-                        width: "75%",
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-            {!fetchingAstrologers && filteredAstrologers.length > 0 && (
-              <div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
-                style={{
-                  opacity: !!connectingCallType ? 0.5 : 1,
-                  pointerEvents: !!connectingCallType ? "none" : "auto",
-                }}
-              >
+              {!fetchingAstrologers && filteredAstrologers.length > 0 && (
+                <div
+                  className="astrologers-scroll-container"
+                  style={{
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    maxHeight: "820px", // Shows max 6 cards (2 rows of 3 cards)
+                    paddingRight: "0.5rem",
+                    paddingBottom: "0.5rem",
+                  }}
+                >
+                  <div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    style={{
+                      opacity: !!connectingCallType ? 0.5 : 1,
+                      pointerEvents: !!connectingCallType ? "none" : "auto",
+                    }}
+                  >
                 {filteredAstrologers.map((a) => (
                   <Link
                     href={`/account/astrologer/${a.id}`}
@@ -1322,6 +1334,7 @@ export default function TalkToAstrologer() {
                     </div>
                   </Link>
                 ))}
+                </div>
               </div>
             )}
 
@@ -1370,6 +1383,49 @@ export default function TalkToAstrologer() {
                 </p>
               </div>
             )}
+            </div>
+
+            {/* Explanation Card - At the end */}
+            <div 
+              className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border" 
+              style={{ 
+                marginTop: "2rem",
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+                borderColor: "rgba(212, 175, 55, 0.3)",
+                maxWidth: "100%",
+              }}
+            >
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: "1.5rem",
+                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+                marginBottom: "1.5rem",
+              }}>
+                <h2 style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: 0,
+                }}>
+                  Understanding Live Astrologer Consultations
+                </h2>
+              </div>
+              <div style={{ padding: 0 }}>
+                <p style={{
+                  fontSize: "0.875rem",
+                  color: "#374151",
+                  fontStyle: "normal",
+                  marginBottom: 0,
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: 1.6,
+                }}>
+                  Connect with experienced <strong>Vedic Astrologers</strong> through live video or voice calls for personalized guidance. Our certified astrologers provide authentic interpretations of your birth chart, analyze planetary influences, and offer insights into various aspects of life including <strong>Career Guidance</strong> based on planetary positions and dasha periods, <strong>Relationship Compatibility</strong> using traditional matching systems, <strong>Remedial Solutions</strong> including gemstone recommendations and spiritual practices, and <strong>Timing Predictions</strong> for important life events. Each consultation is tailored to your unique astrological profile, ensuring accurate and meaningful guidance rooted in ancient Vedic wisdom.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Balance modal */}
@@ -1448,6 +1504,25 @@ export default function TalkToAstrologer() {
             grid-template-columns: repeat(3, 1fr) !important;
             gap: 1.5rem !important;
           }
+        }
+
+        /* Custom scrollbar styling for astrologers scroll container */
+        .astrologers-scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .astrologers-scroll-container::-webkit-scrollbar-track {
+          background: rgba(212, 175, 55, 0.1);
+          border-radius: 10px;
+        }
+
+        .astrologers-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(212, 175, 55, 0.4);
+          border-radius: 10px;
+        }
+
+        .astrologers-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(212, 175, 55, 0.6);
         }
 
         @keyframes pulse {
