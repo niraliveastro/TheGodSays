@@ -6,6 +6,7 @@
 import { getFirestore } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { generateSlug } from '@/lib/blog-utils'
+import { requireAdminAuth } from '@/lib/admin-auth'
 
 const BLOGS_COLLECTION = 'blogs'
 
@@ -47,9 +48,16 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT: Update an existing blog post
+// PUT: Update an existing blog post (Admin only)
 export async function PUT(request, { params }) {
   try {
+    // Verify admin authentication
+    const body = await request.json()
+    const authError = await requireAdminAuth(request, body)
+    if (authError) {
+      return authError
+    }
+
     const db = getFirestore()
     if (!db || typeof db.collection !== 'function') {
       return Response.json(
@@ -59,7 +67,6 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = await params
-    const body = await request.json()
     const {
       title,
       slug,
@@ -152,9 +159,15 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE: Delete a blog post
+// DELETE: Delete a blog post (Admin only)
 export async function DELETE(request, { params }) {
   try {
+    // Verify admin authentication
+    const authError = await requireAdminAuth(request)
+    if (authError) {
+      return authError
+    }
+
     const db = getFirestore()
     if (!db || typeof db.collection !== 'function') {
       return Response.json(

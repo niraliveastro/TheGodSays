@@ -12,16 +12,26 @@ import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
 import './admin-blog.css'
 
+const ADMIN_PASSCODE = 'Spacenos.nxt@global'
+const PASSCODE_STORAGE_KEY = 'admin_passcode_verified'
+
 export default function BlogAdminPage() {
   const router = useRouter()
-  const [blogs, setBlogs] = useState([])
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingContentImage, setUploadingContentImage] = useState(false)
+  const [isPasscodeVerified, setIsPasscodeVerified] = useState(false)
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false)
+  const [passcodeInput, setPasscodeInput] = useState('')
+  const [passcodeError, setPasscodeError] = useState('')
+  const [publishedBlogs, setPublishedBlogs] = useState([])
+  const [draftBlogs, setDraftBlogs] = useState([])
+  const [loadingPublished, setLoadingPublished] = useState(false)
+  const [loadingDrafts, setLoadingDrafts] = useState(false)
+  const [activeTab, setActiveTab] = useState('published') // 'published' or 'drafts'
 
   // Form state
   const [editingId, setEditingId] = useState(null)
@@ -37,19 +47,52 @@ export default function BlogAdminPage() {
     status: 'draft',
   })
 
-  // Fetch all blogs
+  // Check if passcode is already verified in session
   useEffect(() => {
-    fetchBlogs()
+    if (typeof window !== 'undefined') {
+      const verified = sessionStorage.getItem(PASSCODE_STORAGE_KEY)
+      if (verified === 'true') {
+        setIsPasscodeVerified(true)
+      } else {
+        setShowPasscodeModal(true)
+      }
+    }
   }, [])
+
+  // Fetch blogs only after authentication
+  useEffect(() => {
+    if (isPasscodeVerified) {
+      fetchAllBlogs()
+    }
+  }, [isPasscodeVerified])
+
+  const handlePasscodeSubmit = (e) => {
+    e.preventDefault()
+    setPasscodeError('')
+    
+    if (passcodeInput === ADMIN_PASSCODE) {
+      setIsPasscodeVerified(true)
+      setShowPasscodeModal(false)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(PASSCODE_STORAGE_KEY, 'true')
+      }
+      setPasscodeInput('')
+    } else {
+      setPasscodeError('Incorrect passcode. Please try again.')
+      setPasscodeInput('')
+    }
+  }
 
   // Handle edit query parameter from URL
   useEffect(() => {
-    if (blogs.length === 0 || editingId) return
+    if ((publishedBlogs.length === 0 && draftBlogs.length === 0) || editingId) return
     
     const params = new URLSearchParams(window.location.search)
     const editId = params.get('edit')
     if (editId) {
-      const blogToEdit = blogs.find(b => b.id === editId)
+      // Search in both published and draft blogs
+      const allBlogs = [...publishedBlogs, ...draftBlogs]
+      const blogToEdit = allBlogs.find(b => b.id === editId)
       if (blogToEdit) {
         setEditingId(blogToEdit.id)
         setFormData({
@@ -68,24 +111,49 @@ export default function BlogAdminPage() {
         window.history.replaceState({}, '', '/admin/blog')
       }
     }
-  }, [blogs, editingId])
+  }, [publishedBlogs, draftBlogs, editingId])
 
-  const fetchBlogs = async () => {
+  const fetchAllBlogs = async () => {
+    // Fetch published blogs
+    setLoadingPublished(true)
     try {
-      setLoading(true)
-      const response = await fetch('/api/blog')
-      const data = await response.json()
-
-      if (response.ok) {
-        setBlogs(data.blogs || [])
-      } else {
-        setError(data.error || 'Failed to fetch blogs')
+      const publishedResponse = await fetch('/api/blog?status=published', {
+        headers: {
+          'Authorization': `Bearer ${ADMIN_PASSCODE}`,
+        },
+      })
+      const publishedData = await publishedResponse.json()
+      if (publishedResponse.ok) {
+        setPublishedBlogs(publishedData.blogs || [])
       }
     } catch (err) {
-      setError('Failed to fetch blogs: ' + err.message)
+      console.error('Error fetching published blogs:', err)
     } finally {
-      setLoading(false)
+      setLoadingPublished(false)
     }
+
+    // Fetch draft blogs
+    setLoadingDrafts(true)
+    try {
+      const draftsResponse = await fetch('/api/blog?status=draft', {
+        headers: {
+          'Authorization': `Bearer ${ADMIN_PASSCODE}`,
+        },
+      })
+      const draftsData = await draftsResponse.json()
+      if (draftsResponse.ok) {
+        setDraftBlogs(draftsData.blogs || [])
+      }
+    } catch (err) {
+      console.error('Error fetching draft blogs:', err)
+    } finally {
+      setLoadingDrafts(false)
+    }
+  }
+
+  // Legacy function for compatibility
+  const fetchBlogs = async (status = null) => {
+    await fetchAllBlogs()
   }
 
   const handleInputChange = (e) => {
@@ -118,6 +186,7 @@ export default function BlogAdminPage() {
       const payload = {
         ...formData,
         tags: tagsArray,
+        adminPasscode: ADMIN_PASSCODE, // Include passcode for server-side verification
       }
 
       let response
@@ -125,14 +194,20 @@ export default function BlogAdminPage() {
         // Update existing blog
         response = await fetch(`/api/blog/${editingId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ADMIN_PASSCODE}`, // Also send in header
+          },
           body: JSON.stringify(payload),
         })
       } else {
         // Create new blog
         response = await fetch('/api/blog', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ADMIN_PASSCODE}`, // Also send in header
+          },
           body: JSON.stringify(payload),
         })
       }
@@ -152,6 +227,8 @@ export default function BlogAdminPage() {
             window.open(`/blog/${data.blog.slug}`, '_blank')
           }, 1000)
         }
+        // Refresh all blogs
+        fetchAllBlogs()
       } else {
         const errorMsg = data.error || 'Failed to save blog'
         setError(errorMsg)
@@ -188,6 +265,9 @@ export default function BlogAdminPage() {
     try {
       const response = await fetch(`/api/blog/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${ADMIN_PASSCODE}`, // Send passcode in header
+        },
       })
 
       const data = await response.json()
@@ -196,7 +276,7 @@ export default function BlogAdminPage() {
         const message = 'Blog deleted successfully!'
         setSuccess(message)
         showSuccess(message)
-        fetchBlogs()
+        fetchAllBlogs()
         if (editingId === id) {
           resetForm()
         }
@@ -223,6 +303,55 @@ export default function BlogAdminPage() {
       featuredImage: '',
       status: 'draft',
     })
+  }
+
+  // Show passcode modal if not authenticated
+  if (!isPasscodeVerified) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white shadow-xl rounded-2xl p-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="p-4 bg-blue-100 rounded-full">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Admin Access</h1>
+          <p className="text-sm text-gray-500 text-center mb-8">Enter passcode to access blog management</p>
+          
+          {passcodeError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{passcodeError}</p>
+            </div>
+          )}
+
+          <form onSubmit={handlePasscodeSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="passcode" className="block text-sm font-medium text-gray-700 mb-2">
+                Passcode
+              </label>
+              <input
+                type="password"
+                id="passcode"
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter admin passcode"
+                required
+                autoFocus
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Verify
+            </button>
+          </form>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -351,6 +480,9 @@ export default function BlogAdminPage() {
 
                           const response = await fetch('/api/blog/upload-image', {
                             method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${ADMIN_PASSCODE}`, // Send passcode in header
+                            },
                             body: uploadFormData,
                           })
 
@@ -523,6 +655,9 @@ export default function BlogAdminPage() {
 
                           const response = await fetch('/api/blog/upload-image', {
                             method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${ADMIN_PASSCODE}`, // Send passcode in header
+                            },
                             body: uploadFormData,
                           })
 
@@ -608,58 +743,142 @@ export default function BlogAdminPage() {
           </form>
         </div>
 
-        {/* Blog List */}
+        {/* Blog Management */}
         <div className="admin-card">
-          <h2>All Blog Posts</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 style={{ margin: 0 }}>Blog Management</h2>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setActiveTab('published')}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  background: activeTab === 'published' ? '#d4af37' : 'white',
+                  color: activeTab === 'published' ? 'white' : '#374151',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Published ({publishedBlogs.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('drafts')}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  background: activeTab === 'drafts' ? '#d4af37' : 'white',
+                  color: activeTab === 'drafts' ? 'white' : '#374151',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Drafts ({draftBlogs.length})
+              </button>
+            </div>
+          </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
-              Loading blogs...
-            </div>
-          ) : blogs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
-              No blog posts yet. Create your first one above!
-            </div>
-          ) : (
-            <div>
-              {blogs.map((blog) => (
-                <div key={blog.id} className="admin-blog-item">
-                  <div className="admin-blog-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                      <h3>{blog.title}</h3>
-                      <span className={`admin-status ${
-                        blog.status === 'published' ? 'admin-status-published' : 'admin-status-draft'
-                      }`}>
-                        {blog.status}
-                      </span>
-                    </div>
-                    <p className="admin-blog-meta">
-                      Slug: /blog/{blog.slug} • {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : 'Not published'}
-                    </p>
-                  </div>
-                  <div className="admin-actions">
-                    <button
-                      onClick={() => handleEdit(blog)}
-                      className="admin-action-btn admin-action-btn-edit"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => router.push(`/blog/${blog.slug}`)}
-                      className="admin-action-btn admin-action-btn-view"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleDelete(blog.id)}
-                      className="admin-action-btn admin-action-btn-delete"
-                    >
-                      Delete
-                    </button>
-                  </div>
+          {/* Show Published Blogs */}
+          {activeTab === 'published' && (
+            <>
+              {loadingPublished ? (
+                <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+                  Loading published blogs...
                 </div>
-              ))}
-            </div>
+              ) : publishedBlogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+                  No published posts yet. Publish your first one above!
+                </div>
+              ) : (
+                <div>
+                  {publishedBlogs.map((blog) => (
+                    <div key={blog.id} className="admin-blog-item">
+                      <div className="admin-blog-info">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                          <h3>{blog.title}</h3>
+                          <span className="admin-status admin-status-published">
+                            Published
+                          </span>
+                        </div>
+                        <p className="admin-blog-meta">
+                          Slug: /blog/{blog.slug} • {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : 'Not published'}
+                        </p>
+                      </div>
+                      <div className="admin-actions">
+                        <button
+                          onClick={() => handleEdit(blog)}
+                          className="admin-action-btn admin-action-btn-edit"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => router.push(`/blog/${blog.slug}`)}
+                          className="admin-action-btn admin-action-btn-view"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDelete(blog.id)}
+                          className="admin-action-btn admin-action-btn-delete"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Show Draft Blogs */}
+          {activeTab === 'drafts' && (
+            <>
+              {loadingDrafts ? (
+                <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+                  Loading draft blogs...
+                </div>
+              ) : draftBlogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', fontFamily: "'Inter', sans-serif", color: '#666' }}>
+                  No draft posts yet. Create a draft above!
+                </div>
+              ) : (
+                <div>
+                  {draftBlogs.map((blog) => (
+                    <div key={blog.id} className="admin-blog-item">
+                      <div className="admin-blog-info">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                          <h3>{blog.title}</h3>
+                          <span className="admin-status admin-status-draft">
+                            Draft
+                          </span>
+                        </div>
+                        <p className="admin-blog-meta">
+                          Slug: /blog/{blog.slug} • {blog.updatedAt ? new Date(blog.updatedAt).toLocaleDateString() : 'Not saved'}
+                        </p>
+                      </div>
+                      <div className="admin-actions">
+                        <button
+                          onClick={() => handleEdit(blog)}
+                          className="admin-action-btn admin-action-btn-edit"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(blog.id)}
+                          className="admin-action-btn admin-action-btn-delete"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

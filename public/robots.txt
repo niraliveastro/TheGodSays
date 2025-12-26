@@ -21,6 +21,7 @@ Allow: /predictions/
 Allow: /transit/
 Allow: /talk-to-astrologer/
 Allow: /cosmic-event-tracker/
+Allow: /blog/
 
 # Sitemap
 Sitemap: https://rahunow.com/sitemap.xml

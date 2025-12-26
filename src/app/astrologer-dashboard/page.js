@@ -40,6 +40,11 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Wallet,
+  TrendingUp,
+  History,
+  ArrowDownCircle,
+  DollarSign,
 } from "lucide-react";
 import {
   doc,
@@ -77,6 +82,19 @@ function AstrologerDashboardContent() {
   const [connectionStatus, setConnectionStatus] = useState("connecting"); // Realtime connection health: 'connecting', 'connected', 'disconnected'
   const [notificationPermission, setNotificationPermission] =
     useState("default"); // Browser notification permission status
+  
+  // Earnings state
+  const [earningsData, setEarningsData] = useState(null);
+  const [earningsLoading, setEarningsLoading] = useState(true);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [bankDetails, setBankDetails] = useState({
+    accountNumber: "",
+    ifscCode: "",
+    accountHolderName: "",
+    bankName: "",
+  });
+  const [redeeming, setRedeeming] = useState(false);
 
   // Auth and routing hooks
   const { getUserId, userProfile } = useAuth(); // Auth context for user ID and profile
@@ -879,6 +897,113 @@ function AstrologerDashboardContent() {
   };
 
   /**
+   * Fetch astrologer earnings data
+   */
+  const fetchEarnings = useCallback(async () => {
+    if (!astrologerId) return;
+    
+    setEarningsLoading(true);
+    try {
+      const response = await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "get-earnings-history",
+          astrologerId,
+          limit: 50,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setEarningsData(data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching earnings:", error);
+    } finally {
+      setEarningsLoading(false);
+    }
+  }, [astrologerId]);
+
+  /**
+   * Effect: Fetch earnings on mount and periodically
+   */
+  useEffect(() => {
+    if (astrologerId) {
+      fetchEarnings();
+      // Refresh earnings every 30 seconds
+      const interval = setInterval(fetchEarnings, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [astrologerId, fetchEarnings]);
+
+  /**
+   * Handle earnings redemption
+   */
+  const handleRedeemEarnings = async () => {
+    if (!redeemAmount || parseFloat(redeemAmount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    const amount = parseFloat(redeemAmount);
+    const MINIMUM = 500;
+
+    if (amount < MINIMUM) {
+      alert(`Minimum redemption amount is ₹${MINIMUM}`);
+      return;
+    }
+
+    if (!bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.accountHolderName) {
+      alert("Please fill in all bank details");
+      return;
+    }
+
+    if (earningsData && amount > earningsData.availableEarnings) {
+      alert("Insufficient earnings to redeem");
+      return;
+    }
+
+    setRedeeming(true);
+    try {
+      const response = await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "redeem-earnings",
+          astrologerId,
+          amount,
+          bankDetails,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message || "Redemption request submitted successfully!");
+        setShowRedeemModal(false);
+        setRedeemAmount("");
+        setBankDetails({
+          accountNumber: "",
+          ifscCode: "",
+          accountHolderName: "",
+          bankName: "",
+        });
+        // Refresh earnings
+        fetchEarnings();
+      } else {
+        alert(data.error || "Failed to redeem earnings");
+      }
+    } catch (error) {
+      console.error("Error redeeming earnings:", error);
+      alert("Failed to redeem earnings. Please try again.");
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
+  /**
    * Get color for astrologer status indicator.
    * @returns {string} Hex color code based on status
    */
@@ -1200,6 +1325,639 @@ function AstrologerDashboardContent() {
               </div>
             </div>
           </div>
+
+          {/* Earnings Section */}
+          <div
+            className="card"
+            style={{
+              marginBottom: "2rem",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              background: "white",
+              transition: "box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: 600,
+                  margin: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                <Wallet style={{ width: "1.5rem", height: "1.5rem", color: "#d4af37" }} />
+                Earnings
+              </h2>
+              {earningsData && earningsData.availableEarnings >= 500 && (
+                <button
+                  onClick={() => setShowRedeemModal(true)}
+                  className="btn btn-primary"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.75rem 1.5rem",
+                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                    border: "none",
+                    color: "white",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <ArrowDownCircle style={{ width: "1rem", height: "1rem" }} />
+                  Redeem
+                </button>
+              )}
+            </div>
+
+            {earningsLoading ? (
+              <div style={{ textAlign: "center", padding: "3rem 0" }}>
+                <Loader2
+                  style={{
+                    width: "2rem",
+                    height: "2rem",
+                    color: "#d4af37",
+                    animation: "spin 1s linear infinite",
+                    margin: "0 auto",
+                  }}
+                />
+                <p style={{ color: "var(--color-gray-500)", marginTop: "1rem" }}>
+                  Loading earnings...
+                </p>
+              </div>
+            ) : earningsData ? (
+              <>
+                {/* Earnings Summary Cards */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "1rem",
+                    marginBottom: "1.5rem",
+                  }}
+                >
+                  {/* Total Earnings */}
+                  <div
+                    style={{
+                      padding: "1.25rem",
+                      background: "white",
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
+                      <TrendingUp style={{ width: "1.25rem", height: "1.25rem", color: "#f59e0b" }} />
+                      <span
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                        }}
+                      >
+                        Total Earnings
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "1.75rem",
+                        fontWeight: 700,
+                        color: "#1f2937",
+                        margin: 0,
+                      }}
+                    >
+                      ₹{earningsData.totalEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+
+                  {/* Available Earnings */}
+                  <div
+                    style={{
+                      padding: "1.25rem",
+                      background: "white",
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
+                      <Wallet style={{ width: "1.25rem", height: "1.25rem", color: "#10b981" }} />
+                      <span
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                        }}
+                      >
+                        Available
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "1.75rem",
+                        fontWeight: 700,
+                        color: "#1f2937",
+                        margin: 0,
+                      }}
+                    >
+                      ₹{earningsData.availableEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+
+                  {/* Redeemed Earnings */}
+                  <div
+                    style={{
+                      padding: "1.25rem",
+                      background: "white",
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
+                      <DollarSign style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
+                      <span
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                        }}
+                      >
+                        Redeemed
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "1.75rem",
+                        fontWeight: 700,
+                        color: "#1f2937",
+                        margin: 0,
+                      }}
+                    >
+                      ₹{earningsData.redeemedEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Transaction History */}
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <History style={{ width: "1.25rem", height: "1.25rem", color: "#6b7280" }} />
+                    <h3
+                      style={{
+                        fontSize: "1.125rem",
+                        fontWeight: 600,
+                        margin: 0,
+                        color: "#1f2937",
+                      }}
+                    >
+                      Transaction History
+                    </h3>
+                  </div>
+
+                  {earningsData.transactions && earningsData.transactions.length > 0 ? (
+                    <div
+                      style={{
+                        maxHeight: "400px",
+                        overflowY: "auto",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      {earningsData.transactions.map((transaction, index) => {
+                        const isEarning = transaction.type === "earnings";
+                        const isRedemption = transaction.type === "redemption";
+                        const date = transaction.timestamp instanceof Date
+                          ? transaction.timestamp
+                          : new Date(transaction.timestamp);
+
+                        return (
+                          <div
+                            key={transaction.id || index}
+                            style={{
+                              padding: "1rem",
+                              borderBottom: index < earningsData.transactions.length - 1 ? "1px solid #e5e7eb" : "none",
+                              background: "white",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              transition: "background 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "#f9fafb";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "white";
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <p
+                                style={{
+                                  fontWeight: 600,
+                                  color: "#1f2937",
+                                  margin: "0 0 0.25rem 0",
+                                  fontSize: "0.9375rem",
+                                }}
+                              >
+                                {transaction.description || (isEarning ? "Call Earnings" : "Redemption")}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#6b7280",
+                                  margin: 0,
+                                  fontFamily: "Courier New, monospace",
+                                }}
+                              >
+                                {date.toLocaleString()}
+                                {isEarning && transaction.durationMinutes
+                                  ? ` • ${transaction.durationMinutes} min`
+                                  : ""}
+                              </p>
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: "1.125rem",
+                                  fontWeight: 700,
+                                  color: isEarning ? "#10b981" : "#6b7280",
+                                }}
+                              >
+                                {isEarning ? "+" : ""}₹{Math.abs(transaction.amount).toFixed(2)}
+                              </span>
+                              {transaction.status === "pending" && (
+                                <span
+                                  style={{
+                                    padding: "0.25rem 0.5rem",
+                                    background: "#fef3c7",
+                                    color: "#92400e",
+                                    borderRadius: "6px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                      <History
+                        style={{
+                          width: "3rem",
+                          height: "3rem",
+                          color: "var(--color-gray-400)",
+                          margin: "0 auto 1rem",
+                        }}
+                      />
+                      <p style={{ color: "var(--color-gray-500)", marginBottom: "0.5rem" }}>
+                        No transactions yet
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.875rem",
+                          color: "var(--color-gray-400)",
+                        }}
+                      >
+                        Your earnings from completed calls will appear here
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                <p style={{ color: "var(--color-gray-500)" }}>
+                  Unable to load earnings data. Please try again.
+                </p>
+                <button
+                  onClick={fetchEarnings}
+                  className="btn btn-ghost"
+                  style={{ marginTop: "1rem" }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Redeem Modal */}
+          {showRedeemModal && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+                padding: "1rem",
+              }}
+              onClick={() => !redeeming && setShowRedeemModal(false)}
+            >
+              <div
+                className="card"
+                style={{
+                  maxWidth: "500px",
+                  width: "100%",
+                  padding: "2rem",
+                  background: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3
+                  style={{
+                    fontSize: "1.5rem",
+                    fontWeight: 600,
+                    marginBottom: "1.5rem",
+                    color: "#1f2937",
+                  }}
+                >
+                  Redeem Earnings
+                </h3>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Amount (Minimum ₹500)
+                  </label>
+                  <input
+                    type="number"
+                    value={redeemAmount}
+                    onChange={(e) => setRedeemAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    min="500"
+                    step="0.01"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                    }}
+                    disabled={redeeming}
+                  />
+                  {earningsData && (
+                    <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                      Available: ₹{earningsData.availableEarnings.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Bank Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={bankDetails.accountNumber}
+                    onChange={(e) =>
+                      setBankDetails({ ...bankDetails, accountNumber: e.target.value })
+                    }
+                    placeholder="Enter account number"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                    }}
+                    disabled={redeeming}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    IFSC Code
+                  </label>
+                  <input
+                    type="text"
+                    value={bankDetails.ifscCode}
+                    onChange={(e) =>
+                      setBankDetails({ ...bankDetails, ifscCode: e.target.value.toUpperCase() })
+                    }
+                    placeholder="Enter IFSC code"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                      textTransform: "uppercase",
+                    }}
+                    disabled={redeeming}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={bankDetails.accountHolderName}
+                    onChange={(e) =>
+                      setBankDetails({ ...bankDetails, accountHolderName: e.target.value })
+                    }
+                    placeholder="Enter account holder name"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                    }}
+                    disabled={redeeming}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Bank Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={bankDetails.bankName}
+                    onChange={(e) =>
+                      setBankDetails({ ...bankDetails, bankName: e.target.value })
+                    }
+                    placeholder="Enter bank name"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                    }}
+                    disabled={redeeming}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setShowRedeemModal(false);
+                      setRedeemAmount("");
+                      setBankDetails({
+                        accountNumber: "",
+                        ifscCode: "",
+                        accountHolderName: "",
+                        bankName: "",
+                      });
+                    }}
+                    className="btn btn-ghost"
+                    disabled={redeeming}
+                    style={{ padding: "0.75rem 1.5rem" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRedeemEarnings}
+                    className="btn btn-primary"
+                    disabled={redeeming}
+                    style={{
+                      padding: "0.75rem 1.5rem",
+                      background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                      border: "none",
+                      color: "white",
+                    }}
+                  >
+                    {redeeming ? (
+                      <>
+                        <Loader2
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                            animation: "spin 1s linear infinite",
+                            marginRight: "0.5rem",
+                          }}
+                        />
+                        Processing...
+                      </>
+                    ) : (
+                      "Submit Request"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Queue - Enhanced with better visuals */}
           {queue.length > 0 && (

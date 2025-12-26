@@ -14,9 +14,9 @@ import './blog-detail.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
 
-// Force dynamic rendering to always fetch fresh data
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Use ISR (Incremental Static Regeneration) for better SEO
+// Revalidate every 60 seconds to keep content fresh while allowing static generation
+export const revalidate = 60
 
 // Generate static params for all blog posts (for SSG/ISR)
 export async function generateStaticParams() {

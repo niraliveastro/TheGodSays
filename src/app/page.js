@@ -2616,6 +2616,45 @@ export default function Home() {
             </div>
           </section>
 
+          {/* Explanation Card - At the end before footer */}
+          <section className="card mt-12 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border" style={{
+            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+            borderColor: "rgba(212, 175, 55, 0.3)",
+          }}>
+            <div>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: "1.5rem",
+                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+                marginBottom: "1.5rem",
+              }}>
+                <h2 style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: 0,
+                }}>
+                  Understanding Vedic Astrology
+                </h2>
+              </div>
+              <div style={{ padding: 0 }}>
+                <p style={{
+                  fontSize: "0.875rem",
+                  color: "#374151",
+                  fontStyle: "normal",
+                  marginBottom: 0,
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: 1.6,
+                }}>
+                  Vedic Astrology, also known as <strong>Jyotish</strong>, is an ancient Indian system of astrology that has been practiced for thousands of years. It provides insights into your life through the analysis of planetary positions at the time of your birth. Our platform offers comprehensive astrological services including <strong>Birth Chart Analysis</strong> revealing your planetary positions and their influences, <strong>Compatibility Matching</strong> using the traditional Ashtakoot system to assess relationship harmony, <strong>Dasha Predictions</strong> forecasting life phases based on planetary periods, and <strong>Expert Consultations</strong> with experienced Vedic astrologers who provide personalized guidance based on authentic traditional principles.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* FOOTER */}
           <footer className="home-footer">
             <p>

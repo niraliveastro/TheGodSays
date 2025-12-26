@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import admin from 'firebase-admin'
 import sharp from 'sharp'
+import { requireAdminAuth } from '@/lib/admin-auth'
 
 // Initialize Firebase Admin Storage
 function getStorage() {
@@ -54,6 +55,12 @@ function getStorage() {
 
 export async function POST(request) {
   try {
+    // Verify admin authentication
+    const authError = await requireAdminAuth(request)
+    if (authError) {
+      return authError
+    }
+
     const formData = await request.formData()
     const file = formData.get('file')
     const type = formData.get('type') || 'blog' // 'blog' for blog images
