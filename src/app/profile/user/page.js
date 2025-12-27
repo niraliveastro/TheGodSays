@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,7 @@ import {
   Plus,
   X,
   Sparkles,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -82,36 +83,155 @@ export default function ProfilePage() {
     retry: 1, // Only retry once on failure
   });
 
-  // Fetch call history with React Query - Load separately with longer timeout
-  const { data: historyData, isLoading: historyLoading } = useQuery({
-    queryKey: ['callHistory', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  // Call history state
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
+  // Get status color theme (same as talk-to-astrologer page)
+  const getStatusColor = (status) => {
+    const normalizedStatus = (status || "completed").toLowerCase();
+    switch (normalizedStatus) {
+      case "completed":
+        return {
+          bg: "rgba(16, 185, 129, 0.15)", // green-500 with 15% opacity
+          border: "rgba(16, 185, 129, 0.3)",
+          text: "#059669", // green-600
+        };
+      case "cancelled":
+        return {
+          bg: "rgba(245, 158, 11, 0.15)", // amber-500 with 15% opacity
+          border: "rgba(245, 158, 11, 0.3)",
+          text: "#d97706", // amber-600
+        };
+      case "rejected":
+        return {
+          bg: "rgba(239, 68, 68, 0.15)", // red-500 with 15% opacity
+          border: "rgba(239, 68, 68, 0.3)",
+          text: "#dc2626", // red-600
+        };
+      default:
+        return {
+          bg: "rgba(156, 163, 175, 0.1)", // gray-400 with 10% opacity
+          border: "rgba(156, 163, 175, 0.2)",
+          text: "#6b7280", // gray-500
+        };
+    }
+  };
+
+  // Background fetch to update cache without blocking UI
+  const fetchCallHistoryInBackground = useCallback(async (userId, cacheKey) => {
+    try {
+      const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.history) {
+          const cacheData = {
+            recentCalls: data.history,
+            timestamp: Date.now(),
+          };
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (e) {
+              console.warn('Error updating cache:', e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in background fetch:", error);
+    }
+  }, []);
+
+  // Fetch call history with caching (same logic as talk-to-astrologer page)
+  const fetchCallHistory = useCallback(async (forceRefresh = false) => {
+    if (!userId) return;
+
+    // Check localStorage cache first (10 minute cache for instant loading)
+    const cacheKey = `tgs:callHistory:${userId}`;
+    const cacheTimeout = 10 * 60 * 1000; // 10 minutes
+    const now = Date.now();
+    
+    if (!forceRefresh && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const cacheData = JSON.parse(cached);
+          if (cacheData.timestamp && now - cacheData.timestamp < cacheTimeout) {
+            // Use cached data for instant display
+            setCallHistory((cacheData.recentCalls || []).slice(0, 5));
+            // Still fetch in background to update cache
+            fetchCallHistoryInBackground(userId, cacheKey);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading cache:', e);
+      }
+    }
+
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.history) {
+          const recentCalls = data.history.slice(0, 5); // Show only 5 in profile
+          setCallHistory(recentCalls);
+          
+          // Update cache
+          if (typeof window !== 'undefined') {
+            try {
+              const cacheData = {
+                recentCalls: data.history,
+                timestamp: now,
+              };
+              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (e) {
+              console.warn('Error saving to localStorage:', e);
+            }
+          }
+        } else {
+          setCallHistory([]);
+        }
+      } else {
+        setCallHistory([]);
+      }
+    } catch (error) {
+      console.error("Error fetching call history:", error);
+      setCallHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [userId, fetchCallHistoryInBackground]);
+
+  // Fetch call history on mount
+  useEffect(() => {
+    if (userId) {
+      fetchCallHistory(false); // Use cache if available
+    }
+  }, [userId, fetchCallHistory]);
+  
+  // Load call history from cache immediately for instant display
+  useEffect(() => {
+    if (userId && typeof window !== 'undefined') {
+      const cacheKey = `tgs:callHistory:${userId}`;
+      const cacheTimeout = 10 * 60 * 1000; // 10 minutes
+      const now = Date.now();
       
       try {
-        const res = await fetch(`/api/calls/history?userId=${userId}&limit=5`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.success ? (data.history || []).slice(0, 5) : [];
-      } catch (error) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          console.warn('Call history fetch timed out');
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const cacheData = JSON.parse(cached);
+          if (cacheData.timestamp && now - cacheData.timestamp < cacheTimeout) {
+            // Use cached data immediately for instant display
+            setCallHistory((cacheData.recentCalls || []).slice(0, 5));
+          }
         }
-        return [];
+      } catch (e) {
+        // Ignore cache errors
       }
-    },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache (increased)
-    retry: 0, // Don't retry to avoid delays
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-  });
+    }
+  }, [userId]);
 
   // Fetch family members with React Query
   const { data: familyData } = useQuery({
@@ -140,11 +260,6 @@ export default function ProfilePage() {
     }
   }, [profileData]);
 
-  useEffect(() => {
-    if (historyData) {
-      setCallHistory(historyData);
-    }
-  }, [historyData]);
 
   useEffect(() => {
     if (familyData) {
@@ -152,14 +267,21 @@ export default function ProfilePage() {
     }
   }, [familyData]);
 
-  // Handle loading and auth redirect
+  // Handle loading and auth redirect - Optimize: show content immediately when ready
   useEffect(() => {
     if (!userId) {
       router.push("/auth");
       return;
     }
-    setLoading(profileLoading);
-  }, [userId, profileLoading, router]);
+    // Show page immediately as soon as we have profile data
+    // Don't wait for other data - show page right away
+    if (profileData || user) {
+      setLoading(false);
+    } else if (profileLoading) {
+      // Only show loading if we're still fetching and have no data
+      setLoading(true);
+    }
+  }, [userId, profileLoading, profileData, user, router]);
 
   /* --------------------------------------------------------------- */
   /*  Save profile changes                                           */
@@ -302,7 +424,7 @@ export default function ProfilePage() {
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-indigo-600" />
+                  <Users className="w-5 h-5" style={{ color: "var(--color-gold)" }} />
                   Family Members
                 </h3>
                 <button
@@ -315,7 +437,10 @@ export default function ProfilePage() {
 
               <button
                 onClick={() => setIsFamilyModalOpen(true)}
-                className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="w-full mb-4 px-4 py-3 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                }}
               >
                 <Plus className="w-4 h-4" />
                 Add Family Member
@@ -326,11 +451,25 @@ export default function ProfilePage() {
                   familyMembers.map((member) => (
                     <div
                       key={member.id}
-                      className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all cursor-pointer"
+                      className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 transition-all cursor-pointer"
+                      style={{
+                        borderColor: "var(--color-gray-200)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "var(--color-gold)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "var(--color-gray-200)";
+                      }}
                       onClick={() => handleViewPredictions(member)}
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                          style={{
+                            background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                          }}
+                        >
                           {member.name
                             .split(" ")
                             .map((n) => n[0])
@@ -350,7 +489,19 @@ export default function ProfilePage() {
                         <p>🕐 {member.time}</p>
                         <p>📍 {member.place}</p>
                       </div>
-                      <button className="mt-3 w-full px-3 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
+                      <button 
+                        className="mt-3 w-full px-3 py-2 bg-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        style={{
+                          border: "1px solid var(--color-gold)",
+                          color: "var(--color-gold-dark)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "rgba(212, 175, 55, 0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "white";
+                        }}
+                      >
                         <Sparkles className="w-4 h-4" />
                         View Predictions
                       </button>
@@ -368,8 +519,11 @@ export default function ProfilePage() {
           {/* Toggle Button */}
           <button
             onClick={() => setShowFamilyPanel(!showFamilyPanel)}
-            className="fixed left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-3 rounded-r-xl shadow-lg hover:shadow-xl transition-all z-40"
-            style={{ marginLeft: showFamilyPanel ? "320px" : "0" }}
+            className="fixed left-0 top-1/2 -translate-y-1/2 text-white p-3 rounded-r-xl shadow-lg hover:shadow-xl transition-all z-40"
+            style={{ 
+              marginLeft: showFamilyPanel ? "320px" : "0",
+              background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+            }}
           >
             <Users className="w-5 h-5" />
           </button>
@@ -404,7 +558,7 @@ export default function ProfilePage() {
                     style={{
                       width: "6rem",
                       height: "6rem",
-                      background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                      background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
@@ -809,83 +963,110 @@ export default function ProfilePage() {
               </div>
             ) : callHistory.length > 0 ? (
               <div style={{ display: "grid", gap: "0.75rem" }}>
-                {callHistory.map((call) => (
-                  <div
-                    key={call.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.75rem",
-                      background: "var(--color-gray-50)",
-                      borderRadius: "0.5rem",
-                      border: "none",
-                    }}
-                  >
+                {callHistory.map((call) => {
+                  const statusColor = getStatusColor(call.status);
+                  return (
                     <div
+                      key={call.id}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.75rem",
+                        justifyContent: "space-between",
+                        padding: "0.75rem",
+                        background: statusColor.bg,
+                        borderRadius: "0.5rem",
+                        border: `1px solid ${statusColor.border}`,
                       }}
                     >
                       <div
                         style={{
-                          width: "2.5rem",
-                          height: "2.5rem",
-                          background:
-                            "linear-gradient(135deg, #10b981, #059669)",
-                          borderRadius: "50%",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          color: "white",
-                          fontSize: "0.875rem",
+                          gap: "0.75rem",
+                          flex: 1,
                         }}
                       >
-                        {call.type === "video" ? "V" : "A"}
-                      </div>
-                      <div>
-                        <p
+                        <div
                           style={{
-                            fontSize: "0.9375rem",
-                            fontWeight: 500,
-                            color: "var(--color-gray-900)",
+                            width: "2.5rem",
+                            height: "2.5rem",
+                            background:
+                              call.type === "video"
+                                ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                                : "linear-gradient(135deg, #10b981, #059669)",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
                           }}
                         >
-                          {call.astrologerName}
+                          {call.type === "video" ? (
+                            <Video style={{ width: "1.25rem", height: "1.25rem" }} />
+                          ) : (
+                            <Phone style={{ width: "1.25rem", height: "1.25rem" }} />
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                              color: "var(--color-gray-900)",
+                              margin: 0,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                            title={call.astrologerName}
+                          >
+                            {call.astrologerName || "Unknown Astrologer"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--color-gray-500)",
+                              margin: "0.25rem 0 0 0",
+                            }}
+                          >
+                            {new Date(call.startedAt).toLocaleString()}
+                            {call.duration > 0 && ` • ${call.duration} min`}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          textAlign: "right",
+                          marginLeft: "1rem",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "#dc2626",
+                            margin: 0,
+                          }}
+                        >
+                          -₹{call.cost?.toFixed(2) || "0.00"}
                         </p>
                         <p
                           style={{
                             fontSize: "0.75rem",
-                            color: "var(--color-gray-500)",
+                            color: statusColor.text,
+                            margin: "0.25rem 0 0 0",
+                            textTransform: "capitalize",
+                            fontWeight: 500,
                           }}
                         >
-                          {new Date(call.startedAt).toLocaleString()}
+                          {call.status || "completed"}
                         </p>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p
-                        style={{
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                          color: "#dc2626",
-                        }}
-                      >
-                        -₹{call.cost?.toFixed(2)}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--color-gray-500)",
-                        }}
-                      >
-                        {call.duration} min
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div

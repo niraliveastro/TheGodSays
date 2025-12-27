@@ -45,14 +45,45 @@ export async function getPublishedBlogs() {
         .get()
     }
 
+    // Helper function to convert Firestore Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (!timestamp) return null
+      // If it's a Firestore Timestamp object with toDate method
+      if (typeof timestamp.toDate === 'function') {
+        try {
+          return timestamp.toDate().toISOString()
+        } catch (e) {
+          return null
+        }
+      }
+      // If it's already an ISO string
+      if (typeof timestamp === 'string') {
+        return timestamp
+      }
+      // If it's a plain object with _seconds property (serialized Timestamp)
+      if (timestamp._seconds !== undefined) {
+        try {
+          const milliseconds = timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000
+          return new Date(milliseconds).toISOString()
+        } catch (e) {
+          return null
+        }
+      }
+      return null
+    }
+
     const blogs = []
     snapshot.forEach((doc) => {
+      const data = doc.data()
+      // Convert Firestore Timestamps to ISO strings for JSON serialization
+      // This is required when passing data from Server Components to Client Components
       blogs.push({
         id: doc.id,
-        ...doc.data(),
-        // Convert Firestore Timestamps to ISO strings for JSON serialization
-        publishedAt: doc.data().publishedAt?.toDate?.()?.toISOString() || doc.data().publishedAt,
-        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+        ...data,
+        // Override timestamp fields with converted ISO strings
+        createdAt: convertTimestamp(data.createdAt),
+        publishedAt: convertTimestamp(data.publishedAt),
+        updatedAt: convertTimestamp(data.updatedAt),
       })
     })
 
@@ -104,14 +135,39 @@ export async function getBlogBySlug(slug) {
       return null
     }
 
+    // Helper function to convert Firestore Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (!timestamp) return null
+      if (typeof timestamp.toDate === 'function') {
+        try {
+          return timestamp.toDate().toISOString()
+        } catch (e) {
+          return null
+        }
+      }
+      if (typeof timestamp === 'string') {
+        return timestamp
+      }
+      if (timestamp._seconds !== undefined) {
+        try {
+          const milliseconds = timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000
+          return new Date(milliseconds).toISOString()
+        } catch (e) {
+          return null
+        }
+      }
+      return null
+    }
+
     const doc = snapshot.docs[0]
     const data = doc.data()
 
     return {
       id: doc.id,
       ...data,
-      publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
-      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+      createdAt: convertTimestamp(data.createdAt),
+      publishedAt: convertTimestamp(data.publishedAt),
+      updatedAt: convertTimestamp(data.updatedAt),
     }
   } catch (error) {
     console.error('Error fetching blog by slug:', error)

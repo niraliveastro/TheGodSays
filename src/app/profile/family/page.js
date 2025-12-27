@@ -230,7 +230,7 @@ export default function FamilyPage() {
                         width: "64px",
                         height: "64px",
                         borderRadius: "50%",
-                        background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                        background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
