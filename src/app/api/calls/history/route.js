@@ -55,89 +55,73 @@ export async function GET(request) {
       snapshot = await query.limit(limit).get()
     }
     const history = []
+    const callIds = snapshot.docs.map(doc => doc.id)
+    const callDocs = snapshot.docs
     
-    for (const doc of snapshot.docs) {
+    // Collect unique user and astrologer IDs
+    const userIdsSet = new Set()
+    const astrologerIdsSet = new Set()
+    callDocs.forEach(doc => {
+      const data = doc.data()
+      if (data.userId) userIdsSet.add(data.userId)
+      if (data.astrologerId) astrologerIdsSet.add(data.astrologerId)
+    })
+    
+    // Batch fetch all billing records, users, and astrologers in parallel
+    const [billingResults, userDocs, astrologerDocs] = await Promise.all([
+      callIds.length > 0 ? Promise.all(callIds.map(id => db.collection('call_billing').doc(id).get())) : Promise.resolve([]),
+      userIdsSet.size > 0 ? Promise.all(Array.from(userIdsSet).map(id => db.collection('users').doc(id).get())) : Promise.resolve([]),
+      astrologerIdsSet.size > 0 ? Promise.all(Array.from(astrologerIdsSet).map(id => db.collection('astrologers').doc(id).get())) : Promise.resolve([])
+    ])
+    
+    // Create billing map for quick lookup
+    const billingMap = new Map()
+    billingResults.forEach((billingDoc, idx) => {
+      if (billingDoc.exists) {
+        const billingData = billingDoc.data()
+        billingMap.set(callIds[idx], {
+          cost: billingData.finalAmount || billingData.totalCost || 0,
+          duration: billingData.durationMinutes || 0
+        })
+      }
+    })
+    
+    const usersMap = new Map()
+    userDocs.forEach(doc => {
+      if (doc.exists) {
+        const userData = doc.data()
+        usersMap.set(doc.id, userData.name || userData.displayName || userData.email || userData.fullName || `User ${doc.id.substring(0, 8)}`)
+      }
+    })
+    
+    const astrologersMap = new Map()
+    astrologerDocs.forEach(doc => {
+      if (doc.exists) {
+        const astrologerData = doc.data()
+        astrologersMap.set(doc.id, astrologerData.name || 'Unknown')
+      }
+    })
+    
+    // Build history array with pre-fetched data
+    for (const doc of callDocs) {
       const callData = doc.data()
       
-      // Log the complete call data structure for debugging
-      console.log(`Call data for document ${doc.id}:`, JSON.stringify(callData, null, 2))
+      // Get user and astrologer names from maps
+      const userName = callData.userId ? (usersMap.get(callData.userId) || `User ${callData.userId.substring(0, 8)}`) : 'Anonymous User'
+      const astrologerName = callData.astrologerId ? (astrologersMap.get(callData.astrologerId) || 'Unknown') : 'Unknown'
       
-      // Fetch user name from users collection
-      let userName = 'Anonymous User'
-      if (callData.userId) {
-        try {
-          console.log('Fetching user data for userId:', callData.userId)
-          
-          // Try multiple collection names
-          const collectionNames = ['users', 'user', 'user_profiles', 'profiles']
-          let userFound = false
-          
-          for (const collectionName of collectionNames) {
-            try {
-              const userDoc = await db.collection(collectionName).doc(callData.userId).get()
-              if (userDoc.exists) {
-                const userData = userDoc.data()
-                console.log(`Found user in ${collectionName} collection:`, userData)
-                userName = userData.name || userData.displayName || userData.email || userData.fullName || `User ${callData.userId.substring(0, 8)}`
-                userFound = true
-                break
-              }
-            } catch (collectionError) {
-              console.log(`Error checking ${collectionName} collection:`, collectionError.message)
-            }
-          }
-          
-          if (!userFound) {
-            console.log('User not found in any collection, using userId as fallback')
-            // Also try to extract a name from the userId itself (some auth systems use email as ID)
-            if (callData.userId.includes('@')) {
-              userName = callData.userId.split('@')[0]
-            } else {
-              userName = `User ${callData.userId.substring(0, 8)}`
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error)
-          userName = `User ${callData.userId.substring(0, 8)}`
-        }
-      }
-      
-      // Fetch astrologer name from astrologers collection
-      let astrologerName = 'Unknown'
-      if (callData.astrologerId) {
-        try {
-          const astrologerDoc = await db.collection('astrologers').doc(callData.astrologerId).get()
-          if (astrologerDoc.exists) {
-            const astrologerData = astrologerDoc.data()
-            astrologerName = astrologerData.name || 'Unknown'
-          }
-        } catch (error) {
-          console.error('Error fetching astrologer data:', error)
-        }
-      }
-      
-      // Try to fetch billing data for this call
+      // Get cost and duration from billing map (prefer billing data, fallback to call data)
+      const billingData = billingMap.get(doc.id)
       let cost = 0
       let duration = 0
-      let finalAmount = 0
       
-      try {
-        const billingDoc = await db.collection('call_billing').doc(doc.id).get()
-        if (billingDoc.exists) {
-          const billingData = billingDoc.data()
-          cost = billingData.finalAmount || billingData.totalCost || 0
-          duration = billingData.durationMinutes || 0
-          finalAmount = billingData.finalAmount || 0
-        }
-      } catch (error) {
-        console.error('Error fetching billing data for call:', doc.id, error)
-      }
-      
-      // If no billing data found, estimate cost based on call status and type
-      if (cost === 0 && (callData.status === 'active' || callData.status === 'completed')) {
-        // Default cost estimation for demonstration (should be fetched from pricing)
-        cost = callData.callType === 'video' ? 100 : 50 // Default costs
-        duration = 10 // Default duration for demonstration
+      if (billingData) {
+        cost = billingData.cost || 0
+        duration = billingData.duration || 0
+      } else {
+        // Fallback to call data if billing not found
+        cost = callData.finalAmount || 0
+        duration = callData.durationMinutes || 0
       }
       
       // Ensure proper data types and formatting
@@ -159,10 +143,10 @@ export async function GET(request) {
         id: doc.id,
         astrologerName: astrologerName,
         astrologerId: callData.astrologerId,
-        userName: userName, // Add user name to the response
-        userId: callData.userId, // Also include userId for reference
+        userName: userName,
+        userId: callData.userId,
         type: callData.callType || 'voice',
-        startedAt: startedAt.toISOString(), // Ensure it's a valid date string
+        startedAt: startedAt.toISOString(),
         cost: finalCost,
         duration: finalDuration,
         status: callData.status || 'completed'

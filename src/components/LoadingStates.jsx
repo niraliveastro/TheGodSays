@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { 
   Rocket, 
   Star, 
@@ -19,15 +20,26 @@ import {
 } from 'lucide-react'
 /**
  * Reusable Loading Component with Page-Specific Animations
+ * Supports rotating messages for better user engagement
  */
-export function PageLoading({ type = 'default', message = null }) {
-      const loadingConfigs = {
+export function PageLoading({ type = 'default', message = null, rotatingMessages = null }) {
+  // Rotating messages state
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+  
+  const loadingConfigs = {
     // Cosmic Event Tracker
     cosmic: {
       icon: Rocket,
       message: message || 'Scanning the cosmos for celestial visitors...',
+      rotatingMessages: rotatingMessages || [
+        'Scanning the cosmos...',
+        'Detecting near-Earth objects...',
+        'Analyzing orbital data...',
+        'Calculating trajectories...',
+        'Almost there...'
+      ],
       colors: {
-        bg: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+        bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
       }
     },
@@ -35,6 +47,13 @@ export function PageLoading({ type = 'default', message = null }) {
     predictions: {
       icon: Sparkles,
       message: message || 'Consulting the stars for your predictions...',
+      rotatingMessages: rotatingMessages || [
+        'Consulting the stars...',
+        'Analyzing your birth chart...',
+        'Calculating planetary positions...',
+        'Generating predictions...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
@@ -44,6 +63,13 @@ export function PageLoading({ type = 'default', message = null }) {
     panchang: {
       icon: Calendar,
       message: message || 'Calculating today\'s Panchang...',
+      rotatingMessages: rotatingMessages || [
+        'Calculating today\'s Panchang...',
+        'Fetching tithi timings...',
+        'Calculating nakshatra...',
+        'Determining auspicious times...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
@@ -53,6 +79,13 @@ export function PageLoading({ type = 'default', message = null }) {
     matching: {
       icon: Heart,
       message: message || 'Analyzing compatibility between charts...',
+      rotatingMessages: rotatingMessages || [
+        'Analyzing compatibility...',
+        'Comparing birth charts...',
+        'Calculating gunas...',
+        'Evaluating planetary positions...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #ec4899, #f43f5e)',
         text: '#6b7280'
@@ -62,6 +95,13 @@ export function PageLoading({ type = 'default', message = null }) {
     astrologer: {
       icon: Phone,
       message: message || 'Connecting you with an astrologer...',
+      rotatingMessages: rotatingMessages || [
+        'Finding available astrologers...',
+        'Checking availability...',
+        'Loading astrologer profiles...',
+        'Preparing connection...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
@@ -71,6 +111,13 @@ export function PageLoading({ type = 'default', message = null }) {
     wallet: {
       icon: Wallet,
       message: message || 'Loading your wallet...',
+      rotatingMessages: rotatingMessages || [
+        'Loading your wallet...',
+        'Fetching balance...',
+        'Loading transactions...',
+        'Calculating totals...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #10b981, #059669)',
         text: '#6b7280'
@@ -80,6 +127,13 @@ export function PageLoading({ type = 'default', message = null }) {
     numerology: {
       icon: Hash,
       message: message || 'Calculating your numerology...',
+      rotatingMessages: rotatingMessages || [
+        'Calculating your numerology...',
+        'Analyzing name numbers...',
+        'Computing life path...',
+        'Determining destiny number...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
         text: '#6b7280'
@@ -89,6 +143,13 @@ export function PageLoading({ type = 'default', message = null }) {
     transit: {
       icon: Zap,
       message: message || 'Analyzing planetary transits...',
+      rotatingMessages: rotatingMessages || [
+        'Analyzing planetary transits...',
+        'Calculating current positions...',
+        'Comparing with birth chart...',
+        'Determining effects...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #f59e0b, #d97706)',
         text: '#6b7280'
@@ -98,8 +159,15 @@ export function PageLoading({ type = 'default', message = null }) {
     profile: {
       icon: User,
       message: message || 'Loading your profile...',
+      rotatingMessages: rotatingMessages || [
+        'Loading your profile...',
+        'Loading your calls...',
+        'Loading your wallet...',
+        'Loading family members...',
+        'Almost there...'
+      ],
       colors: {
-        bg: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+        bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
       }
     },
@@ -107,6 +175,13 @@ export function PageLoading({ type = 'default', message = null }) {
     kundali: {
       icon: Star,
       message: message || 'Generating your birth chart...',
+      rotatingMessages: rotatingMessages || [
+        'Generating your birth chart...',
+        'Calculating planetary positions...',
+        'Determining houses...',
+        'Analyzing aspects...',
+        'Almost there...'
+      ],
       colors: {
         bg: 'linear-gradient(135deg, #d4af37, #b8972e)',
         text: '#6b7280'
@@ -125,6 +200,26 @@ export function PageLoading({ type = 'default', message = null }) {
 
   const config = loadingConfigs[type] || loadingConfigs.default
   const Icon = config.icon
+  
+  // Use rotatingMessages prop if provided, otherwise use config's rotatingMessages
+  const activeRotatingMessages = rotatingMessages || config.rotatingMessages
+  
+  // Handle rotating messages
+  useEffect(() => {
+    if (activeRotatingMessages && activeRotatingMessages.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentMessageIndex((prev) => (prev + 1) % activeRotatingMessages.length)
+      }, 2000) // Change message every 2 seconds
+      
+      return () => clearInterval(interval)
+    }
+  }, [activeRotatingMessages])
+  
+  // Determine which message to show
+  let displayMessage = config.message
+  if (activeRotatingMessages && activeRotatingMessages.length > 0) {
+    displayMessage = activeRotatingMessages[currentMessageIndex]
+  }
 
   return (
     <div 
@@ -174,15 +269,18 @@ export function PageLoading({ type = 'default', message = null }) {
       </div>
       <p 
         className="page-loading-text"
+        key={currentMessageIndex}
         style={{
           fontSize: '1.125rem',
           color: config.colors.text,
           fontWeight: 500,
           textAlign: 'center',
           maxWidth: '400px',
+          transition: 'opacity 0.3s ease-in-out',
+          animation: 'fadeIn 0.3s ease-in-out',
         }}
       >
-        {config.message}
+        {displayMessage}
       </p>
       <style jsx>{`
         @keyframes loadingPulse {
@@ -202,6 +300,17 @@ export function PageLoading({ type = 'default', message = null }) {
           }
           50% {
             transform: translateY(-10px) rotate(10deg);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>

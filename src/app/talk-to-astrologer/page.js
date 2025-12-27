@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { collection, getDocs } from "firebase/firestore";
@@ -46,6 +47,16 @@ export default function TalkToAstrologer() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedAstrologer, setSelectedAstrologer] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isCallHistoryModalOpen, setIsCallHistoryModalOpen] = useState(false);
+  const [callHistory, setCallHistory] = useState([]);
+  const [totalSpending, setTotalSpending] = useState(0);
+  const [monthlySpending, setMonthlySpending] = useState(0);
+  const [loadingCallHistory, setLoadingCallHistory] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [callHistoryCache, setCallHistoryCache] = useState(null);
+  const [callHistoryCacheTime, setCallHistoryCacheTime] = useState(0);
+  const [showAllCalls, setShowAllCalls] = useState(false);
+  const [loadingAllCalls, setLoadingAllCalls] = useState(false);
 
   const router = useRouter();
 
@@ -53,7 +64,7 @@ export default function TalkToAstrologer() {
   /*  Modal open state for body scroll lock                         */
   /* --------------------------------------------------------------- */
   const isAnyModalOpen =
-    isBalanceModalOpen || isReviewModalOpen || !!connectingCallType;
+    isBalanceModalOpen || isReviewModalOpen || !!connectingCallType || isCallHistoryModalOpen;
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -473,6 +484,297 @@ export default function TalkToAstrologer() {
   const handleVideoCall = (id) => startCall("video", id);
 
   /* --------------------------------------------------------------- */
+  /*  Call History helpers                                           */
+  /* --------------------------------------------------------------- */
+  
+  // Background fetch to update cache without blocking UI
+  const fetchCallHistoryInBackground = async (userId, cacheKey) => {
+    try {
+      const [recentCallsResponse, statsResponse, balanceResponse] = await Promise.all([
+        fetch(`/api/calls/history?userId=${userId}&limit=20`),
+        fetch(`/api/user/stats?userId=${userId}`),
+        fetch("/api/payments/wallet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-balance", userId }),
+        }),
+      ]);
+
+      let recentCalls = [];
+      if (recentCallsResponse.ok) {
+        const data = await recentCallsResponse.json();
+        if (data.success && data.history) {
+          recentCalls = data.history;
+        }
+      }
+
+      let total = 0;
+      let monthly = 0;
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success) {
+          total = statsData.totalSpending || 0;
+          monthly = statsData.monthlySpending || 0;
+        }
+      }
+
+      let balance = 0;
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        if (balanceData.success && balanceData.wallet) {
+          balance = balanceData.wallet.balance || 0;
+        }
+      }
+
+      // Update cache silently
+      const cacheData = {
+        recentCalls,
+        totalSpending: total,
+        monthlySpending: monthly,
+        balance,
+        timestamp: Date.now(),
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (e) {
+          console.warn('Error updating cache:', e);
+        }
+      }
+
+      // Update state if modal is still open
+      setCallHistory(recentCalls);
+      setTotalSpending(total);
+      setMonthlySpending(monthly);
+      setBalance(balance);
+    } catch (error) {
+      console.error("Error in background fetch:", error);
+    }
+  };
+
+  const fetchCallHistory = async (forceRefresh = false) => {
+    const userId = localStorage.getItem("tgs:userId");
+    if (!userId) {
+      alert("Please log in to view call history.");
+      router.push("/auth/user");
+      return;
+    }
+
+    // Check localStorage cache first (10 minute cache for instant loading)
+    const cacheKey = `tgs:callHistory:${userId}`;
+    const cacheTimeout = 10 * 60 * 1000; // 10 minutes
+    const now = Date.now();
+    
+    if (!forceRefresh && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const cacheData = JSON.parse(cached);
+          if (cacheData.timestamp && now - cacheData.timestamp < cacheTimeout) {
+            // Use cached data for instant display
+            setCallHistory(cacheData.recentCalls || []);
+            setTotalSpending(cacheData.totalSpending || 0);
+            setMonthlySpending(cacheData.monthlySpending || 0);
+            setBalance(cacheData.balance || 0);
+            // Still fetch in background to update cache
+            fetchCallHistoryInBackground(userId, cacheKey);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading cache:', e);
+      }
+    }
+
+    // Check in-memory cache as fallback
+    if (
+      !forceRefresh &&
+      callHistoryCache &&
+      callHistoryCacheTime &&
+      now - callHistoryCacheTime < cacheTimeout
+    ) {
+      setCallHistory(callHistoryCache.recentCalls);
+      setTotalSpending(callHistoryCache.totalSpending);
+      setMonthlySpending(callHistoryCache.monthlySpending);
+      setBalance(callHistoryCache.balance);
+      return;
+    }
+
+    setLoadingCallHistory(true);
+    try {
+      // Fetch recent calls (for display), spending stats (from cache/optimized), and balance in parallel
+      const [recentCallsResponse, statsResponse, balanceResponse] = await Promise.all([
+        fetch(`/api/calls/history?userId=${userId}&limit=20`), // Recent 20 for display only
+        fetch(`/api/user/stats?userId=${userId}`), // Optimized spending stats from cache
+        fetch("/api/payments/wallet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-balance", userId }),
+        }),
+      ]);
+
+      // Process recent calls for display
+      let recentCalls = [];
+      if (recentCallsResponse.ok) {
+        const data = await recentCallsResponse.json();
+        if (data.success && data.history) {
+          recentCalls = data.history;
+          setCallHistory(recentCalls);
+        } else {
+          setCallHistory([]);
+        }
+      } else {
+        setCallHistory([]);
+      }
+
+      // Process spending stats (from optimized API)
+      let total = 0;
+      let monthly = 0;
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success) {
+          total = statsData.totalSpending || 0;
+          monthly = statsData.monthlySpending || 0;
+        }
+      }
+
+      setTotalSpending(total);
+      setMonthlySpending(monthly);
+
+      // Process balance
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        if (balanceData.success && balanceData.wallet) {
+          const currentBalance = balanceData.wallet.balance || 0;
+          setBalance(currentBalance);
+
+          // Update both localStorage and in-memory cache
+          const cacheData = {
+            recentCalls,
+            totalSpending: total,
+            monthlySpending: monthly,
+            balance: currentBalance,
+            timestamp: now,
+          };
+          
+          // Save to localStorage
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (e) {
+              console.warn('Error saving to localStorage:', e);
+            }
+          }
+          
+          // Update in-memory cache
+          setCallHistoryCache({
+            recentCalls,
+            totalSpending: total,
+            monthlySpending: monthly,
+            balance: currentBalance,
+          });
+          setCallHistoryCacheTime(now);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching call history:", error);
+      setCallHistory([]);
+      setTotalSpending(0);
+      setMonthlySpending(0);
+    } finally {
+      setLoadingCallHistory(false);
+    }
+  };
+
+  const calculateMonthlySpending = (calls) => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+
+    return calls
+      .filter((call) => {
+        try {
+          const callDate = new Date(call.startedAt);
+          // Ensure it's within the current month
+          return (
+            callDate >= monthStart &&
+            callDate.getMonth() === currentMonth &&
+            callDate.getFullYear() === currentYear
+          );
+        } catch (error) {
+          return false;
+        }
+      })
+      .reduce((sum, call) => sum + (call.cost || 0), 0);
+  };
+
+
+  const handleOpenCallHistory = () => {
+    setIsCallHistoryModalOpen(true);
+    setShowAllCalls(false); // Reset to recent calls view
+    fetchCallHistory(false); // Use cache if available
+  };
+
+  const handleLoadAllCalls = async () => {
+    const userId = localStorage.getItem("tgs:userId");
+    if (!userId) {
+      alert("Please log in to view call history.");
+      router.push("/auth/user");
+      return;
+    }
+
+    setLoadingAllCalls(true);
+    try {
+      const response = await fetch(`/api/calls/history?userId=${userId}&limit=1000`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.history) {
+          setCallHistory(data.history);
+          setShowAllCalls(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching all calls:", error);
+      alert("Failed to load all calls. Please try again.");
+    } finally {
+      setLoadingAllCalls(false);
+    }
+  };
+
+  // Get status color theme
+  const getStatusColor = (status) => {
+    const normalizedStatus = (status || "completed").toLowerCase();
+    switch (normalizedStatus) {
+      case "completed":
+        return {
+          bg: "rgba(16, 185, 129, 0.15)", // green-500 with 15% opacity - more visible
+          border: "rgba(16, 185, 129, 0.3)",
+          text: "#059669", // green-600
+        };
+      case "cancelled":
+        return {
+          bg: "rgba(245, 158, 11, 0.15)", // amber-500 with 15% opacity - more visible
+          border: "rgba(245, 158, 11, 0.3)",
+          text: "#d97706", // amber-600
+        };
+      case "rejected":
+        return {
+          bg: "rgba(239, 68, 68, 0.15)", // red-500 with 15% opacity - more visible
+          border: "rgba(239, 68, 68, 0.3)",
+          text: "#dc2626", // red-600
+        };
+      default:
+        return {
+          bg: "rgba(156, 163, 175, 0.1)", // gray-400 with 10% opacity
+          border: "rgba(156, 163, 175, 0.2)",
+          text: "#6b7280", // gray-500
+        };
+    }
+  };
+
+  /* --------------------------------------------------------------- */
   /*  Review helpers                                                 */
   /* --------------------------------------------------------------- */
   const handleOpenReview = (astrologer) => {
@@ -623,6 +925,53 @@ export default function TalkToAstrologer() {
                   gap: "1rem",
                 }}
               >
+                {/* Call History Button */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  <button
+                    onClick={handleOpenCallHistory}
+                    className="btn btn-primary"
+                    disabled={!!connectingCallType}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      fontSize: "0.875rem",
+                      padding: "0.5rem 1rem",
+                      background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                      transition: "all 0.3s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!connectingCallType) {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                    }}
+                  >
+                    <Clock
+                      style={{
+                        width: "1rem",
+                        height: "1rem",
+                      }}
+                    />
+                    Call History
+                  </button>
+                </div>
                 <div style={{ flex: 1, position: "relative" }}>
                   <Search
                     style={{
@@ -1487,6 +1836,302 @@ export default function TalkToAstrologer() {
               style={{ zIndex: 1000 }}
             />
           )}
+
+          {/* Call History Modal */}
+          <Modal
+            open={isCallHistoryModalOpen}
+            onClose={() => {
+              setIsCallHistoryModalOpen(false);
+              setShowAllCalls(false); // Reset to recent calls view when closing
+            }}
+            title="Call History & Spending"
+            style={{ zIndex: 1000 }}
+          >
+            <div style={{ padding: "1.5rem" }}>
+              {/* Spending Summary */}
+              <div
+                className="card"
+                style={{
+                  padding: "1.5rem",
+                  marginBottom: "1.5rem",
+                  background:
+                    "linear-gradient(135deg, rgba(239, 246, 255, 0.8), rgba(219, 234, 254, 0.8))",
+                  border: "1px solid rgba(59, 130, 246, 0.2)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "1.5rem",
+                  }}
+                >
+                  {/* Total Spending */}
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        color: "var(--color-gray-700)",
+                        margin: "0 0 0.75rem 0",
+                      }}
+                    >
+                      Total Spending
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "1.875rem",
+                        fontWeight: 700,
+                        color: "#dc2626",
+                        margin: 0,
+                      }}
+                    >
+                      ₹{totalSpending?.toFixed(2) || "0.00"}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "var(--color-gray-500)",
+                        marginTop: "0.5rem",
+                        margin: "0.5rem 0 0 0",
+                      }}
+                    >
+                      This month: ₹{monthlySpending?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+
+                  {/* Balance */}
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        color: "var(--color-gray-700)",
+                        margin: "0 0 0.75rem 0",
+                      }}
+                    >
+                      Current Balance
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "1.875rem",
+                        fontWeight: 700,
+                        color: "#059669",
+                        margin: 0,
+                      }}
+                    >
+                      ₹{balance?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Call History List */}
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: 600,
+                      color: "var(--color-gray-900)",
+                      margin: 0,
+                    }}
+                  >
+                    {showAllCalls ? "All Calls" : "Recent Calls"}
+                  </h3>
+                  {!showAllCalls && callHistory.length >= 20 && (
+                    <button
+                      onClick={handleLoadAllCalls}
+                      disabled={loadingAllCalls}
+                      style={{
+                        fontSize: "0.875rem",
+                        fontWeight: 500,
+                        color: "var(--color-indigo)",
+                        background: "transparent",
+                        border: "1px solid var(--color-indigo)",
+                        borderRadius: "0.5rem",
+                        padding: "0.5rem 1rem",
+                        cursor: loadingAllCalls ? "not-allowed" : "pointer",
+                        opacity: loadingAllCalls ? 0.6 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      {loadingAllCalls ? (
+                        <>
+                          <Loader2
+                            style={{
+                              width: "1rem",
+                              height: "1rem",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                          Loading...
+                        </>
+                      ) : (
+                        "View All"
+                      )}
+                    </button>
+                  )}
+                </div>
+                {loadingCallHistory ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: "3rem",
+                    }}
+                  >
+                    <Loader2
+                      style={{
+                        width: "2rem",
+                        height: "2rem",
+                        animation: "spin 1s linear infinite",
+                        color: "var(--color-indigo)",
+                      }}
+                    />
+                  </div>
+                ) : callHistory.length > 0 ? (
+                  <div style={{ display: "grid", gap: "0.75rem", maxHeight: "400px", overflowY: "auto" }}>
+                    {callHistory.map((call) => {
+                      const statusColor = getStatusColor(call.status);
+                      return (
+                        <div
+                          key={call.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "0.75rem",
+                            background: statusColor.bg,
+                            borderRadius: "0.5rem",
+                            border: `1px solid ${statusColor.border}`,
+                          }}
+                        >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                            flex: 1,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "2.5rem",
+                              height: "2.5rem",
+                              background:
+                                call.type === "video"
+                                  ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                                  : "linear-gradient(135deg, #10b981, #059669)",
+                              borderRadius: "50%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {call.type === "video" ? (
+                              <Video style={{ width: "1.25rem", height: "1.25rem" }} />
+                            ) : (
+                              <Phone style={{ width: "1.25rem", height: "1.25rem" }} />
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p
+                              style={{
+                                fontSize: "0.875rem",
+                                fontWeight: 500,
+                                color: "var(--color-gray-900)",
+                                margin: 0,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                              title={call.astrologerName}
+                            >
+                              {call.astrologerName || "Unknown Astrologer"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "var(--color-gray-500)",
+                                margin: "0.25rem 0 0 0",
+                              }}
+                            >
+                              {new Date(call.startedAt).toLocaleString()}
+                              {call.duration > 0 && ` • ${call.duration} min`}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            textAlign: "right",
+                            marginLeft: "1rem",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              color: "#dc2626",
+                              margin: 0,
+                            }}
+                          >
+                            -₹{call.cost?.toFixed(2) || "0.00"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              color: statusColor.text,
+                              margin: "0.25rem 0 0 0",
+                              textTransform: "capitalize",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {call.status || "completed"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "3rem",
+                      color: "var(--color-gray-500)",
+                    }}
+                  >
+                    <Clock
+                      style={{
+                        width: "3rem",
+                        height: "3rem",
+                        margin: "0 auto 1rem",
+                        opacity: 0.5,
+                      }}
+                    />
+                    <p>No call history yet.</p>
+                    <p style={{ fontSize: "0.875rem", marginTop: "0.5rem" }}>
+                      Start a call with an astrologer to see your history here.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Modal>
         </div>
       )}
 
