@@ -7,6 +7,7 @@ import {
   VideoConference,
   useLocalParticipant,
   useRemoteParticipants,
+  useRoomContext,
   ParticipantTile,
   TrackToggle,
   ControlBar
@@ -851,73 +852,92 @@ function VideoCallChat({ room, localParticipant }) {
     const currentRoom = room || localParticipant?.room;
     
     if (!currentRoom) {
-      console.warn("Chat: Room not available yet, will retry when ready");
+      console.log("❌ Chat: Room not available yet");
       return;
     }
 
     if (!localParticipant) {
-      console.warn("Chat: Local participant not available yet");
+      console.log("❌ Chat: Local participant not available yet");
       return;
     }
 
-    console.log("Chat: Setting up data listener", { 
-      roomState: currentRoom.state, 
-      localParticipantId: localParticipant.identity 
+    console.log("✅ Chat: Setting up message listener", {
+      roomName: currentRoom.name,
+      roomState: currentRoom.state,
+      localIdentity: localParticipant.identity,
+      remoteParticipants: currentRoom.remoteParticipants?.size || 0
     });
 
-    const handleDataReceived = (payload, participant, kind, topic) => {
-      console.log("Chat: Data received", { kind, topic, participantId: participant?.identity });
+    const handleDataReceived = (payload, participant, kind) => {
+      console.log("📨 Chat: Raw data received", {
+        kind,
+        fromParticipant: participant?.identity,
+        payloadSize: payload?.length
+      });
       
-      if (kind === DataPacket_Kind.RELIABLE && topic === undefined) {
-        try {
-          const decoder = new TextDecoder();
-          const text = decoder.decode(payload);
-          const data = JSON.parse(text);
+      try {
+        const decoder = new TextDecoder();
+        const text = decoder.decode(payload);
+        const data = JSON.parse(text);
+        
+        console.log("📦 Chat: Parsed data", data);
+        
+        // Handle call-ended signal
+        if (data.type === "call-ended") {
+          console.log("📞 Received call-ended signal from other party");
+          return;
+        }
+        
+        // Handle chat messages
+        if (data.type === "chat" && data.message) {
+          const isFromMe = participant?.identity === localParticipant.identity;
           
-          console.log("Chat: Parsed data", data);
+          console.log("💬 Chat: Message received", {
+            message: data.message,
+            sender: data.sender,
+            fromParticipant: participant?.identity,
+            isFromMe,
+            localIdentity: localParticipant.identity
+          });
           
-          // Handle call-ended signal
-          if (data.type === "call-ended") {
-            return;
-          }
-          
-          // Handle chat messages
-          if (data.type === "chat" && data.message) {
-            const isFromMe = participant?.identity === localParticipant?.identity;
-            console.log("Chat: Adding message", { isFromMe, message: data.message });
-            
+          // Only add if not from me (we already added it locally)
+          if (!isFromMe) {
+            console.log("✅ Adding received message to chat");
             setMessages((prev) => [
               ...prev,
               {
                 id: Date.now() + Math.random(),
                 text: data.message,
-                sender: data.sender || (isFromMe ? (isAstrologer ? "Astrologer" : "User") : participant?.name || "Unknown"),
-                isUser: isFromMe,
+                sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
+                isUser: false,
                 timestamp: new Date(),
               },
             ]);
+          } else {
+            console.log("⏭️ Skipping own message (already added locally)");
           }
-        } catch (error) {
-          console.error("Chat: Error parsing data message:", error);
         }
+      } catch (error) {
+        console.error("❌ Chat: Error parsing data message:", error);
       }
     };
 
     // Add listener regardless of connection state - it will work once connected
     currentRoom.on(RoomEvent.DataReceived, handleDataReceived);
+    console.log("✅ Chat: Message listener attached to room");
     
     // Also listen for connection to ensure it's set up
     const handleConnected = () => {
-      console.log("Chat: Room connected");
+      console.log("✅ Chat: Room connected");
     };
     currentRoom.on(RoomEvent.Connected, handleConnected);
 
     return () => {
-      console.log("Chat: Cleaning up listener");
+      console.log("🔌 Chat: Cleaning up listeners");
       currentRoom.off(RoomEvent.DataReceived, handleDataReceived);
       currentRoom.off(RoomEvent.Connected, handleConnected);
     };
-  }, [room, localParticipant, isAstrologer]);
+  }, [room, localParticipant]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -927,9 +947,9 @@ function VideoCallChat({ room, localParticipant }) {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) {
-      console.warn("Chat: Empty message");
+      console.warn("❌ Chat: Cannot send empty message");
       return;
     }
     
@@ -937,14 +957,21 @@ function VideoCallChat({ room, localParticipant }) {
     const currentRoom = room || localParticipant?.room;
     
     if (!currentRoom) {
-      console.warn("Chat: Room not available yet, will retry", { room: !!room, localParticipant: !!localParticipant, participantRoom: !!localParticipant?.room });
-      // Don't show alert, just silently return - the chat will work once room is ready
+      console.error("❌ Chat: Room not available for sending message");
+      alert("Chat not connected. Please wait a moment and try again.");
       return;
     }
     
     if (!localParticipant) {
-      console.warn("Chat: Local participant not available yet");
-      // Don't show alert, just silently return
+      console.error("❌ Chat: Local participant not available for sending message");
+      alert("Chat not connected. Please wait a moment and try again.");
+      return;
+    }
+
+    // Check room connection state
+    if (currentRoom.state !== "connected") {
+      console.error("❌ Chat: Room not connected, state:", currentRoom.state);
+      alert("Chat connecting... Please wait and try again.");
       return;
     }
 
@@ -955,20 +982,21 @@ function VideoCallChat({ room, localParticipant }) {
     };
 
     try {
-      console.log("Chat: Sending message", messageData);
-      
-      // Check room state
-      if (currentRoom.state !== "connected") {
-        console.warn("Chat: Room not connected yet, state:", currentRoom.state);
-        // Don't show alert, just return - user can try again when ready
-        return;
-      }
+      console.log("📤 Chat: Sending message", {
+        message: messageData.message,
+        sender: messageData.sender,
+        roomState: currentRoom.state,
+        localIdentity: localParticipant.identity,
+        remoteParticipants: currentRoom.remoteParticipants?.size || 0
+      });
 
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify(messageData));
       
-      // Use localParticipant directly (not room.localParticipant)
-      localParticipant.publishData(data, DataPacket_Kind.RELIABLE);
+      // Use localParticipant directly (from hook, not room.localParticipant)
+      await localParticipant.publishData(data, { reliable: true });
+      
+      console.log("✅ Chat: Data published successfully");
       
       // Add message to local state immediately for better UX
       setMessages((prev) => [
@@ -983,11 +1011,10 @@ function VideoCallChat({ room, localParticipant }) {
       ]);
       
       setInput("");
-      console.log("Chat: Message sent successfully");
+      console.log("✅ Chat: Message sent and added to local state");
     } catch (error) {
-      console.error("Chat: Error sending message:", error);
-      // Show error in console but don't interrupt user with alert
-      // The message will be retried automatically when connection is ready
+      console.error("❌ Chat: Error sending message:", error);
+      alert("Failed to send message. Please try again.");
     }
   };
 
@@ -1354,13 +1381,11 @@ function CustomVideoGridWrapper({ room, onMuteToggle, onVideoToggle, isMuted, is
 }
 
 // Chat Wrapper
-function VideoCallChatWrapper({ room: roomProp, showChat, setShowChat }) {
+function VideoCallChatWrapper({ showChat, setShowChat }) {
   const { localParticipant } = useLocalParticipant();
+  const room = useRoomContext(); // FIXED: Use useRoomContext hook to get room instance
   
   if (!showChat) return null;
-  
-  // Get room from localParticipant if available, otherwise use prop
-  const room = localParticipant?.localParticipant?.room || roomProp;
   
   // Always render chat, even if room/participant not ready yet (it will connect when ready)
   return (
@@ -1374,7 +1399,7 @@ function VideoCallChatWrapper({ room: roomProp, showChat, setShowChat }) {
       zIndex: 2000,
       pointerEvents: "auto",
     }}>
-      <VideoCallChat room={room} localParticipant={localParticipant?.localParticipant} />
+      <VideoCallChat room={room} localParticipant={localParticipant} />
     </div>
   );
 }
@@ -1582,13 +1607,29 @@ export default function VideoCallRoom() {
           body: JSON.stringify({ callId }),
         });
         
-        const result = await response.json();
-        
-        if (result.billingStarted) {
-          console.log("✅ Billing recovery check: Billing started via recovery mechanism");
-          clearInterval(recoveryInterval); // Stop checking once billing starts
+        if (response.ok) {
+          try {
+            const contentType = response.headers.get("content-type");
+            const result = contentType && contentType.includes("application/json") 
+              ? await response.json() 
+              : {};
+            
+            if (result.billingStarted) {
+              console.log("✅ Billing recovery check: Billing started via recovery mechanism");
+              clearInterval(recoveryInterval); // Stop checking once billing starts
+            } else {
+              console.log("⏳ Billing recovery check:", result.reason);
+            }
+          } catch (parseError) {
+            console.warn("Could not parse billing check response:", parseError);
+          }
         } else {
-          console.log("⏳ Billing recovery check:", result.reason);
+          const errorText = await response.text().catch(() => "Unknown error");
+          if (errorText.includes("Rate limit")) {
+            console.warn("⚠️ Rate limit hit during billing check, will retry...");
+          } else {
+            console.error("Billing check error:", errorText);
+          }
         }
       } catch (error) {
         console.error("Error in billing recovery check:", error);
@@ -2611,7 +2652,6 @@ export default function VideoCallRoom() {
                 {/* Chat Overlay - Inside LiveKitRoom to access hooks */}
                 {showChat && (
                   <VideoCallChatWrapper 
-                    room={roomRef.current || room} 
                     showChat={showChat}
                     setShowChat={setShowChat}
                   />

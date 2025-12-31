@@ -7,7 +7,7 @@ import {
   AudioConference,
   useLocalParticipant,
   useRemoteParticipants,
-  useRoom
+  useRoomContext
 } from "@livekit/components-react";
 import { Track, Room, DataPacket_Kind, RemoteParticipant, RoomEvent, ParticipantEvent, ConnectionQuality } from "livekit-client";
 import "@livekit/components-styles";
@@ -564,9 +564,9 @@ function VoiceCallParticipantStatus() {
 }
 
 // Wrapper to access LiveKit hooks
-function VoiceCallChatWrapper() {
+function VoiceCallChatWrapper({ onUnreadChange }) {
   const { localParticipant } = useLocalParticipant();
-  const room = localParticipant?.localParticipant?.room || null;
+  const room = useRoomContext(); // FIXED: Use useRoomContext hook to get room instance
   
   useEffect(() => {
     if (room) {
@@ -592,11 +592,11 @@ function VoiceCallChatWrapper() {
     );
   }
   
-  return <VoiceCallChat room={room} localParticipant={localParticipant?.localParticipant} />;
+  return <VoiceCallChat room={room} localParticipant={localParticipant} onUnreadChange={onUnreadChange} />;
 }
 
 // Chat component for LiveKit room
-function VoiceCallChat({ room, localParticipant }) {
+function VoiceCallChat({ room, localParticipant, onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
@@ -606,58 +606,91 @@ function VoiceCallChat({ room, localParticipant }) {
   // Listen for incoming messages via room events
   useEffect(() => {
     if (!room) {
-      console.log("Chat: Room not available yet");
+      console.log("❌ Chat: Room not available yet");
       return;
     }
 
-    console.log("Chat: Setting up message listener for room:", room.name);
+    if (!localParticipant) {
+      console.log("❌ Chat: Local participant not available yet");
+      return;
+    }
 
-    const handleDataReceived = (payload, participant, kind, topic) => {
-      if (kind === DataPacket_Kind.RELIABLE && topic === undefined) {
-        try {
-          const data = JSON.parse(new TextDecoder().decode(payload));
-          
-          // Handle call-ended signal
-          if (data.type === "call-ended") {
-            console.log("Received call-ended signal from other party");
-            return;
-          }
-          
-          // Handle chat messages
-          if (data.type === "chat" && data.message) {
-            const isFromMe = participant?.identity === localParticipant?.identity;
-            console.log("Chat: Received message from", isFromMe ? "me" : participant?.name, ":", data.message);
-            // Only add if not from me (we already added it locally)
-            if (!isFromMe) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now() + Math.random(),
-                  text: data.message,
-                  sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
-                  isUser: false,
-                  timestamp: new Date(),
-                },
-              ]);
-            }
-          }
-        } catch (error) {
-          console.error("Error parsing data message:", error);
+    console.log("✅ Chat: Setting up message listener", {
+      roomName: room.name,
+      roomState: room.state,
+      localIdentity: localParticipant.identity,
+      remoteParticipants: room.remoteParticipants?.size || 0
+    });
+
+    const handleDataReceived = (payload, participant, kind) => {
+      console.log("📨 Chat: Raw data received", {
+        kind,
+        fromParticipant: participant?.identity,
+        payloadSize: payload?.length
+      });
+
+      try {
+        const decoder = new TextDecoder();
+        const text = decoder.decode(payload);
+        const data = JSON.parse(text);
+        
+        console.log("📦 Chat: Parsed data", data);
+        
+        // Handle call-ended signal
+        if (data.type === "call-ended") {
+          console.log("📞 Received call-ended signal from other party");
+          return;
         }
+        
+        // Handle chat messages
+        if (data.type === "chat" && data.message) {
+          const isFromMe = participant?.identity === localParticipant.identity;
+          
+          console.log("💬 Chat: Message received", {
+            message: data.message,
+            sender: data.sender,
+            fromParticipant: participant?.identity,
+            isFromMe,
+            localIdentity: localParticipant.identity
+          });
+          
+          // Only add if not from me (we already added it locally)
+          if (!isFromMe) {
+            console.log("✅ Adding received message to chat");
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now() + Math.random(),
+                text: data.message,
+                sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
+                isUser: false,
+                timestamp: new Date(),
+              },
+            ]);
+            // Notify parent about new message
+            if (onUnreadChange) {
+              onUnreadChange(true);
+            }
+          } else {
+            console.log("⏭️ Skipping own message (already added locally)");
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error parsing data message:", error);
       }
     };
 
-    // Use RoomEvent.DataReceived
+    // Use RoomEvent.DataReceived - this is critical for receiving messages
     room.on(RoomEvent.DataReceived, handleDataReceived);
-    console.log("Chat: Message listener attached");
+    console.log("✅ Chat: Message listener attached to room");
 
     return () => {
       if (room) {
         room.off(RoomEvent.DataReceived, handleDataReceived);
-        console.log("Chat: Message listener removed");
+        console.log("🔌 Chat: Message listener removed");
       }
     };
-  }, [room, localParticipant, isAstrologer]);
+  }, [room, localParticipant, onUnreadChange]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -667,19 +700,28 @@ function VoiceCallChat({ room, localParticipant }) {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) {
-      console.warn("Cannot send empty message");
+      console.warn("❌ Chat: Cannot send empty message");
       return;
     }
     
     if (!room) {
-      console.error("Room not available for sending message");
+      console.error("❌ Chat: Room not available for sending message");
+      alert("Chat not connected. Please wait a moment and try again.");
       return;
     }
     
-    if (!room.localParticipant) {
-      console.error("Local participant not available for sending message");
+    if (!localParticipant) {
+      console.error("❌ Chat: Local participant not available for sending message");
+      alert("Chat not connected. Please wait a moment and try again.");
+      return;
+    }
+
+    // Check room connection state
+    if (room.state !== "connected") {
+      console.error("❌ Chat: Room not connected, state:", room.state);
+      alert("Chat connecting... Please wait and try again.");
       return;
     }
 
@@ -690,9 +732,21 @@ function VoiceCallChat({ room, localParticipant }) {
     };
 
     try {
+      console.log("📤 Chat: Sending message", {
+        message: messageData.message,
+        sender: messageData.sender,
+        roomState: room.state,
+        localIdentity: localParticipant.identity,
+        remoteParticipants: room.remoteParticipants?.size || 0
+      });
+
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify(messageData));
-      room.localParticipant.publishData(data, DataPacket_Kind.RELIABLE);
+      
+      // Use localParticipant directly (from hook, not room.localParticipant)
+      await localParticipant.publishData(data, { reliable: true });
+      
+      console.log("✅ Chat: Data published successfully");
       
       // Add message to local state immediately for better UX
       setMessages((prev) => [
@@ -707,9 +761,10 @@ function VoiceCallChat({ room, localParticipant }) {
       ]);
       
       setInput("");
-      console.log("Message sent successfully");
+      console.log("✅ Chat: Message sent and added to local state");
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("❌ Chat: Error sending message:", error);
+      alert("Failed to send message. Please try again.");
     }
   };
 
@@ -867,6 +922,7 @@ export default function VoiceCallRoom() {
   const [room, setRoom] = useState(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const roomRef = useRef(null);
   const callIdRef = useRef(null);
   const isDisconnectingRef = useRef(false);
@@ -971,10 +1027,23 @@ export default function VoiceCallRoom() {
           try {
             data = JSON.parse(err);
           } catch {}
-          throw new Error(data.error || "Session failed");
+          throw new Error(data.error || err || "Session failed");
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
+          } else {
+            const text = await response.text();
+            throw new Error(text || "Invalid response format");
+          }
+        } catch (parseError) {
+          console.error("Error parsing session response:", parseError);
+          throw new Error("Failed to parse session response");
+        }
+        
         if (!data.token || !data.wsUrl) throw new Error("Invalid session data");
 
         setToken(data.token);
@@ -1049,13 +1118,26 @@ export default function VoiceCallRoom() {
         });
         
         if (response.ok) {
-          const result = await response.json();
-          console.log(`✅ Participant ${participantType} join notified (state tracking):`, result);
+          try {
+            const contentType = response.headers.get("content-type");
+            const result = contentType && contentType.includes("application/json") 
+              ? await response.json() 
+              : { success: true };
+            console.log(`✅ Participant ${participantType} join notified (state tracking):`, result);
+          } catch (parseError) {
+            console.warn("Could not parse participant join response, but request was successful");
+          }
         } else {
-          const errorData = await response.json().catch(() => ({}));
+          const errorText = await response.text().catch(() => "Unknown error");
+          let errorData = {};
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: errorText };
+          }
           console.error(`❌ Failed to notify participant join:`, errorData);
-          // Retry on error
-          if (retryCount < 3) {
+          // Retry on error (but not for rate limits)
+          if (retryCount < 3 && !errorText.includes("Rate limit")) {
             setTimeout(() => notifyParticipantJoined(retryCount + 1), 2000);
           }
         }
@@ -1126,11 +1208,18 @@ export default function VoiceCallRoom() {
       });
 
           if (response.ok) {
-            const result = await response.json();
-            if (result.billingStarted && !result.alreadyStarted) {
-              console.log("✅ Billing started via recovery check");
-              // Stop checking once billing starts
-              clearInterval(billingCheckInterval);
+            try {
+              const contentType = response.headers.get("content-type");
+              const result = contentType && contentType.includes("application/json") 
+                ? await response.json() 
+                : {};
+              if (result.billingStarted && !result.alreadyStarted) {
+                console.log("✅ Billing started via recovery check");
+                // Stop checking once billing starts
+                clearInterval(billingCheckInterval);
+              }
+            } catch (parseError) {
+              console.warn("Could not parse billing check response:", parseError);
             }
       }
     } catch (error) {
@@ -1464,14 +1553,28 @@ export default function VoiceCallRoom() {
               }),
             });
             if (response.ok) {
-              const result = await response.json();
-              console.log("✅ Audio track published notified (state tracking):", result);
-              localStorage.setItem(`audio-notified-${callId}`, 'true');
+              try {
+                const contentType = response.headers.get("content-type");
+                const result = contentType && contentType.includes("application/json") 
+                  ? await response.json() 
+                  : { success: true };
+                console.log("✅ Audio track published notified (state tracking):", result);
+                localStorage.setItem(`audio-notified-${callId}`, 'true');
+              } catch (parseError) {
+                console.warn("Could not parse audio track response, but request was successful");
+                localStorage.setItem(`audio-notified-${callId}`, 'true');
+              }
             } else {
-              const errorData = await response.json().catch(() => ({}));
+              const errorText = await response.text().catch(() => "Unknown error");
+              let errorData = {};
+              try {
+                errorData = JSON.parse(errorText);
+              } catch {
+                errorData = { error: errorText };
+              }
               console.error("❌ Failed to notify audio track published:", errorData);
-              // Retry on error
-              if (retryCount < 3) {
+              // Retry on error (but not for rate limits)
+              if (retryCount < 3 && !errorText.includes("Rate limit")) {
                 setTimeout(() => handleTrackPublished(publication, retryCount + 1), 2000);
               }
             }
@@ -1575,7 +1678,13 @@ export default function VoiceCallRoom() {
                 console.log("✅ Audio track published notified (state tracking)");
                 localStorage.setItem(`audio-notified-${callId}`, 'true');
               } else {
-                const errorData = await response.json().catch(() => ({}));
+                const errorText = await response.text().catch(() => "Unknown error");
+                let errorData = {};
+                try {
+                  errorData = JSON.parse(errorText);
+                } catch {
+                  errorData = { error: errorText };
+                }
                 console.error("❌ Failed to notify audio track published:", errorData);
               }
             } catch (error) {
@@ -2259,6 +2368,9 @@ export default function VoiceCallRoom() {
                               if (response.ok) {
                                 console.log("✅ Audio track published notified immediately");
                                 localStorage.setItem(`audio-notified-${callId}`, 'true');
+                              } else {
+                                const errorText = await response.text().catch(() => "Unknown error");
+                                console.error("Error notifying audio track:", errorText);
                               }
                             } catch (error) {
                               console.error("Error notifying audio track:", error);
@@ -2332,7 +2444,12 @@ export default function VoiceCallRoom() {
                     {/* Mic Button - Inside LiveKitRoom context */}
                     <MicButton onMuteChange={(muted) => setIsMuted(muted)} />
                     <button
-                      onClick={() => setShowChat(!showChat)}
+                      onClick={() => {
+                        setShowChat(!showChat);
+                        if (!showChat) {
+                          setHasUnreadMessages(false); // Clear unread indicator when opening chat
+                        }
+                      }}
                       className="btn"
                       style={{
                         flex: 1,
@@ -2348,10 +2465,23 @@ export default function VoiceCallRoom() {
                         gap: "0.5rem",
                         cursor: "pointer",
                         transition: "all 0.2s",
+                        position: "relative",
                       }}
                     >
                       <MessageSquare style={{ width: "1.125rem", height: "1.125rem" }} />
                       <span>Chat</span>
+                      {hasUnreadMessages && !showChat && (
+                        <span style={{
+                          position: "absolute",
+                          top: "0.5rem",
+                          right: "0.5rem",
+                          width: "0.5rem",
+                          height: "0.5rem",
+                          background: "#ef4444",
+                          borderRadius: "50%",
+                          animation: "pulse 2s infinite",
+                        }} />
+                      )}
                     </button>
                     <button
                       onClick={handleForceExit}
@@ -2383,7 +2513,11 @@ export default function VoiceCallRoom() {
                     marginTop: "1rem",
                     paddingTop: "1rem",
                   }}>
-                    <VoiceCallChatWrapper />
+                    <VoiceCallChatWrapper onUnreadChange={(hasNew) => {
+                      if (hasNew && !showChat) {
+                        setHasUnreadMessages(true);
+                      }
+                    }} />
                   </div>
                 )}
               </div>
