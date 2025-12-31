@@ -2192,32 +2192,36 @@ export default function TalkToAstrologer() {
                               <Phone style={{ width: "1.25rem", height: "1.25rem" }} />
                             )}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p
-                              style={{
-                                fontSize: "0.875rem",
-                                fontWeight: 500,
-                                color: "var(--color-gray-900)",
-                                margin: 0,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                              title={call.astrologerName}
-                            >
-                              {call.astrologerName || "Unknown Astrologer"}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--color-gray-500)",
-                                margin: "0.25rem 0 0 0",
-                              }}
-                            >
-                              {new Date(call.startedAt).toLocaleString()}
-                              {call.duration > 0 && ` • ${call.duration} min`}
-                            </p>
-                          </div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             <p
+                               style={{
+                                 fontSize: "0.875rem",
+                                 fontWeight: 500,
+                                 color: "var(--color-gray-900)",
+                                 margin: 0,
+                                 whiteSpace: "nowrap",
+                                 overflow: "hidden",
+                                 textOverflow: "ellipsis",
+                               }}
+                               title={call.astrologerName}
+                             >
+                               {call.astrologerName || "Unknown Astrologer"}
+                             </p>
+                             <p
+                               style={{
+                                 fontSize: "0.75rem",
+                                 color: "var(--color-gray-500)",
+                                 margin: "0.25rem 0 0 0",
+                               }}
+                             >
+                               {new Date(call.startedAt).toLocaleString()}
+                               {call.duration > 0 && (() => {
+                                 const minutes = Math.floor(call.duration);
+                                 const seconds = Math.round((call.duration - minutes) * 60);
+                                 return ` • ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                               })()}
+                             </p>
+                           </div>
                         </div>
                         <div
                           style={{

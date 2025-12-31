@@ -500,8 +500,11 @@ export class BillingService {
           }
         }
 
-        // Calculate duration in minutes from seconds
-        const durationMinutes = data.actualDurationSeconds ? Math.floor(data.actualDurationSeconds / 60) : 0
+        // Calculate duration in minutes from seconds (keep decimal for mm:ss formatting)
+        const durationMinutes = data.actualDurationSeconds ? data.actualDurationSeconds / 60 : 0
+        const durationForDisplay = durationMinutes > 0 
+          ? `${Math.floor(durationMinutes)}:${Math.round((durationMinutes - Math.floor(durationMinutes)) * 60).toString().padStart(2, '0')}`
+          : '0:00'
         
         transactions.push({
           id: doc.id,
@@ -509,12 +512,12 @@ export class BillingService {
           amount: earnings,
           callId: doc.id, // Use document ID as callId
           userId: data.userId,
-          durationMinutes,
+          durationMinutes, // Keep as decimal (e.g., 1.5 for 1 minute 30 seconds)
           durationSeconds: data.actualDurationSeconds || 0,
           callType: data.callType || 'video',
           timestamp: endTime || data.createdAt || new Date(),
           status: 'completed',
-          description: `Earnings from ${data.callType || 'voice'} call (${durationMinutes} min)`
+          description: `Earnings from ${data.callType || 'voice'} call (${durationForDisplay})`
         })
       })
 
