@@ -164,6 +164,11 @@ function AstrologerDashboardContent() {
             for (const doc of snapshot.docs) {
               let call = { id: doc.id, ...doc.data() };
 
+              // Convert actualDurationSeconds to durationMinutes for display (keep as decimal for mm:ss formatting)
+              if (call.actualDurationSeconds) {
+                call.durationMinutes = call.actualDurationSeconds / 60;
+              }
+
               // Handle cancelled, rejected, and active calls - clear incoming call if status changed
               if (call.status === "cancelled" || call.status === "rejected" || call.status === "active") {
                 // If this was the current incoming call, clear it immediately
@@ -189,31 +194,9 @@ function AstrologerDashboardContent() {
                 // Don't skip - add to callsList to show in recent calls
               }
 
-              // For completed calls, fetch billing info if missing
-              if (
-                call.status === "completed" &&
-                (!call.durationMinutes || !call.finalAmount)
-              ) {
-                try {
-                  const billingDoc = await db
-                    .collection("call_billing")
-                    .doc(doc.id)
-                    .get();
-                  if (billingDoc.exists) {
-                    const billingData = billingDoc.data();
-                    call.durationMinutes =
-                      call.durationMinutes || billingData.durationMinutes;
-                    call.finalAmount =
-                      call.finalAmount || billingData.finalAmount;
-                  }
-                } catch (error) {
-                  console.warn(
-                    "Error fetching billing data for call:",
-                    doc.id,
-                    error
-                  );
-                }
-              }
+              // For completed calls, use data from call document (no need to fetch separate billing collection)
+              // Duration and amount are stored directly in the call document (actualDurationSeconds, finalAmount)
+              // This is read-only - no calculation needed
 
               if (call.status === "pending") newIncomingCall = call;
               if (call.status === "queued") queueList.push(call);
@@ -357,7 +340,11 @@ function AstrologerDashboardContent() {
           }
           
           if (data.success && data.calls) {
-            const callsList = data.calls;
+            // Convert actualDurationSeconds to durationMinutes for all calls
+            const callsList = data.calls.map(call => ({
+              ...call,
+              durationMinutes: call.actualDurationSeconds ? call.actualDurationSeconds / 60 : undefined
+            }));
             const queueList = callsList.filter(
               (call) => call.status === "queued"
             );
@@ -1086,8 +1073,10 @@ function AstrologerDashboardContent() {
   // Main render: Dashboard UI
   return (
     <>
-      {/* Incoming Call Notification - Enhanced with better props for styling */}
-      {incomingCall && incomingCall.status === "pending" &&
+      {/* Incoming Call Notification - DISABLED: GlobalCallNotification handles this globally */}
+      {/* Note: GlobalCallNotification component (in providers.js) handles all call notifications */}
+      {/* This prevents duplicate notifications when both components are active */}
+      {/* {incomingCall && incomingCall.status === "pending" &&
         (incomingCall.callType === "voice" ? (
           <VoiceCallNotification
             call={incomingCall}
@@ -1629,7 +1618,11 @@ function AstrologerDashboardContent() {
                               >
                                 {date.toLocaleString()}
                                 {isEarning && transaction.durationMinutes
-                                  ? ` • ${transaction.durationMinutes} min`
+                                  ? (() => {
+                                      const minutes = Math.floor(transaction.durationMinutes);
+                                      const seconds = Math.round((transaction.durationMinutes - minutes) * 60);
+                                      return ` • ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                    })()
                                   : ""}
                               </p>
                             </div>
@@ -2230,10 +2223,14 @@ function AstrologerDashboardContent() {
                                 }}
                               >
                                 {call.durationMinutes
-                                  ? `Duration: ${call.durationMinutes} min`
+                                  ? (() => {
+                                      const minutes = Math.floor(call.durationMinutes);
+                                      const seconds = Math.round((call.durationMinutes - minutes) * 60);
+                                      return `Duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                    })()
                                   : "Duration: N/A"}
                                 {call.finalAmount
-                                  ? ` • Earned: ₹${call.finalAmount}`
+                                  ? ` • Earned: ₹${call.finalAmount.toFixed(2)}`
                                   : ""}
                               </p>
                             )}

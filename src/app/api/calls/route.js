@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import admin from 'firebase-admin'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import { BillingService } from '@/lib/billing'
+// OLD BILLING SYSTEM - DEPRECATED
+// import { BillingService } from '@/lib/billing'
 import { CallStateService } from '@/lib/callState'
+import { CallStateMachine } from '@/lib/callStateMachine'
+import { PerSecondBillingService } from '@/lib/perSecondBilling'
 
 // Prevent static generation - this is a dynamic API route
 export const dynamic = 'force-dynamic';
@@ -101,19 +104,29 @@ export async function POST(request) {
 
         const isAstrologerAvailable = astrologerDoc.data().status === 'online'
 
-        const callData = {
-          astrologerId,
-          userId,
+        // Generate call ID
+        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+        // CRITICAL: Use CallStateMachine to create call with new schema
+        // This ensures all required fields are present from the start
+        const result = await CallStateMachine.createCall(callId, userId, astrologerId, callType)
+        
+        // Update call with additional metadata (status, roomName, position)
+        const callRef = db.collection('calls').doc(callId)
+        await callRef.update({
           status: isAstrologerAvailable ? 'pending' : 'queued',
-          callType,
-          createdAt: new Date().toISOString(),
           roomName: null,
           position: null
-        }
+        })
 
-        const callRef = await db.collection('calls').add(callData)
-
-        return NextResponse.json({ success: true, call: { id: callRef.id, ...callData } })
+        return NextResponse.json({ 
+          success: true, 
+          call: { 
+            id: callId, 
+            ...result.call,
+            status: isAstrologerAvailable ? 'pending' : 'queued'
+          } 
+        })
 
       case 'update-call-status':
         // Validate callId is provided and valid
@@ -129,6 +142,36 @@ export async function POST(request) {
         }
 
         const currentCallData = callToUpdateDoc.data()
+        
+        // CRITICAL: Migrate old calls to new schema if needed
+        const needsMigration = currentCallData.userJoined === undefined || 
+                              currentCallData.astrologerJoined === undefined ||
+                              currentCallData.audioTrackPublished === undefined ||
+                              currentCallData.billingStarted === undefined
+        
+        if (needsMigration) {
+          console.log(`🔄 Migrating call ${callId} to new schema (in update-call-status)`)
+          const migrationData = {
+            userJoined: currentCallData.userJoined || false,
+            astrologerJoined: currentCallData.astrologerJoined || false,
+            audioTrackPublished: currentCallData.audioTrackPublished || false,
+            billingStarted: currentCallData.billingStarted || false,
+            billingFinalized: currentCallData.billingFinalized || false,
+            callStartTime: currentCallData.callStartTime || null,
+            callEndTime: currentCallData.callEndTime || null,
+            ratePerMinute: currentCallData.ratePerMinute || null,
+            ratePerSecond: currentCallData.ratePerSecond || null,
+            holdAmount: currentCallData.holdAmount || null,
+            actualDurationSeconds: currentCallData.actualDurationSeconds || 0,
+            finalAmount: currentCallData.finalAmount || 0,
+            astrologerEarning: currentCallData.astrologerEarning || 0,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          }
+          await callToUpdateRef.update(migrationData)
+          // Refresh call data after migration
+          const migratedDoc = await callToUpdateRef.get()
+          Object.assign(currentCallData, migratedDoc.data())
+        }
         
         // CRITICAL: Prevent accepting cancelled or rejected calls
         if (status === 'active') {
@@ -176,6 +219,9 @@ export async function POST(request) {
             callType,
             roomName: updateData.roomName
           })
+          
+          // Also update the call document with roomName for webhook lookup
+          await callToUpdateRef.update({ roomName: updateData.roomName })
         } else if (status === 'cancelled' || status === 'rejected') {
           // Handle call cancellation/rejection
           const now = new Date()
@@ -195,36 +241,12 @@ export async function POST(request) {
           }
         }
         
-        // Handle call completion and billing finalization
-        if (status === 'completed' && durationMinutes !== undefined) {
-          try {
-            console.log(`Finalizing billing for call ${callId} with duration ${durationMinutes} minutes`)
-            const billingResult = await BillingService.immediateCallSettlement(callId, durationMinutes)
-            console.log('Billing finalization result:', billingResult)
-            updateData.billingFinalized = true
-            updateData.finalAmount = billingResult.finalAmount
-            updateData.refundAmount = billingResult.refundAmount
-            updateData.endTime = new Date()
-            updateData.durationMinutes = durationMinutes // Store duration in call document
-            
-            // Update astrologer status back to online
-            const callDoc = await callToUpdateRef.get()
-            if (callDoc.exists) {
-              const callData = callDoc.data()
-              if (callData.astrologerId) {
-                const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
-                await astrologerRef.update({ status: 'online' })
-                console.log(`Updated astrologer ${callData.astrologerId} status to online`)
-              }
-            }
-          } catch (billingError) {
-            console.error('Error finalizing billing:', billingError)
-            updateData.billingError = billingError.message
-          }
-        } else if (status === 'completed' && durationMinutes === undefined) {
-          // Handle completed calls without duration (shouldn't happen normally, but just in case)
-          console.warn(`Call ${callId} marked as completed without durationMinutes`)
+        // Handle call completion
+        // NOTE: Billing finalization happens automatically via PerSecondBillingService
+        // when participants leave (see /api/calls/participant route)
+        if (status === 'completed') {
           updateData.endTime = new Date()
+          console.log(`Call ${callId} marked as completed. Billing handled by PerSecondBillingService.`)
         }
 
         await callToUpdateRef.update(updateData)
@@ -232,39 +254,16 @@ export async function POST(request) {
         return NextResponse.json({ success: true, call: { id: callId, ...callToUpdateDoc.data(), ...updateData } })
 
       case 'finalize-call':
-        if (!callId || durationMinutes === undefined) {
-          return NextResponse.json({ error: 'Call ID and duration minutes are required' }, { status: 400 })
+        if (!callId) {
+          return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
         }
 
         try {
-          console.log(`Finalizing call ${callId} with duration ${durationMinutes} minutes`)
+          console.log(`Finalizing call ${callId} via new per-second billing system`)
           
-          // Finalize billing first
-          const billingResult = await BillingService.immediateCallSettlement(callId, durationMinutes)
+          // Use the new per-second billing service
+          const billingResult = await PerSecondBillingService.finalizeBilling(callId, 'manual_finalize')
           console.log('Billing finalization result:', billingResult)
-          
-          // Update call status to completed
-          const callFinalizeRef = db.collection('calls').doc(callId)
-          const callDoc = await callFinalizeRef.get()
-          
-          await callFinalizeRef.update({
-            status: 'completed',
-            endTime: new Date(),
-            durationMinutes,
-            billingFinalized: true,
-            finalAmount: billingResult.finalAmount,
-            refundAmount: billingResult.refundAmount
-          })
-          
-          // Update astrologer status back to online
-          if (callDoc.exists) {
-            const callData = callDoc.data()
-            if (callData.astrologerId) {
-              const astrologerRef = db.collection('astrologers').doc(callData.astrologerId)
-              await astrologerRef.update({ status: 'online' })
-              console.log(`Updated astrologer ${callData.astrologerId} status to online`)
-            }
-          }
           
           return NextResponse.json({ 
             success: true, 
@@ -293,43 +292,14 @@ export async function POST(request) {
         try {
           const result = await CallStateService.markCallConnected(callId)
           
-          // Only initialize billing when call is actually connected (not when created)
-          // This prevents charging for calls that never connect
-          if (!result.alreadyConnected) {
-            try {
-              // Get call data to get userId and astrologerId
-              const callDoc = await db.collection('calls').doc(callId).get()
-              if (callDoc.exists) {
-                const callData = callDoc.data()
-                const callUserId = callData.userId
-                const callAstrologerId = callData.astrologerId
-                
-                if (callUserId && callAstrologerId) {
-                  // Initialize billing now that call is connected
-                  const billingResult = await BillingService.initializeCallBilling(
-                    callId, 
-                    callUserId, 
-                    callAstrologerId
-                  )
-                  console.log(`✅ Billing initialized for connected call ${callId}:`, billingResult)
-                  return NextResponse.json({ 
-                    success: true, 
-                    ...result,
-                    billingInitialized: true,
-                    billing: billingResult
-                  })
-                }
-              }
-            } catch (billingError) {
-              console.error('Error initializing billing for connected call:', billingError)
-              // Don't fail the connection if billing fails - log and continue
-              return NextResponse.json({ 
-                success: true, 
-                ...result,
-                billingError: billingError.message
-              })
-            }
-          }
+          // NOTE: Billing is NO LONGER initialized here!
+          // The new per-second billing system starts automatically when:
+          // 1. Both participants join (via /api/calls/participant)
+          // 2. Audio track is published (via /api/calls/media)
+          // This happens via LiveKit webhooks and frontend notifications
+          // See: PerSecondBillingService.startBilling() in src/lib/perSecondBilling.js
+          
+          console.log(`✅ Call ${callId} marked as connected. Billing will start automatically when audio track is published.`)
           
           return NextResponse.json({ success: true, ...result })
         } catch (error) {
@@ -354,26 +324,15 @@ export async function POST(request) {
           return NextResponse.json({ error: 'Call ID is required' }, { status: 400 })
         }
         try {
-          const result = await CallStateService.completeCall(callId)
-          // Finalize billing with server-calculated duration
-          if (result.durationMinutes > 0) {
-            try {
-              const billingResult = await BillingService.immediateCallSettlement(callId, result.durationMinutes)
-              return NextResponse.json({ 
-                success: true, 
-                ...result,
-                billing: billingResult
-              })
-            } catch (billingError) {
-              console.error('Error finalizing billing:', billingError)
-              return NextResponse.json({ 
-                success: true, 
-                ...result,
-                billingError: billingError.message
-              })
-            }
-          }
-          return NextResponse.json({ success: true, ...result })
+          console.log(`Completing call ${callId} via new per-second billing system`)
+          
+          // Use the new per-second billing service
+          const billingResult = await PerSecondBillingService.finalizeBilling(callId, 'complete_call')
+          
+          return NextResponse.json({ 
+            success: true, 
+            billing: billingResult
+          })
         } catch (error) {
           console.error('Error completing call:', error)
           return NextResponse.json({ error: error.message }, { status: 400 })

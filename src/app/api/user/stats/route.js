@@ -62,7 +62,7 @@ export async function GET(request) {
       console.log('Could not fetch cached stats, will calculate:', error.message)
     }
 
-    // Calculate from call_billing collection (source of truth for billing)
+    // Calculate from calls collection (NEW: source of truth for billing)
     const currentDate = new Date()
     const currentMonth = currentDate.getMonth()
     const currentYear = currentDate.getFullYear()
@@ -71,16 +71,18 @@ export async function GET(request) {
     // Set month end to end of current month
     const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)
     
-    // Get all billing records for this user from call_billing collection
-    // This is the authoritative source for spending
-    let billingSnapshot
+    console.log(`📊 Calculating user stats for ${userId} from calls collection (new schema)`)
+    
+    // Get all completed calls for this user from calls collection
+    // This is the authoritative source for spending (NEW SCHEMA)
+    let callsSnapshot
     try {
-      billingSnapshot = await db.collection('call_billing')
+      callsSnapshot = await db.collection('calls')
         .where('userId', '==', userId)
         .where('status', '==', 'completed')
         .get()
     } catch (error) {
-      console.error('Error fetching billing records:', error)
+      console.error('Error fetching call records:', error)
       // Fallback: return zero values
       return NextResponse.json({
         success: true,
@@ -93,53 +95,57 @@ export async function GET(request) {
     let totalSpending = 0
     let monthlySpending = 0
 
-    billingSnapshot.forEach((doc) => {
-      const billingData = doc.data()
+    console.log(`📊 Found ${callsSnapshot.size} completed calls for user ${userId}`)
+
+    callsSnapshot.forEach((doc) => {
+      const callData = doc.data()
       
-      // Get finalAmount from billing (this is the actual charged amount)
-      const cost = billingData.finalAmount || billingData.totalCost || 0
+      // Get finalAmount from call (NEW SCHEMA: stored directly in call document)
+      const cost = callData.finalAmount || 0
       const costNum = typeof cost === 'number' ? cost : parseFloat(cost) || 0
       
       if (costNum > 0 && !isNaN(costNum)) {
         // Add to total spending (all time)
         totalSpending += costNum
 
-        // Check if this billing is from current month using createdAt or startTime
-        let billingDate = null
-        const dateField = billingData.createdAt || billingData.startTime || billingData.created_at
+        // Check if this call is from current month using callEndTime
+        let callDate = null
+        const dateField = callData.callEndTime || callData.createdAt
         
         if (dateField) {
           try {
             if (dateField.toDate && typeof dateField.toDate === 'function') {
-              billingDate = dateField.toDate()
+              callDate = dateField.toDate()
             } else if (typeof dateField === 'string') {
-              billingDate = new Date(dateField)
+              callDate = new Date(dateField)
             } else if (dateField._seconds !== undefined) {
               // Firestore timestamp format
-              billingDate = new Date(dateField._seconds * 1000 + (dateField._nanoseconds || 0) / 1000000)
+              callDate = new Date(dateField._seconds * 1000 + (dateField._nanoseconds || 0) / 1000000)
             } else if (dateField instanceof Date) {
-              billingDate = dateField
+              callDate = dateField
             } else {
-              billingDate = new Date(dateField)
+              callDate = new Date(dateField)
             }
             
             // Validate the date
-            if (isNaN(billingDate.getTime())) {
-              billingDate = null
+            if (isNaN(callDate.getTime())) {
+              callDate = null
             }
           } catch (e) {
-            console.warn('Error parsing billing date:', e)
-            billingDate = null
+            console.warn('Error parsing call date:', e)
+            callDate = null
           }
         }
         
-        // Check if billing is from current month (only if we have a valid date)
-        if (billingDate && billingDate >= monthStart && billingDate <= monthEnd) {
+        // Check if call is from current month (only if we have a valid date)
+        if (callDate && callDate >= monthStart && callDate <= monthEnd) {
           monthlySpending += costNum
         }
       }
     })
 
+    console.log(`✅ User stats calculated: total=₹${totalSpending}, monthly=₹${monthlySpending}`)
+    
     // Cache the results in user_stats collection (async, don't wait)
     db.collection('user_stats').doc(userId).set({
       totalSpending,

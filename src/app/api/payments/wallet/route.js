@@ -4,6 +4,10 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { WalletService } from '@/lib/wallet'
 import { createRazorpayOrder } from '@/lib/razorpay'
 
+// Mark this route as dynamic to prevent prerendering during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
   try {

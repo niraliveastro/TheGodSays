@@ -46,17 +46,28 @@ export async function GET(request) {
     const limitParam = searchParams.get('limit')
     const limit = limitParam ? parseInt(limitParam, 10) : 5
     
+    // Fetch MORE than needed to account for filtering out failed calls
+    const fetchLimit = Math.max(limit * 3, 20) // Fetch 3x or at least 20
+    
     // Try the query with orderBy first, if it fails, fallback to without orderBy
     let snapshot
     try {
-      snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get()
+      snapshot = await query.orderBy('createdAt', 'desc').limit(fetchLimit).get()
+      console.log(`📞 Fetched ${snapshot.size} calls with orderBy for ${userId ? 'user' : 'astrologer'}`)
     } catch (indexError) {
       console.log('Index not ready, querying without orderBy:', indexError.message)
-      snapshot = await query.limit(limit).get()
+      snapshot = await query.limit(fetchLimit).get()
     }
     const history = []
     const callIds = snapshot.docs.map(doc => doc.id)
-    const callDocs = snapshot.docs
+    let callDocs = snapshot.docs
+    
+    // Sort in memory by createdAt (most recent first)
+    callDocs = callDocs.sort((a, b) => {
+      const aTime = a.data().createdAt?.toDate?.() || new Date(a.data().createdAt || 0)
+      const bTime = b.data().createdAt?.toDate?.() || new Date(b.data().createdAt || 0)
+      return bTime - aTime
+    })
     
     // Collect unique user and astrologer IDs
     const userIdsSet = new Set()
@@ -67,24 +78,11 @@ export async function GET(request) {
       if (data.astrologerId) astrologerIdsSet.add(data.astrologerId)
     })
     
-    // Batch fetch all billing records, users, and astrologers in parallel
-    const [billingResults, userDocs, astrologerDocs] = await Promise.all([
-      callIds.length > 0 ? Promise.all(callIds.map(id => db.collection('call_billing').doc(id).get())) : Promise.resolve([]),
+    // Batch fetch users and astrologers in parallel (NO MORE call_billing collection)
+    const [userDocs, astrologerDocs] = await Promise.all([
       userIdsSet.size > 0 ? Promise.all(Array.from(userIdsSet).map(id => db.collection('users').doc(id).get())) : Promise.resolve([]),
       astrologerIdsSet.size > 0 ? Promise.all(Array.from(astrologerIdsSet).map(id => db.collection('astrologers').doc(id).get())) : Promise.resolve([])
     ])
-    
-    // Create billing map for quick lookup
-    const billingMap = new Map()
-    billingResults.forEach((billingDoc, idx) => {
-      if (billingDoc.exists) {
-        const billingData = billingDoc.data()
-        billingMap.set(callIds[idx], {
-          cost: billingData.finalAmount || billingData.totalCost || 0,
-          duration: billingData.durationMinutes || 0
-        })
-      }
-    })
     
     const usersMap = new Map()
     userDocs.forEach(doc => {
@@ -110,18 +108,27 @@ export async function GET(request) {
       const userName = callData.userId ? (usersMap.get(callData.userId) || `User ${callData.userId.substring(0, 8)}`) : 'Anonymous User'
       const astrologerName = callData.astrologerId ? (astrologersMap.get(callData.astrologerId) || 'Unknown') : 'Unknown'
       
-      // Get cost and duration from billing map (prefer billing data, fallback to call data)
-      const billingData = billingMap.get(doc.id)
-      let cost = 0
-      let duration = 0
+      // CRITICAL FIX: Read cost and duration DIRECTLY from call document (NEW system)
+      // NO MORE call_billing collection lookup
+      let cost = callData.finalAmount || 0
+      let durationSeconds = callData.actualDurationSeconds || 0
+      let duration = Math.floor(durationSeconds / 60) // Convert seconds to minutes for display
       
-      if (billingData) {
-        cost = billingData.cost || 0
-        duration = billingData.duration || 0
-      } else {
-        // Fallback to call data if billing not found
-        cost = callData.finalAmount || 0
-        duration = callData.durationMinutes || 0
+      // FILTER OUT: Skip failed calls or calls with no cost/duration
+      // Only show successfully completed calls
+      if (callData.status === 'failed' || (cost === 0 && durationSeconds === 0 && callData.status !== 'created')) {
+        console.log(`⏭️ Skipping ${callData.status} call ${doc.id} with cost=₹${cost}, duration=${durationSeconds}s`)
+        continue // Skip this call
+      }
+      
+      // Debug logging for calls with 0 cost but completed status
+      if (cost === 0 && callData.status === 'completed') {
+        console.warn(`⚠️ Call ${doc.id} has 0 cost but status is completed:`, {
+          finalAmount: callData.finalAmount,
+          actualDurationSeconds: callData.actualDurationSeconds,
+          status: callData.status,
+          billingFinalized: callData.billingFinalized
+        })
       }
       
       // Ensure proper data types and formatting
@@ -153,6 +160,11 @@ export async function GET(request) {
       }
       
       history.push(formattedCall)
+      
+      // Stop after we have enough valid calls
+      if (history.length >= limit) {
+        break
+      }
     }
     
     console.log('Call history fetched successfully:', {

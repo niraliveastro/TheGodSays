@@ -1202,9 +1202,9 @@ export default function Home() {
       localStorage.setItem("tgs:currentCallId", call.id);
       localStorage.setItem("tgs:astrologerId", astrologerId);
 
-      /* ---- Billing will be initialized when call is actually connected ---- */
-      /* ---- This prevents charging for calls that never connect ---- */
-      console.log("Call created. Billing will initialize when call connects.");
+      /* ---- Billing will start automatically when both participants join and audio track is published ---- */
+      /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
+      console.log("Call created. Billing will start automatically when call connects.");
 
       /* ---- Poll for call status ---- */
       let timeoutId;

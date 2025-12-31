@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -30,6 +30,7 @@ export default function GlobalCallNotification() {
   const router = useRouter();
   const pathname = usePathname();
   const [incomingCall, setIncomingCall] = useState(null);
+  const isProcessingRef = useRef(false); // Prevent duplicate accept/reject actions
   const [userNames, setUserNames] = useState({});
 
   // Check if user is an astrologer
@@ -176,6 +177,17 @@ export default function GlobalCallNotification() {
 
   const handleCallAction = async (callId, action) => {
     try {
+      // CRITICAL: Prevent duplicate actions
+      if (isProcessingRef.current) {
+        console.log("⚠️ Call action already in progress, ignoring duplicate");
+        return;
+      }
+      
+      isProcessingRef.current = true;
+      
+      // Clear incoming call immediately to prevent duplicate notifications
+      setIncomingCall(null);
+      
       const callRef = doc(db, "calls", callId);
 
       // Check current call status before accepting
@@ -183,26 +195,31 @@ export default function GlobalCallNotification() {
         const callSnapshot = await getDoc(callRef);
         if (!callSnapshot.exists) {
           alert("Call not found. It may have been cancelled.");
-          setIncomingCall(null);
+          isProcessingRef.current = false;
           return;
         }
 
         const currentCallData = callSnapshot.data();
 
-        // Prevent accepting cancelled or rejected calls
-        if (
-          currentCallData.status === "cancelled" ||
-          currentCallData.status === "rejected" ||
-          currentCallData.status === "completed"
-        ) {
-          alert("This call is no longer available.");
-          setIncomingCall(null);
+        // Prevent accepting if already accepted, cancelled, or rejected
+        if (currentCallData.status === "active" || 
+            currentCallData.status === "completed") {
+          console.log("⚠️ Call already accepted/completed, ignoring duplicate accept");
+          isProcessingRef.current = false;
+          return;
+        }
+        
+        if (currentCallData.status === "cancelled" ||
+            currentCallData.status === "rejected") {
+          alert("This call was cancelled/rejected and cannot be accepted.");
+          isProcessingRef.current = false;
           return;
         }
 
+        // Only accept if status is "pending"
         if (currentCallData.status !== "pending") {
           alert("This call is no longer available.");
-          setIncomingCall(null);
+          isProcessingRef.current = false;
           return;
         }
       }
@@ -312,6 +329,9 @@ export default function GlobalCallNotification() {
       }
     } catch (error) {
       console.error("Call action error:", error);
+    } finally {
+      // Always reset processing flag
+      isProcessingRef.current = false;
     }
   };
 

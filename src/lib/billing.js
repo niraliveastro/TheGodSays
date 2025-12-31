@@ -428,14 +428,15 @@ export class BillingService {
   static async getAstrologerEarnings(astrologerId, startDate, endDate) {
     try {
       const db = getDb()
-      let earningsQuery = db.collection('call_billing')
+      // NEW: Read from calls collection instead of call_billing
+      let earningsQuery = db.collection('calls')
         .where('astrologerId', '==', astrologerId)
         .where('status', '==', 'completed')
 
       if (startDate && endDate) {
         earningsQuery = earningsQuery
-          .where('endTime', '>=', startDate)
-          .where('endTime', '<=', endDate)
+          .where('callEndTime', '>=', startDate)
+          .where('callEndTime', '<=', endDate)
       }
 
       const earningsSnapshot = await earningsQuery.get()
@@ -444,12 +445,15 @@ export class BillingService {
 
       earningsSnapshot.forEach((doc) => {
         const data = doc.data()
-        totalEarnings += data.finalAmount
+        const earnings = data.astrologerEarning || 0 // NEW: Use astrologerEarning field
+        totalEarnings += earnings
         completedCalls.push({
           id: doc.id,
           ...data
         })
       })
+
+      console.log(`✅ Fetched earnings for astrologer ${astrologerId}: ₹${totalEarnings} from ${completedCalls.length} completed calls`)
 
       return {
         totalEarnings,
@@ -468,10 +472,11 @@ export class BillingService {
   static async getAstrologerEarningsWithHistory(astrologerId, limitCount = 50) {
     try {
       const db = getDb()
-      const earningsSnapshot = await db.collection('call_billing')
+      // NEW: Read from calls collection instead of call_billing
+      const earningsSnapshot = await db.collection('calls')
         .where('astrologerId', '==', astrologerId)
         .where('status', '==', 'completed')
-        .orderBy('endTime', 'desc')
+        .orderBy('callEndTime', 'desc')
         .limit(limitCount)
         .get()
 
@@ -480,32 +485,39 @@ export class BillingService {
 
       earningsSnapshot.forEach((doc) => {
         const data = doc.data()
-        const earnings = data.finalAmount || 0
+        const earnings = data.astrologerEarning || 0 // NEW: Use astrologerEarning field
         totalEarnings += earnings
         
-        // Parse endTime safely
+        // Parse callEndTime safely
         let endTime = null
-        if (data.endTime) {
-          if (data.endTime.toDate) {
-            endTime = data.endTime.toDate()
-          } else if (typeof data.endTime === 'string') {
-            endTime = new Date(data.endTime)
-          } else if (data.endTime.seconds) {
-            endTime = new Date(data.endTime.seconds * 1000)
+        if (data.callEndTime) {
+          if (data.callEndTime.toDate) {
+            endTime = data.callEndTime.toDate()
+          } else if (typeof data.callEndTime === 'string') {
+            endTime = new Date(data.callEndTime)
+          } else if (data.callEndTime.seconds) {
+            endTime = new Date(data.callEndTime.seconds * 1000)
           }
         }
 
+        // Calculate duration in minutes from seconds (keep decimal for mm:ss formatting)
+        const durationMinutes = data.actualDurationSeconds ? data.actualDurationSeconds / 60 : 0
+        const durationForDisplay = durationMinutes > 0 
+          ? `${Math.floor(durationMinutes)}:${Math.round((durationMinutes - Math.floor(durationMinutes)) * 60).toString().padStart(2, '0')}`
+          : '0:00'
+        
         transactions.push({
           id: doc.id,
           type: 'earnings',
           amount: earnings,
-          callId: data.callId,
+          callId: doc.id, // Use document ID as callId
           userId: data.userId,
-          durationMinutes: data.durationMinutes || 0,
+          durationMinutes, // Keep as decimal (e.g., 1.5 for 1 minute 30 seconds)
+          durationSeconds: data.actualDurationSeconds || 0,
           callType: data.callType || 'video',
           timestamp: endTime || data.createdAt || new Date(),
           status: 'completed',
-          description: `Earnings from ${data.callType || 'video'} call (${data.durationMinutes || 0} min)`
+          description: `Earnings from ${data.callType || 'voice'} call (${durationForDisplay})`
         })
       })
 
