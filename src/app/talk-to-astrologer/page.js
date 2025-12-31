@@ -14,7 +14,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import CallConnectingNotification from "@/components/CallConnectingNotification";
 import Modal from "@/components/Modal";
@@ -48,7 +48,7 @@ export default function TalkToAstrologer() {
   const [selectedAstrologer, setSelectedAstrologer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isCallHistoryModalOpen, setIsCallHistoryModalOpen] = useState(false);
-  const [callHistory, setCallHistory] = useState([]);
+  const [callHistory, setCallHistory] = useState([]); // Stores ALL calls
   const [totalSpending, setTotalSpending] = useState(0);
   const [monthlySpending, setMonthlySpending] = useState(0);
   const [loadingCallHistory, setLoadingCallHistory] = useState(false);
@@ -59,6 +59,71 @@ export default function TalkToAstrologer() {
   const [loadingAllCalls, setLoadingAllCalls] = useState(false);
 
   const router = useRouter();
+
+  /* --------------------------------------------------------------- */
+  /*  Helper: Invalidate Cache & Force Refresh                      */
+  /* --------------------------------------------------------------- */
+  const invalidateCache = (userId) => {
+    console.log('🗑️ Invalidating cache for user', userId)
+    const cacheKey = `tgs:callHistory:${userId}`
+    try {
+      localStorage.removeItem(cacheKey)
+      setCallHistoryCache(null)
+      setCallHistoryCacheTime(0)
+    } catch (e) {
+      console.warn('Error invalidating cache:', e)
+    }
+  }
+
+  /* --------------------------------------------------------------- */
+  /*  useEffect: Periodic balance refresh (every 5 seconds)         */
+  /* --------------------------------------------------------------- */
+  useEffect(() => {
+    const userId = localStorage.getItem("tgs:userId")
+    if (!userId) return
+
+    console.log('🔄 Setting up periodic balance refresh for user:', userId)
+
+    // Fetch balance immediately
+    let previousBalance = null
+    const fetchBalance = async () => {
+      try {
+        const response = await fetch("/api/payments/wallet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-balance", userId }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.wallet) {
+            const newBalance = data.wallet.balance || 0
+            
+            // If balance changed, invalidate cache
+            if (previousBalance !== null && previousBalance !== newBalance) {
+              console.log(`💰 Balance changed: ₹${previousBalance} → ₹${newBalance}`)
+              invalidateCache(userId)
+            }
+            
+            previousBalance = newBalance
+            setBalance(newBalance)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error)
+      }
+    }
+
+    // Fetch immediately
+    fetchBalance()
+
+    // Then poll every 5 seconds for real-time feel
+    const intervalId = setInterval(fetchBalance, 5000)
+
+    return () => {
+      console.log('🔌 Stopping balance refresh')
+      clearInterval(intervalId)
+    }
+  }, []) // Run once on mount
 
   /* --------------------------------------------------------------- */
   /*  Modal open state for body scroll lock                         */
@@ -329,20 +394,33 @@ export default function TalkToAstrologer() {
         status: call.status,
       });
 
-      /* ---- Billing will be initialized when call is actually connected ---- */
-      /* ---- This prevents charging for calls that never connect ---- */
-      console.log("Call created. Billing will initialize when call connects.");
+      /* ---- Billing will start automatically when both participants join and audio track is published ---- */
+      /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
+      console.log("Call created. Billing will start automatically when call connects.");
 
-      /* ---- Poll status ---- */
-      let timeoutId;
-      const poll = setInterval(async () => {
-        const sRes = await fetch(`/api/calls?astrologerId=${astrologerId}`);
-        const sData = await sRes.json();
-        const c = sData.calls?.find((c) => c.id === call.id);
+      /* ---- REAL-TIME listener for INSTANT status updates ---- */
+      const callDocRef = doc(db, "calls", call.id);
+      let unsubscribe = null;
+      let timeoutId = null;
 
-        if (c?.status === "active") {
-          clearInterval(poll);
-          clearTimeout(timeoutId);
+      console.log("📡 Setting up real-time listener for call:", call.id);
+
+      // Use Firestore real-time listener for instant updates (no 2s delay!)
+      unsubscribe = onSnapshot(callDocRef, async (snapshot) => {
+        if (!snapshot.exists()) {
+          console.error("❌ Call document no longer exists");
+          return;
+        }
+
+        const c = snapshot.data();
+        console.log(`📡 Real-time update - Call status: ${c.status}`, c);
+
+        if (c?.status === "active" && c?.roomName) {
+          console.log("✅ Call accepted by astrologer! Joining room:", c.roomName);
+          
+          // Clean up listener and timeout
+          if (unsubscribe) unsubscribe();
+          if (timeoutId) clearTimeout(timeoutId);
 
           // Track call accepted
           trackEvent("call_accepted", {
@@ -384,6 +462,8 @@ export default function TalkToAstrologer() {
             setConnectingCallType(null);
             setConnectingAstrologerId(null);
             setLoading(false);
+            
+            console.log("🚀 Redirecting user to call room:", roomName);
             router.push(
               type === "video"
                 ? `/talk-to-astrologer/room/${roomName}`
@@ -401,8 +481,11 @@ export default function TalkToAstrologer() {
             alert("Failed to join room.");
           }
         } else if (c?.status === "rejected") {
-          clearInterval(poll);
-          clearTimeout(timeoutId);
+          console.log("❌ Call rejected by astrologer");
+          
+          // Clean up listener and timeout
+          if (unsubscribe) unsubscribe();
+          if (timeoutId) clearTimeout(timeoutId);
 
           // Track call rejected
           trackActionAbandon("astrologer_booking", "astrologer_rejected");
@@ -425,9 +508,11 @@ export default function TalkToAstrologer() {
             setLoading(false);
           }, 2000);
         } else if (c?.status === "cancelled") {
-          // Handle cancelled status (when user cancels)
-          clearInterval(poll);
-          clearTimeout(timeoutId);
+          console.log("⚠️ Call cancelled");
+          
+          // Clean up listener and timeout
+          if (unsubscribe) unsubscribe();
+          if (timeoutId) clearTimeout(timeoutId);
 
           // Track call cancelled
           trackActionAbandon("astrologer_booking", "user_cancelled");
@@ -442,10 +527,16 @@ export default function TalkToAstrologer() {
           setCallStatus("connecting");
           setLoading(false);
         }
-      }, 2000);
+      }, (error) => {
+        console.error("❌ Error in call status listener:", error);
+      });
 
+      // Timeout after 60 seconds
       timeoutId = setTimeout(() => {
-        clearInterval(poll);
+        console.log("⏱️ Call timed out - astrologer not responding");
+        
+        // Clean up listener
+        if (unsubscribe) unsubscribe();
 
         // Track timeout
         trackActionAbandon("astrologer_booking", "astrologer_timeout");
@@ -502,27 +593,39 @@ export default function TalkToAstrologer() {
 
       let recentCalls = [];
       if (recentCallsResponse.ok) {
-        const data = await recentCallsResponse.json();
-        if (data.success && data.history) {
-          recentCalls = data.history;
+        try {
+          const data = await recentCallsResponse.json();
+          if (data.success && data.history) {
+            recentCalls = data.history;
+          }
+        } catch (jsonError) {
+          console.error("Error parsing call history response:", jsonError);
         }
       }
 
       let total = 0;
       let monthly = 0;
       if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        if (statsData.success) {
-          total = statsData.totalSpending || 0;
-          monthly = statsData.monthlySpending || 0;
+        try {
+          const statsData = await statsResponse.json();
+          if (statsData.success) {
+            total = statsData.totalSpending || 0;
+            monthly = statsData.monthlySpending || 0;
+          }
+        } catch (jsonError) {
+          console.error("Error parsing stats response:", jsonError);
         }
       }
 
       let balance = 0;
       if (balanceResponse.ok) {
-        const balanceData = await balanceResponse.json();
-        if (balanceData.success && balanceData.wallet) {
-          balance = balanceData.wallet.balance || 0;
+        try {
+          const balanceData = await balanceResponse.json();
+          if (balanceData.success && balanceData.wallet) {
+            balance = balanceData.wallet.balance || 0;
+          }
+        } catch (jsonError) {
+          console.error("Error parsing balance response:", jsonError);
         }
       }
 
@@ -561,9 +664,10 @@ export default function TalkToAstrologer() {
       return;
     }
 
-    // Check localStorage cache first (10 minute cache for instant loading)
+    // Check localStorage cache first (30 second cache for instant loading)
+    // SKIP cache completely when forceRefresh=true (e.g., when opening modal)
     const cacheKey = `tgs:callHistory:${userId}`;
-    const cacheTimeout = 10 * 60 * 1000; // 10 minutes
+    const cacheTimeout = 30 * 1000; // 30 seconds (reduced from 10 minutes)
     const now = Date.now();
     
     if (!forceRefresh && typeof window !== 'undefined') {
@@ -603,40 +707,66 @@ export default function TalkToAstrologer() {
 
     setLoadingCallHistory(true);
     try {
-      // Fetch recent calls (for display), spending stats (from cache/optimized), and balance in parallel
-      const [recentCallsResponse, statsResponse, balanceResponse] = await Promise.all([
-        fetch(`/api/calls/history?userId=${userId}&limit=20`), // Recent 20 for display only
-        fetch(`/api/user/stats?userId=${userId}`), // Optimized spending stats from cache
+      // STRATEGY: Fetch ALL calls once, then slice first 20 for "Recent Calls"
+      // This ensures both "Recent Calls" and "View All" use the same fresh data
+      const timestamp = Date.now();
+      const [allCallsResponse, statsResponse, balanceResponse] = await Promise.all([
+        fetch(`/api/calls/history?userId=${userId}&limit=1000&_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }), // Fetch ALL calls (up to 1000)
+        fetch(`/api/user/stats?userId=${userId}&_t=${timestamp}`, {
+          cache: 'no-store'
+        }), // Optimized spending stats from cache
         fetch("/api/payments/wallet", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache"
+          },
           body: JSON.stringify({ action: "get-balance", userId }),
+          cache: 'no-store'
         }),
       ]);
 
-      // Process recent calls for display
-      let recentCalls = [];
-      if (recentCallsResponse.ok) {
-        const data = await recentCallsResponse.json();
-        if (data.success && data.history) {
-          recentCalls = data.history;
-          setCallHistory(recentCalls);
-        } else {
+      // Process ALL calls - store everything
+      let allCalls = [];
+      if (allCallsResponse.ok) {
+        try {
+          const data = await allCallsResponse.json();
+          if (data.success && data.history) {
+            allCalls = data.history;
+            console.log(`📞 Fetched ${allCalls.length} total calls from API`);
+            setCallHistory(allCalls); // Store ALL calls
+          } else {
+            setCallHistory([]);
+          }
+        } catch (jsonError) {
+          console.error("❌ Error parsing call history response:", jsonError);
           setCallHistory([]);
         }
       } else {
+        console.error("❌ Call history API error:", allCallsResponse.status, allCallsResponse.statusText);
         setCallHistory([]);
       }
+      
+      const recentCalls = allCalls; // For cache, we store all
 
       // Process spending stats (from optimized API)
       let total = 0;
       let monthly = 0;
       if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        if (statsData.success) {
-          total = statsData.totalSpending || 0;
-          monthly = statsData.monthlySpending || 0;
+        try {
+          const statsData = await statsResponse.json();
+          if (statsData.success) {
+            total = statsData.totalSpending || 0;
+            monthly = statsData.monthlySpending || 0;
+          }
+        } catch (jsonError) {
+          console.error("❌ Error parsing stats response:", jsonError);
         }
+      } else {
+        console.error("❌ Stats API error:", statsResponse.status, statsResponse.statusText);
       }
 
       setTotalSpending(total);
@@ -644,39 +774,59 @@ export default function TalkToAstrologer() {
 
       // Process balance
       if (balanceResponse.ok) {
-        const balanceData = await balanceResponse.json();
-        if (balanceData.success && balanceData.wallet) {
-          const currentBalance = balanceData.wallet.balance || 0;
-          setBalance(currentBalance);
+        try {
+          const balanceData = await balanceResponse.json();
+          if (balanceData.success && balanceData.wallet) {
+            const currentBalance = balanceData.wallet.balance || 0;
+            setBalance(currentBalance);
 
-          // Update both localStorage and in-memory cache
-          const cacheData = {
-            recentCalls,
-            totalSpending: total,
-            monthlySpending: monthly,
-            balance: currentBalance,
-            timestamp: now,
-          };
-          
-          // Save to localStorage
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            } catch (e) {
-              console.warn('Error saving to localStorage:', e);
-            }
+            // Update both localStorage and in-memory cache
+            const cacheData = {
+              recentCalls,
+              totalSpending: total,
+              monthlySpending: monthly,
+              balance: currentBalance,
+              timestamp: now,
+            };
+          } else {
+            console.warn("⚠️ Balance API returned success but no wallet data");
           }
-          
-          // Update in-memory cache
-          setCallHistoryCache({
-            recentCalls,
-            totalSpending: total,
-            monthlySpending: monthly,
-            balance: currentBalance,
-          });
-          setCallHistoryCacheTime(now);
+        } catch (jsonError) {
+          console.error("❌ Error parsing balance response:", jsonError);
+          console.error("Response was:", await balanceResponse.text());
+        }
+      } else {
+        console.error("❌ Balance API error:", balanceResponse.status, balanceResponse.statusText);
+        try {
+          const errorText = await balanceResponse.text();
+          console.error("Error response:", errorText);
+        } catch (e) {
+          console.error("Could not read error response");
+        }
+        // Keep existing balance if API fails
+      }
+      
+      // Update cache even if some APIs failed
+      const cacheData = {
+        recentCalls,
+        totalSpending: total,
+        monthlySpending: monthly,
+        balance: balance || 0,
+        timestamp: now,
+      };
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (e) {
+          console.warn('Error saving to localStorage:', e);
         }
       }
+      
+      // Update in-memory cache
+      setCallHistoryCache(recentCalls);
+      setCallHistoryCacheTime(now);
     } catch (error) {
       console.error("Error fetching call history:", error);
       setCallHistory([]);
@@ -714,33 +864,27 @@ export default function TalkToAstrologer() {
   const handleOpenCallHistory = () => {
     setIsCallHistoryModalOpen(true);
     setShowAllCalls(false); // Reset to recent calls view
-    fetchCallHistory(false); // Use cache if available
+    
+    // CRITICAL: Clear ALL cached data immediately
+    const userId = localStorage.getItem("tgs:userId")
+    if (userId) {
+      invalidateCache(userId)
+    }
+    
+    // Clear state immediately to show loading
+    setCallHistory([]);
+    setLoadingCallHistory(true);
+    
+    // Force a small delay to ensure state clears before fetch
+    setTimeout(() => {
+      fetchCallHistory(true); // Force refresh, bypass all caches
+    }, 10);
   };
 
   const handleLoadAllCalls = async () => {
-    const userId = localStorage.getItem("tgs:userId");
-    if (!userId) {
-      alert("Please log in to view call history.");
-      router.push("/auth/user");
-      return;
-    }
-
-    setLoadingAllCalls(true);
-    try {
-      const response = await fetch(`/api/calls/history?userId=${userId}&limit=1000`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.history) {
-          setCallHistory(data.history);
-          setShowAllCalls(true);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching all calls:", error);
-      alert("Failed to load all calls. Please try again.");
-    } finally {
-      setLoadingAllCalls(false);
-    }
+    // No need to fetch again - we already have all calls loaded
+    // Just toggle the view to show all instead of recent 20
+    setShowAllCalls(true);
   };
 
   // Get status color theme
@@ -2002,7 +2146,7 @@ export default function TalkToAstrologer() {
                   </div>
                 ) : callHistory.length > 0 ? (
                   <div style={{ display: "grid", gap: "0.75rem", maxHeight: "400px", overflowY: "auto" }}>
-                    {callHistory.map((call) => {
+                    {(showAllCalls ? callHistory : callHistory.slice(0, 20)).map((call) => {
                       const statusColor = getStatusColor(call.status);
                       return (
                         <div

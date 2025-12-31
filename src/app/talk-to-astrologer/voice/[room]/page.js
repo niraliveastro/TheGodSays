@@ -6,7 +6,8 @@ import {
   LiveKitRoom, 
   AudioConference,
   useLocalParticipant,
-  useRemoteParticipants
+  useRemoteParticipants,
+  useRoom
 } from "@livekit/components-react";
 import { Track, Room, DataPacket_Kind, RemoteParticipant, RoomEvent, ParticipantEvent, ConnectionQuality } from "livekit-client";
 import "@livekit/components-styles";
@@ -916,8 +917,32 @@ export default function VoiceCallRoom() {
         const roomName = params.room;
         if (!userId) throw new Error("User not authenticated");
 
-        const callId = localStorage.getItem("tgs:currentCallId") || 
+        let callId = localStorage.getItem("tgs:currentCallId") || 
                       localStorage.getItem("tgs:callId");
+        
+        // FALLBACK: If callId not in localStorage, look it up from roomName
+        if (!callId && roomName) {
+          try {
+            const { collection, query, where, getDocs } = await import("firebase/firestore");
+            const { db } = await import("@/lib/firebase");
+            const callsQuery = query(
+              collection(db, "calls"),
+              where("roomName", "==", roomName)
+            );
+            const querySnapshot = await getDocs(callsQuery);
+            if (!querySnapshot.empty) {
+              callId = querySnapshot.docs[0].id;
+              console.log(`✅ Found callId ${callId} from roomName ${roomName}`);
+              localStorage.setItem("tgs:currentCallId", callId);
+              localStorage.setItem("tgs:callId", callId);
+            } else {
+              console.warn(`⚠️ No call found for roomName ${roomName}`);
+            }
+          } catch (lookupError) {
+            console.warn("Error looking up callId from roomName:", lookupError);
+          }
+        }
+        
         callIdRef.current = callId;
 
         const participantId = isAstrologer
@@ -964,71 +989,90 @@ export default function VoiceCallRoom() {
     if (params.room && !permissionError) initializeRoom();
   }, [params.room, permissionError]);
 
-  // Server-side duration sync - fetch from server every second
+  // Track participant join for state management (not billing)
   useEffect(() => {
     if (!isConnected) return;
     
-    const callId = callIdRef.current || 
+    // Determine participant type
+    const userRole = localStorage.getItem("tgs:role") || "user";
+    const participantType = userRole === "astrologer" ? "astrologer" : "user";
+
+    // Notify backend that participant joined (for state tracking only)
+    const notifyParticipantJoined = async (retryCount = 0) => {
+      // Try to get callId from multiple sources
+      let callId = callIdRef.current || 
       localStorage.getItem("tgs:currentCallId") || 
       localStorage.getItem("tgs:callId");
     
-    if (!callId) return;
-
-    // Mark call as connected when we join (only once)
-    const markConnected = async () => {
+      // If callId not found, try to get it from room name
+      if (!callId && params.room) {
       try {
-        const response = await fetch("/api/calls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "mark-connected",
-            callId: callId,
-          }),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          console.log("✅ Voice call marked as connected:", data);
+          const { collection, query, where, getDocs } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          const callsQuery = query(
+            collection(db, "calls"),
+            where("roomName", "==", params.room)
+          );
+          const querySnapshot = await getDocs(callsQuery);
+          if (!querySnapshot.empty) {
+            callId = querySnapshot.docs[0].id;
+            console.log(`✅ Found callId ${callId} from roomName ${params.room}`);
+            callIdRef.current = callId;
+            localStorage.setItem("tgs:currentCallId", callId);
+            localStorage.setItem("tgs:callId", callId);
         }
-      } catch (error) {
-        console.error("Error marking voice call as connected:", error);
+        } catch (lookupError) {
+          console.warn("Error looking up callId from roomName:", lookupError);
       }
-    };
+      }
+      
+      if (!callId) {
+        // Retry after a delay if callId not found yet
+        if (retryCount < 5) {
+          console.log(`⚠️ CallId not found, retrying participant join notification (attempt ${retryCount + 1}/5)...`);
+          setTimeout(() => notifyParticipantJoined(retryCount + 1), 1000 * (retryCount + 1));
+        } else {
+          console.error("❌ Failed to notify participant join - callId not found after 5 retries");
+        }
+        return;
+      }
 
-    // Mark connected immediately
-    markConnected();
-
-    // Sync duration from server every second
-    const syncDuration = async () => {
       try {
-        const response = await fetch("/api/calls", {
+        const response = await fetch("/api/calls/participant", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "get-duration",
             callId: callId,
+            action: "join",
+            participantType: participantType,
           }),
         });
+        
         if (response.ok) {
-          const data = await response.json();
-          if (data.durationSeconds !== undefined) {
-            setCallDuration(data.durationSeconds);
+          const result = await response.json();
+          console.log(`✅ Participant ${participantType} join notified (state tracking):`, result);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(`❌ Failed to notify participant join:`, errorData);
+          // Retry on error
+          if (retryCount < 3) {
+            setTimeout(() => notifyParticipantJoined(retryCount + 1), 2000);
           }
         }
       } catch (error) {
-        console.error("Error syncing voice call duration:", error);
+        console.error("Error notifying participant join:", error);
+        // Retry on error
+        if (retryCount < 3) {
+          setTimeout(() => notifyParticipantJoined(retryCount + 1), 2000);
+        }
       }
     };
 
-    // Initial sync
-    syncDuration();
-    
-    // Sync every second
-    const interval = setInterval(syncDuration, 1000);
-    
-    return () => clearInterval(interval);
+    // Notify when connected (with retry logic)
+    notifyParticipantJoined();
   }, [isConnected]);
 
-  // Firebase real-time listener for call status changes
+  // Firebase real-time listener for call state, duration, and billing
   useEffect(() => {
     const callId = callIdRef.current || 
                   localStorage.getItem("tgs:currentCallId") || 
@@ -1036,7 +1080,7 @@ export default function VoiceCallRoom() {
     
     if (!callId) return;
 
-    // Listen for call status changes in Firebase
+    // Listen for call state changes in Firebase
     const callRef = doc(db, "calls", callId);
     firebaseUnsubscribeRef.current = onSnapshot(
       callRef,
@@ -1045,14 +1089,20 @@ export default function VoiceCallRoom() {
         
         const callData = snapshot.data();
         
+        // Update duration from Firestore (per-second accurate)
+        if (callData.actualDurationSeconds !== undefined) {
+          setCallDuration(callData.actualDurationSeconds || 0);
+        }
+        
         // If call is completed, cancelled, or rejected, disconnect immediately
         if (callData.status === "completed" || 
             callData.status === "cancelled" || 
-            callData.status === "rejected") {
+            callData.status === "rejected" ||
+            callData.status === "failed") {
           
           if (!isDisconnectingRef.current) {
-            console.log(`Call ${callId} ended by other party. Status: ${callData.status}`);
-            // Auto-disconnect when other party ends call
+            console.log(`Call ${callId} ended. Status: ${callData.status}`);
+            // Auto-disconnect when call ends
             handleDisconnect();
           }
         }
@@ -1062,51 +1112,46 @@ export default function VoiceCallRoom() {
       }
     );
 
+    // CRITICAL RECOVERY MECHANISM: Check if billing should start
+    // This handles cases where webhooks or events are missed
+    // Only runs if connected
+    let billingCheckInterval = null;
+    if (isConnected) {
+      billingCheckInterval = setInterval(async () => {
+        try {
+          const response = await fetch("/api/calls/billing/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ callId }),
+      });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.billingStarted && !result.alreadyStarted) {
+              console.log("✅ Billing started via recovery check");
+              // Stop checking once billing starts
+              clearInterval(billingCheckInterval);
+            }
+      }
+    } catch (error) {
+          console.warn("Recovery billing check error:", error);
+        }
+      }, 3000); // Check every 3 seconds
+    }
+
     return () => {
       if (firebaseUnsubscribeRef.current) {
         firebaseUnsubscribeRef.current();
         firebaseUnsubscribeRef.current = null;
       }
+      if (billingCheckInterval) {
+        clearInterval(billingCheckInterval);
+      }
     };
   }, [isConnected]); // Re-run when connection status changes
 
-  const updateCallStatus = async (status, durationMinutes = null) => {
-    try {
-      const callId = callIdRef.current || 
-                    localStorage.getItem("tgs:currentCallId") || 
-                    localStorage.getItem("tgs:callId");
-      
-      if (!callId) {
-        console.warn("No callId found for status update");
-        return;
-      }
-
-      const updateData = {
-        action: "update-call-status",
-        callId: callId,
-        status: status,
-      };
-
-      if (durationMinutes !== null) {
-        updateData.durationMinutes = durationMinutes;
-      }
-
-      const response = await fetch("/api/calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Failed to update call status:", errorData);
-      } else {
-        console.log(`Call status updated to: ${status}`);
-      }
-    } catch (error) {
-      console.error("Error updating call status:", error);
-    }
-  };
+  // Note: updateCallStatus removed - call status is managed by backend via webhooks
+  // Frontend only reads state from Firestore
 
   const handleDisconnect = async (forceExit = false) => {
     // If force exit, allow it even if already disconnecting (user manually clicked)
@@ -1127,9 +1172,8 @@ export default function VoiceCallRoom() {
       const callId = callIdRef.current || 
                     localStorage.getItem("tgs:currentCallId") || 
                     localStorage.getItem("tgs:callId");
-      const durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
 
-      console.log(`Ending voice call ${callId} with duration ${durationMinutes} minutes`);
+      console.log(`Ending voice call ${callId}`);
 
       // CRITICAL: Send disconnect signal via LiveKit data channel FIRST
       // This ensures the other party gets immediate notification
@@ -1159,44 +1203,25 @@ export default function VoiceCallRoom() {
         }
       }
 
-      // Complete call with server-side duration calculation and billing
-      // This ensures both parties see the same duration and billing is accurate
+      // Notify backend that participant left (billing finalization happens automatically via webhook)
       if (callId) {
         try {
-          // Use complete-call endpoint which handles duration calculation and billing
-          const completeResponse = await fetch("/api/calls", {
+          const userRole = localStorage.getItem("tgs:role") || "user";
+          const participantType = userRole === "astrologer" ? "astrologer" : "user";
+          
+          await fetch("/api/calls/participant", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              action: "complete-call",
               callId: callId,
+              action: "leave",
+              participantType: participantType,
             }),
           });
-
-          if (completeResponse.ok) {
-            const completeData = await completeResponse.json();
-            console.log("✅ Voice call completed with server-calculated duration:", {
-              durationSeconds: completeData.durationSeconds,
-              durationMinutes: completeData.durationMinutes,
-              billing: completeData.billing
-            });
-            
-            if (completeData.billing) {
-              console.log(`✅ Voice billing finalized: ₹${completeData.billing.finalAmount} charged`);
-            }
-          } else {
-            console.warn("⚠️ Error completing voice call, trying fallback");
-            // Fallback to old method if new endpoint fails
-            await updateCallStatus("completed", durationMinutes);
-          }
+          console.log(`✅ Participant ${participantType} leave notified (billing will finalize automatically)`);
         } catch (e) {
-          console.warn("Error completing voice call:", e);
-          // Fallback to old method
-          try {
-            await updateCallStatus("completed", durationMinutes);
-          } catch (fallbackError) {
-            console.error("Fallback also failed:", fallbackError);
-          }
+          console.warn("Error notifying participant leave:", e);
+          // Continue with disconnect even if notification fails
         }
       }
 
@@ -1267,9 +1292,19 @@ export default function VoiceCallRoom() {
 
   // Set up room event listeners when room is available
   useEffect(() => {
+    // Try multiple sources for room: ref, state
     const currentRoom = roomRef.current || room;
     
-    if (!currentRoom || !isConnected) return;
+    if (!currentRoom || !isConnected) {
+      console.log("⏳ Waiting for room and connection...", { 
+        hasRoomRef: !!roomRef.current, 
+        hasRoomState: !!room, 
+        isConnected 
+      });
+      return;
+    }
+    
+    console.log("✅ Setting up room event listeners for room:", currentRoom.name);
 
     // Listen for call-ended signals via data channel
     const handleDataReceived = (payload, participant, kind, topic) => {
@@ -1371,10 +1406,85 @@ export default function VoiceCallRoom() {
         updateMuteState();
       }
     };
-    const handleTrackPublished = (publication) => {
+    const handleTrackPublished = async (publication, retryCount = 0) => {
       if (publication && publication.source === Track.Source.Microphone) {
-        console.log("📢 Track published event received");
+        console.log("📢 Audio track published event received");
         updateMuteState();
+        
+        // Notify backend that audio track is published (for state tracking only)
+        // Billing will start automatically via webhook, but we notify for redundancy
+        let callId = callIdRef.current || 
+                      localStorage.getItem("tgs:currentCallId") || 
+                      localStorage.getItem("tgs:callId");
+        
+        // If callId not found, try to get it from room name
+        if (!callId && params.room) {
+          try {
+            const { collection, query, where, getDocs } = await import("firebase/firestore");
+            const { db } = await import("@/lib/firebase");
+            const callsQuery = query(
+              collection(db, "calls"),
+              where("roomName", "==", params.room)
+            );
+            const querySnapshot = await getDocs(callsQuery);
+            if (!querySnapshot.empty) {
+              callId = querySnapshot.docs[0].id;
+              console.log(`✅ Found callId ${callId} from roomName for audio track notification`);
+              callIdRef.current = callId;
+              localStorage.setItem("tgs:currentCallId", callId);
+              localStorage.setItem("tgs:callId", callId);
+            }
+          } catch (lookupError) {
+            console.warn("Error looking up callId from roomName for audio track:", lookupError);
+          }
+        }
+        
+        if (!callId) {
+          // Retry after a delay if callId not found yet
+          if (retryCount < 5) {
+            console.log(`⚠️ CallId not found for audio track, retrying (attempt ${retryCount + 1}/5)...`);
+            setTimeout(() => handleTrackPublished(publication, retryCount + 1), 1000 * (retryCount + 1));
+          } else {
+            console.error("❌ Failed to notify audio track published - callId not found after 5 retries");
+          }
+          return;
+        }
+        
+        // Check if we already notified (avoid duplicate calls)
+        const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+        if (!alreadyNotified) {
+          try {
+            const response = await fetch("/api/calls/media", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                callId: callId,
+                trackType: "audio",
+                event: "published",
+              }),
+            });
+            if (response.ok) {
+              const result = await response.json();
+              console.log("✅ Audio track published notified (state tracking):", result);
+              localStorage.setItem(`audio-notified-${callId}`, 'true');
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              console.error("❌ Failed to notify audio track published:", errorData);
+              // Retry on error
+              if (retryCount < 3) {
+                setTimeout(() => handleTrackPublished(publication, retryCount + 1), 2000);
+              }
+            }
+          } catch (error) {
+            console.error("Error notifying audio track published:", error);
+            // Retry on error
+            if (retryCount < 3) {
+              setTimeout(() => handleTrackPublished(publication, retryCount + 1), 2000);
+            }
+          }
+        } else {
+          console.log("⚠️ Audio track already notified for this call");
+        }
       }
     };
     
@@ -1386,10 +1496,164 @@ export default function VoiceCallRoom() {
       }
     };
 
+    // CRITICAL: Check if audio track is already published when room connects
+    // (TrackPublished event might have fired before listener was set up)
+    const checkExistingAudioTrack = async (forceNotify = false) => {
+      // Try to get callId from multiple sources
+      let callId = callIdRef.current || 
+                    localStorage.getItem("tgs:currentCallId") || 
+                    localStorage.getItem("tgs:callId");
+      
+      // If callId not found, try to get it from room name
+      if (!callId && params.room) {
+        try {
+          const { collection, query, where, getDocs } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          const callsQuery = query(
+            collection(db, "calls"),
+            where("roomName", "==", params.room)
+          );
+          const querySnapshot = await getDocs(callsQuery);
+          if (!querySnapshot.empty) {
+            callId = querySnapshot.docs[0].id;
+            console.log(`✅ Found callId ${callId} from roomName for audio track check`);
+            callIdRef.current = callId;
+            localStorage.setItem("tgs:currentCallId", callId);
+            localStorage.setItem("tgs:callId", callId);
+          }
+        } catch (lookupError) {
+          console.warn("Error looking up callId from roomName for audio track check:", lookupError);
+        }
+      }
+      
+      if (!callId) {
+        console.warn("⚠️ Cannot check audio track - no callId available");
+        return;
+      }
+      
+      const localParticipant = currentRoom.localParticipant;
+      let audioTrackFound = false;
+      
+      if (localParticipant) {
+        // Check for microphone track
+        const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+        
+        // ULTRA-AGGRESSIVE: Check multiple ways
+        const hasTrack = micPublication && micPublication.track;
+        const isEnabled = localParticipant.isMicrophoneEnabled;
+        const audioTracks = localParticipant.audioTrackPublications;
+        const hasAudioTracks = audioTracks && audioTracks.size > 0;
+        
+        console.log("🔍 Audio track check:", {
+          hasTrack,
+          isEnabled,
+          hasAudioTracks,
+          trackCount: audioTracks ? audioTracks.size : 0,
+          forceNotify
+        });
+        
+        // If ANY indication of audio track, notify backend
+        if (hasTrack || hasAudioTracks || forceNotify) {
+          console.log("📢 Audio track detected, notifying backend...");
+          audioTrackFound = true;
+          
+          // Check if already notified
+          const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+          if (!alreadyNotified || forceNotify) {
+            try {
+              const response = await fetch("/api/calls/media", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  callId: callId,
+                  trackType: "audio",
+                  event: "published",
+                }),
+              });
+              
+              if (response.ok) {
+                console.log("✅ Audio track published notified (state tracking)");
+                localStorage.setItem(`audio-notified-${callId}`, 'true');
+              } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("❌ Failed to notify audio track published:", errorData);
+              }
+            } catch (error) {
+              console.error("Error notifying audio track published:", error);
+            }
+          } else {
+            console.log("ℹ️ Audio track already notified");
+          }
+        } else {
+          console.log("⚠️ No audio track found yet");
+        }
+      }
+      
+      // Also check remote participants
+      const remoteParticipants = Array.from(currentRoom.remoteParticipants.values());
+      for (const remoteParticipant of remoteParticipants) {
+        const remoteMicPublication = remoteParticipant.getTrackPublication(Track.Source.Microphone);
+        if (remoteMicPublication && remoteMicPublication.track) {
+          console.log("📢 Remote participant has audio track");
+        }
+      }
+      
+      return audioTrackFound;
+    };
+
+    // Check immediately when room is ready (with delay to ensure room is fully initialized)
+    // Multiple checks to catch the audio track at different stages
+    setTimeout(() => checkExistingAudioTrack(false), 500);
+    setTimeout(() => checkExistingAudioTrack(false), 1500);
+    setTimeout(() => checkExistingAudioTrack(false), 3000);
+    setTimeout(() => checkExistingAudioTrack(false), 5000);
+    
+    // ULTRA-AGGRESSIVE: Force notify after 10 seconds if not already notified
+    // This ensures billing starts even if audio track detection fails
+    setTimeout(async () => {
+      const callId = callIdRef.current || 
+                    localStorage.getItem("tgs:currentCallId") || 
+                    localStorage.getItem("tgs:callId");
+      
+      if (callId) {
+        const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+        if (!alreadyNotified) {
+          console.warn("⚠️ Audio track not detected after 10 seconds - FORCE NOTIFYING to start billing");
+          await checkExistingAudioTrack(true); // Force notify
+        }
+      }
+    }, 10000); // Force after 10 seconds
+
     currentRoom.localParticipant.on(ParticipantEvent.TrackMuted, handleTrackMuted);
     currentRoom.localParticipant.on(ParticipantEvent.TrackUnmuted, handleTrackUnmuted);
     currentRoom.localParticipant.on(ParticipantEvent.TrackPublished, handleTrackPublished);
     currentRoom.on(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
+    
+    // Also check periodically (fallback in case event doesn't fire)
+    const checkInterval = setInterval(() => {
+      const localParticipant = currentRoom.localParticipant;
+      if (localParticipant) {
+        const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+        if (micPublication && micPublication.track) {
+          const callId = callIdRef.current || 
+                        localStorage.getItem("tgs:currentCallId") || 
+                        localStorage.getItem("tgs:callId");
+          if (callId) {
+            // Check if we already notified (avoid duplicate calls)
+            const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+            if (!alreadyNotified) {
+              console.log("📢 Audio track detected (periodic check), notifying backend...");
+              handleTrackPublished(micPublication);
+              localStorage.setItem(`audio-notified-${callId}`, 'true');
+            }
+          }
+        }
+      }
+    }, 2000); // Check every 2 seconds
+
+    // Store interval for cleanup
+    if (!window.audioCheckIntervals) window.audioCheckIntervals = [];
+    window.audioCheckIntervals.push(checkInterval);
 
     // Cleanup function
     return () => {
@@ -1408,6 +1672,12 @@ export default function VoiceCallRoom() {
         }
         currentRoom.off(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
         currentRoom.off(RoomEvent.TrackSubscribed, handleLocalTrackSubscribed);
+      }
+      
+      // Cleanup periodic check intervals
+      if (window.audioCheckIntervals) {
+        window.audioCheckIntervals.forEach(interval => clearInterval(interval));
+        window.audioCheckIntervals = [];
       }
     };
   }, [room, isConnected]); // Re-run when room or connection status changes
@@ -1949,6 +2219,7 @@ export default function VoiceCallRoom() {
                 
                 // Store room reference - room might be undefined, so check first
                 if (room) {
+                  console.log("✅ Room provided in onConnected callback:", room.name);
                   setRoom(room);
                   roomRef.current = room;
                   isDisconnectingRef.current = false;
@@ -1963,13 +2234,53 @@ export default function VoiceCallRoom() {
                     if (!micEnabled) {
                       console.warn("Failed to enable microphone - may need user permission");
                     }
+                    
+                    // CRITICAL: Immediately check for audio track after enabling mic
+                    const checkAudioTrack = async () => {
+                      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+                      if (micPublication && micPublication.track) {
+                        console.log("📢 Audio track found immediately after mic enable, notifying backend...");
+                        const callId = callIdRef.current || 
+                                      localStorage.getItem("tgs:currentCallId") || 
+                                      localStorage.getItem("tgs:callId");
+                        if (callId) {
+                          const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+                          if (!alreadyNotified) {
+                            try {
+                              const response = await fetch("/api/calls/media", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  callId: callId,
+                                  trackType: "audio",
+                                  event: "published",
+                                }),
+                              });
+                              if (response.ok) {
+                                console.log("✅ Audio track published notified immediately");
+                                localStorage.setItem(`audio-notified-${callId}`, 'true');
+                              }
+                            } catch (error) {
+                              console.error("Error notifying audio track:", error);
+                            }
+                          }
+                        }
+                      } else {
+                        console.log("⚠️ Audio track not found yet, will check again...");
+                      }
+                    };
+                    
+                    // Check immediately and then again after delays
+                    checkAudioTrack();
+                    setTimeout(checkAudioTrack, 1000);
+                    setTimeout(checkAudioTrack, 3000);
                   } catch (permError) {
                     console.error("Error enabling microphone:", permError);
                     setPermissionError("Please allow microphone access to use voice call");
                   }
                 } else {
                   // If room is not provided, we'll set up listeners in useEffect
-                  console.warn("Room not provided in onConnected callback");
+                  console.warn("⚠️ Room not provided in onConnected callback - will use roomRef");
                 }
               }}
               connectOptions={{

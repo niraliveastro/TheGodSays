@@ -14,33 +14,36 @@ export class WalletService {
   /**
     * Get user's wallet balance and transaction history
     */
-   static async getWallet(userId) {
-     try {
-       const db = getDb()
-       const walletRef = db.collection('wallets').doc(userId)
-       const walletDoc = await walletRef.get()
+  static async getWallet(userId) {
+    try {
+      const db = getDb()
+      const walletRef = db.collection('wallets').doc(userId)
+      const walletDoc = await walletRef.get()
 
-       if (!walletDoc.exists) {
-         // Create wallet with zero balance if it doesn't exist
-        await this.createWallet(userId)
-         return { balance: 0, transactions: [] }
-       }
+      if (!walletDoc.exists) {
+        // Create wallet with zero balance if it doesn't exist
+       await this.createWallet(userId)
+        return { balance: 0, transactions: [] }
+      }
 
-       const data = walletDoc.data()
-       const transactions = data.transactions || []
+      const data = walletDoc.data()
+      const transactions = data.transactions || []
 
-       // Calculate balance from transactions
-      const calculatedBalance = this.calculateBalanceFromTransactions(transactions)
+      // CRITICAL FIX: Use stored balance field (updated via FieldValue.increment)
+      // This is the source of truth since we manage it with atomic operations
+      const storedBalance = typeof data.balance === 'number' ? data.balance : 0
 
-       return {
-         balance: calculatedBalance,
-         transactions
-       }
-     } catch (error) {
-       console.error('Error getting wallet:', error)
-       throw new Error('Failed to fetch wallet')
-     }
-   }
+      console.log(`💰 Wallet for user ${userId}: stored balance=₹${storedBalance}`)
+
+      return {
+        balance: Math.round(storedBalance * 100) / 100, // Round to 2 decimals
+        transactions
+      }
+    } catch (error) {
+      console.error('Error getting wallet:', error)
+      throw new Error('Failed to fetch wallet')
+    }
+  }
 
   /**
     * Calculate balance from transaction history
@@ -50,6 +53,14 @@ export class WalletService {
       if (!transactions || !Array.isArray(transactions)) {
         return balance
       }
+
+      // Find all hold completions to exclude their corresponding holds
+      const completedHoldCallIds = new Set()
+      transactions.forEach(transaction => {
+        if (transaction.type === 'hold_complete' && transaction.status === 'completed') {
+          completedHoldCallIds.add(transaction.callId)
+        }
+      })
 
       transactions.forEach(transaction => {
         if (transaction.status === 'completed') {
@@ -61,16 +72,25 @@ export class WalletService {
               balance -= transaction.amount
               break
             case 'hold':
-              // Completed hold transactions should be deducted as they represent finalized charges
-              balance -= transaction.amount
+              // If this hold has been completed, don't count it (it's been settled via deductions+refund)
+              if (!completedHoldCallIds.has(transaction.callId)) {
+                // Completed hold transactions that haven't been marked as complete should be deducted
+                balance -= transaction.amount
+              }
+              break
+            case 'hold_complete':
+              // This is just a marker, don't affect balance
               break
             default:
               break
           }
         } else if (transaction.status === 'pending' && transaction.type === 'hold') {
-          // Pending hold transactions should be deducted from available balance
-          // as they represent reserved funds
-          balance -= transaction.amount
+          // Only count pending holds if they haven't been completed
+          if (!completedHoldCallIds.has(transaction.callId)) {
+            // Pending hold transactions should be deducted from available balance
+            // as they represent reserved funds
+            balance -= transaction.amount
+          }
         }
       })
 
@@ -115,11 +135,15 @@ export class WalletService {
         status: 'completed'
       }
 
+      console.log(`💳 Adding ₹${amount} to wallet for user ${userId}: ${description}`)
+
       await walletRef.update({
         balance: admin.firestore.FieldValue.increment(amount),
         transactions: admin.firestore.FieldValue.arrayUnion(transaction),
         updatedAt: new Date()
       })
+
+      console.log(`✅ Added ₹${amount} to wallet successfully`)
 
       return { success: true, transaction }
     } catch (error) {
@@ -136,6 +160,8 @@ export class WalletService {
       const db = getDb()
       const walletRef = db.collection('wallets').doc(userId)
       const wallet = await this.getWallet(userId)
+
+      console.log(`💸 Attempting to deduct ₹${amount} from user ${userId}. Current balance: ₹${wallet.balance}`)
 
       if (wallet.balance < amount) {
         throw new Error('Insufficient balance')
@@ -156,6 +182,8 @@ export class WalletService {
         updatedAt: new Date()
       })
 
+      console.log(`✅ Successfully deducted ₹${amount} from user ${userId}`)
+
       return { success: true, transaction }
     } catch (error) {
       console.error('Error deducting money from wallet:', error)
@@ -174,6 +202,8 @@ export class WalletService {
       const db = getDb()
       const walletRef = db.collection('wallets').doc(userId)
       const wallet = await this.getWallet(userId)
+
+      console.log(`🔒 Attempting to hold ₹${amount} for call ${callId}. Current balance: ₹${wallet.balance}`)
 
       if (wallet.balance < amount) {
         throw new Error('Insufficient balance')
@@ -194,6 +224,8 @@ export class WalletService {
         transactions: admin.firestore.FieldValue.arrayUnion(transaction),
         updatedAt: new Date()
       })
+
+      console.log(`✅ Successfully held ₹${amount} for call ${callId}`)
 
       return { success: true, transaction }
     } catch (error) {
@@ -244,6 +276,53 @@ export class WalletService {
        throw new Error('Failed to release hold')
      }
    }
+
+  /**
+   * Mark a hold transaction as completed
+   * This is used when a call finalizes to mark the hold as used/settled
+   */
+  static async completeHold(userId, callId) {
+    try {
+      const db = getDb()
+      const walletRef = db.collection('wallets').doc(userId)
+      const wallet = await this.getWallet(userId)
+
+      // Find the hold transaction
+      const holdTransaction = wallet.transactions.find(t => t.callId === callId && t.type === 'hold' && t.status === 'pending')
+
+      if (!holdTransaction) {
+        console.warn(`No pending hold found for call ${callId}, skipping completion`)
+        return { success: true, alreadyCompleted: true }
+      }
+
+      console.log(`🔓 Marking hold transaction as completed for call ${callId}`)
+
+      // Create a new transaction to mark the hold as completed
+      // We can't modify the existing transaction in the array, so we add a completion marker
+      const completionTransaction = {
+        id: `hold-complete-${callId}`,
+        type: 'hold_complete',
+        amount: holdTransaction.amount,
+        description: `Hold completed for call ${callId}`,
+        timestamp: new Date(),
+        status: 'completed',
+        callId,
+        originalHoldId: holdTransaction.id
+      }
+
+      await walletRef.update({
+        transactions: admin.firestore.FieldValue.arrayUnion(completionTransaction),
+        updatedAt: new Date()
+      })
+
+      console.log(`✅ Hold marked as completed for call ${callId}`)
+
+      return { success: true, transaction: completionTransaction }
+    } catch (error) {
+      console.error('Error completing hold:', error)
+      throw new Error('Failed to complete hold')
+    }
+  }
 
   /**
    * Confirm held money deduction (finalize the charge)

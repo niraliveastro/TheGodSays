@@ -1477,7 +1477,7 @@ export default function VideoCallRoom() {
     initializeRoom();
   }, [params.room]);
 
-  // Firebase real-time listener for call status changes
+  // Firebase real-time listener for call state, duration, and billing
   useEffect(() => {
     const callId = callIdRef.current ||
       localStorage.getItem("tgs:currentCallId") ||
@@ -1485,7 +1485,7 @@ export default function VideoCallRoom() {
 
     if (!callId) return;
 
-    // Listen for call status changes in Firebase
+    // Listen for call state changes in Firebase
     const callRef = doc(db, "calls", callId);
     firebaseUnsubscribeRef.current = onSnapshot(
       callRef,
@@ -1494,14 +1494,20 @@ export default function VideoCallRoom() {
 
         const callData = snapshot.data();
 
-        // If call is completed, cancelled, or rejected, disconnect immediately
+        // Update duration from Firestore (per-second accurate)
+        if (callData.actualDurationSeconds !== undefined) {
+          setCallDuration(callData.actualDurationSeconds || 0);
+        }
+
+        // If call is completed, cancelled, rejected, or failed, disconnect immediately
         if (callData.status === "completed" ||
           callData.status === "cancelled" ||
-          callData.status === "rejected") {
+          callData.status === "rejected" ||
+          callData.status === "failed") {
 
           if (!isDisconnectingRef.current) {
-            console.log(`Call ${callId} ended by other party. Status: ${callData.status}`);
-            // Auto-disconnect when other party ends call
+            console.log(`Call ${callId} ended. Status: ${callData.status}`);
+            // Auto-disconnect when call ends
             handleDisconnect();
           }
         }
@@ -1519,7 +1525,7 @@ export default function VideoCallRoom() {
     };
   }, [params.room]); // Re-run when room changes
 
-  // Server-side duration sync - fetch from server every second
+  // Track participant join for state management (not billing)
   useEffect(() => {
     if (!isConnected) return;
     
@@ -1529,58 +1535,70 @@ export default function VideoCallRoom() {
     
     if (!callId) return;
 
-    // Mark call as connected when we join (only once)
-    const markConnected = async () => {
+    // Determine participant type
+    const userRole = localStorage.getItem("tgs:role") || "user";
+    const participantType = userRole === "astrologer" ? "astrologer" : "user";
+
+    // Notify backend that participant joined (for state tracking only)
+    const notifyParticipantJoined = async () => {
       try {
-        const response = await fetch("/api/calls", {
+        await fetch("/api/calls/participant", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "mark-connected",
             callId: callId,
+            action: "join",
+            participantType: participantType,
           }),
         });
-        if (response.ok) {
-          const data = await response.json();
-          console.log("✅ Call marked as connected:", data);
-        }
+        console.log(`✅ Participant ${participantType} join notified (state tracking)`);
       } catch (error) {
-        console.error("Error marking call as connected:", error);
+        console.error("Error notifying participant join:", error);
       }
     };
 
-    // Mark connected immediately
-    markConnected();
+    // Notify once when connected
+    notifyParticipantJoined();
+  }, [isConnected]);
 
-    // Sync duration from server every second
-    const syncDuration = async () => {
+  // RECOVERY MECHANISM: Periodically check if billing should start
+  // This is a fallback in case LiveKit webhooks or initial notifications are missed
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const callId = callIdRef.current || 
+      localStorage.getItem("tgs:currentCallId") || 
+      localStorage.getItem("tgs:callId");
+    
+    if (!callId) return;
+
+    console.log("🔄 Starting billing recovery check interval");
+    
+    const recoveryInterval = setInterval(async () => {
       try {
-        const response = await fetch("/api/calls", {
+        const response = await fetch("/api/calls/billing/check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "get-duration",
-            callId: callId,
-          }),
+          body: JSON.stringify({ callId }),
         });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.durationSeconds !== undefined) {
-            setCallDuration(data.durationSeconds);
-          }
+        
+        const result = await response.json();
+        
+        if (result.billingStarted) {
+          console.log("✅ Billing recovery check: Billing started via recovery mechanism");
+          clearInterval(recoveryInterval); // Stop checking once billing starts
+        } else {
+          console.log("⏳ Billing recovery check:", result.reason);
         }
       } catch (error) {
-        console.error("Error syncing duration:", error);
+        console.error("Error in billing recovery check:", error);
       }
-    };
+    }, 3000); // Check every 3 seconds
 
-    // Initial sync
-    syncDuration();
-    
-    // Sync every second
-    const interval = setInterval(syncDuration, 1000);
-    
-    return () => clearInterval(interval);
+    return () => {
+      console.log("🛑 Stopping billing recovery check interval");
+      clearInterval(recoveryInterval);
+    };
   }, [isConnected]);
 
   // Set up room event listeners when room is available
@@ -1713,10 +1731,110 @@ export default function VideoCallRoom() {
     // Update state initially
     updateLocalState();
 
+    // ULTRA-AGGRESSIVE AUDIO TRACK DETECTION
+    // Check multiple times to ensure we catch the audio track at different stages
+    let audioNotificationAttempts = 0;
+    const maxAudioAttempts = 5;
+    
+    const notifyAudioTrackPublished = async (callId, forceNotify = false) => {
+      const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+      if (alreadyNotified && !forceNotify) {
+        console.log("Audio track already notified, skipping");
+        return true;
+      }
+
+      audioNotificationAttempts++;
+      console.log(`📞 Attempting to notify audio track (attempt ${audioNotificationAttempts}/${maxAudioAttempts})...`);
+      
+      try {
+        const response = await fetch("/api/calls/media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            callId: callId,
+            trackType: "audio",
+            event: "published",
+          }),
+        });
+        
+        if (response.ok) {
+          console.log("✅ Audio track published notified (state tracking)");
+          localStorage.setItem(`audio-notified-${callId}`, 'true');
+          return true;
+        } else {
+          console.warn("Audio track notification failed:", response.status);
+          return false;
+        }
+      } catch (error) {
+        console.error("Error notifying audio track published:", error);
+        return false;
+      }
+    };
+    
+    const checkExistingAudioTrack = async () => {
+      const localParticipant = currentRoom.localParticipant;
+      if (!localParticipant) {
+        console.log("⏳ No local participant yet, will retry");
+        return;
+      }
+      
+      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+      const callId = callIdRef.current || 
+                    localStorage.getItem("tgs:currentCallId") || 
+                    localStorage.getItem("tgs:callId");
+      
+      if (micPublication && micPublication.track) {
+        console.log("📢 Audio track detected, notifying backend...");
+        if (callId) {
+          await notifyAudioTrackPublished(callId);
+        }
+      } else {
+        console.log("⏳ Audio track not yet published");
+      }
+    };
+
+    // CRITICAL: Multiple checks at different intervals to catch audio track
+    console.log("🎯 Starting ultra-aggressive audio detection...");
+    
+    // Check immediately
+    checkExistingAudioTrack();
+    
+    // Check at 0.5s, 1.5s, 3s, 5s, 10s
+    setTimeout(checkExistingAudioTrack, 500);
+    setTimeout(checkExistingAudioTrack, 1500);
+    setTimeout(checkExistingAudioTrack, 3000);
+    setTimeout(checkExistingAudioTrack, 5000);
+    
+    // FINAL FALLBACK: Force notify after 10 seconds if still not detected
+    // This ensures billing can start even if audio detection fails
+    setTimeout(async () => {
+      const callId = callIdRef.current || 
+                    localStorage.getItem("tgs:currentCallId") || 
+                    localStorage.getItem("tgs:callId");
+      const alreadyNotified = localStorage.getItem(`audio-notified-${callId}`);
+      
+      if (!alreadyNotified && callId && isConnected) {
+        console.log("⚠️ FORCE NOTIFY: Audio track still not detected after 10s, forcing notification to backend");
+        console.log("⚠️ This ensures billing can start via grace period bypass");
+        await notifyAudioTrackPublished(callId, true);
+      }
+    }, 10000);
+
     // Listen for track changes
-    const handleTrackPublished = (publication) => {
+    const handleTrackPublished = async (publication) => {
       console.log("Track published:", publication.kind, publication.source);
       updateLocalState();
+      
+      // Notify backend that audio track is published (for state tracking only)
+      if (publication && publication.source === Track.Source.Microphone) {
+        const callId = callIdRef.current || 
+                      localStorage.getItem("tgs:currentCallId") || 
+                      localStorage.getItem("tgs:callId");
+        
+        if (callId) {
+          await notifyAudioTrackPublished(callId);
+        }
+      }
     };
     const handleTrackUnpublished = (publication) => {
       console.log("Track unpublished:", publication.kind, publication.source);
@@ -1775,48 +1893,8 @@ export default function VideoCallRoom() {
     };
   }, [room, isConnected]); // Re-run when room or connection status changes
 
-  const updateCallStatus = async (status, durationMinutes = null) => {
-    const callId = callIdRef.current ||
-      localStorage.getItem("tgs:currentCallId") ||
-      localStorage.getItem("tgs:callId");
-
-    if (!callId) return;
-
-    try {
-      const updateData = {
-        action: "update-call-status",
-        callId: callId,
-        status: status,
-      };
-
-      if (durationMinutes !== null) {
-        updateData.durationMinutes = durationMinutes;
-      }
-
-      const response = await fetch("/api/calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        let errorData = {};
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            errorData = await response.json();
-          } catch (e) {
-            console.warn("Error parsing error response as JSON:", e);
-          }
-        }
-        console.error("Failed to update call status:", errorData);
-      } else {
-        console.log(`Call status updated to: ${status}`);
-      }
-    } catch (error) {
-      console.error("Error updating call status:", error);
-    }
-  };
+  // Note: updateCallStatus removed - call status is managed by backend via webhooks
+  // Frontend only reads state from Firestore
 
   const handleDisconnect = async (forceExit = false) => {
     // If force exit, allow it even if already disconnecting (user manually clicked)
@@ -1839,35 +1917,7 @@ export default function VideoCallRoom() {
         localStorage.getItem("tgs:currentCallId") ||
         localStorage.getItem("tgs:callId") ||
         params.room;
-      // Use server-side duration calculation instead of client-side
-      let durationMinutes = 0;
-      try {
-        const durationResponse = await fetch("/api/calls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "get-duration",
-            callId: callId,
-          }),
-        });
-        if (durationResponse.ok) {
-          const durationData = await durationResponse.json();
-          durationMinutes = Math.max(1, durationData.durationMinutes || 1);
-          console.log(`✅ Server-calculated duration: ${durationMinutes} minutes`);
-        } else {
-          // Fallback to client duration if server fails
-          durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
-          console.warn("⚠️ Using fallback client duration:", durationMinutes);
-        }
-      } catch (error) {
-        // Fallback to client duration if server fails
-        durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
-        console.warn("⚠️ Error getting server duration, using fallback:", error);
-      }
-
-      console.log(
-        `Ending call ${callId} with duration ${durationMinutes} minutes`
-      );
+      console.log(`Ending call ${callId}`);
 
       // CRITICAL: Send disconnect signal via LiveKit data channel FIRST
       // This ensures the other party gets immediate notification
@@ -1897,67 +1947,25 @@ export default function VideoCallRoom() {
         }
       }
 
-      // Update call status to completed BEFORE disconnecting
-      // This ensures Firebase listener on other party picks it up immediately
-      if (callId && durationMinutes > 0) {
-        // Try direct billing API first
+      // Notify backend that participant left (billing finalization happens automatically via webhook)
+      if (callId) {
         try {
-          const billingResponse = await fetch("/api/billing", {
+          const userRole = localStorage.getItem("tgs:role") || "user";
+          const participantType = userRole === "astrologer" ? "astrologer" : "user";
+          
+          await fetch("/api/calls/participant", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              action: "immediate-settlement",
               callId: callId,
-              durationMinutes: durationMinutes,
+              action: "leave",
+              participantType: participantType,
             }),
           });
-
-          // Check if response is OK and is JSON before parsing
-          if (billingResponse.ok) {
-            const contentType = billingResponse.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              try {
-                const billingResult = await billingResponse.json();
-                if (billingResult.success) {
-                  console.log(
-                    `✅ Billing finalized: ₹${billingResult.finalAmount} charged, ₹${billingResult.refundAmount} refunded`
-                  );
-                } else {
-                  console.error("❌ Billing finalization failed:", billingResult.error);
-                }
-              } catch (jsonError) {
-                console.warn("Error parsing billing response as JSON:", jsonError);
-              }
-            } else {
-              console.warn("Billing API returned non-JSON response");
-            }
-          } else {
-            console.warn(`Billing API returned ${billingResponse.status} status`);
-          }
-
-          // Update call status
-          await fetch("/api/calls", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "update-call-status",
-              callId: callId,
-              status: "completed",
-              durationMinutes: durationMinutes,
-            }),
-          }).catch((e) => console.warn("Error updating call status:", e));
-        } catch (billingError) {
-          console.error("Error finalizing billing:", billingError);
-          // Still update call status even if billing fails
-          await fetch("/api/calls", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "update-call-status",
-              callId: callId,
-              status: "completed",
-            }),
-          }).catch((e) => console.warn("Error updating call status:", e));
+          console.log(`✅ Participant ${participantType} leave notified (billing will finalize automatically)`);
+        } catch (e) {
+          console.warn("Error notifying participant leave:", e);
+          // Continue with disconnect even if notification fails
         }
       }
 
