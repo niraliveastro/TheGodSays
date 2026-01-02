@@ -55,14 +55,6 @@ export const metadata = {
     telephone: false,
   },
   manifest: "/manifest.json",
-  themeColor: "#d4af37",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-    viewportFit: "cover"
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -124,6 +116,16 @@ export const metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+};
+
+// Viewport and themeColor must be exported separately (Next.js 14+ requirement)
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  themeColor: "#d4af37",
 };
 
 export default function RootLayout({ children }) {

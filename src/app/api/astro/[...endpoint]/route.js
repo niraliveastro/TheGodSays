@@ -254,24 +254,64 @@ export async function POST(request, { params }) {
     console.log("[DEBUG] API Base URL:", API_BASE_URL);
     console.log("[DEBUG] API Key present:", !!API_KEY);
 
-    // Forward the request to the astrology API
+    // Forward the request to the astrology API with retry logic for rate limiting
     const apiUrl = `${API_BASE_URL}/${endpointPath}`;
     console.log("[DEBUG] Full API URL:", apiUrl);
     
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY,
-      },
-      body: JSON.stringify(finalPayload),
-    });
+    // Retry logic with exponential backoff for 429 errors
+    let res;
+    let lastError;
+    const maxRetries = 3;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+          },
+          body: JSON.stringify(finalPayload),
+        });
 
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => "");
+        // If successful, break out of retry loop
+        if (res.ok) {
+          break;
+        }
+
+        // If 429 (rate limit) and we have retries left, wait and retry
+        if (res.status === 429 && attempt < maxRetries - 1) {
+          const baseDelay = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+          const jitter = Math.floor(Math.random() * 500); // 0-500ms random jitter
+          const delay = baseDelay + jitter;
+          
+          console.log(`[RETRY] Rate limit hit for ${endpointPath}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // For other errors or final attempt, break and handle error
+        break;
+      } catch (fetchError) {
+        lastError = fetchError;
+        // If it's a network error and we have retries left, retry
+        if (attempt < maxRetries - 1) {
+          const baseDelay = 500 * Math.pow(2, attempt);
+          const jitter = Math.floor(Math.random() * 200);
+          await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
+          continue;
+        }
+        // Final attempt failed, throw
+        throw fetchError;
+      }
+    }
+
+    // Handle errors after retries
+    if (!res || !res.ok) {
+      const errorText = await res?.text().catch(() => "") || lastError?.message || "Unknown error";
       console.error("=".repeat(80));
       console.error("[ERROR] Endpoint:", endpointPath);
-      console.error("[ERROR] Status:", res.status);
+      console.error("[ERROR] Status:", res?.status || "Network Error");
       console.error("[ERROR] Response:", errorText);
       console.error("[ERROR] Payload sent:", JSON.stringify(finalPayload, null, 2));
       console.error("=".repeat(80));
@@ -289,11 +329,11 @@ export async function POST(request, { params }) {
       
       return NextResponse.json(
         { 
-          error: errorMessage || `External API error ${res.status}`,
+          error: errorMessage || `External API error ${res?.status || "Network Error"}`,
           endpoint: endpointPath,
-          status: res.status 
+          status: res?.status || 500 
         },
-        { status: res.status }
+        { status: res?.status || 500 }
       );
     }
 

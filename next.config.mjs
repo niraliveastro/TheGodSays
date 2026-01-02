@@ -5,6 +5,14 @@ const nextConfig = {
     // Keep unoptimized: true to allow external images, but our custom API handles optimization
     unoptimized: true,
     
+    // Configure local patterns for image optimization API route
+    localPatterns: [
+      {
+        pathname: '/api/image-optimize',
+        search: 'url=*',
+      },
+    ],
+    
     // Allow Firebase Storage and other image domains
     remotePatterns: [
       { 

@@ -80,7 +80,8 @@ export const astrologyAPI = {
 
       // Retry with exponential backoff on 429
       let lastErr
-      for (let attempt = 0; attempt < 3; attempt++) {
+      const maxRetries = 4 // Increased from 3 to 4 for better resilience
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
         // Use server proxy when running on the client to avoid CORS and hide API key
 const isServer = typeof window === "undefined";
 const url = isServer
@@ -115,11 +116,13 @@ const response = await fetch(url, {
           return data
         }
 
-        // If 429, backoff and retry
-        if (response.status === 429 && attempt < 2) {
-          const base = 400 * Math.pow(2, attempt)
-          const jitter = Math.floor(Math.random() * 150)
-          await new Promise(r => setTimeout(r, base + jitter))
+        // If 429, backoff and retry with longer delays
+        if (response.status === 429 && attempt < maxRetries - 1) {
+          const base = 1000 * Math.pow(2, attempt) // 1s, 2s, 4s, 8s
+          const jitter = Math.floor(Math.random() * 500) // 0-500ms random jitter
+          const delay = base + jitter
+          console.log(`[API] Rate limit (429) for ${endpoint}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`)
+          await new Promise(r => setTimeout(r, delay))
           continue
         }
 
@@ -270,16 +273,18 @@ const response = await fetch(url, {
     const errors = {}
 
     const promises = endpoints.map(async (endpoint, index) => {
-      // slight staggering to be kind to rate limits
-      await new Promise((r) => setTimeout(r, index * 120))
+      // Increased staggering to better respect rate limits (500ms between requests)
+      await new Promise((r) => setTimeout(r, index * 500))
       try {
         const result = await this.getSingleCalculation(endpoint, payload)
         results[endpoint] = result
       } catch (error) {
         errors[endpoint] = error.message
         // Only log warnings for non-500 errors to reduce noise
-        if (!error.message.includes('500')) {
+        if (!error.message.includes('500') && !error.message.includes('429')) {
           console.warn(`Failed to fetch ${endpoint}:`, error.message)
+        } else if (error.message.includes('429')) {
+          console.log(`[API] ${endpoint} rate limited (429), will retry with backoff`)
         } else {
           console.log(`[API] ${endpoint} temporarily unavailable (500 error)`)
         }
