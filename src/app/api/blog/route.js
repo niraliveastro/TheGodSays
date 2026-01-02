@@ -6,7 +6,7 @@
 import { getFirestore } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import { generateSlug } from '@/lib/blog-utils'
-import { verifyAdminAuth } from '@/lib/admin-auth'
+import { verifyAdminAuth, requireAdminAuth } from '@/lib/admin-auth'
 
 const BLOGS_COLLECTION = 'blogs'
 
