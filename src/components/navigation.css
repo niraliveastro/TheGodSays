@@ -187,37 +187,36 @@
   }
 }
 
-/* Cosmic theme styles for navigation - Royal Golden */
-/* Language Switcher Mobile */
+/* Language Switcher Mobile - HIDE in top bar, will show in hamburger menu */
 .nav-language-mobile {
-  display: flex;
-  align-items: center;
-  margin-right: 0.5rem;
-}
-
-@media (min-width: 768px) {
-  .nav-language-mobile {
-    display: none;
-  }
+  display: none;
 }
 
 /* Desktop Navigation */
 .nav-desktop {
   display: none;
   align-items: center;
-  gap: 0;
-  margin-left: 2rem;
-}
-/* ONLY second navbar */
-.nav-bottom-row .nav-desktop{
   justify-content: center;
-  margin-left: 0;
-  width: 100%;
+  gap: 0;
+}
+
+/* SECOND navbar row - HIDE on mobile */
+.nav-bottom-row {
+  display: none;
 }
 
 @media (min-width: 768px) {
   .nav-desktop {
     display: flex;
+  }
+  
+  /* Show second navbar only on desktop for regular users */
+  .nav-bottom-row {
+    display: flex;
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
   }
 }
 
@@ -254,7 +253,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-background: linear-gradient(135deg, #d4af37, #b8972e);
+  background: linear-gradient(135deg, #d4af37, #b8972e);
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
@@ -300,7 +299,7 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
 }
 
 .nav-link-active:hover {
-   box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
   transform: translateY(-2px);
 }
 
@@ -309,8 +308,8 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
   height: 40px;
+  width: 38px;
   border-radius: 10px;
   background: white;
   border: 1px solid #e5e7eb;
@@ -331,7 +330,7 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
 
 .nav-mobile-btn svg {
   color: #d4af37;
-   width: 24px;
+  width: 24px;
   height: 24px;
 }
 
@@ -367,6 +366,16 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
   gap: 0.425rem;
 }
 
+/* Language Switcher in Mobile Menu */
+.nav-mobile-language-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 0.5rem;
+}
+
 /* Mobile Links & Buttons */
 .nav-mobile-link, .nav-mobile-button {
   width: 100%;
@@ -395,13 +404,10 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
   color: #4b5563;
 }
 
-
-
 .nav-mobile-link-active {
   background: linear-gradient(135deg, #d4af37, #b8972e);
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
-   color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  color: white;
 }
 
 .nav-mobile-link:not(.nav-mobile-link-active):hover {
@@ -586,7 +592,7 @@ background: linear-gradient(135deg, #d4af37, #b8972e);
 .nav-mobile-dropdown-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* Space between text and chevron */
+  gap: 0.5rem;
 }
 
 .dropdown-icon,

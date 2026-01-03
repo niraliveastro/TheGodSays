@@ -23,6 +23,7 @@ import {
   Hash,
   Zap,
   Infinity,
+  Rss
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -88,19 +89,13 @@ const Navigation = () => {
     { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
     { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
     { href: "/matching", label: t.nav.matching, icon: BookOpen },
-    {
-      href: null,
-      label: t.nav.tools,
-      icon: Settings,
-      dropdownId: "tools",
-      children: [
-        { href: "/blog", label: t.nav.blog || "Blog", icon: BookOpen },
+    { href: "/blog", label: t.nav.blog , icon: Rss },
+        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
         { href: "/numerology", label: t.numerology.title, icon: Hash },
         { href: "/transit", label: t.transit.title, icon: Zap },
-        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
         { href: "/panchang", label: t.panchang.title, icon: BookOpen },
-      ],
-    },
+
+
   ], [language, t]);
 
   // For mobile - combine all user nav items
@@ -375,17 +370,22 @@ const Navigation = () => {
 
         {/* SECOND NAVBAR - Only for regular users */}
         {!isAstrologer && (
-          <div className="nav-content">
-            <div className="nav-desktop nav-bottom-row">
+          <div className="nav-content nav-bottom-row">
+            <div className="nav-desktop">
               {userBottomNavItems.map(item => renderNavItem(item))}
             </div>
           </div>
         )}
 
-        {/* Mobile Navigation */}
+ {/* Mobile Navigation */}
         {isOpen && (
           <div className="nav-mobile-menu">
             <div className="nav-mobile-menu-content">
+              {/* Language Switcher at top of mobile menu */}
+              <div className="nav-mobile-language-wrapper">
+                <LanguageSwitcher />
+              </div>
+              
               {navItems.map((item) => {
                 const Icon = item.icon;
 
