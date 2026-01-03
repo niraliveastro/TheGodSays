@@ -75,6 +75,15 @@ const setCachedData = (key, data) => {
   }
 }
 
+const clearCachedData = (key) => {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, userProfile, loading: authLoading } = useAuth()
@@ -176,10 +185,8 @@ export default function AdminDashboard() {
       router.push('/auth/user')
       return
     }
-    // Only fetch if no cached data
-    if (!getCachedData(CACHE_KEYS.STATS)) {
-      fetchData(false)
-    }
+    // Always fetch fresh stats for real-time data
+    fetchData(false)
     fixPendingCalls()
   }, [user, authLoading, router, isPasscodeVerified])
 
@@ -273,13 +280,18 @@ export default function AdminDashboard() {
     setRefreshing(true)
     if (forceRefresh) {
       setLoading(true)
+      // Clear stats cache on force refresh to ensure fresh data
+      clearCachedData(CACHE_KEYS.STATS)
     }
     
     try {
-      // Fetch stats first (lightweight) - always fetch fresh
+      // Fetch stats first (lightweight) - always fetch fresh, no cache
       const statsRes = await fetch('/api/admin/stats', {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
       })
       if (statsRes.ok) {
         const statsData = await statsRes.json()
