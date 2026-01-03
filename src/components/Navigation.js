@@ -64,6 +64,7 @@ const Navigation = () => {
   // Astrologer-specific navigation items - using useMemo to make them reactive
   const astrologerNavItems = useMemo(() => [
     { href: "/astrologer-dashboard", label: t.astrologerDashboard?.title || "Dashboard", icon: LayoutDashboard },
+    { href: "/appointments", label: "My Appointments", icon: Calendar },
     { href: `/account/astrologer/${user?.uid}`, label: t.profile?.myProfile || "My Profile", icon: User },
     { href: "/profile/astrology", label: t.profile?.settings || "Account Settings", icon: Settings },
   ], [language, user, t]);
@@ -93,6 +94,7 @@ const Navigation = () => {
       dropdownId: "account",
       children: [
         { href: "/profile/user", label: t.profile.myProfile, icon: User },
+        { href: "/appointments", label: "My Appointments", icon: Calendar },
         { href: "/wallet", label: t.nav.wallet, icon: Wallet },
         { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
         { href: "/admin/dashboard", label: "Admin Dashboard", icon: LayoutDashboard },

@@ -20,6 +20,7 @@ import {
   X,
   Save,
   Camera,
+  CalendarCheck,
 } from "lucide-react";
 
 /**
@@ -1105,6 +1106,26 @@ export default function AstrologerProfile() {
                         >
                           <Phone style={{ width: "20px", height: "20px" }} />
                           Start Voice Call
+                        </button>
+
+                        <button
+                          className="btn"
+                          onClick={() => router.push(`/appointments/book/${astrologer.id}`)}
+                          style={{
+                            height: "52px",
+                            fontSize: "1.05rem",
+                            backgroundColor: "#10b981",
+                            color: "#fff",
+                            border: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.5rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <CalendarCheck style={{ width: "20px", height: "20px" }} />
+                          Book Appointment
                         </button>
 
                         {!isOnline && (
