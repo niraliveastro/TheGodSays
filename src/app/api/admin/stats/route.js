@@ -21,8 +21,20 @@ if (!getApps().length) {
 }
 
 /**
+ * Helper function to convert Firebase Timestamp to Date
+ */
+function toDate(value) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  if (typeof value === 'string') return new Date(value)
+  if (value && typeof value.toDate === 'function') return value.toDate()
+  return null
+}
+
+/**
  * GET /api/admin/stats
  * Get dashboard statistics: total calls, revenue, active users, etc.
+ * UPDATED: Now uses calls collection directly (finalAmount, actualDurationSeconds)
  */
 export async function GET(request) {
   try {
@@ -30,122 +42,124 @@ export async function GET(request) {
     
     // Get all calls
     const callsSnapshot = await db.collection('calls').get()
-    const allCalls = callsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    
-    // Get all billing records
-    const billingSnapshot = await db.collection('call_billing').get()
-    const allBilling = billingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const allCalls = callsSnapshot.docs.map(doc => {
+      const data = doc.data()
+      return { 
+        id: doc.id, 
+        ...data,
+        // Normalize date fields
+        createdAt: toDate(data.createdAt),
+        endTime: toDate(data.endTime),
+      }
+    })
     
     // Calculate statistics
     const totalCalls = allCalls.length
-    const completedCalls = allCalls.filter(c => c.status === 'completed').length
+    const completedCalls = allCalls.filter(c => c.status === 'completed')
     const activeCalls = allCalls.filter(c => c.status === 'active').length
     const pendingCalls = allCalls.filter(c => c.status === 'pending').length
     const cancelledCalls = allCalls.filter(c => c.status === 'cancelled').length
     
-    // Calculate total revenue from completed billing records
-    const completedBilling = allBilling.filter(b => b.status === 'completed')
-    const totalRevenue = completedBilling.reduce((sum, b) => sum + (b.finalAmount || 0), 0)
+    // Calculate total revenue from completed calls (using finalAmount from calls collection)
+    const totalRevenue = completedCalls.reduce((sum, c) => {
+      const amount = typeof c.finalAmount === 'number' ? c.finalAmount : parseFloat(c.finalAmount) || 0
+      return sum + amount
+    }, 0)
     
-    // Calculate total duration
-    const totalDuration = completedBilling.reduce((sum, b) => sum + (b.durationMinutes || 0), 0)
+    // Calculate total duration from completed calls (using actualDurationSeconds from calls collection)
+    const totalDurationSeconds = completedCalls.reduce((sum, c) => {
+      const seconds = typeof c.actualDurationSeconds === 'number' ? c.actualDurationSeconds : parseFloat(c.actualDurationSeconds) || 0
+      return sum + seconds
+    }, 0)
+    const totalDuration = totalDurationSeconds / 60 // Convert to minutes
     
-    // Get unique users and astrologers
-    const uniqueUsers = new Set(allCalls.map(c => c.userId).filter(Boolean))
-    const uniqueAstrologers = new Set(allCalls.map(c => c.astrologerId).filter(Boolean))
+    // Get active users (users who have made at least one call)
+    const uniqueUserIds = new Set(allCalls.map(c => c.userId).filter(Boolean))
+    const activeUsers = uniqueUserIds.size
     
-    // Calculate average call duration
-    const avgDuration = completedBilling.length > 0 
-      ? totalDuration / completedBilling.length 
+    // Get active astrologers (astrologers with status 'online')
+    const activeAstrologersSnapshot = await db.collection('astrologers')
+      .where('status', '==', 'online')
+      .get()
+    const activeAstrologers = activeAstrologersSnapshot.size
+    
+    // Calculate average call duration (in minutes)
+    const avgDuration = completedCalls.length > 0 
+      ? totalDuration / completedCalls.length 
       : 0
     
     // Calculate average call cost
-    const avgCost = completedBilling.length > 0 
-      ? totalRevenue / completedBilling.length 
+    const avgCost = completedCalls.length > 0 
+      ? totalRevenue / completedCalls.length 
       : 0
     
-    // Get today's stats
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // Get today's stats (using server local time)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    
     const todayCalls = allCalls.filter(c => {
-      const createdAt = c.createdAt
-      let callDate
-      if (typeof createdAt === 'string') {
-        callDate = new Date(createdAt)
-      } else if (createdAt && createdAt.toDate) {
-        callDate = createdAt.toDate()
-      } else {
-        return false
-      }
+      // Use endTime for completed calls, createdAt for others
+      const dateToCheck = c.endTime || c.createdAt
+      if (!dateToCheck) return false
+      const callDate = dateToCheck instanceof Date ? dateToCheck : new Date(dateToCheck)
       return callDate >= today
     })
     
-    const todayBilling = completedBilling.filter(b => {
-      const endTime = b.endTime
-      let billingDate
-      if (endTime && typeof endTime === 'string') {
-        billingDate = new Date(endTime)
-      } else if (endTime && endTime.toDate) {
-        billingDate = endTime.toDate()
-      } else {
-        return false
-      }
-      return billingDate >= today
+    const todayCompletedCalls = completedCalls.filter(c => {
+      // For revenue, use endTime (when call was completed), fallback to createdAt
+      const endDate = c.endTime || c.createdAt
+      if (!endDate) return false
+      const callDate = endDate instanceof Date ? endDate : new Date(endDate)
+      return callDate >= today
     })
     
-    const todayRevenue = todayBilling.reduce((sum, b) => sum + (b.finalAmount || 0), 0)
+    const todayRevenue = todayCompletedCalls.reduce((sum, c) => {
+      const amount = typeof c.finalAmount === 'number' ? c.finalAmount : parseFloat(c.finalAmount) || 0
+      return sum + amount
+    }, 0)
     
-    // Get this month's stats
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
+    // Get this month's stats (using server local time)
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
     
     const monthCalls = allCalls.filter(c => {
-      const createdAt = c.createdAt
-      let callDate
-      if (typeof createdAt === 'string') {
-        callDate = new Date(createdAt)
-      } else if (createdAt && createdAt.toDate) {
-        callDate = createdAt.toDate()
-      } else {
-        return false
-      }
+      // Use endTime for completed calls, createdAt for others
+      const dateToCheck = c.endTime || c.createdAt
+      if (!dateToCheck) return false
+      const callDate = dateToCheck instanceof Date ? dateToCheck : new Date(dateToCheck)
       return callDate >= monthStart
     })
     
-    const monthBilling = completedBilling.filter(b => {
-      const endTime = b.endTime
-      let billingDate
-      if (endTime && typeof endTime === 'string') {
-        billingDate = new Date(endTime)
-      } else if (endTime && endTime.toDate) {
-        billingDate = endTime.toDate()
-      } else {
-        return false
-      }
-      return billingDate >= monthStart
+    const monthCompletedCalls = completedCalls.filter(c => {
+      // For revenue, use endTime (when call was completed), fallback to createdAt
+      const endDate = c.endTime || c.createdAt
+      if (!endDate) return false
+      const callDate = endDate instanceof Date ? endDate : new Date(endDate)
+      return callDate >= monthStart
     })
     
-    const monthRevenue = monthBilling.reduce((sum, b) => sum + (b.finalAmount || 0), 0)
+    const monthRevenue = monthCompletedCalls.reduce((sum, c) => {
+      const amount = typeof c.finalAmount === 'number' ? c.finalAmount : parseFloat(c.finalAmount) || 0
+      return sum + amount
+    }, 0)
 
     return NextResponse.json({
       success: true,
       stats: {
         totalCalls,
-        completedCalls,
+        completedCalls: completedCalls.length,
         activeCalls,
         pendingCalls,
         cancelledCalls,
-        totalRevenue,
-        totalDuration,
+        totalRevenue: Math.round(totalRevenue * 100) / 100, // Round to 2 decimal places
+        totalDuration: Math.round(totalDuration * 100) / 100,
         avgDuration: Math.round(avgDuration * 100) / 100,
         avgCost: Math.round(avgCost * 100) / 100,
-        uniqueUsers: uniqueUsers.size,
-        uniqueAstrologers: uniqueAstrologers.size,
+        uniqueUsers: activeUsers,
+        uniqueAstrologers: activeAstrologers,
         todayCalls: todayCalls.length,
-        todayRevenue,
+        todayRevenue: Math.round(todayRevenue * 100) / 100,
         monthCalls: monthCalls.length,
-        monthRevenue,
+        monthRevenue: Math.round(monthRevenue * 100) / 100,
       }
     })
   } catch (error) {
@@ -156,4 +170,3 @@ export async function GET(request) {
     )
   }
 }
-
