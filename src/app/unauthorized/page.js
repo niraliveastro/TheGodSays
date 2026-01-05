@@ -26,8 +26,8 @@ export default function Unauthorized() {
           </h1>
           <p className="text-gray-600">
             {isAstrologer 
-              ? "This page is for users only. Please use your astrologer dashboard to access your features."
-              : "You don't have permission to access this page. Please contact support if you believe this is an error."}
+              ? "You don't have permission to access this page. If you're trying to access astrologer features, please use your astrologer dashboard."
+              : "You don't have permission to access this page. This page is for astrologers only. Please contact support if you believe this is an error."}
           </p>
         </div>
 

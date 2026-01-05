@@ -45,6 +45,7 @@ import {
   History,
   ArrowDownCircle,
   DollarSign,
+  Calendar,
 } from "lucide-react";
 import {
   doc,
@@ -1184,19 +1185,47 @@ function AstrologerDashboardContent() {
                 Manage your availability and handle client calls
               </p>
             </div>
-            <button
-              onClick={() => router.push("/astrologer-dashboard/pricing")}
-              className="btn btn-secondary"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.75rem 1.5rem",
-              }}
-            >
-              <Settings style={{ width: "1rem", height: "1rem" }} />
-              Pricing Settings
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => router.push("/appointments")}
+                className="btn btn-secondary"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1.5rem",
+                }}
+              >
+                <Calendar style={{ width: "1rem", height: "1rem" }} />
+                My Appointments
+              </button>
+              <button
+                onClick={() => router.push("/appointments/availability")}
+                className="btn btn-secondary"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1.5rem",
+                }}
+              >
+                <Calendar style={{ width: "1rem", height: "1rem" }} />
+                Manage Availability
+              </button>
+              <button
+                onClick={() => router.push("/astrologer-dashboard/pricing")}
+                className="btn btn-secondary"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1.5rem",
+                }}
+              >
+                <Settings style={{ width: "1rem", height: "1rem" }} />
+                Pricing Settings
+              </button>
+            </div>
           </header>
 
           {/* Status Card - Enhanced with subtle shadow and hover */}
