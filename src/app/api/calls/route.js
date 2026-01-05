@@ -104,15 +104,15 @@ export async function POST(request) {
 
         const isAstrologerAvailable = astrologerDoc.data().status === 'online'
 
-        // Generate call ID
-        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        // Generate call ID (use newCallId to avoid shadowing the callId from body destructuring)
+        const newCallId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
         // CRITICAL: Use CallStateMachine to create call with new schema
         // This ensures all required fields are present from the start
-        const result = await CallStateMachine.createCall(callId, userId, astrologerId, callType)
+        const result = await CallStateMachine.createCall(newCallId, userId, astrologerId, callType)
         
         // Update call with additional metadata (status, roomName, position)
-        const callRef = db.collection('calls').doc(callId)
+        const callRef = db.collection('calls').doc(newCallId)
         await callRef.update({
           status: isAstrologerAvailable ? 'pending' : 'queued',
           roomName: null,
@@ -122,7 +122,7 @@ export async function POST(request) {
         return NextResponse.json({ 
           success: true, 
           call: { 
-            id: callId, 
+            id: newCallId, 
             ...result.call,
             status: isAstrologerAvailable ? 'pending' : 'queued'
           } 

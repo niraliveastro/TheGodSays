@@ -23,11 +23,13 @@ import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function AstrologerProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user: authUser, userProfile, signOut } = useAuth();
+  const { user: authUser, userProfile, signOut, loading: authLoading } = useAuth();
 
   /* --------------------------------------------------------------- */
   /*  State                                                          */
@@ -49,26 +51,31 @@ export default function AstrologerProfilePage() {
   });
   const [saving, setSaving] = useState(false);
   const [callHistory, setCallHistory] = useState([]);
-  const [calculatedEarnings, setCalculatedEarnings] = useState(0);
-  const [monthlyEarnings, setMonthlyEarnings] = useState(0);
+  const [earningsData, setEarningsData] = useState(null);
+  const [earningsLoading, setEarningsLoading] = useState(true);
   const [totalCalls, setTotalCalls] = useState(0);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
   const [perMinuteRate, setPerMinuteRate] = useState(50);
   const [apiError, setApiError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologer + history                                     */
   /* --------------------------------------------------------------- */
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+
+    // Redirect if not authenticated or not an astrologer
     if (!authUser || userProfile?.collection !== "astrologers") {
       router.push("/auth/astrologer");
       return;
     }
 
     fetchAstrologerData();
-  }, [authUser, userProfile, router]);
+  }, [authUser, userProfile, authLoading, router]);
 
   const fetchAstrologerData = async () => {
     try {
@@ -76,7 +83,7 @@ export default function AstrologerProfilePage() {
 
       // Fetch astrologer profile from Firestore
       const astrologerResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/user/profile`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/user/profile?userId=${authUser.uid}&userType=astrologer`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -98,8 +105,8 @@ export default function AstrologerProfilePage() {
 
       if (astrologerResponse.ok) {
         const profileData = await astrologerResponse.json();
-        if (profileData.success && profileData.profile) {
-          astrologerData = { ...astrologerData, ...profileData.profile };
+        if (profileData.success && profileData.user) {
+          astrologerData = { ...astrologerData, ...profileData.user };
         }
       }
 
@@ -174,11 +181,70 @@ export default function AstrologerProfilePage() {
         bio: finalAstrologerData.bio,
       });
 
-      // Fetch call history from Firestore
-      await fetchCallHistory();
+      // Fetch earnings and call history
+      await Promise.all([
+        fetchEarnings(),
+        fetchCallHistory()
+      ]);
+      
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching astrologer data:", error);
       setLoading(false);
+    }
+  };
+
+  const fetchEarnings = async () => {
+    try {
+      setEarningsLoading(true);
+      const response = await fetch("/api/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "get-earnings-history",
+          astrologerId: authUser.uid,
+          limit: 50,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // The API returns the earnings data directly (not nested in 'earnings')
+          setEarningsData({
+            totalEarnings: data.totalEarnings || 0,
+            availableEarnings: data.availableEarnings || 0,
+            redeemedEarnings: data.redeemedEarnings || 0,
+            transactions: data.transactions || []
+          });
+        } else {
+          // Set default values if no earnings data
+          setEarningsData({
+            totalEarnings: 0,
+            availableEarnings: 0,
+            redeemedEarnings: 0,
+            transactions: []
+          });
+        }
+      } else {
+        console.error("Failed to fetch earnings");
+        setEarningsData({
+          totalEarnings: 0,
+          availableEarnings: 0,
+          redeemedEarnings: 0,
+          transactions: []
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching earnings:", error);
+      setEarningsData({
+        totalEarnings: 0,
+        availableEarnings: 0,
+        redeemedEarnings: 0,
+        transactions: []
+      });
+    } finally {
+      setEarningsLoading(false);
     }
   };
 
@@ -205,12 +271,12 @@ export default function AstrologerProfilePage() {
 
         if (data.success && data.history && data.history.length > 0) {
           setCallHistory(data.history);
-          calculatePerformanceMetrics(data.history);
+          setTotalCalls(data.history.length);
           setIsRetrying(false);
         } else {
           console.log("No call history found");
           setCallHistory([]);
-          calculatePerformanceMetrics([]);
+          setTotalCalls(0);
           setIsRetrying(false);
         }
       } else {
@@ -220,14 +286,14 @@ export default function AstrologerProfilePage() {
           "Unable to load call history. This might be due to database indexing issues."
         );
         setCallHistory([]);
-        calculatePerformanceMetrics([]);
+        setTotalCalls(0);
         setIsRetrying(false);
       }
     } catch (error) {
       console.error("Error fetching call history:", error);
       setApiError("Failed to connect to server. Please try again later.");
       setCallHistory([]);
-      calculatePerformanceMetrics([]);
+      setTotalCalls(0);
       setIsRetrying(false);
     }
   };
@@ -236,62 +302,7 @@ export default function AstrologerProfilePage() {
     fetchCallHistory();
   };
 
-  const calculatePerformanceMetrics = (calls) => {
-    try {
-      console.log("Calculating performance metrics for calls:", calls);
-
-      // Calculate total earnings
-      const totalEarnings = calls.reduce((sum, call) => {
-        return sum + (call.cost || 0);
-      }, 0);
-
-      // Calculate current month earnings
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-
-      const monthlyEarningsData = calls
-        .filter((call) => {
-          try {
-            const callDate = new Date(call.startedAt);
-            return (
-              callDate.getMonth() === currentMonth &&
-              callDate.getFullYear() === currentYear
-            );
-          } catch (error) {
-            console.error("Error parsing call date:", error, call);
-            return false;
-          }
-        })
-        .reduce((sum, call) => sum + (call.cost || 0), 0);
-
-      // Calculate performance metrics
-      const totalCallsCount = calls.length;
-
-      // Only update earnings and calls - keep existing rating and reviews data
-      console.log("Calculated metrics:", {
-        totalEarnings,
-        monthlyEarningsData,
-        totalCallsCount,
-        avgRating, // Using existing state
-        reviewsCount, // Using existing state
-      });
-
-      setCalculatedEarnings(totalEarnings);
-      setMonthlyEarnings(monthlyEarningsData);
-      setTotalCalls(totalCallsCount);
-      // Do NOT update avgRating and reviewsCount here as they are already set from reviews API
-    } catch (error) {
-      console.error("Error calculating performance metrics:", error);
-      // Set fallback values for earnings and calls only
-      setCalculatedEarnings(0);
-      setMonthlyEarnings(0);
-      setTotalCalls(0);
-      // Keep existing rating and reviews data
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed calculatePerformanceMetrics - earnings now come from API
 
   /* --------------------------------------------------------------- */
   /*  Toggle online status                                           */
@@ -332,6 +343,127 @@ export default function AstrologerProfilePage() {
       router.push("/auth/astrologer");
     } catch (e) {
       console.error("Sign out error:", e);
+    }
+  };
+
+  /**
+   * Compress and resize image for avatar upload.
+   * @param {File} file - Image file to compress
+   * @param {number} maxWidth - Maximum width
+   * @param {number} maxHeight - Maximum height
+   * @param {number} quality - JPEG quality (0-1)
+   * @returns {Promise<Blob>} Compressed image blob
+   */
+  const compressImage = (file, maxWidth, maxHeight, quality) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error("Failed to compress image"));
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
+   * Handle avatar file upload.
+   * Validates file type/size, compresses image, converts to base64,
+   * and updates Firestore. Ensures base64 size < 800KB.
+   * @param {Event} e - File input change event
+   */
+  const handleAvatarUpload = async (e) => {
+    if (!authUser) return;
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+
+    // Validate original file size (max 2MB before compression)
+    if (file.size > 2 * 1024 * 1024) {
+      alert(
+        "Image size should be less than 2MB (will be compressed automatically)"
+      );
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // Step 1: Compress the image
+      const compressedFile = await compressImage(file, 300, 300, 0.7);
+
+      // Step 2: Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile);
+      });
+
+      // Step 3: Validate final size (base64 < 800KB to stay under Firestore limits)
+      if (base64.length > 800 * 1024) {
+        throw new Error("Compressed image too large for storage");
+      }
+
+      // Step 4: Update Firestore directly
+      const docRef = doc(db, "astrologers", authUser.uid);
+      await updateDoc(docRef, { avatar: base64 });
+
+      // Step 5: Update local state
+      setAstrologer((prev) => ({ ...prev, avatar: base64 }));
+
+      // Reset input
+      e.target.value = "";
+
+      alert("Avatar updated successfully!");
+    } catch (err) {
+      console.error("Failed to upload avatar:", err);
+      alert(`Failed to upload: ${err.message}. Please try a smaller image.`);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -410,7 +542,12 @@ export default function AstrologerProfilePage() {
                     style={{
                       width: "6rem",
                       height: "6rem",
-                      background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                      backgroundImage: astrologer.avatar
+                        ? `url(${astrologer.avatar})`
+                        : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
@@ -420,12 +557,13 @@ export default function AstrologerProfilePage() {
                       fontSize: "1.75rem",
                     }}
                   >
-                    {astrologer.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {!astrologer.avatar &&
+                      astrologer.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                   </div>
-                  <button
+                  <label
                     style={{
                       position: "absolute",
                       bottom: "0",
@@ -439,12 +577,26 @@ export default function AstrologerProfilePage() {
                       justifyContent: "center",
                       color: "white",
                       border: "none",
-                      cursor: "pointer",
+                      cursor: uploadingAvatar ? "not-allowed" : "pointer",
+                      opacity: uploadingAvatar ? 0.5 : 1,
                     }}
-                    onClick={() => alert("Avatar upload coming soon!")}
                   >
-                    <Camera style={{ width: "1rem", height: "1rem" }} />
-                  </button>
+                    {uploadingAvatar ? (
+                      <Loader2
+                        style={{ width: "1rem", height: "1rem" }}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <Camera style={{ width: "1rem", height: "1rem" }} />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2
@@ -743,24 +895,49 @@ export default function AstrologerProfilePage() {
                   </div>
                 )}
 
-                <p
-                  style={{
-                    fontSize: "1.875rem",
-                    fontWeight: 700,
-                    color: "#059669",
-                  }}
-                >
-                  ₹{calculatedEarnings?.toFixed(2) || "0.00"}
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "var(--color-gray-500)",
-                    marginTop: "0.5rem",
-                  }}
-                >
-                  This month: ₹{monthlyEarnings?.toFixed(2) || "0.00"}
-                </p>
+                {earningsLoading ? (
+                  <div style={{ textAlign: "center", padding: "1rem 0" }}>
+                    <Loader2
+                      style={{
+                        width: "1.5rem",
+                        height: "1.5rem",
+                        color: "#d4af37",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto",
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p
+                      style={{
+                        fontSize: "1.875rem",
+                        fontWeight: 700,
+                        color: "#059669",
+                      }}
+                    >
+                      ₹{earningsData?.totalEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "var(--color-gray-500)",
+                        marginTop: "0.5rem",
+                      }}
+                    >
+                      Available: ₹{earningsData?.availableEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "var(--color-gray-500)",
+                        marginTop: "0.25rem",
+                      }}
+                    >
+                      Redeemed: ₹{earningsData?.redeemedEarnings?.toFixed(2) || "0.00"}
+                    </p>
+                  </>
+                )}
                 {apiError && (
                   <p
                     style={{
@@ -928,7 +1105,7 @@ export default function AstrologerProfilePage() {
                 Recent Calls
               </h3>
               <Button
-                onClick={() => router.push("/astrologer/call-history")}
+                onClick={() => router.push("/astrologer-dashboard")}
                 variant="ghost"
                 style={{ fontSize: "0.875rem", color: "var(--color-indigo)" }}
               >
@@ -1006,7 +1183,7 @@ export default function AstrologerProfilePage() {
                           margin: 0,
                         }}
                       >
-                        +₹{call.cost?.toFixed(2)}
+                        +₹{(call.finalAmount || call.cost || 0).toFixed(2)}
                       </p>
                       <p
                         style={{
@@ -1015,7 +1192,7 @@ export default function AstrologerProfilePage() {
                           margin: 0,
                         }}
                       >
-                        {call.duration} min
+                        {call.durationMinutes || call.duration || Math.floor((call.actualDurationSeconds || 0) / 60) || "0"} min
                       </p>
                     </div>
                   </div>

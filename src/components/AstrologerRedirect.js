@@ -21,7 +21,7 @@ export default function AstrologerRedirect() {
     // If not an astrologer, don't do anything
     if (!isAstrologer) return
 
-    // Allow astrologers to access video and voice call rooms, their dashboard, profile, and auth pages
+    // Allow astrologers to access video and voice call rooms, their dashboard, profile, auth pages, and appointment management
     const allowedPaths = [
       '/astrologer-dashboard',
       '/talk-to-astrologer/room/',
@@ -29,6 +29,8 @@ export default function AstrologerRedirect() {
       '/profile/astrology',
       '/account/astrologer',
       '/auth',
+      '/appointments/availability', // Allow astrologers to manage availability
+      '/appointments', // Allow astrologers to view their appointments
       '/unauthorized' // Allow access to unauthorized page itself
     ]
     

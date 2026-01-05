@@ -74,11 +74,15 @@ export async function GET(request) {
     const db = getFirestore()
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+    const userType = searchParams.get('userType') || 'user'
+    
     if (!userId) {
       return NextResponse.json({ success: false, message: 'userId is required' }, { status: 400 })
     }
 
-    const userRef = db.collection('users').doc(userId)
+    // Determine collection based on userType
+    const collectionName = userType === 'astrologer' ? 'astrologers' : 'users'
+    const userRef = db.collection(collectionName).doc(userId)
     const snap = await userRef.get()
     if (!snap.exists) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
