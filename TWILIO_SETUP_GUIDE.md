@@ -45,10 +45,18 @@ This guide will help you set up Twilio for OTP (SMS) and WhatsApp messaging in T
 
 ### Option B: WhatsApp Business API (Production)
 
-1. Apply for WhatsApp Business API access through Twilio
-2. Complete the business verification process
-3. Get your approved WhatsApp Business number
-4. This can take several days to weeks for approval
+**📖 Detailed Guide:** See `WHATSAPP_BUSINESS_API_SETUP.md` for complete step-by-step instructions.
+
+**Quick Steps:**
+1. Upgrade your Twilio account (add payment method)
+2. Go to **Messaging** → **WhatsApp** → **Get Started with WhatsApp Business API**
+3. Fill out the application form with business details
+4. Submit business verification documents (registration, tax ID, etc.)
+5. Wait for approval (typically 2-4 weeks)
+6. Create and get message templates approved
+7. Use your approved WhatsApp Business number
+
+**Note:** This process requires business verification and can take several weeks. Use the sandbox for testing while waiting.
 
 ## Step 5: Configure Environment Variables
 

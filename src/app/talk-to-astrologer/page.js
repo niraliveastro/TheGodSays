@@ -12,6 +12,8 @@ import {
   CheckCircle,
   Loader2,
   Clock,
+  Calendar,
+  CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
@@ -144,12 +146,22 @@ export default function TalkToAstrologer() {
   }, [isAnyModalOpen]);
 
   /* --------------------------------------------------------------- */
-  /*  Fetch astrologers + pricing + reviews                         */
+  /*  Fetch astrologers + pricing + reviews (PARALLEL LOADING)     */
   /* --------------------------------------------------------------- */
   const fetchAndUpdateAstrologers = async () => {
     try {
-      const snap = await getDocs(collection(db, "astrologers"));
-      const list = snap.docs.map((doc) => {
+      // Step 1: Fetch astrologers and pricing in parallel
+      const [astrologersSnap, pricingResponse] = await Promise.all([
+        getDocs(collection(db, "astrologers")),
+        fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-all-pricing" }),
+        }).catch(() => null), // Don't fail if pricing fails
+      ]);
+
+      // Process astrologers list
+      const list = astrologersSnap.docs.map((doc) => {
         const d = doc.data();
         return {
           id: doc.id,
@@ -159,11 +171,10 @@ export default function TalkToAstrologer() {
           reviews: d.reviews || 0,
           experience: d.experience,
           languages: d.languages || ["English"],
-          status: d.status || "offline", // Store actual status
+          status: d.status || "offline",
           isOnline: d.status === "online",
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
-          // NEW: map areasOfExpertise / specialties for expertise display
           areasOfExpertise: Array.isArray(d.areasOfExpertise)
             ? d.areasOfExpertise
             : Array.isArray(d.specialties)
@@ -179,66 +190,75 @@ export default function TalkToAstrologer() {
         };
       });
 
-      /* ---- Pricing ---- */
-      try {
-        const res = await fetch("/api/pricing", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "get-all-pricing" }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          const map = {};
-          data.pricing.forEach((p) => (map[p.astrologerId] = p));
-          list.forEach((a) => {
-            const p = map[a.id];
-            if (p) {
-              a.pricing = p;
-              a.perMinuteCharge =
-                p.pricingType === "per_minute" ? p.finalPrice : null;
-            } else {
-              a.pricing = { pricingType: "per_minute", finalPrice: 50 };
-              a.perMinuteCharge = 50;
-            }
-          });
+      // Process pricing data (if available)
+      let pricingMap = {};
+      if (pricingResponse && pricingResponse.ok) {
+        try {
+          const pricingData = await pricingResponse.json();
+          if (pricingData.success) {
+            pricingData.pricing.forEach((p) => (pricingMap[p.astrologerId] = p));
+          }
+        } catch (e) {
+          console.error("Pricing parse error:", e);
         }
-      } catch (e) {
-        console.error("Pricing fetch error:", e);
-        list.forEach((a) => {
-          a.pricing = { pricingType: "per_minute", finalPrice: 50 };
-          a.perMinuteCharge = 50;
-        });
       }
 
-      /* ---- Reviews & rating recalc ---- */
-      const updated = await Promise.all(
-        list.map(async (a) => {
-          try {
-            const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
-            const data = await res.json();
-            if (res.ok && data.success && data.reviews?.length) {
-              const total = data.reviews.reduce((s, r) => s + r.rating, 0);
-              const avg = data.reviews.length
-                ? (total / data.reviews.length).toFixed(1)
-                : 0;
-              return {
-                ...a,
-                rating: parseFloat(avg),
-                reviews: data.reviews.length,
-              };
-            }
-            return a; // Return original if reviews fetch fails
-          } catch (e) {
-            console.error(`Reviews error for ${a.id}:`, e);
-          }
-          return a;
-        })
-      );
+      // Apply pricing to astrologers
+      list.forEach((a) => {
+        const p = pricingMap[a.id];
+        if (p) {
+          a.pricing = p;
+          a.perMinuteCharge =
+            p.pricingType === "per_minute" ? p.finalPrice : null;
+        } else {
+          a.pricing = { pricingType: "per_minute", finalPrice: 50 };
+          a.perMinuteCharge = 50;
+        }
+      });
 
+      // Step 2: Fetch all reviews in parallel (batch requests)
+      // Group reviews requests to avoid too many simultaneous requests
+      const BATCH_SIZE = 10; // Process 10 at a time to avoid overwhelming the server
+      const updated = [];
+      
+      for (let i = 0; i < list.length; i += BATCH_SIZE) {
+        const batch = list.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (a) => {
+            try {
+              const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
+              const data = await res.json();
+              if (res.ok && data.success && data.reviews?.length) {
+                const total = data.reviews.reduce((s, r) => s + r.rating, 0);
+                const avg = data.reviews.length
+                  ? (total / data.reviews.length).toFixed(1)
+                  : 0;
+                return {
+                  ...a,
+                  rating: parseFloat(avg),
+                  reviews: data.reviews.length,
+                };
+              }
+              return a;
+            } catch (e) {
+              console.error(`Reviews error for ${a.id}:`, e);
+              return a;
+            }
+          })
+        );
+        updated.push(...batchResults);
+        
+        // Update UI incrementally for better perceived performance
+        if (i === 0) {
+          setAstrologers(updated);
+          setFetchingAstrologers(false); // Show initial results immediately
+        }
+      }
+
+      // Final update with all reviews
       setAstrologers(updated);
     } catch (e) {
       console.error("Astrologers fetch error:", e);
-    } finally {
       setFetchingAstrologers(false);
     }
   };
@@ -1069,155 +1089,208 @@ export default function TalkToAstrologer() {
                   gap: "1rem",
                 }}
               >
-                {/* Call History Button */}
+                {/* Search + Filter Side by Side */}
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "flex-end",
-                    marginBottom: "0.5rem",
+                    gap: "1rem",
+                    alignItems: "stretch",
                   }}
                 >
-                  <button
-                    onClick={handleOpenCallHistory}
-                    className="btn btn-primary"
-                    disabled={!!connectingCallType}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      fontSize: "0.875rem",
-                      padding: "0.5rem 1rem",
-                      background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--radius-md)",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-                      transition: "all 0.3s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!connectingCallType) {
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
-                    }}
-                  >
-                    <Clock
+                  {/* Search Bar */}
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <Search
                       style={{
-                        width: "1rem",
-                        height: "1rem",
+                        position: "absolute",
+                        left: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "1.25rem",
+                        height: "1.25rem",
+                        color: "var(--color-gold)",
+                        zIndex: 1,
                       }}
                     />
-                    Call History
-                  </button>
-                </div>
-                <div style={{ flex: 1, position: "relative" }}>
-                  <Search
-                    style={{
-                      position: "absolute",
-                      left: "0.75rem",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      color: "var(--color-gold)",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search astrologer or specialization..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    disabled={!!connectingCallType}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem 1rem 0.75rem 2.5rem",
-                      border: "1px solid var(--color-gray-300)",
-                      borderRadius: "0.75rem",
-                      fontSize: "1rem",
-                      outline: "none",
-                      transition: "var(--transition-fast)",
-                      opacity: !!connectingCallType ? 0.5 : 1,
-                      pointerEvents: !!connectingCallType ? "none" : "auto",
-                    }}
-                    onFocus={(e) => {
-                      if (!!connectingCallType) return;
-                      e.target.style.borderColor = "var(--color-gold)";
-                      e.target.style.boxShadow =
-                        "0 0 0 3px rgba(212, 175, 55, 0.2)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--color-gray-300)";
-                      e.target.style.boxShadow = "none";
-                    }}
-                  />
-                </div>
+                    <input
+                      type="text"
+                      placeholder="Search astrologer or specialization..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      disabled={!!connectingCallType}
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem 0.75rem 2.5rem",
+                        border: "1px solid var(--color-gray-300)",
+                        borderRadius: "0.75rem",
+                        fontSize: "1rem",
+                        outline: "none",
+                        transition: "var(--transition-fast)",
+                        opacity: !!connectingCallType ? 0.5 : 1,
+                        pointerEvents: !!connectingCallType ? "none" : "auto",
+                      }}
+                      onFocus={(e) => {
+                        if (!!connectingCallType) return;
+                        e.target.style.borderColor = "var(--color-gold)";
+                        e.target.style.boxShadow =
+                          "0 0 0 3px rgba(212, 175, 55, 0.2)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "var(--color-gray-300)";
+                        e.target.style.boxShadow = "none";
+                      }}
+                    />
+                  </div>
 
-                <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    maxWidth: "16rem",
-                  }}
-                >
-                  <Filter
+                  {/* Filter Dropdown */}
+                  <div
                     style={{
-                      position: "absolute",
-                      left: "0.75rem",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      color: "var(--color-gold)",
-                    }}
-                  />
-                  <select
-                    value={filterSpecialization}
-                    onChange={(e) => setFilterSpecialization(e.target.value)}
-                    disabled={!!connectingCallType}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem 1rem 0.75rem 2.5rem",
-                      border: "1px solid var(--color-gray-300)",
-                      borderRadius: "0.75rem",
-                      fontSize: "1rem",
-                      appearance: "none",
-                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                      backgroundPosition: "right 0.75rem center",
-                      backgroundRepeat: "no-repeat",
-                      backgroundSize: "1.2em",
-                      outline: "none",
-                      opacity: !!connectingCallType ? 0.5 : 1,
-                      pointerEvents: !!connectingCallType ? "none" : "auto",
-                    }}
-                    onFocus={(e) => {
-                      if (!!connectingCallType) return;
-                      e.target.style.borderColor = "var(--color-gold)";
-                      e.target.style.boxShadow =
-                        "0 0 0 3px rgba(212, 175, 55, 0.2)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--color-gray-300)";
-                      e.target.style.boxShadow = "none";
+                      position: "relative",
+                      minWidth: "16rem",
+                      maxWidth: "16rem",
                     }}
                   >
-                    <option value="">All Specializations</option>
-                    <option value="Vedic Astrology">Vedic Astrology</option>
-                    <option value="Tarot Reading">Tarot Reading</option>
-                    <option value="Numerology">Numerology</option>
-                    <option value="Palmistry">Palmistry</option>
-                  </select>
+                    <Filter
+                      style={{
+                        position: "absolute",
+                        left: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "1.25rem",
+                        height: "1.25rem",
+                        color: "var(--color-gold)",
+                        zIndex: 1,
+                      }}
+                    />
+                    <select
+                      value={filterSpecialization}
+                      onChange={(e) => setFilterSpecialization(e.target.value)}
+                      disabled={!!connectingCallType}
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem 1rem 0.75rem 2.5rem",
+                        border: "1px solid var(--color-gray-300)",
+                        borderRadius: "0.75rem",
+                        fontSize: "1rem",
+                        appearance: "none",
+                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                        backgroundPosition: "right 0.75rem center",
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "1.2em",
+                        outline: "none",
+                        opacity: !!connectingCallType ? 0.5 : 1,
+                        pointerEvents: !!connectingCallType ? "none" : "auto",
+                      }}
+                      onFocus={(e) => {
+                        if (!!connectingCallType) return;
+                        e.target.style.borderColor = "var(--color-gold)";
+                        e.target.style.boxShadow =
+                          "0 0 0 3px rgba(212, 175, 55, 0.2)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "var(--color-gray-300)";
+                        e.target.style.boxShadow = "none";
+                      }}
+                    >
+                      <option value="">All Specializations</option>
+                      <option value="Vedic Astrology">Vedic Astrology</option>
+                      <option value="Tarot Reading">Tarot Reading</option>
+                      <option value="Numerology">Numerology</option>
+                      <option value="Palmistry">Palmistry</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Astrologers Card Container */}
             <div className="card" style={{ marginTop: "1.5rem", padding: "1.5rem" }}>
+              {/* Call History + My Appointments Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.75rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <button
+                  onClick={() => router.push("/appointments")}
+                  className="btn btn-primary"
+                  disabled={!!connectingCallType}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    fontSize: "0.875rem",
+                    padding: "0.5rem 1rem",
+                    background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "var(--radius-md)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!connectingCallType) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                  }}
+                >
+                  <CalendarCheck
+                    style={{
+                      width: "1rem",
+                      height: "1rem",
+                    }}
+                  />
+                  My Appointments
+                </button>
+                <button
+                  onClick={handleOpenCallHistory}
+                  className="btn btn-primary"
+                  disabled={!!connectingCallType}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    fontSize: "0.875rem",
+                    padding: "0.5rem 1rem",
+                    background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "var(--radius-md)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!connectingCallType) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                  }}
+                >
+                  <Clock
+                    style={{
+                      width: "1rem",
+                      height: "1rem",
+                    }}
+                  />
+                  Call History
+                </button>
+              </div>
+
               {/* Loading skeletons – Responsive grid */}
               {fetchingAstrologers && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1746,46 +1819,56 @@ export default function TalkToAstrologer() {
                         marginTop: "auto",
                         position: "relative",
                         zIndex: 30,
+                        alignItems: "stretch",
                       }}
                     >
+                      {/* Schedule Button - Matching My Appointments/Call History style */}
                       <Button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleVideoCall(a.id);
+                          router.push(`/appointments/book/${a.id}`);
                         }}
-                        disabled={
-                          !a.isOnline || loading || !!connectingCallType
-                        }
                         className="btn btn-primary"
+                        disabled={!!connectingCallType}
                         style={{
                           flex: 1,
                           height: "3rem",
                           padding: "0 1.5rem",
                           fontSize: "1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "0.5rem",
+                          background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "var(--radius-md)",
+                          fontWeight: 600,
+                          boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                          transition: "all 0.3s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!connectingCallType) {
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                            e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
                         }}
                       >
-                        {loading && connectingCallType === "video" ? (
-                          <Loader2
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                              animation: "spin 1s linear infinite",
-                              marginRight: "0.5rem",
-                            }}
-                          />
-                        ) : (
-                          <Video
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                              marginRight: "0.5rem",
-                            }}
-                          />
-                        )}
-                        {a.isOnline ? "Video Call" : "Offline"}
+                        <CalendarCheck
+                          style={{
+                            width: "1rem",
+                            height: "1rem",
+                          }}
+                        />
+                        Schedule
                       </Button>
 
+                      {/* Voice Call Icon Button - Half size of original voice call button */}
                       <Button
                         onClick={(e) => {
                           e.preventDefault();
@@ -1798,11 +1881,16 @@ export default function TalkToAstrologer() {
                         variant="outline"
                         className="btn btn-outline"
                         style={{
-                          flex: 1,
+                          flex: 0.5,
                           height: "3rem",
-                          padding: "0 1.5rem",
-                          fontSize: "1rem",
+                          width: "3rem",
+                          padding: 0,
+                          minWidth: "3rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
+                        title={a.isOnline ? "Voice Call" : "Offline"}
                       >
                         {loading && connectingCallType === "voice" ? (
                           <Loader2
@@ -1810,7 +1898,6 @@ export default function TalkToAstrologer() {
                               width: "1rem",
                               height: "1rem",
                               animation: "spin 1s linear infinite",
-                              marginRight: "0.5rem",
                             }}
                           />
                         ) : (
@@ -1818,11 +1905,51 @@ export default function TalkToAstrologer() {
                             style={{
                               width: "1rem",
                               height: "1rem",
-                              marginRight: "0.5rem",
                             }}
                           />
                         )}
-                        {a.isOnline ? "Voice Call" : "Offline"}
+                      </Button>
+
+                      {/* Video Call Icon Button - Half size of original voice call button */}
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleVideoCall(a.id);
+                        }}
+                        disabled={
+                          !a.isOnline || loading || !!connectingCallType
+                        }
+                        variant="outline"
+                        className="btn btn-outline"
+                        style={{
+                          flex: 0.5,
+                          height: "3rem",
+                          width: "3rem",
+                          padding: 0,
+                          minWidth: "3rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        title={a.isOnline ? "Video Call" : "Offline"}
+                      >
+                        {loading && connectingCallType === "video" ? (
+                          <Loader2
+                            style={{
+                              width: "1rem",
+                              height: "1rem",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                        ) : (
+                          <Video
+                            style={{
+                              width: "1rem",
+                              height: "1rem",
+                            }}
+                          />
+                        )}
                       </Button>
                     </div>
                   </Link>

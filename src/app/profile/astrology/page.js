@@ -23,6 +23,8 @@ import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function AstrologerProfilePage() {
   const { t } = useTranslation();
@@ -57,6 +59,7 @@ export default function AstrologerProfilePage() {
   const [perMinuteRate, setPerMinuteRate] = useState(50);
   const [apiError, setApiError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologer + history                                     */
@@ -343,6 +346,127 @@ export default function AstrologerProfilePage() {
     }
   };
 
+  /**
+   * Compress and resize image for avatar upload.
+   * @param {File} file - Image file to compress
+   * @param {number} maxWidth - Maximum width
+   * @param {number} maxHeight - Maximum height
+   * @param {number} quality - JPEG quality (0-1)
+   * @returns {Promise<Blob>} Compressed image blob
+   */
+  const compressImage = (file, maxWidth, maxHeight, quality) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error("Failed to compress image"));
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
+   * Handle avatar file upload.
+   * Validates file type/size, compresses image, converts to base64,
+   * and updates Firestore. Ensures base64 size < 800KB.
+   * @param {Event} e - File input change event
+   */
+  const handleAvatarUpload = async (e) => {
+    if (!authUser) return;
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+
+    // Validate original file size (max 2MB before compression)
+    if (file.size > 2 * 1024 * 1024) {
+      alert(
+        "Image size should be less than 2MB (will be compressed automatically)"
+      );
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // Step 1: Compress the image
+      const compressedFile = await compressImage(file, 300, 300, 0.7);
+
+      // Step 2: Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile);
+      });
+
+      // Step 3: Validate final size (base64 < 800KB to stay under Firestore limits)
+      if (base64.length > 800 * 1024) {
+        throw new Error("Compressed image too large for storage");
+      }
+
+      // Step 4: Update Firestore directly
+      const docRef = doc(db, "astrologers", authUser.uid);
+      await updateDoc(docRef, { avatar: base64 });
+
+      // Step 5: Update local state
+      setAstrologer((prev) => ({ ...prev, avatar: base64 }));
+
+      // Reset input
+      e.target.value = "";
+
+      alert("Avatar updated successfully!");
+    } catch (err) {
+      console.error("Failed to upload avatar:", err);
+      alert(`Failed to upload: ${err.message}. Please try a smaller image.`);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   /* --------------------------------------------------------------- */
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
@@ -418,7 +542,12 @@ export default function AstrologerProfilePage() {
                     style={{
                       width: "6rem",
                       height: "6rem",
-                      background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                      backgroundImage: astrologer.avatar
+                        ? `url(${astrologer.avatar})`
+                        : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
@@ -428,12 +557,13 @@ export default function AstrologerProfilePage() {
                       fontSize: "1.75rem",
                     }}
                   >
-                    {astrologer.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {!astrologer.avatar &&
+                      astrologer.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                   </div>
-                  <button
+                  <label
                     style={{
                       position: "absolute",
                       bottom: "0",
@@ -447,12 +577,26 @@ export default function AstrologerProfilePage() {
                       justifyContent: "center",
                       color: "white",
                       border: "none",
-                      cursor: "pointer",
+                      cursor: uploadingAvatar ? "not-allowed" : "pointer",
+                      opacity: uploadingAvatar ? 0.5 : 1,
                     }}
-                    onClick={() => alert("Avatar upload coming soon!")}
                   >
-                    <Camera style={{ width: "1rem", height: "1rem" }} />
-                  </button>
+                    {uploadingAvatar ? (
+                      <Loader2
+                        style={{ width: "1rem", height: "1rem" }}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <Camera style={{ width: "1rem", height: "1rem" }} />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h2

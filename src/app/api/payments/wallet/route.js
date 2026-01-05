@@ -25,12 +25,25 @@ if (!getApps().length) {
 
 export async function POST(request) {
   try {
-    const { action, userId, amount } = await request.json()
+    // Check if request has a body before parsing
+    let body;
+    try {
+      const text = await request.text();
+      if (!text || text.trim() === '') {
+        return NextResponse.json({ error: 'Request body is required' }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    const { action, userId, amount } = body;
 
     // Validate action
-     const validActions = ['recharge', 'get-balance', 'get-history']
+    const validActions = ['recharge', 'get-balance', 'get-history'];
     if (!validActions.includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
     // Validate userId

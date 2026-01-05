@@ -16,6 +16,7 @@ export default function BookAppointment() {
 
   const [astrologer, setAstrologer] = useState(null)
   const [availability, setAvailability] = useState([])
+  const [bookedSlots, setBookedSlots] = useState(new Set()) // Track booked slots
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
   const [selectedDuration, setSelectedDuration] = useState(30)
@@ -36,6 +37,7 @@ export default function BookAppointment() {
       checkPhoneVerification()
       fetchAstrologer()
       fetchAvailability()
+      fetchBookedSlots()
     }
   }, [user, userProfile, authLoading])
 
@@ -83,6 +85,24 @@ export default function BookAppointment() {
     }
   }
 
+  const fetchBookedSlots = async () => {
+    try {
+      const response = await fetch(`/api/appointments?astrologerId=${astrologerId}&status=confirmed`)
+      const data = await response.json()
+      if (data.success && data.appointments) {
+        const booked = new Set()
+        data.appointments.forEach(apt => {
+          if (apt.status === 'confirmed' || apt.status === 'pending') {
+            booked.add(`${apt.date}_${apt.time}`)
+          }
+        })
+        setBookedSlots(booked)
+      }
+    } catch (error) {
+      console.error('Error fetching booked slots:', error)
+    }
+  }
+
   const handlePhoneVerified = (phone) => {
     setPhoneVerified(true)
   }
@@ -93,7 +113,34 @@ export default function BookAppointment() {
   }
 
   const getAvailableTimesForDate = (date) => {
-    return availability.filter(slot => slot.date === date)
+    const now = new Date()
+    const selectedDateObj = new Date(date)
+    selectedDateObj.setHours(0, 0, 0, 0)
+    
+    return availability.filter(slot => {
+      if (slot.date !== date) return false
+      
+      // Filter out past slots
+      const slotDate = new Date(slot.date)
+      const [hours, minutes] = slot.time.split(':').map(Number)
+      const slotDateTime = new Date(slotDate)
+      slotDateTime.setHours(hours, minutes, 0, 0)
+      
+      return slotDateTime > now
+    })
+  }
+
+  const isSlotBooked = (date, time) => {
+    return bookedSlots.has(`${date}_${time}`)
+  }
+
+  const isSlotPast = (date, time) => {
+    const now = new Date()
+    const slotDate = new Date(date)
+    const [hours, minutes] = time.split(':').map(Number)
+    const slotDateTime = new Date(slotDate)
+    slotDateTime.setHours(hours, minutes, 0, 0)
+    return slotDateTime <= now
   }
 
   const handleBookAppointment = async (e) => {
@@ -109,6 +156,13 @@ export default function BookAppointment() {
 
     if (!selectedDate || !selectedTime) {
       setError('Please select date and time')
+      setBooking(false)
+      return
+    }
+
+    // Validate that the selected slot is not in the past
+    if (isSlotPast(selectedDate, selectedTime)) {
+      setError('Cannot book appointments in the past. Please select a future date and time.')
       setBooking(false)
       return
     }
@@ -208,13 +262,22 @@ export default function BookAppointment() {
     )
   }
 
-  // Group availability by date
+  // Group availability by date and filter out past dates
   const datesWithSlots = {}
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  
   availability.forEach(slot => {
-    if (!datesWithSlots[slot.date]) {
-      datesWithSlots[slot.date] = []
+    const slotDate = new Date(slot.date)
+    slotDate.setHours(0, 0, 0, 0)
+    
+    // Only include future dates or today
+    if (slotDate >= now) {
+      if (!datesWithSlots[slot.date]) {
+        datesWithSlots[slot.date] = []
+      }
+      datesWithSlots[slot.date].push(slot)
     }
-    datesWithSlots[slot.date].push(slot)
   })
 
   const sortedDates = Object.keys(datesWithSlots).sort()
@@ -392,30 +455,63 @@ export default function BookAppointment() {
                   }}>
                     {getAvailableTimesForDate(selectedDate).map(slot => {
                       const isSelected = selectedTime === slot.time
+                      const isBooked = isSlotBooked(selectedDate, slot.time)
+                      const isPast = isSlotPast(selectedDate, slot.time)
+                      const isDisabled = isBooked || isPast
+                      
                       return (
                         <button
                           key={slot.time}
                           type="button"
+                          disabled={isDisabled}
                           onClick={() => {
-                            setSelectedTime(slot.time)
-                            setSelectedDuration(slot.duration || 30)
+                            if (!isDisabled) {
+                              setSelectedTime(slot.time)
+                              setSelectedDuration(slot.duration || 30)
+                            }
                           }}
                           style={{
                             padding: '0.75rem',
-                            border: `2px solid ${isSelected ? '#6366f1' : '#d1d5db'}`,
+                            border: isBooked 
+                              ? '2px solid #9ca3af' 
+                              : isPast
+                                ? '2px solid #d1d5db'
+                                : `2px solid ${isSelected ? '#fbbf24' : '#fef3c7'}`,
                             borderRadius: '0.5rem',
-                            backgroundColor: isSelected ? '#eef2ff' : '#fff',
-                            cursor: 'pointer',
+                            backgroundColor: isBooked 
+                              ? '#9ca3af' 
+                              : isPast
+                                ? '#f3f4f6'
+                                : isSelected 
+                                  ? '#fef3c7' 
+                                  : '#fef3c7',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
                             fontSize: '0.875rem',
                             fontWeight: isSelected ? 600 : 400,
-                            color: isSelected ? '#6366f1' : '#374151'
+                            color: isBooked 
+                              ? '#fff' 
+                              : isPast
+                                ? '#9ca3af'
+                                : isSelected 
+                                  ? '#92400e' 
+                                  : '#92400e',
+                            opacity: isDisabled ? 0.6 : 1
                           }}
+                          title={
+                            isBooked 
+                              ? 'This slot is already booked' 
+                              : isPast
+                                ? 'This slot is in the past'
+                                : 'Available slot'
+                          }
                         >
                           {new Date(`2000-01-01T${slot.time}`).toLocaleTimeString('en-IN', {
                             hour: '2-digit',
                             minute: '2-digit',
                             hour12: true
                           })}
+                          {isBooked && ' (Booked)'}
+                          {isPast && !isBooked && ' (Past)'}
                         </button>
                       )
                     })}

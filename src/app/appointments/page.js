@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Calendar, Clock, User, Phone, Video, MessageSquare, CheckCircle, X, Loader2 } from 'lucide-react'
+import { Calendar, Clock, User, Phone, Video, MessageSquare, CheckCircle, X, Loader2, CalendarCheck } from 'lucide-react'
 
 export default function Appointments() {
   const router = useRouter()
@@ -130,13 +130,50 @@ export default function Appointments() {
         maxWidth: '1000px',
         margin: '0 auto'
       }}>
-        <h1 style={{
-          fontSize: '1.875rem',
-          fontWeight: 700,
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           marginBottom: '2rem'
         }}>
-          My Appointments
-        </h1>
+          <h1 style={{
+            fontSize: '1.875rem',
+            fontWeight: 700,
+            margin: 0
+          }}>
+            My Appointments
+          </h1>
+          {isAstrologer && (
+            <button
+              onClick={() => router.push('/appointments/availability')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#6366f1',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#4f46e5'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#6366f1'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            >
+              <CalendarCheck size={18} />
+              Manage Availability
+            </button>
+          )}
+        </div>
 
         <div style={{
           display: 'flex',
@@ -191,19 +228,24 @@ export default function Appointments() {
               const isUpcoming = appointmentDate > new Date() && appointment.status === 'confirmed'
               const isPast = appointmentDate < new Date() || appointment.status === 'completed'
               
+              // Check if this is user's own booking (for users viewing their appointments)
+              const isUserBooking = !isAstrologer && appointment.userId === user?.uid
+              
               return (
                 <div
                   key={appointment.id}
                   style={{
-                    backgroundColor: '#fff',
+                    backgroundColor: isUserBooking && appointment.status === 'confirmed' ? '#f0fdf4' : '#fff',
                     borderRadius: '0.75rem',
                     padding: '1.5rem',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                     border: appointment.status === 'cancelled' 
                       ? '1px solid #fee2e2' 
-                      : isUpcoming 
-                        ? '1px solid #d1fae5' 
-                        : '1px solid #e5e7eb'
+                      : isUserBooking && appointment.status === 'confirmed'
+                        ? '2px solid #10b981' // Green border for user's bookings
+                        : isUpcoming 
+                          ? '1px solid #d1fae5' 
+                          : '1px solid #e5e7eb'
                   }}
                 >
                   <div style={{
