@@ -13,7 +13,7 @@ import SEOStructuredData from "@/components/SEOStructuredData";
 const inter = Inter({ subsets: ["latin"] });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
-const SITE_NAME = "RahuNow - Vedic Astrology & Panchang";
+const SITE_NAME = "NiraLive Astro - Vedic Astrology & Panchang";
 const SITE_DESCRIPTION = "Get your daily Panchang, personalized Kundali, numerology readings, and live consultations with expert astrologers. Your complete Vedic astrology platform.";
 
 export const metadata = {
@@ -46,9 +46,9 @@ export const metadata = {
     "dasha predictions",
     "transit analysis"
   ],
-  authors: [{ name: "RahuNow" }],
-  creator: "RahuNow",
-  publisher: "RahuNow",
+  authors: [{ name: "NiraLive Astro" }],
+  creator: "NiraLive Astro",
+  publisher: "NiraLive Astro",
   formatDetection: {
     email: false,
     address: false,
@@ -58,7 +58,7 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "RahuNow",
+    title: "NiraLive Astro",
   },
   icons: {
     icon: [

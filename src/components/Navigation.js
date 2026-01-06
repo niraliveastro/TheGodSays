@@ -273,7 +273,7 @@ const Navigation = () => {
             <div className="nav-logo-icon">
               <Infinity className="nav-logo-icon-svg" />
             </div>
-            <span className="nav-logo-text">RahuNow</span>
+            <span className="nav-logo-text">NiraLive Astro</span>
           </Link>
 
           {/* Desktop Navigation */}
