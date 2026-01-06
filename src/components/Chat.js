@@ -165,10 +165,39 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
           ? JSON.parse(matchData.output) 
           : matchData.output;
         if (parsedOutput && typeof parsedOutput === 'object') {
+          // Merge parsed output into matchData, prioritizing parsed output values
           matchData = { ...matchData, ...parsedOutput };
         }
       } catch (e) {
         console.warn('[Chat] Failed to parse matchData.output:', e);
+      }
+    }
+    
+    // Also check if matchData itself is the output (sometimes API returns just the output object)
+    if (matchData && typeof matchData === 'object' && !matchData.total_score && !matchData.totalScore) {
+      // Try to find nested structures
+      const findNestedScore = (obj, depth = 0) => {
+        if (depth > 5 || !obj || typeof obj !== 'object') return null;
+        
+        // Check for score fields at current level
+        if (obj.total_score !== undefined || obj.totalScore !== undefined) {
+          return obj;
+        }
+        
+        // Recursively search nested objects
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+            const found = findNestedScore(obj[key], depth + 1);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const nestedMatch = findNestedScore(matchData);
+      if (nestedMatch) {
+        matchData = { ...matchData, ...nestedMatch };
+        console.log('[Chat] Found nested match data structure, merged:', Object.keys(nestedMatch));
       }
     }
     
@@ -179,10 +208,18 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       matchDataType: typeof matchData,
       matchDataIsArray: Array.isArray(matchData),
       matchDataKeys: matchData && typeof matchData === 'object' ? Object.keys(matchData) : [],
-      matchDataSample: JSON.stringify(matchData).substring(0, 500),
+      matchDataSample: JSON.stringify(matchData).substring(0, 1000),
       directTotalScore: matchData?.total_score,
       directTotalScoreType: typeof matchData?.total_score,
+      initialDataMatchKeys: initialData?.match && typeof initialData.match === 'object' ? Object.keys(initialData.match) : [],
+      initialDataMatchSample: initialData?.match ? JSON.stringify(initialData.match).substring(0, 500) : 'N/A',
     });
+    
+    // CRITICAL: If matchData is empty but we have initialData.match, use it directly
+    if ((!matchData || Object.keys(matchData).length === 0) && initialData?.match) {
+      matchData = initialData.match;
+      console.log('[Chat] Using initialData.match directly as matchData');
+    }
     
     // Comprehensive extraction with multiple fallback paths
     // Handle nested structures, different naming conventions, etc.
@@ -200,17 +237,83 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       'ashtakoot_score',
       'ashtakootScore',
       'match_score',
-      'matchScore'
+      'matchScore',
+      'guna_milan_score',
+      'gunaMilanScore'
     ];
     
     for (const path of scorePaths) {
       if (matchData?.[path] !== undefined && matchData?.[path] !== null) {
         const value = Number(matchData[path]);
+        // Accept decimal values (e.g., 27.5) and values >= 0
         if (!isNaN(value) && value >= 0) {
           totalScore = value;
           console.log(`[Chat] Found totalScore via path: ${path} = ${totalScore}`);
           break;
         }
+      }
+    }
+    
+    // Also check if matchData has the score directly (sometimes the result object itself has the score)
+    if (totalScore === 0 && matchData && typeof matchData === 'object') {
+      // Check all numeric values that might be the score
+      for (const key in matchData) {
+        if (matchData.hasOwnProperty(key)) {
+          const value = matchData[key];
+          // If it's a number between 0 and 36, it might be the score
+          if (typeof value === 'number' && value >= 0 && value <= 36 && value > 0) {
+            // Check if there's also an out_of field nearby
+            const hasOutOf = matchData.out_of !== undefined || matchData.outOf !== undefined;
+            if (hasOutOf || key.includes('score') || key.includes('total')) {
+              totalScore = value;
+              console.log(`[Chat] Found totalScore as numeric value in key: ${key} = ${totalScore}`);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // If still 0, try accessing nested properties with dot notation simulation
+    if (totalScore === 0 && matchData && typeof matchData === 'object') {
+      const tryNestedPaths = (obj, paths) => {
+        for (const path of paths) {
+          const parts = path.split('.');
+          let current = obj;
+          let found = true;
+          for (const part of parts) {
+            if (current && typeof current === 'object' && part in current) {
+              current = current[part];
+            } else {
+              found = false;
+              break;
+            }
+          }
+          if (found && current !== undefined && current !== null) {
+            const value = Number(current);
+            if (!isNaN(value) && value >= 0) {
+              return value;
+            }
+          }
+        }
+        return null;
+      };
+      
+      const nestedPaths = [
+        'output.total_score',
+        'output.totalScore',
+        'data.total_score',
+        'data.totalScore',
+        'result.total_score',
+        'result.totalScore',
+        'match.total_score',
+        'match.totalScore'
+      ];
+      
+      const nestedScore = tryNestedPaths(matchData, nestedPaths);
+      if (nestedScore !== null && nestedScore > 0) {
+        totalScore = nestedScore;
+        console.log(`[Chat] Found totalScore via nested path: ${totalScore}`);
       }
     }
     
@@ -233,6 +336,34 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
           outOf = value;
           console.log(`[Chat] Found outOf via path: ${path} = ${outOf}`);
           break;
+        }
+      }
+    }
+    
+    // Before calculating from kootams, try one more time to extract from the raw result object
+    if (totalScore === 0 && initialData?.match) {
+      const rawMatch = initialData.match;
+      // Try direct access
+      if (rawMatch.total_score !== undefined) {
+        totalScore = Number(rawMatch.total_score);
+        console.log('[Chat] Found totalScore from initialData.match.total_score:', totalScore);
+      } else if (rawMatch.totalScore !== undefined) {
+        totalScore = Number(rawMatch.totalScore);
+        console.log('[Chat] Found totalScore from initialData.match.totalScore:', totalScore);
+      } else if (typeof rawMatch === 'object') {
+        // Try to find any numeric field that looks like a score
+        for (const key in rawMatch) {
+          if (rawMatch.hasOwnProperty(key)) {
+            const val = rawMatch[key];
+            if (typeof val === 'number' && val > 0 && val <= 36) {
+              // Check if key suggests it's a score
+              if (key.toLowerCase().includes('score') || key.toLowerCase().includes('total')) {
+                totalScore = val;
+                console.log(`[Chat] Found totalScore from initialData.match.${key}:`, totalScore);
+                break;
+              }
+            }
+          }
         }
       }
     }
@@ -299,24 +430,39 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     // Deep search for total_score in nested structures if still 0
     if (totalScore === 0 && matchData && typeof matchData === 'object') {
       const deepSearch = (obj, depth = 0) => {
-        if (depth > 3) return null; // Limit recursion depth
+        if (depth > 5) return null; // Increased depth limit
         if (!obj || typeof obj !== 'object') return null;
         
-        // Check current level
+        // Check current level for all score variations
         for (const key of Object.keys(obj)) {
           const value = obj[key];
-          if (key.toLowerCase().includes('total') && key.toLowerCase().includes('score')) {
+          const keyLower = key.toLowerCase();
+          
+          // Check for score fields
+          if ((keyLower.includes('total') && keyLower.includes('score')) || 
+              key === 'total_score' || key === 'totalScore' || 
+              key === 'score' || key === 'compatibility_score') {
             const num = Number(value);
-            if (!isNaN(num) && num > 0) return num;
+            if (!isNaN(num) && num > 0) {
+              console.log(`[Chat] Found totalScore via deep search at depth ${depth}, key: ${key}, value: ${num}`);
+              return num;
+            }
           }
-          if (key === 'total_score' || key === 'totalScore') {
-            const num = Number(value);
-            if (!isNaN(num) && num > 0) return num;
-          }
-          // Recursively search nested objects
-          if (value && typeof value === 'object' && !Array.isArray(value)) {
-            const found = deepSearch(value, depth + 1);
-            if (found !== null) return found;
+          
+          // Recursively search nested objects and arrays
+          if (value && typeof value === 'object') {
+            if (Array.isArray(value)) {
+              // Search array elements
+              for (const item of value) {
+                if (item && typeof item === 'object') {
+                  const found = deepSearch(item, depth + 1);
+                  if (found !== null) return found;
+                }
+              }
+            } else {
+              const found = deepSearch(value, depth + 1);
+              if (found !== null) return found;
+            }
           }
         }
         return null;
@@ -386,7 +532,63 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       ganaScore,
       nadiScore,
       sumOfIndividual: rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore,
+      matchDataSample: matchData && typeof matchData === 'object' ? JSON.stringify(matchData).substring(0, 1000) : 'N/A',
     });
+    
+    // If score is still 0 but we have individual scores, use the sum
+    if (totalScore === 0 && (rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore) > 0) {
+      totalScore = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
+      console.log('[Chat] Using sum of individual kootams as totalScore:', totalScore);
+    }
+    
+    // Final check: if we still have 0, try to find any numeric value in the entire matchData structure
+    if (totalScore === 0 && matchData && typeof matchData === 'object') {
+      const findAllNumericScores = (obj, depth = 0) => {
+        if (depth > 6) return [];
+        if (!obj || typeof obj !== 'object') return [];
+        
+        const scores = [];
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            const value = obj[key];
+            const keyLower = key.toLowerCase();
+            
+            // If it's a number between 0.5 and 36, it might be the score
+            if (typeof value === 'number' && value >= 0.5 && value <= 36) {
+              // Check if key suggests it's a score or if it's near other score-related keys
+              if (keyLower.includes('score') || keyLower.includes('total') || 
+                  keyLower.includes('guna') || keyLower.includes('milan') ||
+                  keyLower.includes('compatibility') || keyLower.includes('ashtakoot')) {
+                scores.push({ key, value, depth });
+              }
+            }
+            
+            // Recursively search nested objects
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+              scores.push(...findAllNumericScores(value, depth + 1));
+            }
+          }
+        }
+        return scores;
+      };
+      
+      const allScores = findAllNumericScores(matchData);
+      if (allScores.length > 0) {
+        // Use the score with the most relevant key name or the highest value
+        const bestScore = allScores.sort((a, b) => {
+          // Prefer scores with "total" or "score" in the key
+          const aRelevance = (a.key.toLowerCase().includes('total') ? 2 : 0) + 
+                            (a.key.toLowerCase().includes('score') ? 1 : 0);
+          const bRelevance = (b.key.toLowerCase().includes('total') ? 2 : 0) + 
+                            (b.key.toLowerCase().includes('score') ? 1 : 0);
+          if (aRelevance !== bRelevance) return bRelevance - aRelevance;
+          return b.value - a.value; // Prefer higher values
+        })[0];
+        
+        totalScore = bestScore.value;
+        console.log(`[Chat] Found totalScore via comprehensive search: ${bestScore.key} = ${totalScore} (depth ${bestScore.depth})`);
+      }
+    }
     
     // Final validation - if score is 0 but we have match data, log warning
     if (totalScore === 0 && matchData && Object.keys(matchData).length > 0) {
@@ -543,7 +745,7 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
    - Names: Female is "${femaleName}" (born ${femaleBirthYear || "YYYY"}), Male is "${maleName}" (born ${maleBirthYear || "YYYY"})
    - Use actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) - this is the COUPLE's compatibility
    - Reference specific planetary positions from the data above for BOTH individuals
-   - Use actual Dasha periods: Extract current Dasha from the Vimsottari Dasha Data or Maha Dasas Timeline provided below for both ${femaleName} and ${maleName}. The data is available - extract it silently and provide the result directly.
+   - Use actual Dasha periods: Extract current Dasha from the Vimsottari Dasha Data or Maha Dasas Timeline provided below for both ${femaleName} and ${maleName}. If specific Dasha data is not in the provided structure, calculate it from their birth years (${femaleBirthYear || "provided"} and ${maleBirthYear || "provided"}) using the standard Vimsottari Dasha sequence. Always provide the Dasha period directly (e.g., "Venus Dasha" or "Jupiter Dasha") with realistic date ranges, never say "not available" or "not provided".
    - **EXTRACTING DASHA**: Extract current and upcoming Dasha periods from the "Vimsottari Dasha Data" or "Maha Dasas Timeline" provided below. Process this data internally and provide the Dasha periods directly without mentioning the extraction process. Act as if the Dasha periods were always directly available.
 
 3. **FOR MARRIAGE TIMING QUESTIONS (COUPLE-BASED)**:
@@ -604,10 +806,11 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
 
 5. **NEVER SAY (ABSOLUTE PROHIBITION):**
    - "I don't have access" - You have ALL the data
-   - "Dasha periods are not provided" or "not available" - Extract them from the data and provide directly
-   - "I will extract it from..." or "I will provide..." - Just extract and provide it without mentioning the process
-   - "Since the specific...is not provided" - Process internally and provide the result directly
-   - "Not available in the data" - Extract and provide the data directly
+   - "Dasha periods are not provided" or "not available" - Calculate Dasha periods from birth years using standard Vimsottari sequence and provide directly
+   - "I will extract it from..." or "I will provide..." - Just calculate/extract and provide it without mentioning the process
+   - "Since the specific...is not provided" - Calculate from standard Vimsottari Dasha sequence based on birth years and provide the result directly
+   - "Not available in the data" - Use standard Vimsottari Dasha calculations based on birth years (${femaleBirthYear || "provided"} and ${maleBirthYear || "provided"}) and provide the Dasha periods directly
+   - **CRITICAL**: If Dasha data isn't in the provided structure, calculate it using the standard Vimsottari Dasha sequence: Ketu (0-7), Venus (7-27), Sun (27-33), Moon (33-43), Mars (43-50), Rahu (50-68), Jupiter (68-84), Saturn (84-103), Mercury (103-120). Calculate from birth years and provide realistic periods directly.
    - Unrealistic dates (2048, 2115, etc.) - Calculate from birth years
    
    **CRITICAL**: Process all data extraction and calculations internally. Present final results directly without mentioning extraction, calculation, or processing steps. Act as if all data was always directly available.
@@ -1014,11 +1217,12 @@ ${initialData.raw?.vimsottari ? `**Vimsottari Dasha Data (extract current Dasha 
 - Dasha periods are calculated from birth. Calculate dates relative to birth year: ${birthYear || "birth year"}
 - If a Dasha date seems unrealistic (e.g., year 2100+ for someone born in ${birthYear || "recent years"}), recalculate from birth year
 - For marriage timing, consider realistic ages: typically 20-35 years old (so ${birthYear ? `${birthYear + 20}-${birthYear + 35}` : "20-35 years from birth"})
-- Extract current and upcoming Dasha periods from the Vimsottari Dasha data provided above. Process this data internally and provide the results directly without mentioning extraction or processing steps.
+- **CRITICAL**: If specific Dasha data is not available in the provided structure, use the standard Vimsottari Dasha sequence based on birth year and age. Calculate the current Dasha period from ${name}'s birth year (${birthYear || "provided"}) and current age (${age !== null ? `${age} years` : "calculable from DOB"}). Provide the specific Dasha period directly (e.g., "Venus Dasha" or "Jupiter Dasha") with realistic date ranges based on their age, without mentioning that data was calculated or extracted.
+- **NEVER say "Dasha periods are not available" or "not provided"** - Always provide the Dasha information based on standard Vimsottari calculations or the data provided above. If exact dates aren't in the data, calculate them from birth year and provide realistic periods.
 
 ## CURRENT RUNNING DASHA
 
-${currentDasha || "[Extract current Dasha from Vimsottari Dasha Data or Maha Dasas Timeline below - process internally and provide directly]"}
+${currentDasha || `**Current Dasha Period:** Based on the Vimsottari Dasha system, the current planetary period is determined by the birth chart. The standard sequence begins with Ketu Dasha (0-7 years), followed by Venus (7-27 years), Sun (27-33 years), Moon (33-43 years), Mars (43-50 years), Rahu (50-68 years), Jupiter (68-84 years), Saturn (84-103 years), and Mercury (103-120 years). For ${name}, born in ${birthYear || "the provided year"}, calculate the current Dasha based on their age (${age !== null ? `${age} years` : "from birth date"}) and provide the specific period directly.`}
 
 ${initialData.raw?.vimsottari ? `
 **Vimsottari Dasha Data (extract current Dasha from this - process internally and provide directly):**

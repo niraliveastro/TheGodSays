@@ -237,6 +237,47 @@ export async function POST(request, { params }) {
         }
         // CRITICAL: Ensure language is NOT included at root level (it causes 400 errors)
         delete finalPayload.language;
+        
+        // Validate date is valid and not too far in the future (API may reject future dates)
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const requestDate = new Date(finalPayload.year, finalPayload.month - 1, finalPayload.date);
+        
+        // Check if date is valid
+        if (isNaN(requestDate.getTime())) {
+          return NextResponse.json(
+            { error: `Invalid date: ${finalPayload.year}-${finalPayload.month}-${finalPayload.date}` },
+            { status: 400 }
+          );
+        }
+        
+        // Warn if date is in the future (API might reject it)
+        if (requestDate > currentDate) {
+          const daysDiff = Math.ceil((requestDate - currentDate) / (1000 * 60 * 60 * 24));
+          console.warn(`[API] Warning: Request date ${finalPayload.year}-${finalPayload.month}-${finalPayload.date} is ${daysDiff} days in the future. API may reject future dates.`);
+        }
+        
+        // Ensure all required fields are present and valid
+        if (!finalPayload.year || !finalPayload.month || !finalPayload.date) {
+          return NextResponse.json(
+            { error: "Missing required date fields for vimsottari endpoint" },
+            { status: 400 }
+          );
+        }
+        
+        // Validate month and date ranges
+        if (finalPayload.month < 1 || finalPayload.month > 12) {
+          return NextResponse.json(
+            { error: `Invalid month: ${finalPayload.month}. Must be between 1 and 12.` },
+            { status: 400 }
+          );
+        }
+        if (finalPayload.date < 1 || finalPayload.date > 31) {
+          return NextResponse.json(
+            { error: `Invalid date: ${finalPayload.date}. Must be between 1 and 31.` },
+            { status: 400 }
+          );
+        }
       } else {
         // For other endpoints, include config as-is but ensure it exists
         if (payload.config) {
