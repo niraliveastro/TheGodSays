@@ -4563,9 +4563,9 @@ div[role="list"] .astrologer-card button.btn.btn-primary:hover {
   }
 
   /* Ensure buttons are full width on mobile */
-  button:not(.inline-block) {
+  /* button:not(.inline-block) {
     width: 100%;
-  }
+  } */
 
   /* Prevent horizontal overflow */
   * {

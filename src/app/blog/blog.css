@@ -16,17 +16,17 @@
 
 .blog-hero h1 {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 3.5rem;
-  font-weight: 700;
+  font-size: 3rem;
+  font-weight: 300;
   color: #d4af37;
   margin: 0 0 1rem;
 }
 
 .blog-hero p {
   font-family: 'Inter', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: #666;
-  max-width: 700px;
+  max-width: 400px;
   margin: 0 auto;
 }
 

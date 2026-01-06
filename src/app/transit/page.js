@@ -4,6 +4,20 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import "./transit.css";
 import { upcomingTransits as FIVE_YEARS } from "./transitData";
+import {
+  TbZodiacAquarius,
+  TbZodiacAries,
+  TbZodiacCancer,
+  TbZodiacCapricorn,
+  TbZodiacGemini,
+  TbZodiacLeo,
+  TbZodiacLibra,
+  TbZodiacPisces,
+  TbZodiacSagittarius,
+  TbZodiacScorpio,
+  TbZodiacTaurus,
+  TbZodiacVirgo,
+} from "react-icons/tb";
 
 // ----------------- helpers -----------------
 const parseLooseDate = (s) =>
@@ -81,18 +95,18 @@ const PLANET_COLORS = {
   Rahu: "#8b5cf6",
 };
 const ZODIAC_SYMBOLS = {
-  Aries: "♈",
-  Taurus: "♉",
-  Gemini: "♊",
-  Cancer: "♋",
-  Leo: "♌",
-  Virgo: "♍",
-  Libra: "♎",
-  Scorpio: "♏",
-  Sagittarius: "♐",
-  Capricorn: "♑",
-  Aquarius: "♒",
-  Pisces: "♓",
+  Aries: TbZodiacAries,
+  Taurus: TbZodiacTaurus,
+  Gemini: TbZodiacGemini,
+  Cancer: TbZodiacCancer,
+  Leo: TbZodiacLeo,
+  Virgo: TbZodiacVirgo,
+  Libra: TbZodiacLibra,
+  Scorpio: TbZodiacScorpio,
+  Sagittarius: TbZodiacSagittarius,
+  Capricorn: TbZodiacCapricorn,
+  Aquarius: TbZodiacAquarius,
+  Pisces: TbZodiacPisces,
 };
 
 // get next future item in a list
@@ -351,7 +365,10 @@ export default function TransitPage() {
                           }}
                         >
                           <span style={{ fontSize: "2rem" }}>
-                            {ZODIAC_SYMBOLS[item.sign] || "✦"}
+                            {(() => {
+                              const Icon = ZODIAC_SYMBOLS[item.sign];
+                              return Icon ? <Icon /> : "✦";
+                            })()}
                           </span>
                         </div>
                         <div className="titleGroup" style={{ flex: 1 }}>
@@ -536,7 +553,10 @@ export default function TransitPage() {
                                 }}
                               >
                                 <span style={{ fontSize: "1.5rem" }}>
-                                  {ZODIAC_SYMBOLS[transit.sign] || "✦"}
+                                  {(() => {
+                                    const Icon = ZODIAC_SYMBOLS[transit.sign];
+                                    return Icon ? <Icon /> : "✦";
+                                  })()}
                                 </span>
                               </div>
                               <div className="titleGroup" style={{ flex: 1 }}>

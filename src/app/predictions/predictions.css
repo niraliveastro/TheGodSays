@@ -867,10 +867,23 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Force full width for explanation card */
+.birth-history-layout.explanation-full-width {
+  max-width: 100% !important;
+}
+
+.birth-history-layout.explanation-full-width > .card {
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 .birth-history-layout form {
-  font-size: 0.85em; 
+  font-size: 0.85em;
+  max-width: 100% !important; /* Override max-w-4xl from inline classes */
 }
 
 /* Inputs inherit font-size, but enforce for safety */
@@ -890,7 +903,7 @@
 
   .birth-history-layout form {
     flex: 0 0 60%;
-    max-width: 60%;
+    max-width: 60% !important;
     margin-left: 0 !important;
     margin-right: 0 !important; /* override mx-auto */
     min-width: 0; /* allow it to shrink if table is wide */

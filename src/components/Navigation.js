@@ -23,8 +23,7 @@ import {
   Hash,
   Zap,
   Infinity,
-  // Moon,
-  // Sun,
+  Rss
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -58,10 +57,12 @@ const Navigation = () => {
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
   
-  // Separate dropdown states for each menu
-  const [openDropdown, setOpenDropdown] = useState(null); // 'tools', 'account', or null
+  const [openDropdown, setOpenDropdown] = useState(null);
 
-  // Astrologer-specific navigation items - using useMemo to make them reactive
+  // Check if user is astrologer
+  const isAstrologer = userProfile?.collection === "astrologers";
+
+  // Astrologer-specific navigation items
   const astrologerNavItems = useMemo(() => [
     { href: "/astrologer-dashboard", label: t.astrologerDashboard?.title || "Dashboard", icon: LayoutDashboard },
     { href: "/appointments", label: "My Appointments", icon: Calendar },
@@ -69,24 +70,8 @@ const Navigation = () => {
     { href: "/profile/astrology", label: t.profile?.settings || "Account Settings", icon: Settings },
   ], [language, user, t]);
 
-  // Regular user navigation items - using useMemo to make them reactive to language changes
-  const userNavItems = useMemo(() => [
-    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
-    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
-    { href: "/matching", label: t.nav.matching, icon: BookOpen },
-    {
-      href: null,
-      label: t.nav.tools,
-      icon: Settings,
-      dropdownId: "tools",
-      children: [
-        { href: "/blog", label: t.nav.blog || "Blog", icon: BookOpen },
-        { href: "/numerology", label: t.numerology.title, icon: Hash },
-        { href: "/transit", label: t.transit.title, icon: Zap },
-        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
-        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
-      ],
-    },
+  // Regular user navigation items - split into top and bottom
+  const userTopNavItems = useMemo(() => [
     {
       href: null,
       label: t.nav.myAccount,
@@ -102,21 +87,37 @@ const Navigation = () => {
     },
   ], [language, t]);
 
-  // When user logs in from the centered auth modal, switch to top-right profile view automatically
+  const userBottomNavItems = useMemo(() => [
+    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
+    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+    { href: "/matching", label: t.nav.matching, icon: BookOpen },
+    { href: "/blog", label: t.nav.blog , icon: Rss },
+        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
+        { href: "/numerology", label: t.numerology.title, icon: Hash },
+        { href: "/transit", label: t.transit.title, icon: Zap },
+        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+
+
+  ], [language, t]);
+
+  // For mobile - combine all user nav items
+  const userMobileNavItems = useMemo(() => [
+    ...userBottomNavItems,
+    ...userTopNavItems,
+  ], [userBottomNavItems, userTopNavItems]);
+
   useEffect(() => {
     if (user && showProfileModal) {
       setModalPosition("top-right");
     }
   }, [user, showProfileModal]);
 
-  // Close dropdown when mobile menu closes
   useEffect(() => {
     if (!isOpen) {
       setOpenDropdown(null);
     }
   }, [isOpen]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openDropdown && !event.target.closest("[data-dropdown-container]")) {
@@ -133,17 +134,12 @@ const Navigation = () => {
     };
   }, [openDropdown]);
 
-  // Determine which nav items to show based on user type
-  const navItems = userProfile?.collection === "astrologers" 
-    ? astrologerNavItems 
-    : userNavItems;
-
+  const navItems = isAstrologer ? astrologerNavItems : userMobileNavItems;
 
   async function handleAccountClick() {
     if (user) {
-      // Redirect based on user type
       try {
-        if (userProfile?.collection === "astrologers") {
+        if (isAstrologer) {
           router.push("/profile/astrology");
         } else {
           router.push("/profile/user");
@@ -158,10 +154,9 @@ const Navigation = () => {
 
   async function onSignOutClick() {
     try {
-      const wasAstrologer = userProfile?.collection === "astrologers";
+      const wasAstrologer = isAstrologer;
       
-      // Track sign out
-      trackEvent('sign_out', {
+      typeof trackEvent !== 'undefined' && trackEvent('sign_out', {
         user_type: wasAstrologer ? 'astrologer' : 'user'
       });
       
@@ -183,7 +178,6 @@ const Navigation = () => {
     }
   }
 
-
   async function handleSignIn(e) {
     e.preventDefault();
     setAuthError("");
@@ -192,14 +186,13 @@ const Navigation = () => {
     const email = form.get("email")?.toString() || "";
     const password = form.get("password")?.toString() || "";
     
-    // Track login attempt from navigation
-    trackEvent('login_attempt', { method: 'email', source: 'navigation' });
+    typeof trackEvent !== 'undefined' && trackEvent('login_attempt', { method: 'email', source: 'navigation' });
     
     try {
       await signIn(email, password);
-      trackEvent('login_success', { method: 'email', source: 'navigation' });
+      typeof trackEvent !== 'undefined' && trackEvent('login_success', { method: 'email', source: 'navigation' });
     } catch (err) {
-      trackEvent('login_failed', { method: 'email', source: 'navigation', error: err.message });
+      typeof trackEvent !== 'undefined' && trackEvent('login_failed', { method: 'email', source: 'navigation', error: err.message });
       setAuthError("Failed to sign in. Please check your credentials.");
       console.error("Nav SignIn error", err);
     } finally {
@@ -217,21 +210,20 @@ const Navigation = () => {
     const password = form.get("password")?.toString() || "";
     const confirm = form.get("confirm")?.toString() || "";
     if (password !== confirm) {
-      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: 'password_mismatch' });
+      typeof trackEvent !== 'undefined' && trackEvent('signup_failed', { method: 'email', source: 'navigation', error: 'password_mismatch' });
       setAuthError("Passwords do not match");
       setAuthSubmitting(false);
       return;
     }
     
-    // Track signup attempt from navigation
-    trackEvent('signup_attempt', { method: 'email', source: 'navigation' });
+    typeof trackEvent !== 'undefined' && trackEvent('signup_attempt', { method: 'email', source: 'navigation' });
     
     try {
       await signUp(email, password, { displayName: name });
-      trackEvent('signup_success', { method: 'email', source: 'navigation' });
+      typeof trackEvent !== 'undefined' && trackEvent('signup_success', { method: 'email', source: 'navigation' });
       setDisplayName(name);
     } catch (err) {
-      trackEvent('signup_failed', { method: 'email', source: 'navigation', error: err.message });
+      typeof trackEvent !== 'undefined' && trackEvent('signup_failed', { method: 'email', source: 'navigation', error: err.message });
       setAuthError("Failed to create account. Please try again.");
       console.error("Nav SignUp error", err);
     } finally {
@@ -265,9 +257,82 @@ const Navigation = () => {
     }
   }
 
+  // Render function for navigation items (used in both desktop styles)
+  const renderNavItem = (item, trackSource = 'desktop_nav') => {
+    const Icon = item.icon;
+    
+    if (item.children) {
+      const isActive = item.children.some(child => pathname === child.href);
+      const isOpen = openDropdown === item.dropdownId;
+      
+      return (
+        <div 
+          key={item.label} 
+          className="nav-dropdown"
+          data-dropdown-container
+          onMouseEnter={() => setOpenDropdown(item.dropdownId)}
+          onMouseLeave={() => setOpenDropdown(null)}
+        >
+          <button
+            className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
+            onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
+          >
+            {Icon && <Icon />}
+            <span>{item.label}</span>
+            <ChevronDown className={`dropdown-icon ${isOpen ? 'rotated' : ''}`} />
+          </button>
+          
+          {isOpen && (
+            <>
+              <div className="nav-dropdown-bridge"></div>
+              <div className="nav-dropdown-menu">
+                <div className="nav-dropdown-content">
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`nav-dropdown-item ${
+                          pathname === child.href ? 'active' : ''
+                        }`}
+                      >
+                        {ChildIcon && <ChildIcon />}
+                        <span>{child.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={`nav-link ${pathname === item.href ? "nav-link-active" : ""}`}
+        onClick={() => {
+          typeof trackEvent !== 'undefined' && trackEvent('navigation_click', {
+            destination: item.href,
+            label: item.label,
+            source: trackSource
+          });
+        }}
+      >
+        {Icon && <Icon />}
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
+
   return (
     <nav className="enhanced-nav">
       <div className="nav-container">
+        {/* TOP NAVBAR */}
         <div className="nav-content">
           <Link href="/" className="nav-logo-wrapper">
             <div className="nav-logo-icon">
@@ -276,131 +341,61 @@ const Navigation = () => {
             <span className="nav-logo-text">NiraLive Astro</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="nav-desktop">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              // Handle dropdown menu (Tools, My Account) - only for users
-              if (item.children) {
-                const isActive = item.children.some(child => pathname === child.href)
-                const isOpen = openDropdown === item.dropdownId;
-                return (
-                  <div 
-                    key={item.label} 
-                    className="nav-dropdown"
-                    data-dropdown-container
-                    onMouseEnter={() => setOpenDropdown(item.dropdownId)}
-                    onMouseLeave={() => setOpenDropdown(null)}
-                  >
-                    <button
-                      className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
-                      onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
-                    >
-                      {item.icon && <Icon />}
-                      <span>{item.label}</span>
-                      <ChevronDown className={`dropdown-icon ${isOpen ? 'rotated' : ''}`} />
-                    </button>
-                    
-                    {isOpen && (
-                      <>
-                        <div className="nav-dropdown-bridge"></div>
-                        <div className="nav-dropdown-menu">
-                          <div className="nav-dropdown-content">
-                            {item.children.map((child) => {
-                              const ChildIcon = child.icon;
-                              return (
-                                <Link
-                                  key={child.href}
-                                  href={child.href}
-                                  className={`nav-dropdown-item ${
-                                    pathname === child.href ? 'active' : ''
-                                  }`}
-                                >
-                                  {ChildIcon && <ChildIcon />}
-                                  <span>{child.label}</span>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`nav-link ${
-                    pathname === item.href ? "nav-link-active" : ""
-                  }`}
-                  onClick={() => {
-                    trackEvent('navigation_click', {
-                      destination: item.href,
-                      label: item.label,
-                      source: 'desktop_nav'
-                    });
-                  }}
-                >
-                  {Icon && <Icon />}
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-
-            {/* Theme Toggle - Commented out for future use */}
-            {/* <button
-              onClick={toggleTheme}
-              className="theme-toggle-btn"
-              aria-label={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
-              title={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
-            >
-              {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-            </button> */}
-
-            {/* Language Switcher */}
-            <div className="ml-4">
-              <LanguageSwitcher />
+          {/* ASTROLOGER: Original style - all items in top navbar */}
+          {isAstrologer && (
+            <div className="nav-desktop">
+              {astrologerNavItems.map(item => renderNavItem(item))}
+              <div className="ml-4">
+                <LanguageSwitcher />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Theme Toggle Mobile - Commented out for future use */}
-          {/* <button
-            onClick={toggleTheme}
-            className="theme-toggle-btn theme-toggle-btn-mobile"
-            aria-label={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
-            title={`Switch to ${theme === "light" ? "cosmic" : "light"} theme`}
-          >
-            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-          </button> */}
+          {/* USER: My Account dropdown in top navbar */}
+          {!isAstrologer && (
+            <div className="nav-desktop">
+              {userTopNavItems.map(item => renderNavItem(item))}
+              <div className="ml-4">
+                <LanguageSwitcher />
+              </div>
+            </div>
+          )}
 
-          {/* Language Switcher Mobile */}
           <div className="nav-language-mobile">
             <LanguageSwitcher />
           </div>
 
-          {/* Mobile menu button */}
           <button className="nav-mobile-btn" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* SECOND NAVBAR - Only for regular users */}
+        {!isAstrologer && (
+          <div className="nav-content nav-bottom-row">
+            <div className="nav-desktop">
+              {userBottomNavItems.map(item => renderNavItem(item))}
+            </div>
+          </div>
+        )}
+
+ {/* Mobile Navigation */}
         {isOpen && (
           <div className="nav-mobile-menu">
             <div className="nav-mobile-menu-content">
+              {/* Language Switcher at top of mobile menu */}
+              <div className="nav-mobile-language-wrapper">
+                <LanguageSwitcher />
+              </div>
+              
               {navItems.map((item) => {
                 const Icon = item.icon;
 
-                // Handle dropdown menu (Tools, My Account) in mobile
                 if (item.children) {
-                  const isActive = item.children.some(child => pathname === child.href)
+                  const isActive = item.children.some(child => pathname === child.href);
                   const isOpen = openDropdown === item.dropdownId;
                   return (
                     <div key={item.label} data-dropdown-container>
-                      {/* Dropdown button */}
                       <button
                         type="button"
                         className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
@@ -413,7 +408,6 @@ const Navigation = () => {
                         <ChevronDown className={`chevron-icon ${isOpen ? 'rotated' : ''}`} />
                       </button>
                       
-                      {/* Expandable children */}
                       {isOpen && (
                         <div className="nav-mobile-dropdown-content">
                           {item.children.map((child) => {
@@ -426,8 +420,8 @@ const Navigation = () => {
                                   pathname === child.href ? 'active' : ''
                                 }`}
                                 onClick={() => {
-                                  setIsOpen(false)
-                                  setOpenDropdown(null)
+                                  setIsOpen(false);
+                                  setOpenDropdown(null);
                                 }}
                               >
                                 {ChildIcon && <ChildIcon className="mr-2" />}
@@ -438,7 +432,7 @@ const Navigation = () => {
                         </div>
                       )}
                     </div>
-                  )
+                  );
                 }
 
                 return (
@@ -449,7 +443,7 @@ const Navigation = () => {
                       pathname === item.href ? "nav-mobile-link-active" : ""
                     }`}
                     onClick={() => {
-                      trackEvent('navigation_click', {
+                      typeof trackEvent !== 'undefined' && trackEvent('navigation_click', {
                         destination: item.href,
                         label: item.label,
                         source: 'mobile_nav'
@@ -466,7 +460,7 @@ const Navigation = () => {
           </div>
         )}
 
-        {/* Profile / Auth Modal – Using ONLY globals.css */}
+        {/* Profile / Auth Modal */}
         <Modal
           open={showProfileModal}
           onClose={() => setShowProfileModal(false)}
@@ -581,7 +575,6 @@ const Navigation = () => {
             </form>
           ) : (
             <div className="auth-container">
-              {/* Tab Switcher */}
               <div className="tab-switcher">
                 <button
                   type="button"
@@ -599,22 +592,20 @@ const Navigation = () => {
                 </button>
               </div>
 
-              {/* Error Message */}
               {authError && (
                 <div className="alert alert-error">{authError}</div>
               )}
 
-              {/* Google Sign-In */}
               <button
                 type="button"
                 onClick={async () => {
                   setAuthError("");
-                  trackEvent('login_attempt', { method: 'google', source: 'navigation' });
+                  typeof trackEvent !== 'undefined' && trackEvent('login_attempt', { method: 'google', source: 'navigation' });
                   try {
                     await signInWithGoogle();
-                    trackEvent('login_success', { method: 'google', source: 'navigation' });
+                    typeof trackEvent !== 'undefined' && trackEvent('login_success', { method: 'google', source: 'navigation' });
                   } catch (e) {
-                    trackEvent('login_failed', { method: 'google', source: 'navigation', error: e.message });
+                    typeof trackEvent !== 'undefined' && trackEvent('login_failed', { method: 'google', source: 'navigation', error: e.message });
                     setAuthError("Google sign-in failed");
                     console.error(e);
                   }
@@ -650,7 +641,6 @@ const Navigation = () => {
                 <span>or</span>
               </div>
 
-              {/* Sign In / Sign Up Forms */}
               {authTab === "signin" ? (
                 <form onSubmit={handleSignIn} className="form">
                   <div className="form-group">

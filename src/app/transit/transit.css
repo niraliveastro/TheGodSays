@@ -131,7 +131,7 @@
   /* reduced section heading size for Next Immediate / Current sections */
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-gray-800);
+  color: var(--color-gray-700);
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
@@ -159,7 +159,7 @@
   transform: translateX(-50%);
   width: 150px;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-indigo), var(--color-purple));
+  background: linear-gradient(90deg, var(--color-gold), var(--color-gold-dark));
 }
 
 /* ---------- Transit Cards Grid ---------- */

@@ -1592,7 +1592,7 @@ export default function PredictionsPage() {
         </div>
 
         {/* Explanation Card - Below form and history */}
-        <div className="birth-history-layout" style={{ marginTop: "2rem" }}>
+        <div  style={{ marginTop: "2rem", width: "100%", maxWidth: "90rem", marginLeft: "auto", marginRight: "auto" }}>
           <div 
             className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
             style={{
