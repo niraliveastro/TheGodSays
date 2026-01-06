@@ -166,7 +166,7 @@ export const en = {
   // Footer
   footer: {
     madeBy: "Made with",
-    team: "RahuNow Team",
+    team: "NiraLive Astro Team",
     company: "Spacenos",
     tagline: "Vedic wisdom meets modern precision",
   },

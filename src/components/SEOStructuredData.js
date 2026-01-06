@@ -5,7 +5,7 @@
  */
 export default function SEOStructuredData({ type = "website", pageData = {} }) {
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
-  const SITE_NAME = "RahuNow - Vedic Astrology & Panchang";
+  const SITE_NAME = "NiraLive Astro - Vedic Astrology & Panchang";
 
   // Base Organization Schema
   const organizationSchema = {
