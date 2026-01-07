@@ -13,9 +13,9 @@ export default function HinduDateCard({
   shakaLine = '-',
   rightExtra = '',
 }) {
-  // Preserve last valid values to avoid flicker while data loads
   const [stableTitle, setStableTitle] = useState(primaryTitle);
   const [stableTithi, setStableTithi] = useState(tithi);
+  const [animateDay, setAnimateDay] = useState(false);
 
   useEffect(() => {
     if (primaryTitle && primaryTitle !== '-') {
@@ -29,6 +29,17 @@ export default function HinduDateCard({
     }
   }, [tithi]);
 
+  // Animate when day changes
+  useEffect(() => {
+    if (dayNumber !== '-') {
+      setAnimateDay(true);
+      const t = setTimeout(() => setAnimateDay(false), 300);
+      return () => clearTimeout(t);
+    }
+  }, [dayNumber]);
+
+  const isDoubleDigit = String(dayNumber).length === 2;
+
   return (
     <>
       <style jsx>{`
@@ -38,14 +49,12 @@ export default function HinduDateCard({
           display: flex;
           justify-content: center;
           width: 100%;
-          padding: 1rem 0;
         }
 
         .hinduCard {
           width: 360px;
           max-width: 100%;
           background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(12px);
           border: 1px solid rgba(212, 175, 55, 0.3);
           border-radius: 1.5rem;
           overflow: hidden;
@@ -62,24 +71,24 @@ export default function HinduDateCard({
           border-bottom: 1px solid rgba(212, 175, 55, 0.2);
         }
 
-        .cardBody {
-          background: #ffffff;
-          padding: 1.25rem 1.5rem;
-          overflow: hidden;
-        }
+.cardBody {
+  padding: 1.25rem 1.5rem;
+  position: relative;
+}
 
+
+        /* MAIN GRID */
         .bodyContent {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          align-items: start;
-          gap: 1rem;
-          min-height: 160px;
+          min-height: 260px;
+          align-items: stretch;
         }
 
+        /* LEFT */
         .leftCol {
           display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
+          align-items: flex-start;
         }
 
         .primaryTitle {
@@ -87,168 +96,176 @@ export default function HinduDateCard({
           font-size: 1.65rem;
           font-weight: 700;
           color: #7c2d12;
-          margin-bottom: 0;
           line-height: 1.2;
         }
 
+        /* RIGHT */
         .rightCol {
           display: flex;
           flex-direction: column;
-          align-items: flex-end;
+          height: 100%;
           text-align: right;
-          min-width: 0;
-          overflow: hidden;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
+
+        .rightTop {
+          font-size: 0.8rem;
+          align-self: flex-end;
+        }
+
+.centerDate {
+  position: absolute;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 
         .dayNumber {
           font-size: 8rem;
-          line-height: 1;
           font-weight: 900;
           color: #d4af37;
-          letter-spacing: -0.05em;
-          margin-bottom: 0.25rem;
+          line-height: 1;
+          transition: transform 0.25s ease, opacity 0.25s ease;
         }
 
-        .dateSeparator {
-          width: 20px;
-          height: 1px;
-          background: #d4af37;
-          margin: 0.25rem 0 0.5rem auto;
+        /* Optical centering */
+        .day-single {
+          transform: translateX(0);
         }
 
-        .tithi {
+        .day-double {
+          transform: translateX(-0.18em);
+        }
+
+        /* Animation */
+        .day-animate {
+          transform: scale(1.08);
+          opacity: 0.7;
+        }
+
+        .bottomTithi {
+          margin-top: auto;
           font-weight: 700;
           font-size: 0.95rem;
           color: #374151;
-          line-height: 1.3;
-          word-break: break-word;
-          overflow-wrap: break-word;
-          margin-top: 0.5rem;
+          align-self: flex-end;
         }
 
         .gregDate {
           font-size: 0.8125rem;
           color: #6b7280;
-          word-break: break-word;
-          overflow-wrap: break-word;
-          margin-top: 0.25rem;
         }
 
         .weekday {
           font-size: 0.75rem;
           color: #9ca3af;
-          word-break: break-word;
-          overflow-wrap: break-word;
-          margin-top: 0.25rem;
         }
 
         .rightExtra {
-          margin-top: 0.25rem;
           font-size: 0.75rem;
           color: #7c2d12;
           font-weight: 500;
-          word-break: break-word;
-          overflow-wrap: break-word;
         }
 
+        /* FOOTER */
         .footer {
-          margin-top: 0.5rem;
-          padding-top: 0.75rem;
           border-top: 1px solid rgba(212, 175, 55, 0.18);
+          padding-top: 0.75rem;
+          margin-top: 0.75rem;
         }
 
         .footerLine {
           font-size: 0.9rem;
           color: #374151;
-          line-height: 1.4;
-          font-family: 'Inter', sans-serif;
-          word-break: break-word;
-          overflow-wrap: break-word;
         }
 
         .footerLine strong {
           color: #7c2d12;
-          font-weight: 600;
         }
 
+        /* MOBILE */
         @media (max-width: 480px) {
           .hinduCard {
-            width: 100%;
             max-width: 340px;
           }
 
           .bodyContent {
             grid-template-columns: 1fr;
-            gap: 1rem;
-            min-height: auto;
-          }
-
-          .leftCol {
-            align-items: center;
             text-align: center;
-          }
-
-          .dayNumber {
-            font-size: 6rem;
-            margin: 0 auto 0.25rem;
-          }
-
-          .dateSeparator {
-            margin: 0.25rem auto 0.5rem;
           }
 
           .rightCol {
             align-items: center;
             text-align: center;
           }
+
+          .rightTop,
+          .bottomTithi {
+            align-self: center;
+          }
+
+          .dayNumber {
+            font-size: 6rem;
+          }
+
+          .day-double {
+            transform: translateX(-0.12em);
+          }
         }
       `}</style>
 
-      {/* Wrapper centers the card */}
       <div className="cardWrapper">
         <div className="hinduCard">
-          {/* Header */}
           <div className="cardHeader">{heading}</div>
 
-          {/* Main Body */}
           <div className="cardBody">
             <div className="bodyContent">
-              {/* Left column - Primary title */}
+              {/* LEFT */}
               <div className="leftCol">
                 <div className="primaryTitle">
-                  {stableTitle && stableTitle !== '-' ? stableTitle : 'Hindu Calendar'}
+                  {stableTitle !== '-' ? stableTitle : 'Hindu Calendar'}
                 </div>
               </div>
 
-              {/* Right column - Day number and date details */}
+              {/* RIGHT */}
               <div className="rightCol">
-                {/* Huge day number */}
-                <div className="dayNumber">{dayNumber}</div>
-                
-                {/* Small separator dash */}
-                <div className="dateSeparator"></div>
-                
-                {/* Date details stacked vertically */}
-                <div className="gregDate">{gregDate}</div>
-                <div className="weekday">{weekday}</div>
-                {rightExtra && <div className="rightExtra">{rightExtra}</div>}
-                {stableTithi && stableTithi !== '-' && (
-                  <div className="tithi">{stableTithi}</div>
+                <div className="rightTop">
+                  <div className="gregDate">{gregDate}</div>
+                  <div className="weekday">{weekday}</div>
+                  {rightExtra && <div className="rightExtra">{rightExtra}</div>}
+                </div>
+
+                <div className="centerDate">
+                  <div
+                    className={[
+                      'dayNumber',
+                      isDoubleDigit ? 'day-double' : 'day-single',
+                      animateDay ? 'day-animate' : '',
+                    ].join(' ')}
+                  >
+                    {dayNumber}
+                  </div>
+                </div>
+
+                {stableTithi !== '-' && (
+                  <div className="bottomTithi">{stableTithi}</div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Footer – era & shaka */}
           <div className="cardBody">
             <div className="footer">
               <div className="footerLine">
-                <strong>Vikrama Samvat:</strong> {eraLine && eraLine !== '-' ? eraLine.split('Kaliyukta')[0].trim() : '-'}
+                <strong>Vikrama Samvat:</strong>{' '}
+                {eraLine !== '-' ? eraLine.split('Kaliyukta')[0].trim() : '-'}
               </div>
               <div className="footerLine">
-                <strong>Shaka Year:</strong> {shakaLine && shakaLine !== '-' ? shakaLine : '-'}
+                <strong>Shaka Year:</strong> {shakaLine}
               </div>
             </div>
           </div>

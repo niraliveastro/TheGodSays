@@ -72,6 +72,8 @@ const Navigation = () => {
 
   // Regular user navigation items - split into top and bottom
   const userTopNavItems = useMemo(() => [
+    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
+    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
     {
       href: null,
       label: t.nav.myAccount,
@@ -88,14 +90,25 @@ const Navigation = () => {
   ], [language, t]);
 
   const userBottomNavItems = useMemo(() => [
-    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
-    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+    
     { href: "/matching", label: t.nav.matching, icon: BookOpen },
-    { href: "/blog", label: t.nav.blog , icon: Rss },
         { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
+        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+
+
+    
+    {
+      href: null,
+      label: t.nav.tools,
+      icon: Settings,
+      dropdownId: "tools",
+      children: [
         { href: "/numerology", label: t.numerology.title, icon: Hash },
         { href: "/transit", label: t.transit.title, icon: Zap },
-        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+      ],
+    },
+    { href: "/blog", label: t.nav.blog , icon: Rss },
+        
 
 
   ], [language, t]);
