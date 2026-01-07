@@ -11,11 +11,7 @@ import {
   TicketPercent,
 } from 'lucide-react'
 
-// NEW PROJECT (coupons)
-import { couponDb, couponFunctions } from '@/lib/firebaseCoupons'
-import { doc, getDoc } from 'firebase/firestore'
-import { httpsCallable } from 'firebase/functions'
-import { trackEvent, trackActionStart, trackActionComplete } from '@/lib/analytics'
+import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon } from '@/lib/analytics'
 
 export default function Wallet() {
   const { user, getUserId, userProfile } = useAuth()
@@ -25,8 +21,7 @@ export default function Wallet() {
   const [showRechargeForm, setShowRechargeForm] = useState(false)
   const [rechargeLoading, setRechargeLoading] = useState(false)
 
-  // Coupon states (NEW)
-  const [couponBalance, setCouponBalance] = useState(0)
+  // Coupon states
   const [showCouponField, setShowCouponField] = useState(false)
   const [couponCode, setCouponCode] = useState('')
   const [couponStatus, setCouponStatus] = useState(null) // {type,msg}
@@ -35,12 +30,11 @@ export default function Wallet() {
   const userId = getUserId()
 
   /* ------------------------------------------------------------------ */
-  /*  FETCH WALLET DATA (OLD PROJECT via API)                            */
+  /*  FETCH WALLET DATA                                                   */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
     if (userId) {
       fetchWalletData()
-      fetchCouponBalance()
     }
   }, [userId])
 
@@ -63,102 +57,84 @@ export default function Wallet() {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  FETCH COUPON BALANCE (NEW PROJECT Firestore)                       */
+  /*  REDEEM COUPON (MAIN PROJECT API)                                   */
   /* ------------------------------------------------------------------ */
-  const fetchCouponBalance = async () => {
+  const handleRedeemCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponStatus({ type: "error", msg: "Please enter a coupon code" });
+      return;
+    }
+
+    // Track coupon redemption start
+    trackActionStart('coupon_redemption');
+    trackEvent('coupon_redeem_attempt', { coupon_code: couponCode.toUpperCase() });
+
+    setCouponLoading(true);
+    setCouponStatus({ type: "loading", msg: "Redeeming…" });
+
     try {
-      const ref = doc(couponDb, 'wallets', userId)
-      const snap = await getDoc(ref)
-      if (snap.exists()) {
-        const data = snap.data()
-        setCouponBalance(data.couponBalance || 0)
+      const res = await fetch("/api/coupons/redeem-main", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: couponCode, userId }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        // Track successful coupon redemption
+        trackActionComplete('coupon_redemption', {
+          coupon_code: couponCode.toUpperCase(),
+          amount: data.amount,
+          success: true
+        });
+        trackEvent('coupon_redeem_success', {
+          coupon_code: couponCode.toUpperCase(),
+          amount: data.amount
+        });
+
+        setCouponStatus({
+          type: "success",
+          msg: `Coupon applied! +₹${data.amount} added to wallet`,
+        });
+        setCouponCode("");
+        // Refresh wallet data to show updated balance
+        await fetchWalletData();
       } else {
-        setCouponBalance(0)
+        // Track failed coupon redemption
+        trackActionAbandon('coupon_redemption', data.reason || 'unknown_error');
+        trackEvent('coupon_redeem_failed', {
+          coupon_code: couponCode.toUpperCase(),
+          reason: data.reason || 'unknown'
+        });
+
+        const map = {
+          NOT_FOUND: "Invalid coupon code",
+          INACTIVE: "This coupon is inactive",
+          EXPIRED: "This coupon has expired",
+          MAXED_OUT: "Coupon usage limit reached",
+          USER_LIMIT_REACHED: "You have reached your usage limit for this coupon",
+          USED_BY_YOU: "You have already used this coupon",
+          ALREADY_USED: "This coupon has already been used",
+          NOT_ELIGIBLE: "This coupon is only for first-time users",
+          BAD_COUPON_AMOUNT: "Coupon not configured correctly",
+          NO_USER_ID: "User ID is required",
+        };
+        setCouponStatus({
+          type: "error",
+          msg: map[data.reason] || "Coupon invalid",
+        });
       }
     } catch (e) {
-      console.error('Error fetching coupon balance:', e)
-      setCouponBalance(0)
+      trackActionAbandon('coupon_redemption', e.message);
+      trackEvent('coupon_redeem_error', { error: e.message });
+      setCouponStatus({ type: "error", msg: e.message || "Failed to redeem coupon" });
+    } finally {
+      setCouponLoading(false);
     }
-  }
-
-  /* ------------------------------------------------------------------ */
-  /*  REDEEM COUPON (NEW PROJECT callable function)                      */
-  /* ------------------------------------------------------------------ */
-const handleRedeemCoupon = async () => {
-  if (!couponCode.trim()) {
-    setCouponStatus({ type: "error", msg: "Please enter a coupon code" });
-    return;
-  }
-
-  // Track coupon redemption start
-  trackActionStart('coupon_redemption');
-  trackEvent('coupon_redeem_attempt', { coupon_code: couponCode.toUpperCase() });
-
-  setCouponLoading(true);
-  setCouponStatus({ type: "loading", msg: "Redeeming…" });
-
-  try {
-    // get OLD-project ID token
-    const idToken = await user.getIdToken();
-
-    const res = await fetch("/api/coupons/redeem", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({ code: couponCode }),
-    });
-
-    const data = await res.json();
-
-    if (data.ok) {
-      // Track successful coupon redemption
-      trackActionComplete('coupon_redemption', {
-        coupon_code: couponCode.toUpperCase(),
-        amount: data.amount,
-        success: true
-      });
-      trackEvent('coupon_redeem_success', {
-        coupon_code: couponCode.toUpperCase(),
-        amount: data.amount
-      });
-
-      setCouponStatus({
-        type: "success",
-        msg: `Coupon applied! +₹${data.amount}`,
-      });
-      setCouponCode("");
-      await fetchCouponBalance();
-    } else {
-      // Track failed coupon redemption
-      trackActionAbandon('coupon_redemption', data.reason || 'unknown_error');
-      trackEvent('coupon_redeem_failed', {
-        coupon_code: couponCode.toUpperCase(),
-        reason: data.reason || 'unknown'
-      });
-
-      const map = {
-        NOT_FOUND: "Invalid coupon",
-        INACTIVE: "Coupon inactive",
-        EXPIRED: "Coupon expired",
-        MAXED_OUT: "Coupon limit reached",
-        USED_BY_YOU: "You already used this coupon",
-        BAD_COUPON_AMOUNT: "Coupon not configured correctly",
-      };
-      setCouponStatus({
-        type: "error",
-        msg: map[data.reason] || "Coupon invalid",
-      });
-    }
-  } catch (e) {
-    trackActionAbandon('coupon_redemption', e.message);
-    trackEvent('coupon_redeem_error', { error: e.message });
-    setCouponStatus({ type: "error", msg: e.message });
-  } finally {
-    setCouponLoading(false);
-  }
-};
+  };
 
 
   /* ------------------------------------------------------------------ */
@@ -360,14 +336,9 @@ const handleRedeemCoupon = async () => {
           </div>
         </div>
 
-        {/* Real Wallet Balance (old project) */}
-        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '0.5rem' }}>
+        {/* Wallet Balance */}
+        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '1rem' }}>
           {formatCurrency(wallet.balance)}
-        </div>
-
-        {/* Coupon Balance (new project) */}
-        <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#4338ca', marginBottom: '1rem' }}>
-          Coupon Balance: {formatCurrency(couponBalance)}
         </div>
 
         {/* Actions row */}
@@ -524,7 +495,19 @@ const handleRedeemCoupon = async () => {
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {wallet.transactions.map((t, i) => (
+            {[...wallet.transactions]
+              .sort((a, b) => {
+                // Sort by timestamp (newest first)
+                const getTimestamp = (ts) => {
+                  if (!ts) return 0
+                  if (ts._seconds) return ts._seconds * 1000
+                  if (ts.toDate) return ts.toDate().getTime()
+                  if (ts.seconds) return ts.seconds * 1000
+                  return new Date(ts).getTime()
+                }
+                return getTimestamp(b.timestamp) - getTimestamp(a.timestamp)
+              })
+              .map((t, i) => (
               <div
                 key={i}
                 style={{

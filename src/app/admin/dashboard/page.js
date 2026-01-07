@@ -25,6 +25,9 @@ import {
   CreditCard,
   Download,
   Lock,
+  TicketPercent,
+  Plus,
+  X,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -130,6 +133,19 @@ export default function AdminDashboard() {
   const [passcodeInput, setPasscodeInput] = useState('')
   const [passcodeError, setPasscodeError] = useState('')
   const [isPasscodeVerified, setIsPasscodeVerified] = useState(false)
+  // Coupon management states
+  const [coupons, setCoupons] = useState([])
+  const [showCouponModal, setShowCouponModal] = useState(false)
+  const [editingCoupon, setEditingCoupon] = useState(null)
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    type: 'once_per_user',
+    amount: '',
+    maxUses: '',
+    expiresAt: '',
+    active: true,
+    description: '',
+  })
 
   // Check passcode on mount
   useEffect(() => {
@@ -907,6 +923,115 @@ export default function AdminDashboard() {
     }
   }
 
+  // Coupon management functions
+  const fetchCoupons = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/coupons')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          setCoupons(data.coupons || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching coupons:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'coupons' && isPasscodeVerified) {
+      fetchCoupons()
+    }
+  }, [activeTab, isPasscodeVerified, fetchCoupons])
+
+  const openCouponModal = (coupon = null) => {
+    if (coupon) {
+      setEditingCoupon(coupon)
+      setCouponForm({
+        code: coupon.code || '',
+        type: coupon.type || 'once_per_user',
+        amount: coupon.amount?.toString() || '',
+        maxUses: (coupon.maxUses || coupon.maxUsesPerUser)?.toString() || '',
+        expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().slice(0, 16) : '',
+        active: coupon.active !== undefined ? coupon.active : true,
+        description: coupon.description || '',
+      })
+    } else {
+      setEditingCoupon(null)
+      setCouponForm({
+        code: '',
+        type: 'once_per_user',
+        amount: '',
+        maxUses: '',
+        expiresAt: '',
+        active: true,
+        description: '',
+      })
+    }
+    setShowCouponModal(true)
+  }
+
+  const handleSaveCoupon = async () => {
+    try {
+      if (!couponForm.code || !couponForm.amount) {
+        alert('Please fill in required fields (Code and Amount)')
+        return
+      }
+
+      const url = '/api/admin/coupons'
+      const method = editingCoupon ? 'PUT' : 'POST'
+      const body = {
+        ...(editingCoupon ? { id: editingCoupon.id } : {}),
+        code: couponForm.code.toUpperCase(),
+        type: couponForm.type,
+        amount: parseFloat(couponForm.amount),
+        active: couponForm.active,
+        description: couponForm.description,
+        ...(couponForm.type === 'limited_total' && couponForm.maxUses ? { maxUses: parseInt(couponForm.maxUses) } : {}),
+        ...(couponForm.type === 'multiple_per_user' && couponForm.maxUses ? { maxUsesPerUser: parseInt(couponForm.maxUses) } : {}),
+        ...(couponForm.expiresAt ? { expiresAt: couponForm.expiresAt } : {}),
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert(editingCoupon ? 'Coupon updated successfully!' : 'Coupon created successfully!')
+        setShowCouponModal(false)
+        fetchCoupons()
+      } else {
+        const errorMsg = data.error || `Failed to ${editingCoupon ? 'update' : 'create'} coupon`
+        console.error('Coupon save error:', data)
+        alert(errorMsg)
+      }
+    } catch (error) {
+      console.error('Error saving coupon:', error)
+      alert('Error saving coupon')
+    }
+  }
+
+  const handleDeleteCoupon = async (couponId) => {
+    if (!confirm('Are you sure you want to delete this coupon?')) return
+    
+    try {
+      const res = await fetch(`/api/admin/coupons?id=${couponId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success || res.ok) {
+        alert('Coupon deleted successfully!')
+        fetchCoupons()
+      } else {
+        alert(data.error || 'Failed to delete coupon')
+      }
+    } catch (error) {
+      console.error('Error deleting coupon:', error)
+      alert('Error deleting coupon')
+    }
+  }
+
   // Show passcode modal if not verified
   if (showPasscodeModal) {
     return (
@@ -1089,6 +1214,18 @@ export default function AdminDashboard() {
           >
             <CreditCard size={18} />
             Pricing
+          </button>
+          <button
+            className={`admin-tab ${activeTab === 'coupons' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('coupons')
+              if (isPasscodeVerified) {
+                setTimeout(() => fetchCoupons(), 100)
+              }
+            }}
+          >
+            <TicketPercent size={18} />
+            Coupons
           </button>
         </div>
 
@@ -1835,6 +1972,262 @@ export default function AdminDashboard() {
                   <button
                     className="admin-btn admin-btn-secondary"
                     onClick={() => setShowChatPricingModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Coupon Management Tab */}
+        {activeTab === 'coupons' && (
+          <div className="admin-pricing-section">
+            <div className="admin-pricing-header">
+              <h2>Coupon Management</h2>
+              <button
+                className="admin-btn admin-btn-primary"
+                onClick={() => openCouponModal(null)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <Plus size={18} />
+                Create Coupon
+              </button>
+            </div>
+
+            <div className="admin-astrologers-pricing-list">
+              {coupons.length === 0 ? (
+                <div className="admin-empty-state">
+                  <TicketPercent size={48} />
+                  <p>No coupons created yet</p>
+                  <button
+                    className="admin-btn admin-btn-primary"
+                    onClick={() => openCouponModal(null)}
+                  >
+                    Create First Coupon
+                  </button>
+                </div>
+              ) : (
+                <table className="admin-pricing-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Type</th>
+                      <th>Amount (₹)</th>
+                      <th>Status</th>
+                      <th>Used</th>
+                      <th>Expires</th>
+                      <th>Description</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coupons.map((coupon) => (
+                      <tr key={coupon.id}>
+                        <td><strong>{coupon.code}</strong></td>
+                        <td>
+                          <span className="admin-badge">
+                            {coupon.type === 'once_per_user' ? 'Once Per User' :
+                             coupon.type === 'multiple_per_user' ? 'Multiple Per User' :
+                             coupon.type === 'one_time_global' ? 'One-Time Global' :
+                             coupon.type === 'limited_total' ? 'Limited Total' :
+                             coupon.type === 'first_time_only' ? 'First-Time Only' :
+                             coupon.type || 'Unknown'}
+                          </span>
+                        </td>
+                        <td>₹{coupon.amount?.toFixed(2) || '0.00'}</td>
+                        <td>
+                          <span className={`admin-badge ${coupon.active ? 'status-published' : 'status-draft'}`}>
+                            {coupon.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td>
+                          {coupon.type === 'limited_total' ? (
+                            `${coupon.usedCount || 0}${coupon.maxUses ? ` / ${coupon.maxUses}` : ''}`
+                          ) : coupon.type === 'one_time_global' ? (
+                            coupon.usedCount > 0 ? 'Used' : 'Available'
+                          ) : (
+                            `${coupon.usedCount || 0} uses`
+                          )}
+                        </td>
+                        <td>{coupon.expiresAt ? formatDate(coupon.expiresAt) : 'No expiry'}</td>
+                        <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {coupon.description || '-'}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              className="admin-action-btn-small"
+                              onClick={() => openCouponModal(coupon)}
+                              title="Edit"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              className="admin-action-btn-small admin-action-btn-danger"
+                              onClick={() => handleDeleteCoupon(coupon.id)}
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Coupon Modal */}
+        {showCouponModal && (
+          <div className="admin-modal-overlay" onClick={() => setShowCouponModal(false)}>
+            <div className="admin-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+              <div className="admin-modal-header">
+                <h2>{editingCoupon ? 'Edit Coupon' : 'Create Coupon'}</h2>
+                <button
+                  className="admin-modal-close"
+                  onClick={() => setShowCouponModal(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="admin-modal-content">
+                <div className="admin-form-group">
+                  <label>Coupon Code *</label>
+                  <input
+                    type="text"
+                    value={couponForm.code}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })
+                    }
+                    className="admin-input"
+                    placeholder="e.g., WELCOME50"
+                    disabled={!!editingCoupon}
+                  />
+                  <p className="admin-form-help">
+                    {editingCoupon ? 'Code cannot be changed after creation' : 'Enter a unique coupon code (will be converted to uppercase)'}
+                  </p>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Type *</label>
+                  <select
+                    value={couponForm.type}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, type: e.target.value })
+                    }
+                    className="admin-input"
+                  >
+                    <option value="once_per_user">Once Per User (Each user can use once, unlimited users)</option>
+                    <option value="multiple_per_user">Multiple Per User (Same user can use multiple times)</option>
+                    <option value="one_time_global">One-Time Global (Only one person can ever use it)</option>
+                    <option value="limited_total">Limited Total (Limited uses across all users)</option>
+                    <option value="first_time_only">First-Time Only (Only for new users)</option>
+                  </select>
+                  <p className="admin-form-help">
+                    Choose how the coupon can be redeemed
+                  </p>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Amount (₹) *</label>
+                  <input
+                    type="number"
+                    value={couponForm.amount}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, amount: e.target.value })
+                    }
+                    className="admin-input"
+                    placeholder="e.g., 100"
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="admin-form-help">
+                    Amount to add to user's wallet when coupon is redeemed
+                  </p>
+                </div>
+
+                {(couponForm.type === 'limited_total' || couponForm.type === 'multiple_per_user') && (
+                  <div className="admin-form-group">
+                    <label>
+                      {couponForm.type === 'limited_total' ? 'Max Total Uses' : 'Max Uses Per User'} (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={couponForm.maxUses}
+                      onChange={(e) =>
+                        setCouponForm({ ...couponForm, maxUses: e.target.value })
+                      }
+                      className="admin-input"
+                      placeholder="Leave empty for unlimited"
+                      min="1"
+                    />
+                    <p className="admin-form-help">
+                      {couponForm.type === 'limited_total' 
+                        ? 'Maximum total number of times this coupon can be used across all users (leave empty for unlimited)'
+                        : 'Maximum number of times the same user can use this coupon (leave empty for unlimited)'}
+                    </p>
+                  </div>
+                )}
+
+                <div className="admin-form-group">
+                  <label>Expiry Date (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={couponForm.expiresAt}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, expiresAt: e.target.value })
+                    }
+                    className="admin-input"
+                  />
+                  <p className="admin-form-help">
+                    Leave empty for no expiration date
+                  </p>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Description (Optional)</label>
+                  <textarea
+                    value={couponForm.description}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, description: e.target.value })
+                    }
+                    className="admin-input"
+                    placeholder="e.g., Welcome bonus for new users"
+                    rows="3"
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={couponForm.active}
+                      onChange={(e) =>
+                        setCouponForm({ ...couponForm, active: e.target.checked })
+                      }
+                    />
+                    Active
+                  </label>
+                  <p className="admin-form-help">
+                    Inactive coupons cannot be redeemed
+                  </p>
+                </div>
+
+                <div className="admin-modal-actions">
+                  <button
+                    className="admin-btn admin-btn-primary"
+                    onClick={handleSaveCoupon}
+                  >
+                    {editingCoupon ? 'Update Coupon' : 'Create Coupon'}
+                  </button>
+                  <button
+                    className="admin-btn admin-btn-secondary"
+                    onClick={() => setShowCouponModal(false)}
                   >
                     Cancel
                   </button>
