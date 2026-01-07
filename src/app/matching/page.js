@@ -1800,7 +1800,6 @@ export default function MatchingPage() {
                       <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
                   </div>
-                  <p className="form-field-helper">dd-mm-yyyy format</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
@@ -1966,27 +1965,11 @@ export default function MatchingPage() {
                     <button
                       type="button"
                       onClick={() => mDateInputRef.current?.showPicker?.() || mDateInputRef.current?.click()}
-                      className="calendar-icon-btn"
-                      style={{ 
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                        transition: "opacity 0.2s",
-                      }}
+                      className="input-icon-btn"
                     >
                       <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
                   </div>
-                  <p className="form-field-helper">dd-mm-yyyy format</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
@@ -2882,174 +2865,7 @@ export default function MatchingPage() {
         )}
       </div>
 
-      <style jsx>{`
-        .history-cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 16px;
-        }
-        .history-card {
-          background: linear-gradient(145deg, #fffaf0, #f8f5eb);
-          border: 1px solid #f1e9d2;
-          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.12);
-          border-radius: 16px;
-          padding: 12px;
-          transition: transform 160ms ease, box-shadow 160ms ease, max-height 0.3s ease;
-          cursor: pointer;
-          max-height: 240px;
-          overflow: hidden;
-        }
-        .history-card.expanded {
-          max-height: none;
-        }
-                .history-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 16px 36px rgba(212, 175, 55, 0.18);
-        }
-                .history-card-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-        .history-card-names {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .pill {
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-weight: 700;
-          font-size: 1rem;
-          border: 1px solid #f5d276;
-          background: #fff8e6;
-          color: #8b6b15;
-        }
-                .pill-female {
-          background: #fce7f3;
-          border-color: #fbcfe8;
-          color: #831843;
-        }
-                .pill-male {
-          background: #dbeafe;
-          border-color: #bfdbfe;
-          color: #1e3a8a;
-        }
-                .dot-separator {
-          color: #c4a13f;
-          font-weight: 700;
-        }
-                .history-card-body {
-          display: flex;
-          gap: 16px;
-          align-items: stretch;
-        }
-        .person-block {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .person-label {
-          text-transform: uppercase;
-          font-size: 0.75rem;
-          letter-spacing: 0.04em;
-          color: #fbbf24;
-          font-weight: 700;
-        }
-                .person-meta {
-          display: flex;
-          gap: 8px;
-          align-items: flex-start;
-          color: #d4af37;
-          font-size: 0.85rem;
-          line-height: 1.4;
-        }
-        .person-meta span {
-          flex: 1;
-          word-break: break-word;
-        }
-        .address-text {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .address-text.expanded {
-          display: block;
-          -webkit-line-clamp: unset;
-        }
-        .show-more-btn {
-          margin-top: 4px;
-          background: none;
-          border: none;
-          color: #d4af37;
-          font-size: 0.75rem;
-          cursor: pointer;
-          text-decoration: underline;
-          padding: 0;
-          font-weight: 500;
-        }
-        .show-more-btn:hover {
-          color: #fbbf24;
-        }
-                                .meta-icon {
-          width: 16px;
-          height: 16px;
-          color: #d4af37;
-        }
-        .person-divider {
-          width: 1px;
-          background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
-        }
-                .history-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .use-btn {
-          background: #fff8e6;
-          color: #8b6b15;
-          border: 1px solid #f5d276;
-          padding: 0.35rem 0.75rem;
-          border-radius: 0.5rem;
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-                .use-btn:hover {
-          background: #fff3d4;
-        }
-                .delete-btn {
-          background: transparent;
-          border: none;
-          color: #dc2626;
-          padding: 0.35rem;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .delete-btn:hover {
-          background: rgba(220, 38, 38, 0.1);
-          color: #b91c1c;
-          transform: scale(1.1);
-        }
-        @media (max-width: 720px) {
-          .history-card-body {
-            flex-direction: column;
-          }
-          .person-divider {
-            height: 1px;
-            width: 100%;
-            background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
-          }
-                  }
-      `}</style>
+
 
       {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
       <div
