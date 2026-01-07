@@ -52,7 +52,8 @@ export async function POST(request) {
       }
 
       const orderData = orderDoc.data()
-      const amount = orderData.amount / 100 // Convert from paise to rupees
+      const amountInPaise = orderData.amount
+      const amount = Math.round(amountInPaise) / 100 // Convert from paise to rupees, round to avoid precision issues
 
       // Add money to user's wallet
       const transactionId = `payment-${razorpay_payment_id}`
