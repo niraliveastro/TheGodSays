@@ -29,7 +29,7 @@ export class BillingService {
 
       return {
         hasBalance: wallet.balance >= minimumBalance,
-        currentBalance: wallet.balance,
+        currentBalance: wallet.balance || 0,
         minimumRequired: minimumBalance,
         shortfall: Math.max(0, minimumBalance - wallet.balance)
       }
@@ -55,8 +55,9 @@ export class BillingService {
         holdAmount = pricing.finalPrice // Hold full amount for per_call
       }
 
-      // Hold money in wallet
-      await WalletService.holdMoney(userId, holdAmount, callId)
+      // Hold money in wallet (may hold less if wallet balance is insufficient, coupons will cover the rest)
+      const holdResult = await WalletService.holdMoney(userId, holdAmount, callId)
+      const actualHoldAmount = holdResult.amountHeld || 0
 
       // Create call billing record with connectedAt timestamp
       const db = getDb()
@@ -70,7 +71,7 @@ export class BillingService {
         startTime: admin.firestore.FieldValue.serverTimestamp(), // Use server timestamp for accuracy
         connectedAt: admin.firestore.FieldValue.serverTimestamp(), // Track when billing actually started
         endTime: null,
-        initialHoldAmount: holdAmount,
+        initialHoldAmount: actualHoldAmount, // Actual amount held (may be less if wallet balance insufficient)
         totalCost: 0,
         finalAmount: 0,
         durationMinutes: 0,
@@ -179,18 +180,24 @@ export class BillingService {
 
        // Get balance before settlement
        const walletBefore = await WalletService.getWallet(userId)
-       console.log(`Balance before settlement: ${walletBefore.balance}`)
+       console.log(`Balance before settlement: Wallet ₹${walletBefore.balance}`)
 
-       // Calculate refund: the hold amount minus the actual cost
-       // Since the hold was already deducted, we refund the unused portion
-       const refundAmount = Math.max(0, initialHoldAmount - finalAmount)
-       if (refundAmount > 0) {
-         await WalletService.addMoney(userId, refundAmount, `refund-hold-${callId}`, `Refund of unused hold amount for call ${callId}`)
+       // Refund the full hold amount first (it was deducted from wallet, if any was held)
+       if (initialHoldAmount > 0) {
+         await WalletService.addMoney(userId, initialHoldAmount, `refund-hold-${callId}`, `Refund of hold amount for call ${callId}`)
        }
+
+       // Now deduct the final amount from wallet
+       await WalletService.deductMoney(
+         userId,
+         finalAmount,
+         `call-charge-${callId}`,
+         `Call charges for call ${callId}`
+       )
 
        // Get balance after settlement
        const walletAfter = await WalletService.getWallet(userId)
-       console.log(`Balance after settlement: ${walletAfter.balance}, Refund amount: ${refundAmount}`)
+       console.log(`Balance after settlement: Wallet ₹${walletAfter.balance}`)
 
        // Note: Don't call releaseHold() here as we've already handled the refund manually
        // releaseHold() should only be used for cancelled calls, not completed calls

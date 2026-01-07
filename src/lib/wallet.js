@@ -126,24 +126,27 @@ export class WalletService {
       const db = getDb()
       const walletRef = db.collection('wallets').doc(userId)
 
+      // Round amount to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(Number(amount) * 100) / 100
+
       const transaction = {
         id: transactionId,
         type: 'credit',
-        amount,
+        amount: roundedAmount,
         description,
         timestamp: new Date(),
         status: 'completed'
       }
 
-      console.log(`💳 Adding ₹${amount} to wallet for user ${userId}: ${description}`)
+      console.log(`💳 Adding ₹${roundedAmount} to wallet for user ${userId}: ${description}`)
 
       await walletRef.update({
-        balance: admin.firestore.FieldValue.increment(amount),
+        balance: admin.firestore.FieldValue.increment(roundedAmount),
         transactions: admin.firestore.FieldValue.arrayUnion(transaction),
         updatedAt: new Date()
       })
 
-      console.log(`✅ Added ₹${amount} to wallet successfully`)
+      console.log(`✅ Added ₹${roundedAmount} to wallet successfully`)
 
       return { success: true, transaction }
     } catch (error) {
@@ -161,28 +164,31 @@ export class WalletService {
       const walletRef = db.collection('wallets').doc(userId)
       const wallet = await this.getWallet(userId)
 
-      console.log(`💸 Attempting to deduct ₹${amount} from user ${userId}. Current balance: ₹${wallet.balance}`)
+      // Round amount to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(Number(amount) * 100) / 100
 
-      if (wallet.balance < amount) {
+      console.log(`💸 Attempting to deduct ₹${roundedAmount} from user ${userId}. Current balance: ₹${wallet.balance}`)
+
+      if (wallet.balance < roundedAmount) {
         throw new Error('Insufficient balance')
       }
 
       const transaction = {
         id: transactionId,
         type: 'debit',
-        amount,
+        amount: roundedAmount,
         description,
         timestamp: new Date(),
         status: 'completed'
       }
 
       await walletRef.update({
-        balance: admin.firestore.FieldValue.increment(-amount),
+        balance: admin.firestore.FieldValue.increment(-roundedAmount),
         transactions: admin.firestore.FieldValue.arrayUnion(transaction),
         updatedAt: new Date()
       })
 
-      console.log(`✅ Successfully deducted ₹${amount} from user ${userId}`)
+      console.log(`✅ Successfully deducted ₹${roundedAmount} from user ${userId}`)
 
       return { success: true, transaction }
     } catch (error) {
@@ -195,6 +201,84 @@ export class WalletService {
   }
 
   /**
+   * Deduct money using coupon balance first, then wallet balance
+   */
+  static async deductMoneyWithCoupons(userId, amount, transactionId, description = 'Payment') {
+    try {
+      const db = getDb()
+      const walletRef = db.collection('wallets').doc(userId)
+      const wallet = await this.getWallet(userId)
+
+      // Round amount to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(Number(amount) * 100) / 100
+
+      const couponBalance = wallet.couponBalance || 0
+      const walletBalance = wallet.balance || 0
+      const totalBalance = couponBalance + walletBalance
+
+      console.log(`💸 Attempting to deduct ₹${roundedAmount} from user ${userId}. Coupon balance: ₹${couponBalance}, Wallet balance: ₹${walletBalance}, Total: ₹${totalBalance}`)
+
+      if (totalBalance < roundedAmount) {
+        throw new Error('Insufficient balance')
+      }
+
+      let couponUsed = 0
+      let walletUsed = 0
+      let remainingAmount = roundedAmount
+
+      // Use coupon balance first
+      if (couponBalance > 0 && remainingAmount > 0) {
+        couponUsed = Math.round(Math.min(couponBalance, remainingAmount) * 100) / 100
+        remainingAmount = Math.round((remainingAmount - couponUsed) * 100) / 100
+      }
+
+      // Use wallet balance for remainder
+      if (remainingAmount > 0) {
+        walletUsed = Math.round(remainingAmount * 100) / 100
+      }
+
+      const updateData = {
+        updatedAt: new Date()
+      }
+
+      if (couponUsed > 0) {
+        updateData.couponBalance = admin.firestore.FieldValue.increment(-couponUsed)
+      }
+
+      if (walletUsed > 0) {
+        updateData.balance = admin.firestore.FieldValue.increment(-walletUsed)
+      }
+
+      const totalDeducted = Math.round((couponUsed + walletUsed) * 100) / 100
+      
+      const transaction = {
+        id: transactionId,
+        type: 'debit',
+        amount: totalDeducted,
+        couponAmount: couponUsed,
+        walletAmount: walletUsed,
+        description,
+        timestamp: new Date(),
+        status: 'completed'
+      }
+
+      updateData.transactions = admin.firestore.FieldValue.arrayUnion(transaction)
+
+      await walletRef.update(updateData)
+
+      console.log(`✅ Successfully deducted ₹${totalDeducted} (₹${couponUsed} from coupons, ₹${walletUsed} from wallet) from user ${userId}`)
+
+      return { success: true, transaction, couponUsed, walletUsed, totalDeducted }
+    } catch (error) {
+      console.error('Error deducting money with coupons:', error)
+      if (error.message === 'Insufficient balance') {
+        throw error
+      }
+      throw new Error('Failed to deduct money')
+    }
+  }
+
+  /**
    * Hold money for a call (reserve amount)
    */
   static async holdMoney(userId, amount, callId) {
@@ -203,16 +287,20 @@ export class WalletService {
       const walletRef = db.collection('wallets').doc(userId)
       const wallet = await this.getWallet(userId)
 
-      console.log(`🔒 Attempting to hold ₹${amount} for call ${callId}. Current balance: ₹${wallet.balance}`)
+      // Round amount to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(Number(amount) * 100) / 100
 
-      if (wallet.balance < amount) {
+      console.log(`🔒 Attempting to hold ₹${roundedAmount} for call ${callId}. Wallet balance: ₹${wallet.balance}`)
+
+      // Check wallet balance
+      if (wallet.balance < roundedAmount) {
         throw new Error('Insufficient balance')
       }
 
       const transaction = {
         id: `hold-${callId}`,
         type: 'hold',
-        amount,
+        amount: roundedAmount,
         description: `Call charges held for call ${callId}`,
         timestamp: new Date(),
         status: 'pending',
@@ -220,14 +308,14 @@ export class WalletService {
       }
 
       await walletRef.update({
-        balance: admin.firestore.FieldValue.increment(-amount),
+        balance: admin.firestore.FieldValue.increment(-roundedAmount),
         transactions: admin.firestore.FieldValue.arrayUnion(transaction),
         updatedAt: new Date()
       })
 
-      console.log(`✅ Successfully held ₹${amount} for call ${callId}`)
+      console.log(`✅ Successfully held ₹${roundedAmount} for call ${callId}`)
 
-      return { success: true, transaction }
+      return { success: true, transaction, amountHeld: roundedAmount }
     } catch (error) {
       console.error('Error holding money:', error)
       if (error.message === 'Insufficient balance') {
@@ -340,7 +428,10 @@ export class WalletService {
         throw new Error('No hold found for this call')
       }
 
-      const difference = finalAmount - holdTransaction.amount
+      // Round amounts to avoid floating point precision issues
+      const roundedFinalAmount = Math.round(Number(finalAmount) * 100) / 100
+      const roundedHoldAmount = Math.round(Number(holdTransaction.amount) * 100) / 100
+      const difference = Math.round((roundedFinalAmount - roundedHoldAmount) * 100) / 100
 
       const transaction = {
         id: `confirm-${callId}`,
