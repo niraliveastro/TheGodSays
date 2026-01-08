@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -23,21 +23,36 @@ import {
   Hash,
   Zap,
   Infinity,
-  Rss
+  Rss,
+  Globe,
+  MessageCircle,
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import "./navigation.css";
 
 const Navigation = () => {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
+  const { language, changeLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 767);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const { user, userProfile, signIn, signUp, signOut, signInWithGoogle } =
@@ -58,6 +73,7 @@ const Navigation = () => {
   const [showPwConfirm, setShowPwConfirm] = useState(false);
   
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
   // Check if user is astrologer
   const isAstrologer = userProfile?.collection === "astrologers";
@@ -89,28 +105,34 @@ const Navigation = () => {
     },
   ], [language, t]);
 
-  const userBottomNavItems = useMemo(() => [
+  const userBottomNavItems = useMemo(() => {
+    // Desktop items
+    const desktopItems = [
+      { href: "/matching", label: t.nav.matching, icon: BookOpen },
+      { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
+      { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+      {
+        href: null,
+        label: t.nav.tools,
+        icon: Settings,
+        dropdownId: "tools",
+        children: [
+          { href: "/numerology", label: t.numerology.title, icon: Hash },
+          { href: "/transit", label: t.transit.title, icon: Zap },
+        ],
+      },
+      { href: "/blog", label: t.nav.blog, icon: Rss },
+    ];
     
-    { href: "/matching", label: t.nav.matching, icon: BookOpen },
-        { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
-        { href: "/panchang", label: t.panchang.title, icon: BookOpen },
-
-
-    
-    {
-      href: null,
-      label: t.nav.tools,
-      icon: Settings,
-      dropdownId: "tools",
-      children: [
-        { href: "/numerology", label: t.numerology.title, icon: Hash },
-        { href: "/transit", label: t.transit.title, icon: Zap },
-      ],
-    },
-    { href: "/blog", label: t.nav.blog , icon: Rss },
-        
-
-
+    return desktopItems;
+  }, [language, t]);
+  
+  // Mobile bottom nav items - circular icons with text below
+  const userBottomNavItemsMobile = useMemo(() => [
+    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
+    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+    { href: "/blog", label: t.nav.blog, icon: Rss },
+    { href: "/appointments", label: "Booking", icon: Calendar },
   ], [language, t]);
 
   // For mobile - combine all user nav items
@@ -347,13 +369,15 @@ const Navigation = () => {
       <div className="nav-container">
         {/* TOP NAVBAR */}
         <div className="nav-content">
-          <Link href="/" className="nav-logo-wrapper">
+          {/* Logo on left with text */}
+          <Link href="/" className="nav-logo-wrapper nav-logo-left">
             <div className="nav-logo-icon">
               <Infinity className="nav-logo-icon-svg" />
             </div>
             <span className="nav-logo-text">NiraLive Astro</span>
           </Link>
 
+          {/* Desktop nav items */}
           {/* ASTROLOGER: Original style - all items in top navbar */}
           {isAstrologer && (
             <div className="nav-desktop">
@@ -368,39 +392,97 @@ const Navigation = () => {
           {!isAstrologer && (
             <div className="nav-desktop">
               {userTopNavItems.map(item => renderNavItem(item))}
-              <div className="ml-4">
-                <LanguageSwitcher />
-              </div>
             </div>
           )}
 
-          <div className="nav-language-mobile">
-            <LanguageSwitcher />
-          </div>
-
+          {/* Hamburger menu on right */}
           <button className="nav-mobile-btn" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
+      </div>
 
-        {/* SECOND NAVBAR - Only for regular users */}
-        {!isAstrologer && (
+      {/* SECOND NAVBAR - Only for regular users - Full width outside container */}
+      {!isAstrologer && (
+        <div className="nav-bottom-row-wrapper">
           <div className="nav-content nav-bottom-row">
             <div className="nav-desktop">
-              {userBottomNavItems.map(item => renderNavItem(item))}
+              {/* Desktop: Show all bottom nav items */}
+              {!isMobile ? (
+                <>
+                  {userBottomNavItems.map((item, index) => {
+                    const navItem = renderNavItem(item);
+                    // Insert language dropdown right after Blog
+                    if (item.href === "/blog") {
+                      return (
+                        <Fragment key={item.href || index}>
+                          {navItem}
+                          <div 
+                            className="nav-language-bottom"
+                            onMouseEnter={() => setLanguageDropdownOpen(true)}
+                            onMouseLeave={() => setLanguageDropdownOpen(false)}
+                          >
+                            <button
+                              className="nav-language-dropdown-button"
+                              onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                            >
+                              <Globe style={{ width: 18, height: 18 }} />
+                              <span>{language === 'en' ? 'ENG' : 'HIN'}</span>
+                              <ChevronDown 
+                                className="dropdown-icon" 
+                                style={{ 
+                                  width: 16, 
+                                  height: 16,
+                                  transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                  transition: 'transform 0.3s ease'
+                                }} 
+                              />
+                            </button>
+                            {languageDropdownOpen && (
+                              <>
+                                <div className="nav-dropdown-bridge"></div>
+                                <div className="nav-language-dropdown-menu">
+                                  <button
+                                    className={`nav-language-dropdown-item ${language === 'en' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      changeLanguage('en');
+                                      setLanguageDropdownOpen(false);
+                                    }}
+                                  >
+                                    ENG
+                                  </button>
+                                  <button
+                                    className={`nav-language-dropdown-item ${language === 'hi' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      changeLanguage('hi');
+                                      setLanguageDropdownOpen(false);
+                                    }}
+                                  >
+                                    हिंदी
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </Fragment>
+                      );
+                    }
+                    return navItem;
+                  })}
+                </>
+              ) : (
+                /* Mobile: Show simplified bottom nav items with normal icon + text */
+                userBottomNavItemsMobile.map((item, index) => renderNavItem(item, index))
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
- {/* Mobile Navigation */}
-        {isOpen && (
+      {/* Mobile Navigation */}
+      {isOpen && (
           <div className="nav-mobile-menu">
             <div className="nav-mobile-menu-content">
-              {/* Language Switcher at top of mobile menu */}
-              <div className="nav-mobile-language-wrapper">
-                <LanguageSwitcher />
-              </div>
-              
               {navItems.map((item) => {
                 const Icon = item.icon;
 
@@ -469,6 +551,45 @@ const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Language Dropdown at bottom of mobile menu */}
+              <div key="language-dropdown" data-dropdown-container>
+                <button
+                  className={`nav-mobile-dropdown-button ${openDropdown === 'mobile-language' ? 'active' : ''}`}
+                  onClick={() => setOpenDropdown(openDropdown === 'mobile-language' ? null : 'mobile-language')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Globe size={20} />
+                    <span>Language ({language === 'en' ? 'English' : 'हिंदी'})</span>
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className={`chevron-icon ${openDropdown === 'mobile-language' ? 'rotated' : ''}`}
+                  />
+                </button>
+                {openDropdown === 'mobile-language' && (
+                  <div className="nav-mobile-dropdown-content">
+                    <button
+                      onClick={() => {
+                        changeLanguage('en');
+                        setOpenDropdown(null);
+                      }}
+                      className={`nav-mobile-dropdown-item ${language === 'en' ? 'active' : ''}`}
+                    >
+                      <span>English</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        changeLanguage('hi');
+                        setOpenDropdown(null);
+                      }}
+                      className={`nav-mobile-dropdown-item ${language === 'hi' ? 'active' : ''}`}
+                    >
+                      <span>हिंदी</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -792,7 +913,6 @@ const Navigation = () => {
             </div>
           )}
         </Modal>
-      </div>
     </nav>
   );
 };
