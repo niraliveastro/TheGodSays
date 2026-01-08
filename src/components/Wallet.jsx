@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   Wallet as WalletIcon,
@@ -11,31 +11,39 @@ import {
   TicketPercent,
 } from 'lucide-react'
 
-import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon } from '@/lib/analytics'
+import {
+  trackEvent,
+  trackActionStart,
+  trackActionComplete,
+  trackActionAbandon,
+} from '@/lib/analytics'
 
 export default function Wallet() {
   const { user, getUserId, userProfile } = useAuth()
+  const userId = getUserId()
+
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] })
   const [loading, setLoading] = useState(true)
+
   const [rechargeAmount, setRechargeAmount] = useState('')
   const [showRechargeForm, setShowRechargeForm] = useState(false)
   const [rechargeLoading, setRechargeLoading] = useState(false)
 
-  // Coupon states
   const [showCouponField, setShowCouponField] = useState(false)
   const [couponCode, setCouponCode] = useState('')
-  const [couponStatus, setCouponStatus] = useState(null) // {type,msg}
+  const [couponStatus, setCouponStatus] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
 
-  const userId = getUserId()
+  /* ---------- TRANSACTION PAGINATION ---------- */
+  const ITEMS_PER_LOAD = 10
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD)
+  const [showAll, setShowAll] = useState(false)
 
   /* ------------------------------------------------------------------ */
-  /*  FETCH WALLET DATA                                                   */
+  /*  FETCH WALLET DATA                                                  */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    if (userId) {
-      fetchWalletData()
-    }
+    if (userId) fetchWalletData()
   }, [userId])
 
   const fetchWalletData = async () => {
@@ -57,212 +65,13 @@ export default function Wallet() {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  REDEEM COUPON (MAIN PROJECT API)                                   */
-  /* ------------------------------------------------------------------ */
-  const handleRedeemCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponStatus({ type: "error", msg: "Please enter a coupon code" });
-      return;
-    }
-
-    // Track coupon redemption start
-    trackActionStart('coupon_redemption');
-    trackEvent('coupon_redeem_attempt', { coupon_code: couponCode.toUpperCase() });
-
-    setCouponLoading(true);
-    setCouponStatus({ type: "loading", msg: "Redeeming…" });
-
-    try {
-      const res = await fetch("/api/coupons/redeem-main", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code: couponCode, userId }),
-      });
-
-      const data = await res.json();
-
-      if (data.ok) {
-        // Track successful coupon redemption
-        trackActionComplete('coupon_redemption', {
-          coupon_code: couponCode.toUpperCase(),
-          amount: data.amount,
-          success: true
-        });
-        trackEvent('coupon_redeem_success', {
-          coupon_code: couponCode.toUpperCase(),
-          amount: data.amount
-        });
-
-        setCouponStatus({
-          type: "success",
-          msg: `Coupon applied! +₹${data.amount} added to wallet`,
-        });
-        setCouponCode("");
-        // Refresh wallet data to show updated balance
-        await fetchWalletData();
-      } else {
-        // Track failed coupon redemption
-        trackActionAbandon('coupon_redemption', data.reason || 'unknown_error');
-        trackEvent('coupon_redeem_failed', {
-          coupon_code: couponCode.toUpperCase(),
-          reason: data.reason || 'unknown'
-        });
-
-        const map = {
-          NOT_FOUND: "Invalid coupon code",
-          INACTIVE: "This coupon is inactive",
-          EXPIRED: "This coupon has expired",
-          MAXED_OUT: "Coupon usage limit reached",
-          USER_LIMIT_REACHED: "You have reached your usage limit for this coupon",
-          USED_BY_YOU: "You have already used this coupon",
-          ALREADY_USED: "This coupon has already been used",
-          NOT_ELIGIBLE: "This coupon is only for first-time users",
-          BAD_COUPON_AMOUNT: "Coupon not configured correctly",
-          NO_USER_ID: "User ID is required",
-        };
-        setCouponStatus({
-          type: "error",
-          msg: map[data.reason] || "Coupon invalid",
-        });
-      }
-    } catch (e) {
-      trackActionAbandon('coupon_redemption', e.message);
-      trackEvent('coupon_redeem_error', { error: e.message });
-      setCouponStatus({ type: "error", msg: e.message || "Failed to redeem coupon" });
-    } finally {
-      setCouponLoading(false);
-    }
-  };
-
-
-  /* ------------------------------------------------------------------ */
-  /*  RECHARGE HANDLER (Razorpay) – OLD PROJECT                          */
-  /* ------------------------------------------------------------------ */
-  const handleRecharge = async () => {
-    if (!rechargeAmount || Number(rechargeAmount) <= 0) {
-      alert('Please enter a valid amount')
-      return
-    }
-
-    const amount = parseFloat(rechargeAmount);
-    
-    // Track wallet recharge initiation
-    trackActionStart('wallet_recharge');
-    trackEvent('wallet_recharge_initiated', { amount });
-
-    setRechargeLoading(true)
-    try {
-      const orderRes = await fetch('/api/payments/wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'recharge',
-          userId,
-          amount,
-        }),
-      })
-      const orderData = await orderRes.json()
-      if (!orderRes.ok || !orderData.success) {
-        // Track failed order creation
-        trackActionAbandon('wallet_recharge', orderData.error || 'order_creation_failed');
-        trackEvent('wallet_recharge_failed', {
-          amount,
-          error: orderData.error || 'order_creation_failed'
-        });
-        alert(orderData.error ?? 'Failed to create payment order')
-        return
-      }
-
-      const keyRes = await fetch('/api/payments/config')
-      const keyData = await keyRes.json()
-      if (!keyData.success) {
-        trackActionAbandon('wallet_recharge', 'payment_config_error');
-        trackEvent('wallet_recharge_failed', { amount, error: 'payment_config_error' });
-        alert('Payment configuration error')
-        return
-      }
-
-      const options = {
-        key: keyData.key,
-        amount: orderData.order.amount,
-        currency: orderData.order.currency,
-        name: 'The God Says',
-        description: 'Wallet Recharge',
-        order_id: orderData.order.id,
-        handler: async (resp) => {
-          const verifyRes = await fetch('/api/payments/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature: resp.razorpay_signature,
-              userId,
-            }),
-          })
-          const verifyData = await verifyRes.json()
-          if (verifyRes.ok && verifyData.success) {
-            // Track successful payment
-            trackActionComplete('wallet_recharge', {
-              amount,
-              order_id: resp.razorpay_order_id,
-              payment_id: resp.razorpay_payment_id,
-              success: true
-            });
-            trackEvent('payment_success', {
-              amount,
-              method: 'razorpay',
-              type: 'wallet_recharge',
-              order_id: resp.razorpay_order_id
-            });
-            
-            alert('Payment successful! Wallet updated.')
-            setRechargeAmount('')
-            setShowRechargeForm(false)
-            fetchWalletData()
-          } else {
-            // Track payment verification failure
-            trackActionAbandon('wallet_recharge', 'payment_verification_failed');
-            trackEvent('payment_verification_failed', {
-              amount,
-              order_id: resp.razorpay_order_id,
-              payment_id: resp.razorpay_payment_id
-            });
-            alert('Payment verification failed. Contact support.')
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            // Track payment modal dismissal (user cancelled)
-            trackActionAbandon('wallet_recharge', 'user_cancelled');
-            trackEvent('payment_cancelled', { amount, method: 'razorpay' });
-          }
-        },
-        prefill: {
-          email: user?.email ?? '',
-          name: user?.displayName ?? '',
-        },
-        theme: { color: '#d4af37' },
-      }
-
-      const rzp = new window.Razorpay(options)
-      rzp.open()
-    } catch (e) {
-      trackActionAbandon('wallet_recharge', e.message);
-      trackEvent('wallet_recharge_error', { amount, error: e.message });
-      alert(`Error: ${e.message}`)
-    } finally {
-      setRechargeLoading(false)
-    }
-  }
-
-  /* ------------------------------------------------------------------ */
-  /*  HELPERS                                                          */
+  /*  HELPERS                                                           */
   /* ------------------------------------------------------------------ */
   const formatCurrency = (amt) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amt)
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+    }).format(amt)
 
   const formatDate = (ts) => {
     let date
@@ -282,74 +91,76 @@ export default function Wallet() {
         })
   }
 
+  const getTimestamp = (ts) => {
+    if (!ts) return 0
+    if (ts._seconds) return ts._seconds * 1000
+    if (ts.toDate) return ts.toDate().getTime()
+    if (ts.seconds) return ts.seconds * 1000
+    return new Date(ts).getTime()
+  }
+
+  const sortedTransactions = useMemo(() => {
+    return [...wallet.transactions].sort(
+      (a, b) => getTimestamp(b.timestamp) - getTimestamp(a.timestamp)
+    )
+  }, [wallet.transactions])
+
+  const visibleTransactions = showAll
+    ? sortedTransactions
+    : sortedTransactions.slice(0, visibleCount)
+
   /* ------------------------------------------------------------------ */
-  /*  RENDER                                                           */
+  /*  LOADING / ACCESS STATES                                            */
   /* ------------------------------------------------------------------ */
   if (loading) {
     return (
-      <div style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 style={{ width: '2rem', height: '2rem', color: 'var(--color-gold)', animation: 'spin 1s linear infinite' }} />
-        <span style={{ marginLeft: '0.5rem', color: 'var(--color-gray-600)' }}>Loading wallet…</span>
+      <div className="min-h-[200px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-gold)]" />
+        <span className="ml-2 text-gray-600">Loading wallet…</span>
       </div>
     )
   }
 
   if (userProfile?.collection === 'astrologers') {
     return (
-      <div style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-            Access Restricted
-          </h2>
-          <p style={{ color: 'var(--color-gray-600)' }}>
-            Wallet functionality is only available for regular users. Astrologers receive payments directly.
-          </p>
-        </div>
+      <div className="max-w-3xl mx-auto p-8 text-center">
+        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+        <p className="text-gray-600">
+          Wallet functionality is only available for regular users.
+        </p>
       </div>
     )
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  RENDER                                                            */
+  /* ------------------------------------------------------------------ */
   return (
-    <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
+    <div className="max-w-3xl mx-auto">
 
       {/* ---------- BALANCE CARD ---------- */}
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-          <div
-            style={{
-              width: '3rem',
-              height: '3rem',
-              background: '#dbeafe',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <WalletIcon style={{ width: '1.75rem', height: '1.75rem', color: '#2563eb' }} />
+      <div className="card mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+            <WalletIcon className="w-7 h-7 text-blue-600" />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>
-              Wallet Balance
-            </h2>
-            <p style={{ color: 'var(--color-gray-600)' }}>Manage your wallet and view history</p>
+            <h2 className="text-xl font-semibold">Wallet Balance</h2>
+            <p className="text-gray-600">Manage your wallet and view history</p>
           </div>
         </div>
 
-        {/* Wallet Balance */}
-        <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#16a34a', marginBottom: '1rem' }}>
+        <div className="text-4xl font-bold text-green-600 mb-4">
           {formatCurrency(wallet.balance)}
         </div>
 
-        {/* Actions row */}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="flex gap-3 flex-wrap">
           <button
             onClick={() => setShowRechargeForm(!showRechargeForm)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            className="btn btn-primary flex items-center gap-2"
           >
-            <Plus style={{ width: '1rem', height: '1rem' }} />
-            <span>Add Money</span>
+            <Plus className="w-4 h-4" />
+            Add Money
           </button>
 
           <button
@@ -357,192 +168,81 @@ export default function Wallet() {
               setShowCouponField(!showCouponField)
               setCouponStatus(null)
             }}
-            className="btn btn-outline"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            className="btn btn-outline flex items-center gap-2"
           >
-            <TicketPercent style={{ width: '1rem', height: '1rem' }} />
-            <span>Redeem Coupon</span>
+            <TicketPercent className="w-4 h-4" />
+            Redeem Coupon
           </button>
         </div>
       </div>
 
-      {/* ---------- COUPON REDEEM FORM ---------- */}
-      {showCouponField && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-            Redeem Coupon
-          </h3>
-
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              placeholder="Enter coupon code"
-              style={{
-                flex: 1,
-                minWidth: '200px',
-                padding: '0.5rem 0.75rem',
-                border: '1px solid var(--color-gray-300)',
-                borderRadius: '0.5rem',
-                background: 'var(--color-white)',
-                fontSize: '1rem',
-                textTransform: 'uppercase',
-              }}
-            />
-
-            <button
-              onClick={handleRedeemCoupon}
-              disabled={couponLoading}
-              className="btn btn-primary"
-              style={{ minWidth: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-            >
-              {couponLoading ? (
-                <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
-              ) : (
-                <TicketPercent style={{ width: '1rem', height: '1rem' }} />
-              )}
-              <span>{couponLoading ? 'Redeeming…' : 'Redeem'}</span>
-            </button>
-          </div>
-
-          {couponStatus && (
-            <p
-              style={{
-                marginTop: '0.75rem',
-                fontWeight: 500,
-                color:
-                  couponStatus.type === 'success'
-                    ? '#16a34a'
-                    : couponStatus.type === 'loading'
-                    ? '#6b7280'
-                    : '#dc2626',
-              }}
-            >
-              {couponStatus.msg}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ---------- RECHARGE FORM ---------- */}
-      {showRechargeForm && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-            Recharge Wallet
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
-                Amount (₹)
-              </label>
-              <input
-                type="number"
-                value={rechargeAmount}
-                onChange={(e) => setRechargeAmount(e.target.value)}
-                placeholder="e.g. 500"
-                min="1"
-                step="0.01"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  border: '1px solid var(--color-gray-300)',
-                  borderRadius: '0.5rem',
-                  background: 'var(--color-white)',
-                  fontSize: '1rem',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={handleRecharge}
-                disabled={rechargeLoading || !rechargeAmount}
-                className="btn btn-primary"
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                {rechargeLoading ? (
-                  <Loader2 style={{ width: '1rem', height: '1rem', animation: 'spin 1s linear infinite' }} />
-                ) : (
-                  <CreditCard style={{ width: '1rem', height: '1rem' }} />
-                )}
-                <span>{rechargeLoading ? 'Processing…' : 'Pay Now'}</span>
-              </button>
-
-              <button
-                onClick={() => setShowRechargeForm(false)}
-                className="btn btn-outline"
-                style={{ flex: 1 }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ---------- TRANSACTION HISTORY ---------- */}
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <History style={{ width: '1.25rem', height: '1.25rem', color: 'var(--color-gray-600)' }} />
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Transaction History</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <History className="w-5 h-5 text-gray-600" />
+          <h3 className="text-lg font-semibold">Transaction History</h3>
         </div>
 
         {wallet.transactions.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--color-gray-500)', padding: '1rem' }}>
+          <p className="text-center text-gray-500 p-4">
             No transactions yet
           </p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {[...wallet.transactions]
-              .sort((a, b) => {
-                // Sort by timestamp (newest first)
-                const getTimestamp = (ts) => {
-                  if (!ts) return 0
-                  if (ts._seconds) return ts._seconds * 1000
-                  if (ts.toDate) return ts.toDate().getTime()
-                  if (ts.seconds) return ts.seconds * 1000
-                  return new Date(ts).getTime()
-                }
-                return getTimestamp(b.timestamp) - getTimestamp(a.timestamp)
-              })
-              .map((t, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem',
-                  background: 'var(--color-gray-50)',
-                  borderRadius: '0.5rem',
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>{t.description}</p>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                    {formatDate(t.timestamp)}
-                  </p>
-                </div>
+          <>
+            <div className="flex flex-col gap-3">
+              {visibleTransactions.map((t, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      {t.description}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {formatDate(t.timestamp)}
+                    </p>
+                  </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <p
-                    style={{
-                      fontWeight: 600,
-                      color: t.type === 'credit' ? '#16a34a' : '#dc2626',
-                    }}
-                  >
-                    {t.type === 'credit' ? '+' : '-'}
-                    {formatCurrency(t.amount)}
-                  </p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', textTransform: 'capitalize' }}>
-                    {t.status}
-                  </p>
+                  <div className="text-right">
+                    <p
+                      className={`font-semibold ${
+                        t.type === 'credit'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
+                      {t.type === 'credit' ? '+' : '-'}
+                      {formatCurrency(t.amount)}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {t.status}
+                    </p>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {!showAll && visibleCount < sortedTransactions.length && (
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() =>
+                    setVisibleCount((v) => v + ITEMS_PER_LOAD)
+                  }
+                  className="btn btn-primary"
+                >
+                  Load more
+                </button>
+
+                <button
+                  onClick={() => setShowAll(true)}
+                  className="btn btn-ghost"
+                >
+                  Show all transactions
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>
