@@ -1545,11 +1545,27 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       formDataHashRef.current = formDataHash;
       
       // Add welcome message for new conversation
-      const welcomeMsg = language === 'hi' 
+      const welcomeMsg = language === 'hi'
         ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
         : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
-      setMessages([{ text: welcomeMsg, isUser: false }]);
-      setPersistedMessages([{ text: welcomeMsg, isUser: false }]);
+      const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
+      const defaultQuestions = language === 'hi'
+        ? [
+            'हमारी Ashtakoot अनुकूलता क्या है?',
+            'शादी के लिए सबसे अच्छा समय कब है?',
+            'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+          ]
+        : [
+            'What is our Ashtakoot compatibility?',
+            'When is the best time for marriage?',
+            'What are our main strengths and challenges as a couple?'
+          ];
+
+      const initialMsg = isMatchingPage
+        ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
+        : { text: welcomeMsg, isUser: false, showQuestions: true };
+      setMessages([initialMsg]);
+      setPersistedMessages([initialMsg]);
       return;
     }
     
@@ -1567,18 +1583,48 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       } else {
         // Form data changed, start fresh (this shouldn't happen as useChatState filters, but safety check)
         console.log('[Chat] Form data hash mismatch in persisted messages, starting fresh');
-        const welcomeMsg = language === 'hi' 
+        const welcomeMsg = language === 'hi'
           ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
           : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
-        setMessages([{ text: welcomeMsg, isUser: false }]);
-        setPersistedMessages([{ text: welcomeMsg, isUser: false }]);
+        const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
+        const defaultQuestions = language === 'hi'
+          ? [
+              'हमारी Ashtakoot अनुकूलता क्या है?',
+              'शादी के लिए सबसे अच्छा समय कब है?',
+              'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+            ]
+          : [
+              'What is our Ashtakoot compatibility?',
+              'When is the best time for marriage?',
+              'What are our main strengths and challenges as a couple?'
+            ];
+        const initialMsg = isMatchingPage
+          ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
+          : { text: welcomeMsg, isUser: false, showQuestions: true };
+        setMessages([initialMsg]);
+        setPersistedMessages([initialMsg]);
       }
     } else {
       // Add a default message when the component mounts (only if no persisted messages)
-      const welcomeMsg = language === 'hi' 
+      const welcomeMsg = language === 'hi'
         ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
         : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
-      setMessages([{ text: welcomeMsg, isUser: false }]);
+      const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
+      const defaultQuestions = language === 'hi'
+        ? [
+            'हमारी Ashtakoot अनुकूलता क्या है?',
+            'शादी के लिए सबसे अच्छा समय कब है?',
+            'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+          ]
+        : [
+            'What is our Ashtakoot compatibility?',
+            'When is the best time for marriage?',
+            'What are our main strengths and challenges as a couple?'
+          ];
+      const initialMsg = isMatchingPage
+        ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
+        : { text: welcomeMsg, isUser: false, showQuestions: true };
+      setMessages([initialMsg]);
     }
     // Reset system context when page title changes
     setSystemContext(null);
@@ -1656,8 +1702,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     setInput(e.target.value);
   };
 
-  const handleSendMessage = async () => {
-    if (input.trim() === '') return;
+  const handleSendMessage = async (messageText = null) => {
+    const userMessage = messageText || input.trim();
+    if (userMessage === '') return;
 
     // Check if user can send message (guest limit or credits)
     const blockedReason = getBlockedReason();
@@ -1670,8 +1717,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       return;
     }
 
-    const userMessage = input.trim();
-    const newMessages = [...messages, { text: userMessage, isUser: true }];
+    // Remove showQuestions flag from all messages when user sends a message
+    const messagesWithoutQuestions = messages.map(msg => ({ ...msg, showQuestions: false }));
+    const newMessages = [...messagesWithoutQuestions, { text: userMessage, isUser: true }];
     setMessages(newMessages);
     setPersistedMessages(newMessages); // Update persisted state
     setInput('');
@@ -1812,7 +1860,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       }
 
       const data = await response.json();
-      const finalMessages = [...newMessages, { text: data.response, isUser: false }];
+      console.log('[Chat] Received response with questions:', data.suggestedQuestions);
+      const finalMessages = [...newMessages, { text: data.response, isUser: false, suggestedQuestions: data.suggestedQuestions || [] }];
       setMessages(finalMessages);
       setPersistedMessages(finalMessages); // Update persisted state
       
@@ -2168,43 +2217,135 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       </div>
       <div className="chat-messages-container">
         {messages.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              justifyContent: msg.isUser ? "flex-end" : "flex-start",
-              marginBottom: 8,
-            }}
-          >
+          <div key={index}>
             <div
               style={{
-                background: msg.isUser
-                  ? "linear-gradient(135deg, #d4af37, #b8972e)"
-                  : "rgba(255, 255, 255, 0.9)",
-                color: msg.isUser 
-                  ? "white" 
-                  : "#111827",
-                padding: "10px 12px",
-                borderRadius: 14,
-                borderTopLeftRadius: msg.isUser ? 14 : 4,
-                borderTopRightRadius: msg.isUser ? 4 : 14,
-                maxWidth: "76%",
-                lineHeight: 1.35,
-                boxShadow: msg.isUser 
-                  ? "0 4px 14px rgba(212, 175, 55, 0.3)"
-                  : "0 2px 8px rgba(0, 0, 0, 0.06)",
-                fontSize: 14,
-                border: msg.isUser 
-                  ? "none" 
-                  : "1px solid rgba(212, 175, 55, 0.15)",
+                display: "flex",
+                justifyContent: msg.isUser ? "flex-end" : "flex-start",
+                marginBottom: 8,
               }}
             >
-              <div className="markdown-content">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {msg.text}
-                </ReactMarkdown>
+              <div
+                style={{
+                  background: msg.isUser
+                    ? "linear-gradient(135deg, #d4af37, #b8972e)"
+                    : "rgba(255, 255, 255, 0.9)",
+                  color: msg.isUser 
+                    ? "white" 
+                    : "#111827",
+                  padding: "10px 12px",
+                  borderRadius: 14,
+                  borderTopLeftRadius: msg.isUser ? 14 : 4,
+                  borderTopRightRadius: msg.isUser ? 4 : 14,
+                  maxWidth: "76%",
+                  lineHeight: 1.35,
+                  boxShadow: msg.isUser 
+                    ? "0 4px 14px rgba(212, 175, 55, 0.3)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.06)",
+                  fontSize: 14,
+                  border: msg.isUser 
+                    ? "none" 
+                    : "1px solid rgba(212, 175, 55, 0.15)",
+                }}
+              >
+                <div className="markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.text}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
+            {/* Show predefined questions only for Predictions page and only on first message */}
+            {msg.showQuestions && determinedChatType === 'prediction' && index === 0 && (
+              <div style={{ marginTop: 12, marginBottom: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+                {[
+                  "What are my planetary strengths and weaknesses?",
+                  "When is the best time for marriage according to my chart?",
+                  "Can I invest in stock market?"
+                ].map((question, qIndex) => (
+                  <button
+                    key={qIndex}
+                    onClick={() => {
+                      setInput(question);
+                      handleSendMessage(question);
+                    }}
+                    disabled={isLoading || !canSendMessage()}
+                    style={{
+                      textAlign: "left",
+                      padding: "10px 14px",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid rgba(212, 175, 55, 0.3)",
+                      borderRadius: 12,
+                      fontSize: 13,
+                      color: "#374151",
+                      cursor: isLoading || !canSendMessage() ? "not-allowed" : "pointer",
+                      transition: "all 0.2s ease",
+                      opacity: isLoading || !canSendMessage() ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoading && canSendMessage()) {
+                        e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+                        e.currentTarget.style.borderColor = "#d4af37";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                      e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.3)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    💫 {question}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Show AI-generated related questions after each AI response */}
+            {!msg.isUser && msg.suggestedQuestions && msg.suggestedQuestions.length > 0 && index === messages.length - 1 && (
+              <div style={{ marginTop: 12, marginBottom: 12 }}>
+                { !((pageTitle === 'Matching' || determinedChatType === 'matchmaking') && index === 0) && (
+                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontWeight: 600 }}>Related Questions:</div>
+                ) }
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+                  {msg.suggestedQuestions.map((question, qIndex) => (
+                    <button
+                      key={qIndex}
+                      onClick={() => {
+                        setInput(question);
+                        handleSendMessage(question);
+                      }}
+                      disabled={isLoading || !canSendMessage()}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px 14px",
+                        background: "rgba(255, 255, 255, 0.95)",
+                        border: "1px solid rgba(212, 175, 55, 0.3)",
+                        borderRadius: 12,
+                        fontSize: 13,
+                        color: "#374151",
+                        cursor: isLoading || !canSendMessage() ? "not-allowed" : "pointer",
+                        transition: "all 0.2s ease",
+                        opacity: isLoading || !canSendMessage() ? 0.6 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isLoading && canSendMessage()) {
+                          e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
+                          e.currentTarget.style.borderColor = "#d4af37";
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                        e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.3)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      💫 {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />

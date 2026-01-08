@@ -129,6 +129,66 @@ export async function POST(req) {
       ? data.choices[0].message.content 
       : "I don't have a response for that."
 
+    // Generate 3 related follow-up questions based on the conversation
+    let suggestedQuestions = []
+    if (aiResponse) {
+      try {
+        console.log('[Chat API] Generating suggested questions for chatType:', chatType)
+        const lastUserMessage = conversationHistory.filter(msg => msg.role === 'user').pop()
+        const questionPrompt = [
+          {
+            role: 'system',
+            content: 'Generate exactly 3 short follow-up questions based on the conversation. Return ONLY a JSON array of 3 strings. Each question must be under 12 words and directly related to the astrology topic discussed.'
+          },
+          {
+            role: 'user',
+            content: `User asked: "${lastUserMessage?.content?.substring(0, 200)}"
+
+AI answered: "${aiResponse.substring(0, 500)}"
+
+Generate 3 relevant follow-up questions as JSON array.`
+          }
+        ]
+
+        const questionsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: questionPrompt,
+            temperature: 0.7,
+            max_tokens: 150,
+          }),
+        })
+
+        if (questionsResponse.ok) {
+          const questionsData = await questionsResponse.json()
+          let questionsText = questionsData.choices?.[0]?.message?.content?.trim()
+          console.log('[Chat API] Raw questions response:', questionsText)
+          if (questionsText) {
+            try {
+              // Remove markdown code blocks if present
+              questionsText = questionsText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+              const parsed = JSON.parse(questionsText)
+              if (Array.isArray(parsed)) {
+                suggestedQuestions = parsed.slice(0, 3)
+                console.log('[Chat API] Generated questions:', suggestedQuestions)
+              }
+            } catch (e) {
+              console.error('[Chat API] Failed to parse questions:', e, questionsText)
+            }
+          }
+        } else {
+          console.error('[Chat API] Questions API failed:', questionsResponse.status)
+        }
+      } catch (qError) {
+        console.error('[Chat API] Error generating questions:', qError)
+      }
+    }
+
     // Deduct credits only after successful AI response (for logged-in users)
     if (userId && aiResponse) {
       try {
@@ -183,6 +243,7 @@ export async function POST(req) {
 
     return NextResponse.json({ 
       response: aiResponse,
+      suggestedQuestions,
       creditsDeducted: userId ? creditsRequired : 0,
       creditsRequired
     })
