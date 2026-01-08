@@ -1734,49 +1734,7 @@ export default function PredictionsPage() {
           )}
         </div>
 
-        {/* Explanation Card - Below form and history */}
-        <div  style={{ marginTop: "2rem", width: "100%", maxWidth: "90rem", marginLeft: "auto", marginRight: "auto" }}>
-          <div 
-            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
-            style={{
-              background: "#ffffff",
-              borderColor: "#eaeaea",
-              maxWidth: "100%",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "1.5rem",
-            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-            marginBottom: "1.5rem",
-          }}>
-            <h2 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: 0,
-            }}>
-              Understanding Your Predictions
-            </h2>
-          </div>
-          <div style={{ padding: 0 }}>
-            <p style={{
-              fontSize: "0.875rem",
-              color: "#374151",
-              fontStyle: "normal",
-              marginBottom: 0,
-              fontFamily: "'Inter', sans-serif",
-              lineHeight: 1.6,
-            }}>
-              Your birth chart is calculated using <strong>Vedic Astrology</strong> principles based on your exact birth details. The system generates <strong>Planetary Positions</strong> showing where each planet was at your time of birth, <strong>Shadbala Analysis</strong> measuring planetary strength and influence, <strong>Dasha Periods</strong> (Vimsottari system) indicating life phases and timing, and <strong>Expert Astrological Insights</strong> providing personalized predictions based on your complete astrological profile, guided by traditional Vedic wisdom and modern computational precision.
-            </p>
-          </div>
-        </div>
-        </div>
+
 
         {/* Results */}
         {result && (
@@ -2397,6 +2355,52 @@ export default function PredictionsPage() {
         </Modal>
       </div>
 
+
+
+              {/* Explanation Card - Below form and history */}
+        <div  style={{ marginTop: "2rem", width: "100%", maxWidth: "90rem", marginLeft: "auto", marginRight: "auto" }}>
+          <div 
+            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+            style={{
+              background: "#ffffff",
+              borderColor: "#eaeaea",
+              maxWidth: "100%",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+            }}
+          >
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "1.5rem",
+            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+            marginBottom: "1.5rem",
+          }}>
+            <h2 style={{
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#1f2937",
+              margin: 0,
+            }}>
+              Understanding Your Predictions
+            </h2>
+          </div>
+          <div style={{ padding: 0 }}>
+            <p style={{
+              fontSize: "0.875rem",
+              color: "#374151",
+              fontStyle: "normal",
+              marginBottom: 0,
+              fontFamily: "'Inter', sans-serif",
+              lineHeight: 1.6,
+            }}>
+              Your birth chart is calculated using <strong>Vedic Astrology</strong> principles based on your exact birth details. The system generates <strong>Planetary Positions</strong> showing where each planet was at your time of birth, <strong>Shadbala Analysis</strong> measuring planetary strength and influence, <strong>Dasha Periods</strong> (Vimsottari system) indicating life phases and timing, and <strong>Expert Astrological Insights</strong> providing personalized predictions based on your complete astrological profile, guided by traditional Vedic wisdom and modern computational precision.
+            </p>
+          </div>
+        </div>
+        </div>
+
       {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
       <div 
         className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
@@ -2681,6 +2685,15 @@ export default function PredictionsPage() {
         )}
 
       </div>
+
+            <a
+        href="/talk-to-astrologer"
+        className="global-floater global-floater--astrologer"
+        aria-label="Talk to Astrologer"
+      >
+      <PhoneCallIcon className="global-floater-icon"/>
+        <span className="global-floater-text">Talk to Astrologer</span>
+      </a>
     </div>
   );
 }

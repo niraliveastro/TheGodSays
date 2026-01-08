@@ -16,6 +16,7 @@ import {
   X,
   LoaderCircle,
   Star,
+  PhoneCallIcon
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import Chat from "@/components/Chat";
@@ -3146,6 +3147,17 @@ export default function MatchingPage() {
         )}
 
       </div>
+
+
+      <a
+  href="/talk-to-astrologer"
+  className="global-floater global-floater--astrologer"
+  aria-label="Talk to Astrologer"
+>
+<PhoneCallIcon className="global-floater-icon"/>
+  <span className="global-floater-text">Talk to Astrologer</span>
+</a>
+
     </div>
     </>
   );

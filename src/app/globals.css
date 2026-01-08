@@ -461,7 +461,7 @@ a {
 }
 
 a:hover {
-  color: var(--color-purple);
+  color: var(--color-gray-900);
   text-decoration: underline;
 }
 
@@ -2896,4 +2896,68 @@ body {
 .delete-btn:hover {
   color: #dc2626;
   transform: scale(1.1);
+}
+
+/* ========================================== */
+/* GLOBAL FLOATER */
+/* ========================================== */
+
+.global-floater {
+  position: fixed;
+  z-index: 1000;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+/* Position variant */
+.global-floater--astrologer {
+  left: 1rem;
+  top: 90%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, var(--color-gold));
+  color: #1f2937;
+}
+
+/* Hover */
+.global-floater:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+}
+
+/* Icon */
+.global-floater-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile behavior */
+@media (max-width: 768px) {
+  .global-floater--astrologer {
+    top: auto;
+    bottom: 1.25rem;
+    transform: none;
+    padding: 0.75rem;
+  }
+
+  .global-floater-text {
+    display: none;
+  }
 }
