@@ -2109,23 +2109,26 @@ export default function MatchingPage() {
             </form>
           </div>
 
-          {/* Right Column - Matching History Sidebar */}
-          <div className="matching-history-sidebar">
-            <div className="history-header">
-              <h3 className="history-title">
-                <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
-                Matching History
-              </h3>
-              {history.length > 0 && (
-                <button
-                  onClick={clearHistory}
-                  className="btn-ghost"
-                  style={{ padding: "0.5rem", fontSize: "0.875rem" }}
-                >
-                  <RotateCcw className="w-4 h-4" /> Clear
-                </button>
-              )}
-            </div>
+        <div className="matching-history-sidebar">
+          <div className="history-header">
+            <h3 className="history-title">
+              <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
+              Matching History
+            </h3>
+
+            {history.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="btn-ghost"
+                style={{ padding: "0.5rem", fontSize: "0.875rem" }}
+              >
+                <RotateCcw className="w-4 h-4" /> Clear
+              </button>
+            )}
+          </div>
+
+          {/* 🔥 NEW SCROLL CONTAINER */}
+          <div className="history-scroll-area">
             {history.length === 0 ? (
               <div className="empty-state">No matching history yet.</div>
             ) : (
@@ -2133,157 +2136,101 @@ export default function MatchingPage() {
                 {history.map((item) => {
                   const isExpanded = expandedAddresses[`${item.id}-female`] || expandedAddresses[`${item.id}-male`];
                   return (
-                    <div
-                      key={item.id}
-                      className={`history-card ${isExpanded ? 'expanded' : ''}`}
-                      onClick={() => loadHistoryIntoForm(item)}
-                    >
-                    <div className="history-card-top">
-                      <div className="history-card-names">
-                        <span className="pill pill-female">
-                          {item.femaleName || "Female"}
-                        </span>
-                        <span className="dot-separator">↔</span>
-                        <span className="pill pill-male">
-                          {item.maleName || "Male"}
-                        </span>
-                      </div>
-                      <div className="history-actions">
-                        <button
-                          className="use-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            loadHistoryIntoForm(item);
-                          }}
-                        >
-                          Use
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteHistoryItem(item.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="history-card-body">
-                      <div className="person-block">
-                        <div className="person-label">FEMALE</div>
-                        <div className="person-meta">
-                          <Calendar className="meta-icon" />
-                          <span>
-                            {item.femaleDob || "-"} · {item.femaleTob || "-"}
-                          </span>
+                    <div key={item.id} className={`history-card ${isExpanded ? 'expanded' : ''}`} onClick={() => loadHistoryIntoForm(item)}>
+                      <div className="history-card-top">
+                        <div className="history-card-names">
+                          <span className="pill pill-female"> {item.femaleName || "Female"} </span>
+                          <span className="dot-separator">↔</span>
+                          <span className="pill pill-male"> {item.maleName || "Male"} </span>
                         </div>
-                        <div className="person-meta">
-                          <MapPin className="meta-icon" />
-                          <div style={{ flex: 1 }}>
-                            <span className={`address-text ${expandedAddresses[`${item.id}-female`] ? 'expanded' : ''}`}>
-                              {item.femalePlace || "-"}
-                            </span>
-                            {item.femalePlace && item.femalePlace.length > 50 && (
-                              <button
-                                className="show-more-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedAddresses(prev => ({
-                                    ...prev,
-                                    [`${item.id}-female`]: !prev[`${item.id}-female`]
-                                  }));
-                                }}
-                              >
-                                {expandedAddresses[`${item.id}-female`] ? 'Show less' : 'Show more'}
-                              </button>
-                            )}
+                        <div className="history-actions">
+                          <button className="use-btn" onClick={(e) => { e.stopPropagation(); loadHistoryIntoForm(item); }}>
+                            Use
+                          </button>
+                          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="history-card-body">
+                        <div className="person-block">
+                          <div className="person-label">FEMALE</div>
+                          <div className="person-meta">
+                            <Calendar className="meta-icon" />
+                            <span> {item.femaleDob || "-"} · {item.femaleTob || "-"} </span>
+                          </div>
+                          <div className="person-meta">
+                            <MapPin className="meta-icon" />
+                            <div style={{ flex: 1 }}>
+                              <span className={`address-text ${expandedAddresses[`${item.id}-female`] ? 'expanded' : ''}`}>
+                                {item.femalePlace || "-"}
+                              </span>
+                              {item.femalePlace && item.femalePlace.length > 50 && (
+                                <button
+                                  className="show-more-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedAddresses(prev => ({
+                                      ...prev,
+                                      [`${item.id}-female`]: !prev[`${item.id}-female`]
+                                    }));
+                                  }}
+                                >
+                                  {expandedAddresses[`${item.id}-female`] ? 'Show less' : 'Show more'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="person-divider" />
-                      <div className="person-block">
-                        <div className="person-label">MALE</div>
-                        <div className="person-meta">
-                          <Calendar className="meta-icon" />
-                          <span>
-                            {item.maleDob || "-"} · {item.maleTob || "-"}
-                          </span>
-                        </div>
-                        <div className="person-meta">
-                          <MapPin className="meta-icon" />
-                          <div style={{ flex: 1 }}>
-                            <span className={`address-text ${expandedAddresses[`${item.id}-male`] ? 'expanded' : ''}`}>
-                              {item.malePlace || "-"}
-                            </span>
-                            {item.malePlace && item.malePlace.length > 50 && (
-                              <button
-                                className="show-more-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedAddresses(prev => ({
-                                    ...prev,
-                                    [`${item.id}-male`]: !prev[`${item.id}-male`]
-                                  }));
-                                }}
+
+                        <div className="person-divider" />
+
+                        <div className="person-block">
+                          <div className="person-label">MALE</div>
+                          <div className="person-meta">
+                            <Calendar className="meta-icon" />
+                            <span> {item.maleDob || "-"} · {item.maleTob || "-"} </span>
+                          </div>
+                          <div className="person-meta">
+                            <MapPin className="meta-icon" />
+                            <div style={{ flex: 1 }}>
+                              <span
+                                className={`address-text ${expandedAddresses[`${item.id}-male`] ? 'expanded' : ''}`}
                               >
-                                {expandedAddresses[`${item.id}-male`] ? 'Show less' : 'Show more'}
-                              </button>
-                            )}
+                                {item.malePlace || "-"}
+                              </span>
+                              {item.malePlace && item.malePlace.length > 50 && (
+                                <button
+                                  className="show-more-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedAddresses(prev => ({
+                                      ...prev,
+                                      [`${item.id}-male`]: !prev[`${item.id}-male`]
+                                    }));
+                                  }}
+                                >
+                                  {expandedAddresses[`${item.id}-male`] ? 'Show less' : 'Show more'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                    );
-                })}
-              </div>
+                  );
+                }
+
+              )}
+            </div>
             )}
           </div>
         </div>
+      
+        </div>
 
-        {/* Explanation Card - Below form and history */}
-        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem" }}>
-          <div 
-            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
-            style={{
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-              borderColor: "rgba(212, 175, 55, 0.3)",
-              maxWidth: "100%",
-            }}
-          >
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "1.5rem",
-            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-            marginBottom: "1.5rem",
-          }}>
-            <h2 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: 0,
-            }}>
-              Understanding Compatibility Matching
-            </h2>
-          </div>
-          <div style={{ padding: 0 }}>
-            <p style={{
-              fontSize: "0.875rem",
-              color: "#374151",
-              fontStyle: "normal",
-              marginBottom: 0,
-              fontFamily: "'Inter', sans-serif",
-              lineHeight: 1.6,
-            }}>
-              The <strong>Ashtakoot System</strong> (8-Point Matching) evaluates compatibility across eight key dimensions: <strong>Varna</strong> (spiritual compatibility), <strong>Vashya</strong> (mutual attraction), <strong>Tara</strong> (birth star compatibility), <strong>Yoni</strong> (nature compatibility), <strong>Graha Maitri</strong> (planetary friendship), <strong>Gana</strong> (temperament), <strong>Bhakoot</strong> (emotional compatibility), and <strong>Nadi</strong> (health compatibility). Each dimension contributes points to the total compatibility score, with higher scores indicating better alignment between partners.
-            </p>
-          </div>
-        </div>
-        </div>
+
+
 
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
@@ -2863,7 +2810,51 @@ export default function MatchingPage() {
             </div>
           </div>
         )}
-      </div>
+
+
+                {/* Explanation Card - Below form and history */}
+        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem" }}>
+          <div 
+            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+            style={{
+              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+              borderColor: "rgba(212, 175, 55, 0.3)",
+              maxWidth: "100%",
+            }}
+          >
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "1.5rem",
+            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+            marginBottom: "1.5rem",
+          }}>
+            <h2 style={{
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#1f2937",
+              margin: 0,
+            }}>
+              Understanding Compatibility Matching
+            </h2>
+          </div>
+          <div style={{ padding: 0 }}>
+            <p style={{
+              fontSize: "0.875rem",
+              color: "#374151",
+              fontStyle: "normal",
+              marginBottom: 0,
+              fontFamily: "'Inter', sans-serif",
+              lineHeight: 1.6,
+            }}>
+              The <strong>Ashtakoot System</strong> (8-Point Matching) evaluates compatibility across eight key dimensions: <strong>Varna</strong> (spiritual compatibility), <strong>Vashya</strong> (mutual attraction), <strong>Tara</strong> (birth star compatibility), <strong>Yoni</strong> (nature compatibility), <strong>Graha Maitri</strong> (planetary friendship), <strong>Gana</strong> (temperament), <strong>Bhakoot</strong> (emotional compatibility), and <strong>Nadi</strong> (health compatibility). Each dimension contributes points to the total compatibility score, with higher scores indicating better alignment between partners.
+            </p>
+          </div>
+        </div>
+        </div>
+     
 
 
 
@@ -3155,6 +3146,7 @@ export default function MatchingPage() {
         )}
 
       </div>
+    </div>
     </>
   );
 }

@@ -227,22 +227,27 @@ input:focus {
   padding: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(212, 175, 55, 0.2);
-  height: fit-content;
+
+  display: flex;
+  flex-direction: column;
+
+  max-height:max-content;
   position: sticky;
   top: 2rem;
 }
 
 @media (max-width: 768px) {
   .matching-history-sidebar {
-    width: 100%;
+    position: static;
+    max-height: none;
     max-width: 100%;
-    position: static;      /* stop sticky */
-    top: auto;
-    margin-top: 1.5rem;    /* breathing room below form */
-    border-radius: 1.25rem;
-    padding: 1.25rem;
+  }
+
+  .history-scroll-area {
+    overflow: visible; /* page scroll instead */
   }
 }
+
 
 
 /* ========================================== */
@@ -468,6 +473,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* HISTORY CARDS */
 /* ========================================== */
 
+.history-scroll-area {
+  flex: 1;                    /* takes remaining height */
+  overflow-y: auto;           /* vertical scroll */
+  overflow-x: hidden;
+  padding-right: 4px;         /* avoids scrollbar overlap */
+}
+
 .history-header {
   display: flex;
   justify-content: space-between;
@@ -488,9 +500,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 500px;
   width: 100%;
   box-sizing: border-box;
+  max-height: 470px;
 }
 
 /* Card MUST obey sidebar width */
@@ -506,7 +518,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   padding: 12px;
 
   cursor: pointer;
-  overflow: hidden;
   max-height: 240px;
 
   transition:
