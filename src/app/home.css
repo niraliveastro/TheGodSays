@@ -3955,321 +3955,118 @@ html {
   margin-top: 0.35rem;
 }
 
-/* Top Astrologers — layout & visuals */
+/* ================================
+   TOP ASTROLOGERS — SINGLE ROW SCROLL
+   ================================ */
+
+/* ---------- VARIABLES ---------- */
+:root {
+  --astro-card-height: 320px;
+  --astro-grid-gap: 16px;
+}
+
+/* ---------- SECTION RESET ---------- */
 .astrologers-section {
-  padding: 1.25rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
-/* Scrollable astrologer cards container - Vertical scrolling */
+/* ---------- HEADER ---------- */
+.astrologers-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- SCROLL CONTAINER ---------- */
 .astrologers-scroll-container {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(212, 175, 55, 0.5) rgba(212, 175, 55, 0.1);
-  position: relative;
+  margin-top: 1.5rem;
+  padding-right: 0.5rem;
+
+  /* EXACTLY ONE ROW HEIGHT */
+  max-height: 320px !important;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+
+  scroll-behavior: smooth;
 }
 
+/* ---------- SCROLLBAR ---------- */
 .astrologers-scroll-container::-webkit-scrollbar {
   width: 10px;
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-track {
   background: rgba(212, 175, 55, 0.1);
-  border-radius: 5px;
+  border-radius: 6px;
   margin: 0.5rem 0;
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.5);
-  border-radius: 5px;
-  border: 2px solid rgba(212, 175, 55, 0.1);
+  background: rgba(212, 175, 55, 0.55);
+  border-radius: 6px;
+  border: 2px solid rgba(212, 175, 55, 0.15);
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.7);
+  background: rgba(212, 175, 55, 0.75);
 }
 
-/* Grid for scrollable astrologer cards - 3 columns, auto rows (6 cards visible initially) */
+/* ---------- GRID ---------- */
 .astrologers-grid-scrollable {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: auto;
-  gap: 1rem;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--astro-grid-gap);
 }
 
-/* Responsive: On mobile, show 1 card per row - 2 cards visible */
-@media (max-width: 768px) {
-  .astrologers-scroll-container {
-    height: 820px !important;
-  }
-  
-  .astrologers-grid-scrollable {
-    grid-template-columns: 1fr !important;
-  }
+/* ---------- EACH ROW SNAP POINT ---------- */
+.astrologers-grid-scrollable > * {
+  scroll-snap-align: start;
 }
 
-/* Tablet: Show 2 cards per row - 6 cards visible (3 rows) */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .astrologers-scroll-container {
-    height: 1250px !important;
-  }
-  
-  .astrologers-grid-scrollable {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-/* Desktop: Show 3 cards per row - 6 cards visible (2 rows) */
-@media (min-width: 1025px) {
-  .astrologers-scroll-container {
-    height: 760px !important;
-  }
-}
-
-/* Header row */
-.astrologers-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.astrologers-header-text {
-  min-width: 0;
-  /* for text truncation safety */
-}
-
-.astrologers-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-gray-900);
-  font-family: 'Georgia', 'Times New Roman', serif;
-}
-
-.astrologers-sub {
-  margin: 0.25rem 0 0 0;
-  color: var(--color-gray-600);
-  font-size: 0.95rem;
-}
-
-/* Header actions */
-.astrologers-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.astrologers-actions .btn {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.9rem;
-}
-
-/* Grid */
-.astrologer-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-top: 0.75rem;
-}
-
-/* Card (overrides for astrologer card) */
+/* ---------- ASTROLOGER CARD ---------- */
 .astrologer-card {
+  height: 320px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
   padding: 1.5rem;
-  min-height: auto;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(212, 175, 55, 0.2) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .astrologer-card:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.2) !important;
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(212, 175, 55, 0.18);
 }
 
-/* Top row inside card */
-.astrologer-card-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.astrologer-meta {
-  min-width: 0;
-}
-
-.astrologer-name {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-gray-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.astrologer-tags {
-  margin-top: 0.5rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.astrologer-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  color: var(--color-gray-700);
-  font-weight: 600;
-}
-
-/* Badge area */
-.astrologer-badge {
-  margin-left: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 64px;
-}
-
-/* Featured badge */
-.featured-badge {
-  background: rgba(212, 175, 55, 0.1);
-  padding: 6px 10px;
-  border-radius: 9999px;
-  color: #b8972e;
-  font-weight: 700;
-  font-size: 0.8rem;
-  border: 1px solid rgba(212, 175, 55, 0.12);
-}
-
-/* Live badge */
-.liveBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 6px 10px;
-  border-radius: 9999px;
-  background: rgba(212, 175, 55, 0.12);
-  color: #b8972e;
-  font-weight: 700;
-  font-size: 0.8rem;
-  border: 1px solid rgba(212, 175, 55, 0.15);
-}
-
-/* pulsing dot */
-.pulseDot {
-  width: 9px;
-  height: 9px;
-  background: #d4af37;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
-  animation: pulse 1.8s ease-in-out infinite;
-}
-
-/* Body row (rating + ctas) */
-.astrologer-card-body {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.9rem;
-  gap: 0.75rem;
-}
-
-.astrologer-rating {
-  color: var(--color-gray-700);
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* CTA buttons group */
-.astrologer-ctas {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-/* Ensure consistent small button sizing */
-.astrologer-ctas .btn {
-  padding: 0.45rem 0.8rem;
-  font-size: 0.9rem;
-  background: transparent !important;
-  border: 1.5px solid #b8972e !important;
-  color: #b8972e !important;
-  font-weight: 600 !important;
-  transition: all 0.3s ease !important;
-}
-
-.astrologer-ctas .btn:hover {
-  background: rgba(184, 151, 46, 0.08) !important;
-  border-color: #d4af37 !important;
-  color: #d4af37 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
-}
-
-/* Target astrologer card buttons specifically */
-.astrologer-card .btn.btn-primary,
-.astrologer-card button.btn-primary {
-  background: transparent !important;
-  border: 1.5px solid #b8972e !important;
-  color: #b8972e !important;
-  box-shadow: none !important;
-}
-
-.astrologer-card .btn.btn-primary:hover,
-.astrologer-card button.btn-primary:hover {
-  background: rgba(184, 151, 46, 0.08) !important;
-  border-color: #d4af37 !important;
-  color: #d4af37 !important;
-  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
-}
-
-/* Ultra-specific selector for grid layout astrologer cards - v2 */
-.grid .astrologer-card button.btn.btn-primary,
-div[role="list"] .astrologer-card button.btn.btn-primary {
-  background: transparent !important;
-  border: 1.5px solid #b8972e !important;
-  color: #b8972e !important;
-  box-shadow: none !important;
-}
-
-.grid .astrologer-card button.btn.btn-primary:hover,
-div[role="list"] .astrologer-card button.btn.btn-primary:hover {
-  background: rgba(184, 151, 46, 0.08) !important;
-  border-color: #d4af37 !important;
-  color: #d4af37 !important;
-  box-shadow: 0 4px 12px rgba(184, 151, 46, 0.15) !important;
-}
-
-/* Responsive tweaks */
-@media (max-width: 640px) {
-  .astrologers-header {
-    align-items: flex-start;
-  }
-
-  .astrologers-actions {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .astrologer-card {
-    min-height: 110px;
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 768px) {
+  .astrologers-grid-scrollable {
+    grid-template-columns: 1fr;
   }
 }
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .astrologers-grid-scrollable {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
 
 /* Loyalty Detector styles */
 .loyalty-detector {

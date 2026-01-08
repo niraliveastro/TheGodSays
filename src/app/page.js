@@ -1942,7 +1942,7 @@ export default function Home() {
 
           {/* ====== Top Astrologers Online / Featured (NEW) ====== */}
 
-          <section className="card mt-12 astrologers-section">
+          <section className="mt-12 astrologers-section">
             <div className="astrologers-header p-6 mx-auto flex flex-col items-center text-center gap-6">
               <div className="flex items-center justify-center gap-3 flex-wrap">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-100 to-yellow-50 flex items-center justify-center ring-1 ring-amber-100">
