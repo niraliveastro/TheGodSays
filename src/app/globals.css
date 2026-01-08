@@ -2186,8 +2186,8 @@ body {
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.18;
+  filter: blur(100px);
+  opacity: 0.08; /* Reduced from 0.18 for better contrast (40-60% reduction) */
   animation: float 22s ease-in-out infinite;
 }
 .orb1 {

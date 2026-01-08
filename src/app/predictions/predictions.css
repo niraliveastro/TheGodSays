@@ -1,5 +1,67 @@
 /* predictions.module.css */
 
+/* ============================================= */
+/* PREMIUM UI IMPROVEMENTS - CONVERSION FOCUSED  */
+/* ============================================= */
+
+/* Increased contrast: Pure white cards */
+.card {
+  background: #ffffff !important;
+  border-color: #eaeaea !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Reduced background glow - 40-60% reduction */
+.orb {
+  opacity: 0.08 !important; /* Reduced from 0.18 */
+  filter: blur(100px) !important; /* Reduced blur */
+}
+
+/* Improved typography hierarchy */
+.form-title {
+  font-size: 1.5rem !important; /* 24px */
+  font-weight: 600 !important;
+  color: #111827 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.form-subtitle {
+  font-size: 0.875rem !important; /* 14px */
+  color: #6b7280 !important;
+  font-weight: 400 !important;
+}
+
+/* Stronger form labels - darker, bigger, semibold */
+.form-field-label {
+  font-size: 0.9375rem !important; /* 15px */
+  font-weight: 600 !important;
+  color: #1f2937 !important; /* Near-black for premium feel */
+  margin-bottom: 0.5rem !important;
+  letter-spacing: -0.01em;
+}
+
+/* Better form field styling */
+.form-field-input {
+  height: 48px !important; /* Increased from 44px */
+  font-size: 0.9375rem !important; /* 15px */
+  border-color: #e5e7eb !important;
+  transition: all 0.2s ease !important;
+}
+
+.form-field-input:focus {
+  outline: 2px solid rgba(212, 175, 55, 0.4) !important;
+  outline-offset: 2px !important;
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* Helper text styling */
+.form-field-helper {
+  font-size: 0.8125rem !important; /* 13px */
+  color: #6b7280 !important;
+  margin-top: 0.375rem !important;
+}
+
 /* Place input wrapper */
 .place-input-wrapper {
   display: flex;
@@ -843,24 +905,251 @@
   gap: 0.5rem;
 }
 
-/* Use button */
+/* Use button - renamed to Load for clarity */
 .use-btn {
-  background: #fff8e6;
-  color: #8b6b15;
-  border: 1px solid #f5d276;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  background: linear-gradient(135deg, #d4af37, #b8972e) !important;
+  color: #1f2937 !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(212, 175, 55, 0.2) !important;
 }
 
 .use-btn:hover {
-  background: #fff3d4;
+  background: linear-gradient(135deg, #b8972e, #a08526) !important;
+  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3) !important;
+  transform: translateY(-1px);
 }
 
-/* Delete button stays same */
+/* Delete button with confirmation safety */
+.delete-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #dc2626 !important;
+  cursor: pointer;
+  padding: 0.5rem !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  background: rgba(220, 38, 38, 0.1) !important;
+  color: #b91c1c !important;
+  transform: scale(1.1);
+}
+
+/* Segmented control for gender */
+.gender-segmented {
+  display: flex;
+  gap: 0.25rem;
+  background: #f3f4f6;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  height: 48px; /* Match form input height */
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.gender-segment {
+  flex: 1;
+  padding: 0.5rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  height: calc(100% - 0.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gender-segment:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #374151;
+}
+
+.gender-segment.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.1));
+  color: #92400e;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Gender field wrapper alignment */
+.place-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .place-row > div:first-child {
+    width: auto;
+    min-width: 192px; /* md:w-48 = 12rem = 192px */
+    max-width: 192px;
+  }
+}
+
+/* Search input for history */
+.history-search {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.history-search:focus {
+  outline: 2px solid rgba(212, 175, 55, 0.4);
+  outline-offset: 2px;
+  border-color: #d4af37;
+}
+
+/* Trust line styling */
+.trust-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.trust-line-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.trust-line-separator {
+  color: #d1d5db;
+}
+
+/* CTA helper text */
+.cta-helper {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Step badge */
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 1rem;
+}
+
+/* Improved history card rows */
+.history-card-row {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid #eaeaea;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.history-card-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* Kebab menu for actions */
+.kebab-menu {
+  position: relative;
+}
+
+.kebab-button {
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.kebab-button:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.kebab-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.kebab-item {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.kebab-item:hover {
+  background: #f3f4f6;
+}
+
+.kebab-item.danger {
+  color: #dc2626;
+}
+
+.kebab-item.danger:hover {
+  background: #fef2f2;
+}
 
 /* Layout for form + history side by side */
 .birth-history-layout {
@@ -961,6 +1250,18 @@
   .place-row {
     flex-direction: row;
     align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  /* Ensure gender field aligns with other inputs */
+  .place-row > div:first-child {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Align gender segmented control with input fields */
+  .place-row .gender-segmented {
+    margin-top: 0;
   }
 }
 
@@ -990,6 +1291,11 @@
   .place-row .btn-primary,
   .place-row .btn-ghost {
     margin-top: 2rem; /* matches label height + margin-bottom */
+  }
+  
+  /* Ensure gender field wrapper doesn't have extra margin */
+  .place-row > div:first-child {
+    margin-top: 0;
   }
 }
 

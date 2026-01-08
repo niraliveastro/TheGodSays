@@ -81,6 +81,8 @@ export default function PredictionsPage() {
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   
   // Form data hash for chat conversation management
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
@@ -160,7 +162,12 @@ export default function PredictionsPage() {
     current = current.filter(
       (it) => `${it.fullName.toUpperCase()}-${it.dob}-${it.tob}` !== key
     );
-    current.unshift(entry);
+    // Add timestamp for "Last generated" display
+    const entryWithTimestamp = {
+      ...entry,
+      lastGenerated: new Date().toISOString(),
+    };
+    current.unshift(entryWithTimestamp);
     if (current.length > 10) current = current.slice(0, 10);
     localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(current));
     setHistory(current);
@@ -169,10 +176,27 @@ export default function PredictionsPage() {
   };
 
   const deleteHistoryItem = (id) => {
+    if (showDeleteConfirm !== id) {
+      setShowDeleteConfirm(id);
+      return;
+    }
     const updated = history.filter((h) => h.id !== id);
     localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(updated));
     setHistory(updated);
+    setShowDeleteConfirm(null);
   };
+
+  // Filter history based on search
+  const filteredHistory = useMemo(() => {
+    if (!historySearch.trim()) return history;
+    const searchLower = historySearch.toLowerCase();
+    return history.filter((item) => {
+      const nameMatch = (item.fullName || "").toLowerCase().includes(searchLower);
+      const placeMatch = (item.place || "").toLowerCase().includes(searchLower);
+      const dobMatch = (item.dob || "").includes(searchLower);
+      return nameMatch || placeMatch || dobMatch;
+    });
+  }, [history, historySearch]);
 
   const clearHistory = () => {
     localStorage.removeItem(PREDICTION_HISTORY_KEY);
@@ -442,6 +466,8 @@ export default function PredictionsPage() {
     }
   }
   function validate() {
+    if (!fullName || !fullName.trim()) return { error: "Please enter your Name." };
+    if (!gender) return { error: "Please select your Gender." };
     if (!dob) return { error: "Please enter your Date of Birth." };
     if (!tob) return { error: "Please enter your Time of Birth." };
     if (!place.trim()) return { error: "Please enter your Place of Birth." };
@@ -1289,8 +1315,27 @@ export default function PredictionsPage() {
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
-        <h1 className="title">{t.predictions.title}</h1>
-        <p className="subtitle">{t.predictions.subtitle}</p>
+        <h1 className="title" style={{ fontSize: "2.5rem", fontWeight: 700 }}>{t.predictions.title}</h1>
+        <p className="subtitle" style={{ fontSize: "1rem", color: "#6b7280", marginTop: "0.5rem" }}>
+          {t.predictions.subtitle}
+        </p>
+        {/* Trust line */}
+        <div className="trust-line">
+          <span className="trust-line-item">
+            <span>🔒</span>
+            <span>Private</span>
+          </span>
+          <span className="trust-line-separator">•</span>
+          <span className="trust-line-item">
+            <span>📍</span>
+            <span>Accurate location</span>
+          </span>
+          <span className="trust-line-separator">•</span>
+          <span className="trust-line-item">
+            <span>💾</span>
+            <span>Saved profiles</span>
+          </span>
+        </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
@@ -1315,8 +1360,9 @@ export default function PredictionsPage() {
             onSubmit={onSubmit}
             className="card backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border max-w-4xl mx-auto"
             style={{
-              background: "rgba(255, 255, 255, 0.9)",
-              borderColor: "rgba(212, 175, 55, 0.2)",
+              background: "#ffffff",
+              borderColor: "#eaeaea",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
             }}
           >
             <div className="form-header" style={{ alignItems: "center" }}>
@@ -1324,6 +1370,7 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
+                <div className="step-badge">Step 1 of 2: Birth Details</div>
                 <h3 className="form-title">{t.predictions.enterDetails}</h3>
                 <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
@@ -1340,12 +1387,14 @@ export default function PredictionsPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g., Priya Sharma"
+                  placeholder="Nehr (as per records)"
                   className="form-field-input form-input-field"
                   required
+                  pattern="[A-Za-z\s]+"
+                  title="Only letters and spaces allowed"
                 />
                 <p className="form-field-helper">
-                  Your full name as per records
+                  Only letters and spaces
                 </p>
               </div>
 
@@ -1359,7 +1408,7 @@ export default function PredictionsPage() {
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   className="form-field-input form-input-field"
-                  placeholder="YYYY-MM-DD"
+                  placeholder="DD / MM / YYYY"
                   required
                 />
                 <p className="form-field-helper">Format: DD-MM-YYYY</p>
@@ -1385,27 +1434,44 @@ export default function PredictionsPage() {
               {/* Gender + Place + Get Predictions in one row */}
               <div className="md:col-span-3">
                 <div className="place-row">
-                  {/* Gender Field */}
+                  {/* Gender Field - Segmented Control */}
                   <div className="w-full md:w-48">
                     <label className="form-field-label flex items-center gap-2 mb-2">
                       Gender
                     </label>
 
-                    <div className="relative">
-                      <select
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="form-field-input form-input-field pr-10"
-                        required
+                    <div className="gender-segmented" role="radiogroup" aria-label="Gender selection">
+                      <button
+                        type="button"
+                        onClick={() => setGender("Male")}
+                        className={`gender-segment ${gender === "Male" ? "active" : ""}`}
+                        aria-pressed={gender === "Male"}
                       >
-                        <option value="" disabled>
-                          Select gender
-                        </option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                        Male
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender("Female")}
+                        className={`gender-segment ${gender === "Female" ? "active" : ""}`}
+                        aria-pressed={gender === "Female"}
+                      >
+                        Female
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender("Other")}
+                        className={`gender-segment ${gender === "Other" ? "active" : ""}`}
+                        aria-pressed={gender === "Other"}
+                      >
+                        Other
+                      </button>
                     </div>
+                    <input
+                      type="hidden"
+                      name="gender"
+                      value={gender}
+                      required
+                    />
 
                     <p className="form-field-helper">
                       Personalize chart reading
@@ -1469,7 +1535,7 @@ export default function PredictionsPage() {
 
                     {/* helper, absolutely positioned -> doesn't affect column height */}
                     <p className="form-field-helper place-helper">
-                      e.g., Mumbai, India
+                      Choose the nearest city for accurate calculation
                     </p>
                   </div>
 
@@ -1479,6 +1545,11 @@ export default function PredictionsPage() {
                       type="submit"
                       disabled={submitting}
                       className="btn btn-primary btn-gold w-full h-[52px]"
+                      style={{
+                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                        border: "none",
+                        boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                      }}
                     >
                       {submitting ? (
                         <>
@@ -1489,6 +1560,9 @@ export default function PredictionsPage() {
                         <>Get Predictions</>
                       )}
                     </button>
+                    <p className="cta-helper">
+                      No signup required • Takes ~10 seconds
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1505,7 +1579,7 @@ export default function PredictionsPage() {
               <div className="results-header">
                 <History style={{ color: "#ca8a04" }} />
                 <h3 className="results-title flex items-center gap-2">
-                  {t.predictions.predictionHistory}
+                  Saved Profiles
                 </h3>
 
                 {history.length > 0 && (
@@ -1518,11 +1592,24 @@ export default function PredictionsPage() {
                 )}
               </div>
 
+              {/* Search input */}
+              {history.length > 0 && (
+                <input
+                  type="text"
+                  placeholder="Search by name, place, or date..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className="history-search"
+                />
+              )}
+
               {history.length === 0 ? (
-                <div className="empty-state">No prediction history yet.</div>
+                <div className="empty-state">No saved profiles yet.</div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="empty-state">No profiles match your search.</div>
               ) : (
                 <div className="history-list">
-                  {history.map((item) => (
+                  {filteredHistory.map((item) => (
                     <div
                       key={item.id}
                       className="history-card-row"
@@ -1531,20 +1618,27 @@ export default function PredictionsPage() {
                       <div className="history-row-text">
                         <div className="h-name">
                           {item.fullName}{" "}
-                          {item.gender ? `(${item.gender})` : ""}
+                          {item.gender ? `(${item.gender.toLowerCase()})` : ""}
                         </div>
-                        <div className="h-date">{item.dob}</div>
-                        <div className="h-time">{item.tob}</div>
+                        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+                          <div className="h-date" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
+                            <strong style={{ color: "#374151" }}>DOB:</strong> {item.dob}
+                          </div>
+                          <div className="h-time" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
+                            <strong style={{ color: "#374151" }}>Time:</strong> {item.tob}
+                          </div>
+                        </div>
 
                         {/* Address */}
-                        <div className="h-place">
+                        <div className="h-place" style={{ marginTop: "0.25rem" }}>
                           <div
                             ref={(el) => (addressRefs.current[item.id] = el)}
                             className={`address ${isAddressExpanded[item.id] ? "show-full" : ""
                               }`}
                             title={item.place}
+                            style={{ fontSize: "0.8125rem", color: "#6b7280" }}
                           >
-                            {item.place}
+                            <strong style={{ color: "#374151" }}>Place:</strong> {item.place}
                           </div>
 
                           {isOverflowing[item.id] && (
@@ -1559,6 +1653,22 @@ export default function PredictionsPage() {
                             </button>
                           )}
                         </div>
+
+                        {/* Last generated timestamp */}
+                        {item.lastGenerated && (
+                          <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.375rem" }}>
+                            Last generated: {(() => {
+                              const date = new Date(item.lastGenerated);
+                              const now = new Date();
+                              const diffMs = now - date;
+                              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                              if (diffDays === 0) return "Today";
+                              if (diffDays === 1) return "1 day ago";
+                              if (diffDays < 7) return `${diffDays} days ago`;
+                              return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                            })()}
+                          </div>
+                        )}
                       </div>
 
                       <div className="history-actions">
@@ -1569,18 +1679,51 @@ export default function PredictionsPage() {
                           }}
                           className="use-btn"
                         >
-                          Use
+                          Load
                         </button>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteHistoryItem(item.id);
-                          }}
-                          className="delete-btn"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {showDeleteConfirm === item.id ? (
+                          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>Delete?</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteHistoryItem(item.id);
+                              }}
+                              className="delete-btn"
+                              style={{ background: "#dc2626", color: "#fff", padding: "0.25rem 0.5rem" }}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowDeleteConfirm(null);
+                              }}
+                              style={{ 
+                                background: "#f3f4f6", 
+                                color: "#374151", 
+                                padding: "0.25rem 0.5rem",
+                                border: "none",
+                                borderRadius: "0.25rem",
+                                fontSize: "0.75rem",
+                                cursor: "pointer"
+                              }}
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistoryItem(item.id);
+                            }}
+                            className="delete-btn"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1596,9 +1739,10 @@ export default function PredictionsPage() {
           <div 
             className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
             style={{
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-              borderColor: "rgba(212, 175, 55, 0.3)",
+              background: "#ffffff",
+              borderColor: "#eaeaea",
               maxWidth: "100%",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
             }}
           >
           <div style={{

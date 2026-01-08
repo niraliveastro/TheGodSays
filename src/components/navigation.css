@@ -16,10 +16,150 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
+/* Add padding to body to prevent content from hiding behind fixed nav */
+body {
+  padding-top: 128px !important; /* Top nav (64px) + Bottom nav (64px approx) */
+}
+
+@media (max-width: 767px) {
+  body {
+    padding-top: 64px !important; /* Only top nav on mobile */
+  }
+}
+
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
+}
+
+/* Full width wrapper for bottom nav bar - exact match to Talk to Astrologer button */
+.nav-bottom-row-wrapper {
+  position: fixed !important; /* Fixed position like top nav */
+  top: 64px !important; /* Below the top nav bar */
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Exact button gradient */
+  z-index: 998 !important; /* Just below top nav */
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2) !important;
+}
+
+/* Mobile: Hide bottom nav bar completely */
+@media (max-width: 767px) {
+  .nav-bottom-row-wrapper {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Mobile top nav: Logo left, text center, menu right */
+  .nav-content {
+    justify-content: space-between !important;
+    position: relative !important;
+    align-items: center !important;
+  }
+  
+  /* Logo on left with text visible */
+  .nav-logo-left {
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    z-index: 1 !important;
+    margin-right: auto !important;
+  }
+  
+  /* Show logo text next to icon on mobile */
+  .nav-logo-left .nav-logo-text {
+    display: inline-block !important;
+    font-size: 1.125rem !important;
+  }
+  
+  /* Hide desktop nav items on mobile */
+  .nav-container .nav-content > .nav-desktop {
+    display: none !important;
+  }
+  
+  /* All bottom nav elements hidden on mobile */
+  .nav-bottom-row-wrapper .nav-content,
+  .nav-bottom-row-wrapper .nav-desktop,
+  .nav-bottom-row,
+  .nav-bottom-row .nav-link,
+  .nav-bottom-row .nav-button,
+  .nav-bottom-row .nav-dropdown-button {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
+
+/* Full width for bottom nav bar - golden background */
+.nav-bottom-row-wrapper .nav-bottom-row {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  background: transparent !important; /* Parent wrapper has the gradient */
+}
+
+/* Match the nav-container width and padding exactly to align with top nav - HARD CSS */
+.nav-bottom-row-wrapper .nav-content {
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  padding: 0 2rem !important; /* Match top nav-container padding exactly */
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Align bottom nav items to start exactly below "NiraLive" text - HARD CSS */
+.nav-bottom-row-wrapper .nav-desktop {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding-left: 2rem !important; /* Match top nav-container padding (2rem = 32px) */
+  margin-left: 56px !important; /* Match logo icon width (44px) + gap (0.75rem = 12px) to align with text start */
+  box-sizing: border-box !important;
+}
+
+/* Mobile responsive: maintain alignment at all zoom levels */
+@media (max-width: 767px) {
+  .nav-container {
+    padding: 0 1rem; /* Match mobile padding */
+  }
+  
+  .nav-bottom-row-wrapper .nav-content {
+    padding: 0 1rem; /* Match top nav-container mobile padding exactly */
+  }
+  
+  .nav-bottom-row-wrapper .nav-desktop {
+    margin-left: 56px; /* Keep alignment even on mobile if space allows */
+  }
+  
+  /* If screen is too narrow, reduce offset proportionally */
+  @media (max-width: 480px) {
+    .nav-bottom-row-wrapper .nav-desktop {
+      margin-left: 0; /* No offset on very small screens */
+    }
+  }
+  
+  .nav-bottom-row {
+    padding: 0.375rem 0; /* Consistent height on mobile */
+  }
+  
+  .nav-bottom-row .nav-link,
+  .nav-bottom-row .nav-button,
+  .nav-bottom-row .nav-dropdown-button {
+    font-size: 0.875rem; /* Slightly smaller text on mobile */
+    padding: 0.375rem 0;
+  }
 }
 
 .nav-content {
@@ -28,6 +168,14 @@
   justify-content: space-between;
   height: 64px;
   padding-block: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Hide center text on desktop */
+.nav-logo-text-center {
+  display: none;
 }
 
 /* Logo Styles */
@@ -38,6 +186,12 @@
   text-decoration: none !important;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Calculate offset: icon width (44px) + gap (0.75rem = 12px) = 56px */
+.nav-logo-text-offset {
+  margin-left: 56px; /* Icon width + gap to align with text start */
 }
 
 .nav-logo-wrapper:hover {
@@ -192,6 +346,110 @@
   display: none;
 }
 
+/* Language Switcher in Bottom Nav Bar */
+.nav-language-bottom {
+  margin-left: auto; /* Push to the right side */
+  display: flex;
+  align-items: center;
+  padding-left: 1rem;
+}
+
+/* Language dropdown for bottom nav bar - match golden theme */
+.nav-language-bottom {
+  position: relative;
+}
+
+.nav-language-dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nav-language-dropdown-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-language-dropdown-button svg {
+  width: 18px;
+  height: 18px;
+  color: #ffffff;
+  margin-right: 0;
+  transition: transform 0.3s ease;
+}
+
+.nav-language-dropdown-button .dropdown-icon {
+  width: 14px;
+  height: 14px;
+  margin-left: 0.25rem;
+}
+
+.nav-language-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 120px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.nav-language-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.nav-language-dropdown-item:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+}
+
+.nav-language-dropdown-item.active {
+  background: rgba(212, 175, 55, 0.15);
+  color: #92400e;
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .nav-language-bottom {
+    display: none; /* Hide on mobile, show in mobile menu */
+  }
+}
+
 /* Desktop Navigation */
 .nav-desktop {
   display: none;
@@ -200,7 +458,7 @@
   gap: 0;
 }
 
-/* SECOND navbar row - HIDE on mobile */
+/* SECOND navbar row - Show on mobile too */
 .nav-bottom-row {
   display: none;
 }
@@ -209,14 +467,74 @@
   .nav-desktop {
     display: flex;
   }
-  
-  /* Show second navbar only on desktop for regular users */
+}
+
+/* Show bottom nav on both mobile and desktop */
+@media (min-width: 768px) {
+  /* Show second navbar for desktop - golden button theme */
   .nav-bottom-row {
-    display: flex;
-    justify-content: center;
+    display: flex !important;
+    justify-content: flex-start !important; /* Align items to left */
+    align-items: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: transparent !important; /* Transparent, parent has gradient */
+    border-top: none !important;
+    border-bottom: none !important;
+    padding: 0.625rem 0 !important; /* Comfortable padding */
+    box-shadow: none !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  
+  /* Container for bottom nav items - align left, start below "NiraLive" text - HARD CSS */
+  .nav-bottom-row .nav-desktop {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 1.5rem !important; /* Increased gap between items like in image */
+    width: 100% !important;
+    flex-wrap: wrap !important; /* Allow wrapping on smaller screens */
+    padding: 0 !important;
+    margin-left: 0 !important; /* Remove duplicate margin, already set in .nav-bottom-row-wrapper .nav-desktop */
+  }
+  
+  /* Ensure bottom nav wrapper desktop maintains padding and margin - HARD CSS */
+  .nav-bottom-row-wrapper .nav-desktop,
+  .nav-bottom-row .nav-desktop {
+    padding-left: 2rem !important;
+    margin-left: 56px !important;
+  }
+  
+  /* Responsive gap adjustment - HARD CSS */
+  @media (max-width: 1200px) {
+    .nav-bottom-row .nav-desktop {
+      gap: 1rem !important; /* Smaller gap on medium screens */
+    }
+    
+    .nav-bottom-row-wrapper .nav-desktop {
+      padding-left: 2rem !important;
+      margin-left: 56px !important;
+    }
+  }
+  
+  @media (max-width: 1024px) {
+    .nav-bottom-row .nav-desktop {
+      gap: 0.75rem !important; /* Even smaller gap on tablets */
+    }
+    
+    .nav-bottom-row-wrapper .nav-desktop {
+      padding-left: 2rem !important;
+      margin-left: 56px !important;
+    }
+  }
+  
+  /* Language switcher positioning - beside Blog */
+  .nav-bottom-row .nav-language-bottom {
     margin-left: 0;
-    width: 100%;
-    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    padding-left: 0;
   }
 }
 
@@ -226,41 +544,34 @@
   }
 }
 
-/* Navigation Links & Buttons */
+/* Navigation Links & Buttons - Top Nav Bar (Rounded Rectangle Style) */
 .nav-link, .nav-button {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px; /* Fully rounded pill shape */
   font-size: 0.875rem;
   font-weight: 500;
-  text-decoration: none;
+  text-decoration: none !important; /* Remove any underlines */
   transition: all 0.3s ease;
-  border: none;
-  background: none;
+  border: 1px solid #e5e7eb; /* Light gray border */
+  background: #ffffff; /* White background */
   cursor: pointer;
   font-family: inherit;
   position: relative;
   overflow: hidden;
   white-space: nowrap;
+  color: #374151; /* Dark gray text */
 }
 
-.nav-link::before, .nav-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 12px;
-}
-
-.nav-link:hover::before, .nav-button:hover::before {
-  opacity: 0.1;
+.nav-link:hover, .nav-button:hover {
+  background: linear-gradient(135deg, #d4af37, #b8972e); /* Golden gradient on hover */
+  color: #ffffff; /* White text on hover */
+  border-color: #d4af37;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
+  text-decoration: none !important; /* Remove underlines on hover */
 }
 
 .nav-link svg, .nav-button svg {
@@ -268,7 +579,8 @@
   height: 18px;
   position: relative;
   z-index: 1;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  color: inherit; /* Inherit color from parent */
 }
 
 .nav-link span, .nav-button span {
@@ -276,22 +588,83 @@
   z-index: 1;
 }
 
-.nav-link:hover svg, .nav-button:hover svg {
-  transform: translateY(-2px);
-}
-
 .nav-link:not(.nav-link-active) {
-  color: #4b5563;
+  color: #374151;
 }
 
 .nav-link:not(.nav-link-active):hover {
-  color: #d4af37;
+  color: #ffffff;
+}
+
+/* Bottom nav bar specific styles - rounded rectangles on hover */
+.nav-bottom-row .nav-link,
+.nav-bottom-row .nav-button {
+  color: #ffffff; /* White text on golden background */
+  font-weight: 500; /* Medium weight */
+  padding: 0.5rem 1rem; /* Comfortable padding */
+  font-size: 0.9375rem; /* Slightly larger text */
+  white-space: nowrap;
+  border-radius: 12px; /* Rounded corners */
+  border: none;
+  background: transparent; /* Transparent by default */
+  text-decoration: none !important;
+  transition: all 0.3s ease; /* Smooth transition */
+}
+
+/* Hover state - transparent rounded rectangle */
+.nav-bottom-row .nav-link:hover,
+.nav-bottom-row .nav-button:hover {
+  background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Override dropdown button styles in bottom nav - rounded rectangles */
+.nav-bottom-row .nav-dropdown-button {
+  border-radius: 12px !important; /* Rounded corners */
+  border: none !important;
+  background: transparent !important;
+  padding: 0.5rem 1rem !important; /* Match other nav items */
+  color: #ffffff !important; /* White text */
+  transition: all 0.3s ease !important;
+}
+
+.nav-bottom-row .nav-dropdown-button:hover {
+  background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
+  border: none !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.nav-bottom-row .nav-link-active {
+  color: #ffffff; /* White text when active */
+  font-weight: 600; /* Bolder when active */
+  background: rgba(255, 255, 255, 0.25) !important; /* Slightly more opaque */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+}
+
+.nav-bottom-row .nav-link-active:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* Icons in bottom nav - white on golden background */
+.nav-bottom-row .nav-link svg,
+.nav-bottom-row .nav-button svg {
+  width: 18px;
+  height: 18px;
+  color: #ffffff; /* White icons */
+  margin-right: 0.5rem; /* Space between icon and text */
 }
 
 .nav-link-active {
   background: linear-gradient(135deg, #d4af37, #b8972e);
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-  color: white;
+  color: #ffffff;
+  border-color: #d4af37;
 }
 
 .nav-link-active::before {
@@ -299,8 +672,10 @@
 }
 
 .nav-link-active:hover {
+  background: linear-gradient(135deg, #b8972e, #a08526);
   box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
   transform: translateY(-2px);
+  color: #ffffff;
 }
 
 /* Mobile Menu Button */
@@ -423,31 +798,41 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px; /* Fully rounded pill shape */
   font-size: 0.875rem;
   font-weight: 500;
-  text-decoration: none;
+  text-decoration: none !important; /* Remove any underlines */
   transition: all 0.3s ease;
-  border: none;
-  background: none;
+  border: 1px solid #e5e7eb; /* Light gray border */
+  background: #ffffff; /* White background */
   cursor: pointer;
   font-family: inherit;
   position: relative;
   overflow: hidden;
   white-space: nowrap;
-  color: #4b5563;
+  color: #374151;
 }
 
 .nav-dropdown-button:hover {
-  color: #d4af37;
-  background: rgba(212, 175, 55, 0.1);
+  background: linear-gradient(135deg, #d4af37, #b8972e); /* Golden gradient on hover */
+  color: #ffffff;
+  border-color: #d4af37;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
+  text-decoration: none !important; /* Remove underlines on hover */
 }
 
 .nav-dropdown-button.active {
   background: linear-gradient(135deg, #d4af37, #b8972e);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  border-color: #d4af37;
+}
+
+.nav-dropdown-button svg {
+  color: inherit;
+  transition: all 0.3s ease;
 }
 
 .nav-dropdown-menu {
@@ -509,7 +894,7 @@
   color: #d4af37;
 }
 
-/* Mobile Dropdown Styles */
+/* Mobile Dropdown Styles - Consistent styling for all dropdowns */
 .nav-mobile-dropdown-button {
   width: 100%;
   display: flex;
@@ -536,9 +921,9 @@
 }
 
 .nav-mobile-dropdown-button.active {
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  color: white;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.15);
+  font-weight: 600;
 }
 
 .nav-mobile-dropdown-content {
@@ -546,20 +931,27 @@
   margin-top: 0.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2125rem;
+  gap: 0.25rem;
+  padding-bottom: 0.5rem;
 }
 
 .nav-mobile-dropdown-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.625rem 0.75rem;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
   color: #6b7280;
   text-decoration: none;
   transition: all 0.2s ease;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
 }
 
 .nav-mobile-dropdown-item svg {
@@ -574,8 +966,9 @@
 }
 
 .nav-mobile-dropdown-item.active {
-  background: rgba(212, 175, 55, 0.15);
+  background: rgba(212, 175, 55, 0.2);
   color: #d4af37;
+  font-weight: 600;
 }
 
 .chevron-icon {
