@@ -16,6 +16,7 @@ import {
   Loader2,
   RotateCcw,
   Trash2,
+  PhoneCallIcon
 } from "lucide-react";
 import "./predictions.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
