@@ -1685,7 +1685,7 @@ export default function Home() {
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
           <section className="max-w-7xl mx-auto mt-16 px-4">
             <div className="text-center mb-10">
-              <h2 className="text-4xl text-gold font-bold mb-3">
+              <h2 className="text-4xl mb-3" style={{ color: '#000000', fontWeight: 700 }}>
                 {t.services.sectionTitle}
               </h2>
               <p className="text-slate-600 text-lg">
@@ -1842,7 +1842,9 @@ export default function Home() {
                   {/* Header with Star Icon */}
                   <div className="quick-start-form-header">
                     <Star className="quick-start-star-icon" />
-                    <h3 className="quick-start-form-title">{t.aiForm.title}</h3>
+                    <h3 className="quick-start-form-title">
+                      <span className="quick-start-gold">Quick Start:</span> Get Your Free AI Reading
+                    </h3>
                   </div>
                   <p className="quick-start-form-description">
                     {t.aiForm.description}
@@ -1905,59 +1907,39 @@ export default function Home() {
                     {/* Gender and Place Row */}
                     <div className="quick-start-form-row">
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">
-                          {t.aiForm.gender}
-                        </label>
-                        <div className="quick-start-radio-group">
-                          <label className="quick-start-radio-label">
-                            <input
-                              type="radio"
-                              name="gender"
-                              value="Male"
-                              className="quick-start-radio"
-                              checked={formData.gender === "Male"}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  gender: e.target.value,
-                                }))
-                              }
-                            />
-                            <span>{t.aiForm.male}</span>
-                          </label>
-                          <label className="quick-start-radio-label">
-                            <input
-                              type="radio"
-                              name="gender"
-                              value="Female"
-                              className="quick-start-radio"
-                              checked={formData.gender === "Female"}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  gender: e.target.value,
-                                }))
-                              }
-                            />
-                            <span>{t.aiForm.female}</span>
-                          </label>
-                          <label className="quick-start-radio-label">
-                            <input
-                              type="radio"
-                              name="gender"
-                              value="Other"
-                              className="quick-start-radio"
-                              checked={formData.gender === "Other"}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  gender: e.target.value,
-                                }))
-                              }
-                            />
-                            <span>{t.aiForm.other}</span>
-                          </label>
+                        <label className="quick-start-form-label">{t.aiForm.gender}</label>
+                        <div className="quick-start-gender-segmented" role="radiogroup" aria-label="Gender selection">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, gender: "Male" }))}
+                            className={`quick-start-gender-segment ${formData.gender === "Male" ? "active" : ""}`}
+                            aria-pressed={formData.gender === "Male"}
+                          >
+                            {t.aiForm.male}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, gender: "Female" }))}
+                            className={`quick-start-gender-segment ${formData.gender === "Female" ? "active" : ""}`}
+                            aria-pressed={formData.gender === "Female"}
+                          >
+                            {t.aiForm.female}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, gender: "Other" }))}
+                            className={`quick-start-gender-segment ${formData.gender === "Other" ? "active" : ""}`}
+                            aria-pressed={formData.gender === "Other"}
+                          >
+                            {t.aiForm.other}
+                          </button>
                         </div>
+                        <input
+                          type="hidden"
+                          name="gender"
+                          value={formData.gender}
+                          required
+                        />
                       </div>
 
                       <div className="quick-start-form-field">
