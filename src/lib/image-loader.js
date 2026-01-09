@@ -12,7 +12,7 @@
 
 export function customImageLoader({ src, width, quality }) {
   // If it's already a relative URL or from our domain, use it directly
-  if (src.startsWith('/') || src.includes('rahunow.com') || src.includes('localhost')) {
+  if (src.startsWith('/') || src.includes('niraliveastro.com') || src.includes('rahunow.com') || src.includes('localhost')) {
     return src
   }
 

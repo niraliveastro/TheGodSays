@@ -1,4 +1,4 @@
-# robots.txt for rahunow.com
+# robots.txt for niraliveastro.com
 
 User-agent: *
 Allow: /
@@ -24,7 +24,7 @@ Allow: /cosmic-event-tracker/
 Allow: /blog/
 
 # Sitemap
-Sitemap: https://rahunow.com/sitemap.xml
+Sitemap: https://niraliveastro.com/sitemap.xml
 
 # Crawl-delay (optional - remove if not needed)
 # Crawl-delay: 1

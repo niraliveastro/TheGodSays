@@ -1,7 +1,7 @@
 /**
  * Blog Detail Page
  * SEO-optimized individual blog post page with full metadata
- * Light theme only - matches Rahunow theme with gold accents
+ * Light theme only - matches NiraLive Astro theme with gold accents
  */
 
 import { getBlogBySlug, getAllBlogSlugs, getPublishedBlogs } from '@/lib/blog'
@@ -12,7 +12,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import './blog-detail.css'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
 
 // Use ISR (Incremental Static Regeneration) for better SEO
 // Revalidate every 60 seconds to keep content fresh while allowing static generation
@@ -38,25 +38,25 @@ export async function generateMetadata({ params }) {
 
   if (!blog) {
     return {
-      title: 'Blog Post Not Found | RahuNow',
+      title: 'Blog Post Not Found | NiraLive Astro',
     }
   }
 
   const title = blog.metaTitle || blog.title
-  const description = blog.metaDescription || blog.content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Read this insightful astrology article on RahuNow.'
+  const description = blog.metaDescription || blog.content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Read this insightful astrology article on NiraLive Astro.'
   const imageUrl = blog.featuredImage || `${SITE_URL}/og-image.png`
   const url = `${SITE_URL}/blog/${slug}`
 
   return {
-    title: `${title} | RahuNow Blog`,
+    title: `${title} | NiraLive Astro Blog`,
     description,
     keywords: blog.tags || ['vedic astrology', 'astrology', 'numerology', 'spiritual guidance'],
-    authors: [{ name: blog.author || 'RahuNow' }],
+    authors: [{ name: blog.author || 'NiraLive Astro' }],
     openGraph: {
       title,
       description,
       url,
-      siteName: 'RahuNow',
+      siteName: 'NiraLive Astro',
       images: [
         {
           url: imageUrl,
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }) {
       type: 'article',
       publishedTime: blog.publishedAt,
       modifiedTime: blog.updatedAt || blog.publishedAt,
-      authors: [blog.author || 'RahuNow'],
+      authors: [blog.author || 'NiraLive Astro'],
       tags: blog.tags || [],
     },
     twitter: {
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       images: [imageUrl],
-      creator: '@rahunow',
+      creator: '@niraliveastro',
     },
     alternates: {
       canonical: url,
@@ -272,11 +272,11 @@ export default async function BlogPostPage({ params }) {
             dateModified: blog.updatedAt || blog.publishedAt,
             author: {
               '@type': 'Organization',
-              name: blog.author || 'RahuNow',
+              name: blog.author || 'NiraLive Astro',
             },
             publisher: {
               '@type': 'Organization',
-              name: 'RahuNow',
+              name: 'NiraLive Astro',
               url: SITE_URL,
               logo: {
                 '@type': 'ImageObject',
