@@ -40,7 +40,7 @@ export async function GET(request) {
     // Fetch the image
     const imageResponse = await fetch(imageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RahuNow-ImageProxy/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; NiraLiveAstro-ImageProxy/1.0)',
         'Referer': url.origin,
       },
       // Add timeout

@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
   title: "Free Numerology Calculator - Complete Numerology Analysis",
@@ -16,13 +16,13 @@ export const metadata = {
     "birth number"
   ],
   openGraph: {
-    title: "Free Numerology Calculator - Complete Analysis | RahuNow",
+    title: "Free Numerology Calculator - Complete Analysis | NiraLive Astro",
     description: "Get your complete numerology analysis using Pythagorean and Chaldean systems. Calculate your Life Path, Destiny, Soul Urge, and more.",
     url: `${SITE_URL}/numerology`,
     type: "website",
   },
   twitter: {
-    title: "Free Numerology Calculator - Complete Analysis | RahuNow",
+    title: "Free Numerology Calculator - Complete Analysis | NiraLive Astro",
     description: "Get your complete numerology analysis using Pythagorean and Chaldean systems. Calculate your Life Path, Destiny, and more.",
   },
   alternates: {

@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
   title: "Talk to Astrologer - Live Online Astrology Consultation",
@@ -16,13 +16,13 @@ export const metadata = {
     "vedic astrologer"
   ],
   openGraph: {
-    title: "Talk to Astrologer - Live Online Consultation | RahuNow",
+    title: "Talk to Astrologer - Live Online Consultation | NiraLive Astro",
     description: "Connect with expert astrologers for live online consultations. Get personalized astrology advice through video or voice calls.",
     url: `${SITE_URL}/talk-to-astrologer`,
     type: "website",
   },
   twitter: {
-    title: "Talk to Astrologer - Live Online Consultation | RahuNow",
+    title: "Talk to Astrologer - Live Online Consultation | NiraLive Astro",
     description: "Connect with expert astrologers for live online consultations. Get personalized astrology advice.",
   },
   alternates: {

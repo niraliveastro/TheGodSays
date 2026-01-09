@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
   title: "Daily Astrological Predictions - Personalized Horoscope Predictions",
@@ -15,13 +15,13 @@ export const metadata = {
     "astrology forecast"
   ],
   openGraph: {
-    title: "Daily Astrological Predictions - Personalized Forecasts | RahuNow",
+    title: "Daily Astrological Predictions - Personalized Forecasts | NiraLive Astro",
     description: "Get personalized daily, weekly, and monthly astrological predictions based on your birth chart with accurate Vedic astrology.",
     url: `${SITE_URL}/predictions`,
     type: "website",
   },
   twitter: {
-    title: "Daily Astrological Predictions - Personalized Forecasts | RahuNow",
+    title: "Daily Astrological Predictions - Personalized Forecasts | NiraLive Astro",
     description: "Get personalized daily, weekly, and monthly astrological predictions based on your birth chart.",
   },
   alternates: {

@@ -12,7 +12,7 @@ import Link from 'next/link'
 import BlogListClient from './BlogListClient'
 import './blog.css'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rahunow.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
 
 // Enable ISR (Incremental Static Regeneration) - revalidate every 60 seconds
 export const revalidate = 60
@@ -22,21 +22,21 @@ export async function generateMetadata() {
   const blogs = await getPublishedBlogs()
   
   return {
-    title: 'Astrology Blog | Vedic Astrology Articles & Insights | RahuNow',
-    description: 'Discover insightful articles on Vedic astrology, numerology, planetary influences, spiritual remedies, and cosmic guidance. Read expert astrology blogs on RahuNow.',
+    title: 'Astrology Blog | Vedic Astrology Articles & Insights | NiraLive Astro',
+    description: 'Discover insightful articles on Vedic astrology, numerology, planetary influences, spiritual remedies, and cosmic guidance. Read expert astrology blogs on NiraLive Astro.',
     keywords: ['vedic astrology', 'astrology blog', 'numerology', 'planetary influences', 'spiritual remedies', 'astrology articles', 'cosmic guidance', 'horoscope insights'],
-    authors: [{ name: 'RahuNow' }],
+    authors: [{ name: 'NiraLive Astro' }],
     openGraph: {
-      title: 'Astrology Blog | RahuNow',
+      title: 'Astrology Blog | NiraLive Astro',
       description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
       url: `${SITE_URL}/blog`,
-      siteName: 'RahuNow',
+      siteName: 'NiraLive Astro',
       images: [
         {
           url: `${SITE_URL}/og-image.png`,
           width: 1200,
           height: 630,
-          alt: 'RahuNow Astrology Blog',
+          alt: 'NiraLive Astro Astrology Blog',
         },
       ],
       locale: 'en_US',
@@ -44,10 +44,10 @@ export async function generateMetadata() {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Astrology Blog | RahuNow',
+      title: 'Astrology Blog | NiraLive Astro',
       description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
       images: [`${SITE_URL}/og-image.png`],
-      creator: '@rahunow',
+      creator: '@niraliveastro',
     },
     alternates: {
       canonical: `${SITE_URL}/blog`,
@@ -149,12 +149,12 @@ export default async function BlogPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
-            name: 'Astrology Blog | RahuNow',
+            name: 'Astrology Blog | NiraLive Astro',
             description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
             url: `${SITE_URL}/blog`,
             publisher: {
               '@type': 'Organization',
-              name: 'RahuNow',
+              name: 'NiraLive Astro',
               url: SITE_URL,
               logo: {
                 '@type': 'ImageObject',
@@ -177,7 +177,7 @@ export default async function BlogPage() {
                   image: blog.featuredImage || `${SITE_URL}/og-image.png`,
                   author: {
                     '@type': 'Organization',
-                    name: blog.author || 'RahuNow',
+                    name: blog.author || 'NiraLive Astro',
                   },
                 },
               })),

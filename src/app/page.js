@@ -65,7 +65,7 @@ export default function Home() {
 
   // Track page view on mount
   useEffect(() => {
-    trackPageView("/", "Home - RahuNow");
+    trackPageView("/", "Home - NiraLive Astro");
   }, []);
 
   const [panchangData, setPanchangData] = useState(null);

@@ -147,7 +147,7 @@ export async function POST(request) {
       content,
       metaTitle,
       metaDescription,
-      author = 'RahuNow',
+      author = 'NiraLive Astro',
       tags = [],
       featuredImage,
       status = 'draft',
