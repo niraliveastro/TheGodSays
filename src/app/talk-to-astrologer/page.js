@@ -1107,7 +1107,7 @@ export default function TalkToAstrologer() {
         <PageLoading type="astrologer" message="Loading astrologers..." />
       ) : (
         <div
-          className="min-h-screen py-4 md:py-8 px-4 md:px-6 lg:px-8"
+          className="min-h-screen pt-0 md:pt-2 pb-2 md:pb-6 px-4 md:px-6 lg:px-8"
           style={{
             background: "#f9fafb",
           }}
@@ -1127,10 +1127,7 @@ export default function TalkToAstrologer() {
               <div className="orb orb3" />
             </div>
             {/* Header */}
-            <header
-              className="header"
-              style={{ textAlign: "center", marginTop: "3rem" }}
-            >
+            <header className="header" style={{ textAlign: "center", marginTop: "0.1rem" }}>
               <h1 className="title">{t.talkToAstrologer.title}</h1>
               <p className="subtitle">{t.talkToAstrologer.subtitle}</p>
             </header>

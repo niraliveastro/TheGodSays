@@ -519,7 +519,7 @@ export default function NumerologyPage() {
   };
 
   return (
-    <div className="numerology-container">
+    <div className="numerology-container" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
       <div className="app">
         {/* Orbs */}
         <div
@@ -536,7 +536,7 @@ export default function NumerologyPage() {
         </div>
 
         {/* Header */}
-        <header className="header">
+        <header className="header" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
           <h1 className="title">{t.numerology.title}</h1>
           <p className="subtitle">
             {t.numerology.subtitle}

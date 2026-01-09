@@ -270,7 +270,7 @@ export default function CosmicEventTracker() {
 
   // Main render: Dashboard layout
   return (
-    <div className="app">
+    <div className="app" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
       {/* Orbs – Background decorative elements */}
       <div
         style={{
@@ -286,7 +286,7 @@ export default function CosmicEventTracker() {
       </div>
 
       {/* Header Section – Title and subtitle */}
-      <div className="header">
+      <div className="header" style={{ paddingTop: '0.01rem', marginTop: '2rem' }}>
         <div className="headerIcon" style={{ width: 36, height: 36 }}>
           <CircleOff className="header-icon" />
         </div>

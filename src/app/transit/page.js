@@ -311,7 +311,7 @@ export default function TransitPage() {
   }, [result]);
 
   return (
-    <div className="transit-container">
+    <div className="transit-container" style={{ paddingTop: '0.01rem', marginTop: '0.9rem' }}>
       {/* Orbs */}
       <div
         style={{

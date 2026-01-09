@@ -1293,7 +1293,7 @@ export default function PredictionsPage() {
       className="app"
       style={{
         background: undefined,
-        minHeight: "100vh",
+        minHeight: "100vh"
       }}
     >
       {/* Orbs */}
@@ -1311,7 +1311,7 @@ export default function PredictionsPage() {
       </div>
 
       {/* Header */}
-      <header className="header">
+      <header className="header" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
         <Sparkles
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}

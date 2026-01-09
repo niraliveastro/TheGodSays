@@ -62,13 +62,13 @@ export default async function BlogPage() {
   return (
     <div className="blog-listing-page">
       {/* Hero Section */}
-      <div className="blog-hero">
+      <div className="blog-hero" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
         <h1>Astrology Blog</h1>
         <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
       </div>
 
       {/* Blog Posts Grid - Server-rendered for SEO */}
-      <div className="blog-container">
+      <div className="blog-container" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
         {blogs.length === 0 ? (
           <div className="empty-state">
             <svg className="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

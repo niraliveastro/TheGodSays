@@ -1689,7 +1689,7 @@ export default function MatchingPage() {
         </div>
         {error && <div className="error" style={{ maxWidth: "1600px", margin: "2rem auto", padding: "0 2rem" }}>{error}</div>}
         {/* Header Section */}
-        <header className="header" style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <header className="header" style={{ textAlign: "center", marginTop: "0.01rem", marginBottom: "2rem" }}>
           <div className="headerIcon" style={{ 
             width: "64px", 
             height: "64px", 
