@@ -2,6 +2,55 @@
 /*  NAVIGATION STYLES                           */
 /* ============================================= */
 
+/* Global rule: Remove all underlines from all navigation items - override globals.css a:hover */
+.enhanced-nav a,
+.enhanced-nav button,
+.enhanced-nav .nav-link,
+.enhanced-nav .nav-button,
+.enhanced-nav .nav-dropdown-button,
+.enhanced-nav .nav-dropdown-item,
+.enhanced-nav .nav-mobile-link,
+.enhanced-nav .nav-mobile-button,
+.enhanced-nav .nav-mobile-dropdown-item,
+.enhanced-nav .nav-language-dropdown-button,
+.enhanced-nav .nav-language-dropdown-item,
+.enhanced-nav a:hover,
+.enhanced-nav a:focus,
+.enhanced-nav a:active,
+.enhanced-nav a:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+}
+
+/* Remove underlines from all spans and text within navigation */
+.enhanced-nav span,
+.enhanced-nav span:hover,
+.enhanced-nav span:focus,
+.enhanced-nav span:active {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+}
+
+/* Specifically override globals.css a:hover rule for dropdown items */
+.enhanced-nav .nav-dropdown-menu a,
+.enhanced-nav .nav-dropdown-menu a:hover,
+.enhanced-nav .nav-dropdown-content a,
+.enhanced-nav .nav-dropdown-content a:hover,
+.enhanced-nav .nav-dropdown-item,
+.enhanced-nav .nav-dropdown-item:hover,
+.enhanced-nav .nav-dropdown-item:focus,
+.enhanced-nav .nav-dropdown-item:active,
+.enhanced-nav .nav-dropdown-item:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+}
+
 .enhanced-nav {
   position: fixed;
   top: 0;
@@ -366,8 +415,8 @@ body {
   padding: 0.5rem 1rem;
   border-radius: 12px;
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: #ffffff;
+  font-weight: 400; /* Normal weight - removed bold */
+  color: #000000; /* Black text */
   text-decoration: none;
   transition: all 0.3s ease;
   border: none;
@@ -389,9 +438,13 @@ body {
 .nav-language-dropdown-button svg {
   width: 18px;
   height: 18px;
-  color: #ffffff;
+  color: #000000; /* Black icons */
   margin-right: 0;
   transition: transform 0.3s ease;
+}
+
+.nav-language-dropdown-button:hover svg {
+  color: #ffffff !important; /* White icons on hover */
 }
 
 .nav-language-dropdown-button .dropdown-icon {
@@ -422,7 +475,7 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
-  text-decoration: none;
+  text-decoration: none !important;
   border-radius: 0;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -431,17 +484,33 @@ body {
   width: 100%;
   text-align: left;
   font-family: inherit;
+  border-bottom: none !important;
 }
 
 .nav-language-dropdown-item:hover {
   background: rgba(212, 175, 55, 0.1);
   color: #d4af37;
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-language-dropdown-item.active {
   background: rgba(212, 175, 55, 0.15);
   color: #92400e;
   font-weight: 600;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove underlines from all links within language dropdown */
+.nav-language-dropdown-item a {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-language-dropdown-item a:hover {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 @media (max-width: 767px) {
@@ -586,6 +655,23 @@ body {
 .nav-link span, .nav-button span {
   position: relative;
   z-index: 1;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove underlines from all spans and links within nav items */
+.nav-link a,
+.nav-button a,
+.nav-link span a,
+.nav-button span a {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-link:hover span,
+.nav-button:hover span {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-link:not(.nav-link-active) {
@@ -599,8 +685,8 @@ body {
 /* Bottom nav bar specific styles - rounded rectangles on hover */
 .nav-bottom-row .nav-link,
 .nav-bottom-row .nav-button {
-  color: #ffffff; /* White text on golden background */
-  font-weight: 500; /* Medium weight */
+  color: #000000; /* Black text on golden background */
+  font-weight: 400; /* Normal weight - removed bold */
   padding: 0.5rem 1rem; /* Comfortable padding */
   font-size: 0.9375rem; /* Slightly larger text */
   white-space: nowrap;
@@ -615,7 +701,7 @@ body {
 .nav-bottom-row .nav-link:hover,
 .nav-bottom-row .nav-button:hover {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
-  color: #ffffff !important;
+  color: #ffffff !important; /* White text on hover */
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -626,21 +712,26 @@ body {
   border: none !important;
   background: transparent !important;
   padding: 0.5rem 1rem !important; /* Match other nav items */
-  color: #ffffff !important; /* White text */
+  font-weight: 400 !important; /* Normal weight - removed bold */
+  color: #000000 !important; /* Black text */
   transition: all 0.3s ease !important;
 }
 
 .nav-bottom-row .nav-dropdown-button:hover {
   background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
   border: none !important;
-  color: #ffffff !important;
+  color: #ffffff !important; /* White text on hover */
   transform: translateY(-1px) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
+.nav-bottom-row .nav-dropdown-button:hover svg {
+  color: #ffffff !important; /* White icons on hover */
+}
+
 .nav-bottom-row .nav-link-active {
   color: #ffffff; /* White text when active */
-  font-weight: 600; /* Bolder when active */
+  font-weight: 400; /* Normal weight - removed bold */
   background: rgba(255, 255, 255, 0.25) !important; /* Slightly more opaque */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border: none;
@@ -656,8 +747,13 @@ body {
 .nav-bottom-row .nav-button svg {
   width: 18px;
   height: 18px;
-  color: #ffffff; /* White icons */
+  color: #000000; /* Black icons */
   margin-right: 0.5rem; /* Space between icon and text */
+}
+
+.nav-bottom-row .nav-link:hover svg,
+.nav-bottom-row .nav-button:hover svg {
+  color: #ffffff !important; /* White icons on hover */
 }
 
 .nav-link-active {
@@ -761,13 +857,25 @@ body {
   border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 500;
-  text-decoration: none;
+  text-decoration: none !important;
   transition: all 0.3s ease;
   border: none;
   background: none;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
+  border-bottom: none !important;
+}
+
+.nav-mobile-link:hover,
+.nav-mobile-link:focus,
+.nav-mobile-link:active,
+.nav-mobile-link:visited,
+.nav-mobile-button:hover,
+.nav-mobile-button:focus,
+.nav-mobile-button:active {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-mobile-link svg, .nav-mobile-button svg {
@@ -792,6 +900,7 @@ body {
 /* Dropdown Styles */
 .nav-dropdown {
   position: relative;
+  z-index: 1000 !important; /* Ensure dropdown container is above bottom nav */
 }
 
 .nav-dropdown-button {
@@ -835,6 +944,11 @@ body {
   transition: all 0.3s ease;
 }
 
+/* Bottom nav dropdown button icons - black by default */
+.nav-bottom-row .nav-dropdown-button svg {
+  color: #000000; /* Black icons */
+}
+
 .nav-dropdown-menu {
   position: absolute;
   top: 100%;
@@ -845,7 +959,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(212, 175, 55, 0.2);
-  z-index: 50;
+  z-index: 1000 !important; /* Higher than bottom nav bar (998) */
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -865,6 +979,27 @@ body {
   padding: 0.5rem;
 }
 
+/* Remove underlines from ALL elements within dropdown content */
+.nav-dropdown-content a,
+.nav-dropdown-content Link,
+.nav-dropdown-content .nav-dropdown-item,
+.nav-dropdown-content .nav-dropdown-item span,
+.nav-dropdown-content * {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-dropdown-content a:hover,
+.nav-dropdown-content a:focus,
+.nav-dropdown-content a:active,
+.nav-dropdown-content a:visited,
+.nav-dropdown-content Link:hover,
+.nav-dropdown-content .nav-dropdown-item:hover,
+.nav-dropdown-content .nav-dropdown-item:hover span {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
 .nav-dropdown-item {
   display: flex;
   align-items: center;
@@ -873,9 +1008,26 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
-  text-decoration: none;
+  text-decoration: none !important;
   border-radius: 8px;
   transition: all 0.2s ease;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+  text-underline-offset: 0 !important;
+  text-decoration-thickness: 0 !important;
+}
+
+.nav-dropdown-item:hover {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-dropdown-item:focus,
+.nav-dropdown-item:active,
+.nav-dropdown-item:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-dropdown-item svg {
@@ -887,11 +1039,76 @@ body {
 .nav-dropdown-item:hover {
   background: rgba(212, 175, 55, 0.1);
   color: #d4af37;
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-dropdown-item.active {
   background: rgba(212, 175, 55, 0.1);
   color: #d4af37;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove underlines from all links within navigation */
+/* Remove underlines from all links and spans within dropdown items */
+.nav-dropdown-item a,
+.nav-dropdown-item Link,
+.nav-dropdown-item span {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-dropdown-item a:hover,
+.nav-dropdown-item Link:hover,
+.nav-dropdown-item span:hover {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* Ensure no underline on Next.js Link components - comprehensive override */
+a.nav-dropdown-item,
+a.nav-dropdown-item:hover,
+a.nav-dropdown-item:focus,
+a.nav-dropdown-item:active,
+a.nav-dropdown-item:visited,
+link.nav-dropdown-item,
+Link.nav-dropdown-item {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+}
+
+a.nav-dropdown-item span,
+a.nav-dropdown-item * {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+}
+
+/* Target all links and text within dropdown menu container - override globals.css a:hover */
+.nav-dropdown-menu a,
+.nav-dropdown-menu Link,
+.nav-dropdown-menu .nav-dropdown-item,
+.nav-dropdown-menu .nav-dropdown-item span,
+.nav-dropdown-menu *,
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a:focus,
+.nav-dropdown-menu a:active,
+.nav-dropdown-menu a:visited,
+.nav-dropdown-content a,
+.nav-dropdown-content a:hover,
+.nav-dropdown-content a:focus,
+.nav-dropdown-content a:active,
+.nav-dropdown-content a:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  -webkit-text-decoration: none !important;
+  -moz-text-decoration: none !important;
+  text-underline-offset: none !important;
+  text-underline-position: none !important;
 }
 
 /* Mobile Dropdown Styles - Consistent styling for all dropdowns */
@@ -944,14 +1161,9 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   color: #6b7280;
-  text-decoration: none;
+  text-decoration: none !important;
+  border-bottom: none !important;
   transition: all 0.2s ease;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  width: 100%;
 }
 
 .nav-mobile-dropdown-item svg {
@@ -963,12 +1175,29 @@ body {
 .nav-mobile-dropdown-item:hover {
   color: #d4af37;
   background: rgba(212, 175, 55, 0.1);
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-mobile-dropdown-item:focus,
+.nav-mobile-dropdown-item:active,
+.nav-mobile-dropdown-item:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .nav-mobile-dropdown-item.active {
   background: rgba(212, 175, 55, 0.2);
   color: #d4af37;
   font-weight: 600;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-mobile-dropdown-item a,
+.nav-mobile-dropdown-item span {
+  text-decoration: none !important;
+  border-bottom: none !important;
 }
 
 .chevron-icon {
