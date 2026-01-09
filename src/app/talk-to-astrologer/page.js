@@ -59,7 +59,7 @@ export default function TalkToAstrologer() {
   const [callHistoryCacheTime, setCallHistoryCacheTime] = useState(0);
   const [showAllCalls, setShowAllCalls] = useState(false);
   const [loadingAllCalls, setLoadingAllCalls] = useState(false);
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE = 20;
   const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
