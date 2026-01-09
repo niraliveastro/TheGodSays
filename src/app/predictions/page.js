@@ -1339,7 +1339,7 @@ export default function PredictionsPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container py-8">
         {error && (
           <div 
             className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
@@ -1354,7 +1354,7 @@ export default function PredictionsPage() {
         )}
 
         {/* === Birth form + History side-by-side === */}
-        <div className="birth-history-layout">
+        <div className="birth-history-layout" style={{width: "100%"}}>
           {/* ==== FORM ==== */}
           <form
             ref={formRef}
@@ -1378,7 +1378,7 @@ export default function PredictionsPage() {
             </div>
             
             {/* ---- Birth Details Section ---- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end" style = {{width: '100%'}}>
               {/* Full Name */}
               <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
