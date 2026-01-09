@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
   title: "Kundali Matching - Free Online Horoscope Matching for Marriage",
@@ -16,13 +16,13 @@ export const metadata = {
     "astrology matching"
   ],
   openGraph: {
-    title: "Kundali Matching - Free Online Horoscope Matching | RahuNow",
+    title: "Kundali Matching - Free Online Horoscope Matching | NiraLive Astro",
     description: "Check compatibility with free online Kundali matching. Get detailed compatibility analysis for marriage based on Vedic astrology.",
     url: `${SITE_URL}/matching`,
     type: "website",
   },
   twitter: {
-    title: "Kundali Matching - Free Online Horoscope Matching | RahuNow",
+    title: "Kundali Matching - Free Online Horoscope Matching | NiraLive Astro",
     description: "Check compatibility with free online Kundali matching. Get detailed compatibility analysis for marriage.",
   },
   alternates: {

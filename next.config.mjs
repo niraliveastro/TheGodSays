@@ -45,6 +45,8 @@ const nextConfig = {
     // Keep domains for backward compatibility
     domains: [
       'localhost',
+      'niraliveastro.com',
+      'www.niraliveastro.com',
       'rahunow.com',
       'www.rahunow.com',
       'json.freeastrologyapi.com',

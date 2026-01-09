@@ -4,7 +4,7 @@
  * This is a server component for optimal SEO performance
  */
 export default function SEOStructuredData({ type = "website", pageData = {} }) {
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
   const SITE_NAME = "NiraLive Astro - Vedic Astrology & Panchang";
 
   // Base Organization Schema
@@ -17,9 +17,9 @@ export default function SEOStructuredData({ type = "website", pageData = {} }) {
     "description": "Comprehensive Vedic astrology platform offering daily Panchang, Kundali generation, numerology, and live consultations with expert astrologers.",
     "sameAs": [
       // Add social media links when available
-      // "https://www.facebook.com/rahunow",
-      // "https://twitter.com/rahunow",
-      // "https://www.instagram.com/rahunow",
+      // "https://www.facebook.com/niraliveastro",
+      // "https://twitter.com/niraliveastro",
+      // "https://www.instagram.com/niraliveastro",
     ],
     "contactPoint": {
       "@type": "ContactPoint",

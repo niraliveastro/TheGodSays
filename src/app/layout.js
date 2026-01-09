@@ -12,7 +12,7 @@ import SEOStructuredData from "@/components/SEOStructuredData";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 const SITE_NAME = "NiraLive Astro - Vedic Astrology & Panchang";
 const SITE_DESCRIPTION = "Get your daily Panchang, personalized Kundali, numerology readings, and live consultations with expert astrologers. Your complete Vedic astrology platform.";
 
@@ -94,7 +94,7 @@ export const metadata = {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/og-image.png`],
-    creator: "@rahunow",
+    creator: "@niraliveastro",
   },
   robots: {
     index: true,

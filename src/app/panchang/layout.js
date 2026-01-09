@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
   title: "Daily Panchang - Today's Panchang with Tithi, Nakshatra, Yoga",
@@ -16,13 +16,13 @@ export const metadata = {
     "hindu panchang"
   ],
   openGraph: {
-    title: "Daily Panchang - Today's Panchang | RahuNow",
+    title: "Daily Panchang - Today's Panchang | NiraLive Astro",
     description: "Get your daily Panchang with accurate Tithi, Nakshatra, Yoga, and Karana calculations. Check auspicious timings for today.",
     url: `${SITE_URL}/panchang`,
     type: "website",
   },
   twitter: {
-    title: "Daily Panchang - Today's Panchang | RahuNow",
+    title: "Daily Panchang - Today's Panchang | NiraLive Astro",
     description: "Get your daily Panchang with accurate Tithi, Nakshatra, Yoga, and Karana calculations.",
   },
   alternates: {

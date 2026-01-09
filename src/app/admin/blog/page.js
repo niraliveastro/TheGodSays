@@ -41,7 +41,7 @@ export default function BlogAdminPage() {
     content: '',
     metaTitle: '',
     metaDescription: '',
-    author: 'RahuNow',
+    author: 'NiraLive Astro',
     tags: '',
     featuredImage: '',
     status: 'draft',
@@ -101,7 +101,7 @@ export default function BlogAdminPage() {
           content: blogToEdit.content || '',
           metaTitle: blogToEdit.metaTitle || blogToEdit.title || '',
           metaDescription: blogToEdit.metaDescription || '',
-          author: blogToEdit.author || 'RahuNow',
+          author: blogToEdit.author || 'NiraLive Astro',
           tags: blogToEdit.tags?.join(', ') || '',
           featuredImage: blogToEdit.featuredImage || '',
           status: blogToEdit.status || 'draft',
@@ -249,7 +249,7 @@ export default function BlogAdminPage() {
       content: blog.content || '',
       metaTitle: blog.metaTitle || blog.title || '',
       metaDescription: blog.metaDescription || '',
-      author: blog.author || 'RahuNow',
+      author: blog.author || 'NiraLive Astro',
       tags: blog.tags?.join(', ') || '',
       featuredImage: blog.featuredImage || '',
       status: blog.status || 'draft',
@@ -298,7 +298,7 @@ export default function BlogAdminPage() {
       content: '',
       metaTitle: '',
       metaDescription: '',
-      author: 'RahuNow',
+      author: 'NiraLive Astro',
       tags: '',
       featuredImage: '',
       status: 'draft',
@@ -610,7 +610,7 @@ export default function BlogAdminPage() {
                     name="featuredImage"
                     value={formData.featuredImage}
                     onChange={handleInputChange}
-                    placeholder="https://rahunow.com/images/your-image.jpg"
+                    placeholder="https://niraliveastro.com/images/your-image.jpg"
                     className="admin-input"
                     style={{ flex: 1 }}
                   />

@@ -1,6 +1,6 @@
 import { getAllBlogSlugs } from '@/lib/blog'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rahunow.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export default async function sitemap() {
   const currentDate = new Date();

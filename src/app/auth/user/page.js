@@ -262,7 +262,7 @@ export default function UserAuth() {
             <div className="logo-icon">
               <Infinity style={{ width: '100%', height: '100%' }} />
             </div>
-            <span className="logo-text">RahuNow</span>
+            <span className="logo-text">NiraLive Astro</span>
           </div>
           <h1 className="auth-title">
             {isLogin ? "Welcome Back" : "Join Our Journey"}

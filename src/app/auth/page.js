@@ -61,7 +61,7 @@ export default function AuthLanding() {
               style={{ width: '100%', height: '100%' }}
             />
           </div>
-          <h1 className={styles["landing-title"]}>Welcome to RahuNow</h1>
+          <h1 className={styles["landing-title"]}>Welcome to NiraLive Astro</h1>
           <p className={styles["landing-subtitle"]}>
             Connect with experienced astrologers or share your expertise with
             seekers worldwide.
