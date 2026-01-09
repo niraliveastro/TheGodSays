@@ -238,6 +238,15 @@ body {
   position: relative;
 }
 
+.nav-logo-icon-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  color: #d4af37;
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.4));
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Calculate offset: icon width (44px) + gap (0.75rem = 12px) = 56px */
 .nav-logo-text-offset {
   margin-left: 56px; /* Icon width + gap to align with text start */
@@ -259,13 +268,12 @@ body {
 }
 
 .nav-logo-icon {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
@@ -296,25 +304,14 @@ body {
   height: 100%;
   object-fit: contain;
   color: #d4af37;
-  transform: rotate(-45deg);
   filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.4));
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: infinityFloat 4s ease-in-out infinite;
 }
 
 .nav-logo-wrapper:hover .nav-logo-icon svg {
-  transform: rotate(-45deg) scale(1.05);
   filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.6));
 }
 
-@keyframes infinityFloat {
-  0%, 100% {
-    transform: rotate(-45deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-45deg) translateY(-3px);
-  }
-}
+
 
 @keyframes logoGlow {
   0%, 100% {

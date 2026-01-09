@@ -372,7 +372,7 @@ const Navigation = () => {
           {/* Logo on left with text */}
           <Link href="/" className="nav-logo-wrapper nav-logo-left">
             <div className="nav-logo-icon">
-              <Infinity className="nav-logo-icon-svg" />
+              <img src="/niralive.svg" className="nav-logo-icon-svg" />
             </div>
             <span className="nav-logo-text">NiraLive Astro</span>
           </Link>

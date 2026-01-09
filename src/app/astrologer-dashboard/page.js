@@ -183,7 +183,7 @@ function AstrologerDashboardContent() {
                         call.status === "cancelled" ? "Call Cancelled" : "Call Declined",
                         {
                           body: `${userNames[call.userId] || "User"} ${call.status === "cancelled" ? "cancelled" : "declined"} the call`,
-                          icon: "/favicon.ico",
+                          icon: "/favicon.png",
                           tag: `call-${call.status}`,
                         }
                       );
@@ -217,7 +217,7 @@ function AstrologerDashboardContent() {
                 try {
                   new Notification("Call Declined", {
                     body: `${userNames[recentlyCancelled.userId] || "User"} declined the call`,
-                    icon: "/favicon.ico",
+                    icon: "/favicon.png",
                     tag: "call-declined",
                   });
                 } catch (e) {
@@ -426,7 +426,7 @@ function AstrologerDashboardContent() {
                       body: `Voice call from ${
                         userNames[newIncomingCall.userId] || "User"
                       }`,
-                      icon: "/favicon.ico",
+                      icon: "/favicon.png",
                       tag: "voice-call",
                       requireInteraction: true,
                     });
