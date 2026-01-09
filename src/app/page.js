@@ -51,7 +51,7 @@ const writeHomeCache = (key, value) => {
   try {
     if (typeof window === "undefined") return;
     localStorage.setItem(HOME_STORAGE_PREFIX + key, JSON.stringify(value));
-  } catch { }
+  } catch {}
 };
 
 export default function Home() {
@@ -65,7 +65,7 @@ export default function Home() {
 
   // Track page view on mount
   useEffect(() => {
-    trackPageView('/', 'Home - RahuNow');
+    trackPageView("/", "Home - RahuNow");
   }, []);
 
   const [panchangData, setPanchangData] = useState(null);
@@ -113,7 +113,8 @@ export default function Home() {
 
   // Review modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedAstrologerForReview, setSelectedAstrologerForReview] = useState(null);
+  const [selectedAstrologerForReview, setSelectedAstrologerForReview] =
+    useState(null);
 
   // Fetch astrologers from Firebase with real status
   const fetchAndUpdateAstrologers = async () => {
@@ -284,8 +285,8 @@ export default function Home() {
 
         // If API returned structured data, pick online + featured
         if (res && res.online && mounted) {
-          setOnlineAstrologers(res.online.slice(0, 10));
-          setFeaturedAstrologers(res.featured ? res.featured.slice(0, 10) : []);
+          setOnlineAstrologers(res.online.slice(0, 6));
+          setFeaturedAstrologers(res.featured ? res.featured.slice(0, 6) : []);
         } else if (mounted) {
           // fallback mock list
           const fallback = [
@@ -315,9 +316,9 @@ export default function Home() {
             },
             // ...more
           ];
-          setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 10));
+          setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 6));
           setFeaturedAstrologers(
-            fallback.filter((a) => a.isFeatured).slice(0, 10)
+            fallback.filter((a) => a.isFeatured).slice(0, 6)
           );
         }
       } catch (e) {
@@ -472,10 +473,10 @@ export default function Home() {
     // 2) If it's a JSON string, parse 1–2 times (handles double-encoded JSON)
     try {
       if (typeof out === "string") out = JSON.parse(out);
-    } catch { }
+    } catch {}
     try {
       if (typeof out === "string") out = JSON.parse(out);
-    } catch { }
+    } catch {}
 
     return out || null;
   };
@@ -493,8 +494,8 @@ export default function Home() {
       const cacheKey = `${date
         .toISOString()
         .slice(0, 10)}|${userLocation.latitude.toFixed(
-          3
-        )},${userLocation.longitude.toFixed(3)}|${tzNow}`;
+        3
+      )},${userLocation.longitude.toFixed(3)}|${tzNow}`;
 
       // 1) Check in-memory cache
       const mem = homePanchangCache.get(cacheKey);
@@ -513,7 +514,7 @@ export default function Home() {
             data: stored.data,
             savedAt: stored.savedAt || Date.now(),
           });
-        } catch { }
+        } catch {}
         setIsLoadingPanchang(false);
         return;
       }
@@ -550,7 +551,7 @@ export default function Home() {
         console.log("[Panchang] Payload", payload);
         console.log("[Auspicious] Payload", auspiciousPayload);
         console.groupEnd();
-      } catch { }
+      } catch {}
 
       // Tolerate partial failures: do not reject if a single call returns 429 or 403
       const [panchangSettled, sunMoonSettled, auspiciousSettled] =
@@ -568,18 +569,18 @@ export default function Home() {
         panchangSettled.status === "fulfilled"
           ? panchangSettled.value
           : {
-            results: {},
-            errors: { all: panchangSettled.reason?.message || "failed" },
-          };
+              results: {},
+              errors: { all: panchangSettled.reason?.message || "failed" },
+            };
       const sunMoonData =
         sunMoonSettled.status === "fulfilled" ? sunMoonSettled.value : null;
       const auspiciousData =
         auspiciousSettled.status === "fulfilled"
           ? auspiciousSettled.value
           : {
-            results: {},
-            errors: { all: auspiciousSettled.reason?.message || "failed" },
-          };
+              results: {},
+              errors: { all: auspiciousSettled.reason?.message || "failed" },
+            };
 
       // Check if API authentication failed (403 error)
       const hasAuthError = [
@@ -710,7 +711,7 @@ export default function Home() {
         console.log("sunMoonData:", sunMoonData);
         console.log("auspiciousData:", auspiciousData);
         console.groupEnd();
-      } catch (_) { }
+      } catch (_) {}
 
       // Log Auspicious/Inauspicious fetch outcome per endpoint
       if (auspiciousData) {
@@ -836,18 +837,18 @@ export default function Home() {
           data: updatedPanchangData,
           savedAt: Date.now(),
         });
-      } catch { }
+      } catch {}
 
       // Decide banner severity
       const hasAnyData = Boolean(
         updatedPanchangData.tithi !== mockPanchangData.tithi ||
-        updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
-        updatedPanchangData.yoga !== mockPanchangData.yoga ||
-        updatedPanchangData.karana !== mockPanchangData.karana ||
-        updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
-        updatedPanchangData.sunset !== mockPanchangData.sunset ||
-        updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
-        updatedPanchangData.moonset !== mockPanchangData.moonset
+          updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
+          updatedPanchangData.yoga !== mockPanchangData.yoga ||
+          updatedPanchangData.karana !== mockPanchangData.karana ||
+          updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
+          updatedPanchangData.sunset !== mockPanchangData.sunset ||
+          updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
+          updatedPanchangData.moonset !== mockPanchangData.moonset
       );
       const allFailed =
         panchangSettled.status === "rejected" &&
@@ -905,15 +906,22 @@ export default function Home() {
             );
             const data = await response.json();
 
-            const city = data.address.city || data.address.town || data.address.village || "";
+            const city =
+              data.address.city ||
+              data.address.town ||
+              data.address.village ||
+              "";
             const country = data.address.country || "";
             const locationString = [city, country].filter(Boolean).join(", ");
 
-            setFormData(prev => ({ ...prev, place: locationString }));
+            setFormData((prev) => ({ ...prev, place: locationString }));
             setShowLocationSuggestions(false);
           } catch (error) {
             console.error("Error reverse geocoding:", error);
-            setFormData(prev => ({ ...prev, place: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+            setFormData((prev) => ({
+              ...prev,
+              place: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            }));
           }
           setIsGettingLocation(false);
         },
@@ -938,13 +946,19 @@ export default function Home() {
 
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          query
+        )}&format=json&limit=5&addressdetails=1`
       );
       const data = await response.json();
 
-      const suggestions = data.map(item => ({
+      const suggestions = data.map((item) => ({
         display_name: item.display_name || "",
-        city: item.address?.city || item.address?.town || item.address?.village || "",
+        city:
+          item.address?.city ||
+          item.address?.town ||
+          item.address?.village ||
+          "",
         country: item.address?.country || "",
         lat: item.lat,
         lon: item.lon,
@@ -958,8 +972,13 @@ export default function Home() {
   };
 
   const handleLocationSelect = (suggestion) => {
-    const locationString = [suggestion.city, suggestion.country].filter(Boolean).join(", ");
-    setFormData(prev => ({ ...prev, place: locationString || suggestion.display_name }));
+    const locationString = [suggestion.city, suggestion.country]
+      .filter(Boolean)
+      .join(", ");
+    setFormData((prev) => ({
+      ...prev,
+      place: locationString || suggestion.display_name,
+    }));
     setShowLocationSuggestions(false);
     setLocationSuggestions([]);
   };
@@ -1033,7 +1052,10 @@ export default function Home() {
   // Close location suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (locationInputRef.current && !locationInputRef.current.contains(event.target)) {
+      if (
+        locationInputRef.current &&
+        !locationInputRef.current.contains(event.target)
+      ) {
         setShowLocationSuggestions(false);
       }
     };
@@ -1204,7 +1226,9 @@ export default function Home() {
 
       /* ---- Billing will start automatically when both participants join and audio track is published ---- */
       /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
-      console.log("Call created. Billing will start automatically when call connects.");
+      console.log(
+        "Call created. Billing will start automatically when call connects."
+      );
 
       /* ---- Poll for call status ---- */
       let timeoutId;
@@ -1250,7 +1274,7 @@ export default function Home() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "cancel-call", callId: call.id }),
-          }).catch(() => { });
+          }).catch(() => {});
           setCallStatus("rejected");
           setTimeout(() => {
             setConnectingCallType(null);
@@ -1272,7 +1296,7 @@ export default function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "cancel-call", callId: call.id }),
-        }).catch(() => { });
+        }).catch(() => {});
         setConnectingCallType(null);
         setLoading(false);
         alert("Astrologer not responding.");
@@ -1380,13 +1404,13 @@ export default function Home() {
                 {/* NEW: Updated headline per request */}
                 <h1 className="hero-main-title">
                   {t.hero.title}{" "}
-                  <span className="hero-highlight">{t.hero.titleHighlight}</span>
+                  <span className="hero-highlight">
+                    {t.hero.titleHighlight}
+                  </span>
                 </h1>
 
                 {/* NEW: Refined subheading */}
-                <p className="hero-description">
-                  {t.hero.description}
-                </p>
+                <p className="hero-description">{t.hero.description}</p>
 
                 {/* NEW: Pill chips under subheading (Life Insights, Kundali Matching, Panchang Today) */}
                 <div className="hero-features-inline" style={{ marginTop: 8 }}>
@@ -1440,9 +1464,7 @@ export default function Home() {
 
                 {/* Subtexts that sit directly below the primary CTAs */}
                 <div className="hero-cta-subtexts">
-                  <p className="cta-subtext">
-                    {t.hero.instantCall}
-                  </p>
+                  <p className="cta-subtext">{t.hero.instantCall}</p>
                   <p className="cta-subtext">{t.hero.preciseInsights}</p>
                 </div>
 
@@ -1477,154 +1499,156 @@ export default function Home() {
                     </div>
                     {/* Zodiac Icons Container - Rotates */}
                     <div className="zodiac-icons-container">
-                    <div className="zodiac-icon zodiac-icon-1">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M12 2L15 8L12 14L9 8L12 2Z M9 8L6 14L3 8 M15 8L18 14L21 8" />
-                      </svg>
-                    </div>
-                    <div className="zodiac-icon zodiac-icon-2">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <circle cx="8" cy="12" r="6" />
-                        <circle cx="16" cy="12" r="6" />
-                      </svg>
-                    </div>
-                    <div className="zodiac-icon zodiac-icon-3">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M6 4v16 M18 4v16 M6 8h12 M6 16h12" />
-                      </svg>
-                    </div>
-                    <div className="zodiac-icon zodiac-icon-4">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <circle cx="12" cy="8" r="4" />
-                        <circle cx="7" cy="16" r="4" />
-                        <circle cx="17" cy="16" r="4" />
-                      </svg>
-                    </div>
-                    <div className="zodiac-icon zodiac-icon-5">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                      <div className="zodiac-icon zodiac-icon-1">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M12 2L15 8L12 14L9 8L12 2Z M9 8L6 14L3 8 M15 8L18 14L21 8" />
+                        </svg>
+                      </div>
+                      <div className="zodiac-icon zodiac-icon-2">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="8" cy="12" r="6" />
+                          <circle cx="16" cy="12" r="6" />
+                        </svg>
+                      </div>
+                      <div className="zodiac-icon zodiac-icon-3">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M6 4v16 M18 4v16 M6 8h12 M6 16h12" />
+                        </svg>
+                      </div>
+                      <div className="zodiac-icon zodiac-icon-4">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="8" r="4" />
+                          <circle cx="7" cy="16" r="4" />
+                          <circle cx="17" cy="16" r="4" />
+                        </svg>
+                      </div>
+                      <div className="zodiac-icon zodiac-icon-5">
                         {" "}
-                        <circle cx="12" cy="12" r="8" />{" "}
-                        <path d="M12 4v8l4 4" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-6">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <circle cx="12" cy="12" r="8" />{" "}
+                          <path d="M12 4v8l4 4" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-6">
                         {" "}
-                        <path d="M3 12h18 M8 6v12 M12 8v8 M16 10v4" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-7">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M3 12h18 M8 6v12 M12 8v8 M16 10v4" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-7">
                         {" "}
-                        <path d="M3 6h18 M5 6v8a6 6 0 006 6h2a6 6 0 006-6V6" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-8">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M3 6h18 M5 6v8a6 6 0 006 6h2a6 6 0 006-6V6" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-8">
                         {" "}
-                        <path d="M12 2L14 8L20 10L14 12L12 18L10 12L4 10L10 8L12 2Z" />{" "}
-                        <path d="M12 18v4" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-9">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M12 2L14 8L20 10L14 12L12 18L10 12L4 10L10 8L12 2Z" />{" "}
+                          <path d="M12 18v4" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-9">
                         {" "}
-                        <path d="M4 12L12 4L20 12 M12 4V20" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-10">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M4 12L12 4L20 12 M12 4V20" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-10">
                         {" "}
-                        <path d="M3 6h6a6 6 0 016 6v6a6 6 0 01-6 6H3" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-11">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M3 6h6a6 6 0 016 6v6a6 6 0 01-6 6H3" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-11">
                         {" "}
-                        <path d="M4 8h16 M4 16h16 M8 4v16 M16 4v16" />{" "}
-                      </svg>{" "}
-                    </div>{" "}
-                    <div className="zodiac-icon zodiac-icon-12">
-                      {" "}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M4 8h16 M4 16h16 M8 4v16 M16 4v16" />{" "}
+                        </svg>{" "}
+                      </div>{" "}
+                      <div className="zodiac-icon zodiac-icon-12">
                         {" "}
-                        <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />{" "}
-                      </svg>{" "}
-                    </div>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          {" "}
+                          <path d="M3 12c0-3 2-5 4-5s4 2 4 5-2 5-4 5 M21 12c0 3-2 5-4 5s-4-2-4-5 2-5 4-5" />{" "}
+                        </svg>{" "}
+                      </div>
                     </div>
                     {/* End Zodiac Icons Container */}
                   </div>
                   <div className="hero-info-card hero-info-card-1">
                     <Clock className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">{t.heroLabels.currentDate}</div>
+                      <div className="hero-info-label">
+                        {t.heroLabels.currentDate}
+                      </div>
                       <div className="hero-info-value">{currentDate}</div>
                     </div>
                   </div>
@@ -1632,7 +1656,9 @@ export default function Home() {
                   <div className="hero-info-card hero-info-card-2">
                     <Moon className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">{t.heroLabels.tithi}</div>
+                      <div className="hero-info-label">
+                        {t.heroLabels.tithi}
+                      </div>
                       <div className="hero-info-value">
                         {panchangData?.tithi || t.heroLabels.loading}
                       </div>
@@ -1642,7 +1668,9 @@ export default function Home() {
                   <div className="hero-info-card hero-info-card-3">
                     <Star className="hero-info-icon" />
                     <div className="hero-info-content">
-                      <div className="hero-info-label">{t.heroLabels.nakshatra}</div>
+                      <div className="hero-info-label">
+                        {t.heroLabels.nakshatra}
+                      </div>
                       <div className="hero-info-value">
                         {panchangData?.nakshatra || t.heroLabels.loading}
                       </div>
@@ -1657,8 +1685,12 @@ export default function Home() {
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
           <section className="max-w-7xl mx-auto mt-16 px-4">
             <div className="text-center mb-10">
-              <h2 className="text-4xl text-gold font-bold mb-3">{t.services.sectionTitle}</h2>
-              <p className="text-slate-600 text-lg">{t.services.sectionSubtitle}</p>
+              <h2 className="text-4xl text-gold font-bold mb-3">
+                {t.services.sectionTitle}
+              </h2>
+              <p className="text-slate-600 text-lg">
+                {t.services.sectionSubtitle}
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -1672,24 +1704,40 @@ export default function Home() {
                     <Star className="service-icon-svg text-white" />
                   </div>
                 </div>
-                <h3 className="service-card-title">{t.services.talkToExpert}</h3>
-                <p className="service-card-description">{t.services.talkToExpertDesc}</p>
-                <div className="service-card-cta">{t.services.talkToExpertCta}</div>
+                <h3 className="service-card-title">
+                  {t.services.talkToExpert}
+                </h3>
+                <p className="service-card-description">
+                  {t.services.talkToExpertDesc}
+                </p>
+                <div className="service-card-cta">
+                  {t.services.talkToExpertCta}
+                </div>
               </div>
 
               {/* Service Card 2: AI Predictions */}
               <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                onClick={() => document.getElementById('ai-prediction-section')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() =>
+                  document
+                    .getElementById("ai-prediction-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">
                     <Sparkles className="service-icon-svg text-white" />
                   </div>
                 </div>
-                <h3 className="service-card-title">{t.services.aiPredictionsTitle}</h3>
-                <p className="service-card-description">{t.services.aiPredictionsDesc}</p>
-                <div className="service-card-cta">{t.services.aiPredictionsCta}</div>
+                <h3 className="service-card-title">
+                  {t.services.aiPredictionsTitle}
+                </h3>
+                <p className="service-card-description">
+                  {t.services.aiPredictionsDesc}
+                </p>
+                <div className="service-card-cta">
+                  {t.services.aiPredictionsCta}
+                </div>
               </div>
 
               {/* Service Card 3: Compatibility Check */}
@@ -1699,29 +1747,47 @@ export default function Home() {
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">
-                    <svg className="service-icon-svg text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      className="service-icon-svg text-white"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <path d="M12 21s-7-4.35-9-7.5A6 6 0 0112 3a6 6 0 019 10.5C19 16.65 12 21 12 21z" />
                     </svg>
                   </div>
                 </div>
                 <h3 className="service-card-title">{t.services.loveMatch}</h3>
-                <p className="service-card-description">{t.services.loveMatchDesc}</p>
-                <div className="service-card-cta">{t.services.loveMatchCta}</div>
+                <p className="service-card-description">
+                  {t.services.loveMatchDesc}
+                </p>
+                <div className="service-card-cta">
+                  {t.services.loveMatchCta}
+                </div>
               </div>
 
               {/* Service Card 4: Daily Panchang */}
               <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                onClick={() => document.getElementById('panchang-section')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() =>
+                  document
+                    .getElementById("panchang-section")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">
                     <Calendar className="service-icon-svg text-white" />
                   </div>
                 </div>
-                <h3 className="service-card-title">{t.services.dailyPanchang}</h3>
-                <p className="service-card-description">{t.services.dailyPanchangDesc}</p>
-                <div className="service-card-cta">{t.services.dailyPanchangCta}</div>
+                <h3 className="service-card-title">
+                  {t.services.dailyPanchang}
+                </h3>
+                <p className="service-card-description">
+                  {t.services.dailyPanchangDesc}
+                </p>
+                <div className="service-card-cta">
+                  {t.services.dailyPanchangCta}
+                </div>
               </div>
             </div>
           </section>
@@ -1733,27 +1799,39 @@ export default function Home() {
               <div className="how-it-works-column">
                 <h2 className="how-it-works-title">{t.howItWorks.title}</h2>
                 <p className="how-it-works-subtitle">{t.howItWorks.subtitle}</p>
-                
+
                 <div className="how-it-works-steps">
                   {/* Step 1 */}
                   <div className="how-it-works-step">
                     <div className="how-it-works-step-number">1</div>
-                    <h3 className="how-it-works-step-title">{t.howItWorks.step1Title}</h3>
-                    <p className="how-it-works-step-desc">{t.howItWorks.step1Desc}</p>
+                    <h3 className="how-it-works-step-title">
+                      {t.howItWorks.step1Title}
+                    </h3>
+                    <p className="how-it-works-step-desc">
+                      {t.howItWorks.step1Desc}
+                    </p>
                   </div>
 
                   {/* Step 2 */}
                   <div className="how-it-works-step">
                     <div className="how-it-works-step-number">2</div>
-                    <h3 className="how-it-works-step-title">{t.howItWorks.step2Title}</h3>
-                    <p className="how-it-works-step-desc">{t.howItWorks.step2Desc}</p>
+                    <h3 className="how-it-works-step-title">
+                      {t.howItWorks.step2Title}
+                    </h3>
+                    <p className="how-it-works-step-desc">
+                      {t.howItWorks.step2Desc}
+                    </p>
                   </div>
 
                   {/* Step 3 */}
                   <div className="how-it-works-step">
                     <div className="how-it-works-step-number">3</div>
-                    <h3 className="how-it-works-step-title">{t.howItWorks.step3Title}</h3>
-                    <p className="how-it-works-step-desc">{t.howItWorks.step3Desc}</p>
+                    <h3 className="how-it-works-step-title">
+                      {t.howItWorks.step3Title}
+                    </h3>
+                    <p className="how-it-works-step-desc">
+                      {t.howItWorks.step3Desc}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1766,7 +1844,9 @@ export default function Home() {
                     <Star className="quick-start-star-icon" />
                     <h3 className="quick-start-form-title">{t.aiForm.title}</h3>
                   </div>
-                  <p className="quick-start-form-description">{t.aiForm.description}</p>
+                  <p className="quick-start-form-description">
+                    {t.aiForm.description}
+                  </p>
 
                   <form
                     className="quick-start-form"
@@ -1778,36 +1858,56 @@ export default function Home() {
                     {/* Name and Date of Birth Row */}
                     <div className="quick-start-form-row">
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.name}</label>
+                        <label className="quick-start-form-label">
+                          {t.aiForm.name}
+                        </label>
                         <input
                           type="text"
                           className="quick-start-form-input"
                           placeholder="e.g., Rajesh Kumar"
                           value={formData.name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                         />
-                        <p className="quick-start-form-helper">Optional — we'll personalise results.</p>
+                        <p className="quick-start-form-helper">
+                          Optional — we'll personalise results.
+                        </p>
                       </div>
 
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.dob}</label>
+                        <label className="quick-start-form-label">
+                          {t.aiForm.dob}
+                        </label>
                         <div className="quick-start-form-input-wrapper">
                           <input
                             type="date"
                             className="quick-start-form-input quick-start-date-input"
                             value={formData.dob}
-                            onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                dob: e.target.value,
+                              }))
+                            }
                             required
                           />
                         </div>
-                        <p className="quick-start-form-helper">Format: DD-MM-YYYY</p>
+                        <p className="quick-start-form-helper">
+                          Format: DD-MM-YYYY
+                        </p>
                       </div>
                     </div>
 
                     {/* Gender and Place Row */}
                     <div className="quick-start-form-row">
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.gender}</label>
+                        <label className="quick-start-form-label">
+                          {t.aiForm.gender}
+                        </label>
                         <div className="quick-start-radio-group">
                           <label className="quick-start-radio-label">
                             <input
@@ -1816,7 +1916,12 @@ export default function Home() {
                               value="Male"
                               className="quick-start-radio"
                               checked={formData.gender === "Male"}
-                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  gender: e.target.value,
+                                }))
+                              }
                             />
                             <span>{t.aiForm.male}</span>
                           </label>
@@ -1827,7 +1932,12 @@ export default function Home() {
                               value="Female"
                               className="quick-start-radio"
                               checked={formData.gender === "Female"}
-                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  gender: e.target.value,
+                                }))
+                              }
                             />
                             <span>{t.aiForm.female}</span>
                           </label>
@@ -1838,7 +1948,12 @@ export default function Home() {
                               value="Other"
                               className="quick-start-radio"
                               checked={formData.gender === "Other"}
-                              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  gender: e.target.value,
+                                }))
+                              }
                             />
                             <span>{t.aiForm.other}</span>
                           </label>
@@ -1846,7 +1961,9 @@ export default function Home() {
                       </div>
 
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.place}</label>
+                        <label className="quick-start-form-label">
+                          {t.aiForm.place}
+                        </label>
                         <div className="quick-start-form-input-wrapper">
                           <input
                             ref={locationInputRef}
@@ -1856,11 +1973,16 @@ export default function Home() {
                             value={formData.place}
                             onChange={(e) => {
                               hasInteractedWithLocation.current = true;
-                              setFormData(prev => ({ ...prev, place: e.target.value }));
+                              setFormData((prev) => ({
+                                ...prev,
+                                place: e.target.value,
+                              }));
                             }}
                             onFocus={() => {
                               hasInteractedWithLocation.current = true;
-                              setShowLocationSuggestions(locationSuggestions.length > 0);
+                              setShowLocationSuggestions(
+                                locationSuggestions.length > 0
+                              );
                             }}
                             required
                             autoComplete="off"
@@ -1881,45 +2003,65 @@ export default function Home() {
                         </div>
 
                         {/* Location suggestions dropdown */}
-                        {showLocationSuggestions && locationSuggestions.length > 0 && (
-                          <div className="quick-start-location-dropdown">
-                            {locationSuggestions.map((suggestion, index) => (
-                              <div
-                                key={index}
-                                className="quick-start-location-suggestion"
-                                onClick={() => handleLocationSelect(suggestion)}
-                              >
-                                <div className="quick-start-location-suggestion-city">
-                                  {suggestion.city || suggestion.display_name?.split(",")[0] || "Unknown Location"}
+                        {showLocationSuggestions &&
+                          locationSuggestions.length > 0 && (
+                            <div className="quick-start-location-dropdown">
+                              {locationSuggestions.map((suggestion, index) => (
+                                <div
+                                  key={index}
+                                  className="quick-start-location-suggestion"
+                                  onClick={() =>
+                                    handleLocationSelect(suggestion)
+                                  }
+                                >
+                                  <div className="quick-start-location-suggestion-city">
+                                    {suggestion.city ||
+                                      suggestion.display_name?.split(",")[0] ||
+                                      "Unknown Location"}
+                                  </div>
+                                  <div className="quick-start-location-suggestion-address">
+                                    {suggestion.display_name ||
+                                      "No address available"}
+                                  </div>
                                 </div>
-                                <div className="quick-start-location-suggestion-address">
-                                  {suggestion.display_name || "No address available"}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              ))}
+                            </div>
+                          )}
                       </div>
                     </div>
 
                     {/* Time of Birth and Submit Button Row */}
                     <div className="quick-start-form-row">
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.tob}</label>
+                        <label className="quick-start-form-label">
+                          {t.aiForm.tob}
+                        </label>
                         <div className="quick-start-form-input-wrapper">
                           <input
                             type="time"
                             className="quick-start-form-input quick-start-time-input"
                             value={formData.tob}
-                            onChange={(e) => setFormData(prev => ({ ...prev, tob: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                tob: e.target.value,
+                              }))
+                            }
                             required
                           />
                         </div>
-                        <p className="quick-start-form-helper">24-hour format</p>
+                        <p className="quick-start-form-helper">
+                          24-hour format
+                        </p>
                       </div>
 
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label" style={{ opacity: 0 }}>Submit</label>
+                        <label
+                          className="quick-start-form-label"
+                          style={{ opacity: 0 }}
+                        >
+                          Submit
+                        </label>
                         <button
                           type="submit"
                           className="quick-start-submit-btn"
@@ -1948,30 +2090,52 @@ export default function Home() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-100 to-yellow-50 flex items-center justify-center ring-1 ring-amber-100">
                   <Star className="w-6 h-6 text-amber-600" />
                 </div>
-                <h2 className="text-3xl md:text-4xl font-bold text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h2
+                  className="text-3xl md:text-4xl font-bold text-gold"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
                   {t.astrologers.title}
                 </h2>
               </div>
 
-              <p className="text-gray-800 text-base md:text-lg max-w-3xl" style={{ color: '#1f2937' }}>
+              <p
+                className="text-gray-800 text-base md:text-lg max-w-3xl"
+                style={{ color: "#1f2937" }}
+              >
                 {t.astrologers.description}
-                <strong style={{ color: '#111827' }}> {t.astrologers.available247}</strong> {t.astrologers.instantConsult}
+                <strong style={{ color: "#111827" }}>
+                  {" "}
+                  {t.astrologers.available247}
+                </strong>{" "}
+                {t.astrologers.instantConsult}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-2xl mt-2">
                 <button
                   onClick={() => fastNavigate(router, "/talk-to-astrologer")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
-                  style={{ backgroundColor: 'var(--color-gold)' }}
+                  style={{ backgroundColor: "var(--color-gold)" }}
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                   <span>{t.astrologers.viewAll}</span>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -1980,14 +2144,26 @@ export default function Home() {
                   onClick={() => fastNavigate(router, "/auth/astrologer")}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white border-2 border-gold text-gray-800 font-semibold shadow-md transition-all duration-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 hover:shadow-lg hover:scale-105 active:scale-95"
                 >
-                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5 text-gold"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <line x1="19" y1="8" x2="19" y2="14" />
                     <line x1="22" y1="11" x2="16" y2="11" />
                   </svg>
                   <span>{t.astrologers.becomeAstrologer}</span>
-                  <svg className="w-5 h-5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5 text-gold"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -2011,343 +2187,356 @@ export default function Home() {
               </div>
             ) : (
               <div
-                className="astrologers-scroll-container"
-                style={{
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  height: "760px",
-                  marginTop: "1.5rem",
-                  paddingRight: "0.5rem",
-                }}
+                className="astrologers-grid-scrollable"
+                role="list"
+                aria-label="Top astrologers list"
               >
-                <div
-                  className="astrologers-grid-scrollable"
-                  role="list"
-                  aria-label="Top astrologers list"
-                >
                 {(onlineAstrologers.length > 0
                   ? onlineAstrologers
                   : featuredAstrologers
-                ).map((ast) => (
-                  <div
-                    key={ast.id}
-                    className="card astrologer-card"
-                    role="listitem"
-                    style={{
-                      padding: "1.5rem",
-                      transition: "all 0.3s ease",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
-                      textDecoration: "none",
-                      color: "inherit",
-                      background: "#ffffff",
-                      border: "1px solid rgba(212, 175, 55, 0.15)",
-                      borderRadius: "12px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.04)";
-                    }}
-                  >
-                    {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
+                )
+                  .slice(0, 6)
+                  .map((ast) => (
                     <div
+                      key={ast.id}
+                      className="card astrologer-card"
+                      role="listitem"
                       style={{
+                        padding: "1.5rem",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
                         display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: "1rem",
-                        marginBottom: "1rem",
+                        flexDirection: "column",
                         position: "relative",
-                        zIndex: 20,
+                        textDecoration: "none",
+                        color: "inherit",
+                        background: "#ffffff",
+                        border: "1px solid rgba(212, 175, 55, 0.15)",
+                        borderRadius: "12px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                        e.currentTarget.style.boxShadow =
+                          "0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow =
+                          "0 2px 8px rgba(0, 0, 0, 0.04)";
                       }}
                     >
-                      {/* Left Side: Avatar + Name + Spec + Experience */}
-                      <div style={{ display: "flex", gap: "0.75rem", flex: 1, minWidth: 0 }}>
-                        {/* Avatar + Status Indicator Dot */}
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                          <div
-                            style={{
-                              width: "4rem",
-                              height: "4rem",
-                              background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              fontWeight: 700,
-                              fontSize: "1.125rem",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {ast.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </div>
-                          {/* Status Indicator Dot - properly aligned at avatar */}
-                          {(ast.online || ast.isOnline) && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                bottom: "2px",
-                                right: "2px",
-                                width: "0.875rem",
-                                height: "0.875rem",
-                                borderRadius: "50%",
-                                border: "2.5px solid white",
-                                background: "#10b981",
-                                zIndex: 10,
-                                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
-                              }}
-                            />
-                          )}
-                        </div>
-
-                        {/* Name, Spec, Experience */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h3
-                            style={{
-                              fontSize: "1.125rem",
-                              fontWeight: 700,
-                              color: "#1f2937",
-                              margin: 0,
-                              marginBottom: "0.25rem",
-                              fontFamily: "var(--font-heading)",
-                              lineHeight: 1.3,
-                              textTransform: "lowercase",
-                            }}
-                            title={ast.name}
-                          >
-                            {ast.name}
-                          </h3>
-                          <p
-                            style={{
-                              fontSize: "0.8125rem",
-                              fontWeight: 500,
-                              color: "var(--color-indigo)",
-                              margin: "0 0 0.125rem 0",
-                              fontFamily: "var(--font-body)",
-                            }}
-                            title={ast.specialization ?? "Astrology"}
-                          >
-                            {ast.specialization ?? "Astrology"}
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#6b7280",
-                              margin: "0",
-                              fontWeight: 400,
-                            }}
-                          >
-                            {ast.experience ?? "Experienced in astrology"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right Side: Rating + Review Button + Price */}
+                      {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          gap: "0.5rem",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {/* Rating */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                            fontSize: "0.875rem",
-                            fontWeight: 600,
-                            color: "#1f2937",
-                          }}
-                        >
-                          <Star
-                            style={{
-                              width: "0.875rem",
-                              height: "0.875rem",
-                              fill: "#f59e0b",
-                              color: "#f59e0b",
-                            }}
-                          />
-                          <span>{ast.rating ?? 4.5}</span>
-                          <span style={{ color: "#6b7280", fontWeight: 400, marginLeft: "0.125rem" }}>
-                            ({ast.reviews ?? 2})
-                          </span>
-                        </div>
-
-                        {/* Review Button */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleOpenReview(ast);
-                          }}
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "0.25rem 0.625rem",
-                            height: "auto",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "0.375rem",
-                            background: "white",
-                            color: "#374151",
-                            cursor: "pointer",
-                            fontWeight: 500,
-                          }}
-                        >
-                          Review
-                        </button>
-
-                        {/* Price - moved to where ONLINE was */}
-                        {ast.perMinuteCharge && (
-                          <div
-                            style={{
-                              fontSize: "0.9375rem",
-                              fontWeight: 700,
-                              color: "#059669",
-                            }}
-                          >
-                            ₹{ast.perMinuteCharge}/min
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Middle Section: Bio */}
-                    <p
-                      style={{
-                        fontSize: "0.875rem",
-                        fontFamily: "var(--font-body)",
-                        color: "#4b5563",
-                        marginBottom: "0.75rem",
-                        lineHeight: 1.5,
-                        position: "relative",
-                        zIndex: 20,
-                      }}
-                    >
-                      {ast.bio ?? `Experienced astrologer providing guidance and insights.`}
-                    </p>
-
-                    {/* Languages */}
-                    {ast.languages?.length > 0 && (
-                      <div
-                        style={{
-                          marginBottom: "0.75rem",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: "1rem",
+                          marginBottom: "1rem",
                           position: "relative",
                           zIndex: 20,
                         }}
                       >
-                        <p
-                          style={{
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            color: "#4b5563",
-                            marginBottom: "0.5rem",
-                          }}
-                        >
-                          Speaks:
-                        </p>
+                        {/* Left Side: Avatar + Name + Spec + Experience */}
                         <div
                           style={{
                             display: "flex",
-                            flexWrap: "wrap",
-                            gap: "0.375rem",
+                            gap: "0.75rem",
+                            flex: 1,
+                            minWidth: 0,
                           }}
                         >
-                          {ast.languages.map((l, i) => (
-                            <span
-                              key={l + i}
+                          {/* Avatar + Status Indicator Dot */}
+                          <div style={{ position: "relative", flexShrink: 0 }}>
+                            <div
                               style={{
-                                padding: "0.25rem 0.625rem",
-                                background: "#E0E7FF",
-                                color: "#4F46E5",
-                                fontSize: "0.75rem",
-                                fontWeight: 500,
-                                borderRadius: "9999px",
+                                width: "4rem",
+                                height: "4rem",
+                                background:
+                                  "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontWeight: 700,
+                                fontSize: "1.125rem",
+                                textTransform: "uppercase",
                               }}
                             >
-                              {l}
+                              {ast.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </div>
+                            {/* Status Indicator Dot - properly aligned at avatar */}
+                            {(ast.online || ast.isOnline) && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  bottom: "2px",
+                                  right: "2px",
+                                  width: "0.875rem",
+                                  height: "0.875rem",
+                                  borderRadius: "50%",
+                                  border: "2.5px solid white",
+                                  background: "#10b981",
+                                  zIndex: 10,
+                                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Name, Spec, Experience */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3
+                              style={{
+                                fontSize: "1.125rem",
+                                fontWeight: 700,
+                                color: "#1f2937",
+                                margin: 0,
+                                marginBottom: "0.25rem",
+                                fontFamily: "var(--font-heading)",
+                                lineHeight: 1.3,
+                                textTransform: "lowercase",
+                              }}
+                              title={ast.name}
+                            >
+                              {ast.name}
+                            </h3>
+                            <p
+                              style={{
+                                fontSize: "0.8125rem",
+                                fontWeight: 500,
+                                color: "var(--color-indigo)",
+                                margin: "0 0 0.125rem 0",
+                                fontFamily: "var(--font-body)",
+                              }}
+                              title={ast.specialization ?? "Astrology"}
+                            >
+                              {ast.specialization ?? "Astrology"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "#6b7280",
+                                margin: "0",
+                                fontWeight: 400,
+                              }}
+                            >
+                              {ast.experience ?? "Experienced in astrology"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Rating + Review Button + Price */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "0.5rem",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {/* Rating */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              color: "#1f2937",
+                            }}
+                          >
+                            <Star
+                              style={{
+                                width: "0.875rem",
+                                height: "0.875rem",
+                                fill: "#f59e0b",
+                                color: "#f59e0b",
+                              }}
+                            />
+                            <span>{ast.rating ?? 4.5}</span>
+                            <span
+                              style={{
+                                color: "#6b7280",
+                                fontWeight: 400,
+                                marginLeft: "0.125rem",
+                              }}
+                            >
+                              ({ast.reviews ?? 2})
                             </span>
-                          ))}
+                          </div>
+
+                          {/* Review Button */}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenReview(ast);
+                            }}
+                            style={{
+                              fontSize: "0.75rem",
+                              padding: "0.25rem 0.625rem",
+                              height: "auto",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "0.375rem",
+                              background: "white",
+                              color: "#374151",
+                              cursor: "pointer",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Review
+                          </button>
+
+                          {/* Price - moved to where ONLINE was */}
+                          {ast.perMinuteCharge && (
+                            <div
+                              style={{
+                                fontSize: "0.9375rem",
+                                fontWeight: 700,
+                                color: "#059669",
+                              }}
+                            >
+                              ₹{ast.perMinuteCharge}/min
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
 
-                    {/* Bottom Section: Connect Button */}
-                    <div
-                      style={{
-                        display: "flex",
-                        marginTop: "auto",
-                        position: "relative",
-                        zIndex: 30,
-                      }}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          fastNavigate(router, `/account/astrologer/${ast.id}`);
-                        }}
+                      {/* Middle Section: Bio */}
+                      <p
                         style={{
-                          width: "100%",
-                          height: "2.75rem",
-                          padding: "0 1.25rem",
-                          fontSize: "0.9375rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "0.5rem",
-                          fontWeight: 600,
-                          background: "white",
-                          border: "1px solid rgba(212, 175, 55, 0.4)",
-                          borderRadius: "0.5rem",
-                          color: "#D4AF37",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                        type="button"
-                        aria-label={`Connect with ${ast.name}`}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.6)";
-                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(212, 175, 55, 0.15)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.4)";
-                          e.currentTarget.style.boxShadow = "none";
+                          fontSize: "0.875rem",
+                          fontFamily: "var(--font-body)",
+                          color: "#4b5563",
+                          marginBottom: "0.75rem",
+                          lineHeight: 1.5,
+                          position: "relative",
+                          zIndex: 20,
                         }}
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                        {ast.bio ??
+                          `Experienced astrologer providing guidance and insights.`}
+                      </p>
+
+                      {/* Languages */}
+                      {ast.languages?.length > 0 && (
+                        <div
+                          style={{
+                            marginBottom: "0.75rem",
+                            position: "relative",
+                            zIndex: 20,
+                          }}
                         >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Connect with {ast.name.split(" ")[0].toLowerCase()}
-                      </button>
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              color: "#4b5563",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            Speaks:
+                          </p>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "0.375rem",
+                            }}
+                          >
+                            {ast.languages.map((l, i) => (
+                              <span
+                                key={l + i}
+                                style={{
+                                  padding: "0.25rem 0.625rem",
+                                  background: "#E0E7FF",
+                                  color: "#4F46E5",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  borderRadius: "9999px",
+                                }}
+                              >
+                                {l}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bottom Section: Connect Button */}
+                      <div
+                        style={{
+                          display: "flex",
+                          marginTop: "auto",
+                          position: "relative",
+                          zIndex: 30,
+                        }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            fastNavigate(
+                              router,
+                              `/account/astrologer/${ast.id}`
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            height: "2.75rem",
+                            padding: "0 1.25rem",
+                            fontSize: "0.9375rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.5rem",
+                            fontWeight: 600,
+                            background: "white",
+                            border: "1px solid rgba(212, 175, 55, 0.4)",
+                            borderRadius: "0.5rem",
+                            color: "#D4AF37",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                          }}
+                          type="button"
+                          aria-label={`Connect with ${ast.name}`}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor =
+                              "rgba(212, 175, 55, 0.6)";
+                            e.currentTarget.style.boxShadow =
+                              "0 2px 8px rgba(212, 175, 55, 0.15)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor =
+                              "rgba(212, 175, 55, 0.4)";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          Connect with {ast.name.split(" ")[0].toLowerCase()}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                </div>
+                  ))}
               </div>
             )}
           </section>
@@ -2385,32 +2574,47 @@ export default function Home() {
                   <h3 id="loyalty-title" className="text-4xl text-gold">
                     {t.compatibility.title}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
+                  <p
+                    className="mt-1 text-sm text-slate-600"
+                    style={{ color: undefined }}
+                  >
                     {t.compatibility.description}
                   </p>
 
-                  <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600" style={{ color: undefined }}>
+                  <ul
+                    className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600"
+                    style={{ color: undefined }}
+                  >
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold" style={{
-                        background: undefined,
-                        color: undefined
-                      }}>
+                      <span
+                        className="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-600 font-semibold"
+                        style={{
+                          background: undefined,
+                          color: undefined,
+                        }}
+                      >
                         ✓
                       </span>
                       {t.compatibility.quickResults}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold" style={{
-                        background: undefined,
-                        color: undefined
-                      }}>
+                      <span
+                        className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-50 text-amber-600 font-semibold"
+                        style={{
+                          background: undefined,
+                          color: undefined,
+                        }}
+                      >
                         ★
                       </span>
                       {t.compatibility.learnKoot}
                     </li>
                   </ul>
 
-                  <p className="mt-3 text-xs text-slate-500" style={{ color: undefined }}>
+                  <p
+                    className="mt-3 text-xs text-slate-500"
+                    style={{ color: undefined }}
+                  >
                     {t.compatibility.prefillNote}
                   </p>
                 </div>
@@ -2471,9 +2675,9 @@ export default function Home() {
               style={{
                 background: undefined,
                 borderColor: undefined,
-                width: '100%',
-                maxWidth: '80rem',
-                boxSizing: 'border-box'
+                width: "100%",
+                maxWidth: "80rem",
+                boxSizing: "border-box",
               }}
             >
               {/* Header Section */}
@@ -2491,40 +2695,43 @@ export default function Home() {
                     <h3 id="panchang-title" className="text-4xl text-gold">
                       {selectedDate === new Date().toISOString().split("T")[0]
                         ? t.panchang.title
-                        : `${t.panchang.titleFor} ${new Date(selectedDate).toLocaleDateString(
-                          "en-US",
-                          {
+                        : `${t.panchang.titleFor} ${new Date(
+                            selectedDate
+                          ).toLocaleDateString("en-US", {
                             weekday: "long",
                             day: "numeric",
                             month: "long",
                             year: "numeric",
-                          }
-                        )}`}
+                          })}`}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
+                    <p
+                      className="mt-1 text-sm text-slate-600"
+                      style={{ color: undefined }}
+                    >
                       {t.panchang.description}
                     </p>
 
                     {/* Date Selector */}
                     <div
-                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${"bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"
-                        }`}
+                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${"bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"}`}
                     >
                       <Calendar className={`w-4 h-4 ${"text-gold"}`} />
                       <input
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${"text-gray-700 hover:text-gold"
-                          }`}
+                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${"text-gray-700 hover:text-gold"}`}
                         style={{
                           colorScheme: "light",
-                          background: 'transparent'
+                          background: "transparent",
                         }}
                       />
                     </div>
 
-                    <p className="mt-3 text-xs text-slate-500" style={{ color: undefined }}>
+                    <p
+                      className="mt-3 text-xs text-slate-500"
+                      style={{ color: undefined }}
+                    >
                       {t.panchang.selectDateHelper}
                     </p>
                   </div>
@@ -2544,7 +2751,10 @@ export default function Home() {
                       borderWidth: "0",
                     }}
                   >
-                    <Calendar className="w-4 h-4" style={{ color: "currentColor" }} />
+                    <Calendar
+                      className="w-4 h-4"
+                      style={{ color: "currentColor" }}
+                    />
                     {t.panchang.viewFull}
                   </button>
                 </div>
@@ -2574,9 +2784,9 @@ export default function Home() {
               style={{
                 background: undefined,
                 borderColor: undefined,
-                width: '100%',
-                maxWidth: '80rem',
-                boxSizing: 'border-box'
+                width: "100%",
+                maxWidth: "80rem",
+                boxSizing: "border-box",
               }}
             >
               {/* Header Section */}
@@ -2591,10 +2801,17 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1">
-                    <h2 id="advanced-vedic-tools-title" className="text-4xl text-gold" style={{ fontFamily: 'var(--font-heading)' }}>
+                    <h2
+                      id="advanced-vedic-tools-title"
+                      className="text-4xl text-gold"
+                      style={{ fontFamily: "var(--font-heading)" }}
+                    >
                       {t.tools.title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-600" style={{ color: undefined }}>
+                    <p
+                      className="mt-1 text-sm text-slate-600"
+                      style={{ color: undefined }}
+                    >
                       {t.tools.description}
                     </p>
                   </div>
@@ -2617,39 +2834,62 @@ export default function Home() {
           </section>
 
           {/* Explanation Card - At the end before footer */}
-          <section className="card mt-12 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border" style={{
-            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-            borderColor: "rgba(212, 175, 55, 0.3)",
-          }}>
+          <section
+            className="card mt-12 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+              borderColor: "rgba(212, 175, 55, 0.3)",
+            }}
+          >
             <div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "1.5rem",
-                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-                marginBottom: "1.5rem",
-              }}>
-                <h2 style={{
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                  color: "#1f2937",
-                  margin: 0,
-                }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingBottom: "1.5rem",
+                  borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    fontSize: "1.5rem",
+                    fontWeight: 700,
+                    color: "#1f2937",
+                    margin: 0,
+                  }}
+                >
                   Understanding Vedic Astrology
                 </h2>
               </div>
               <div style={{ padding: 0 }}>
-                <p style={{
-                  fontSize: "0.875rem",
-                  color: "#374151",
-                  fontStyle: "normal",
-                  marginBottom: 0,
-                  fontFamily: "'Inter', sans-serif",
-                  lineHeight: 1.6,
-                }}>
-                  Vedic Astrology, also known as <strong>Jyotish</strong>, is an ancient Indian system of astrology that has been practiced for thousands of years. It provides insights into your life through the analysis of planetary positions at the time of your birth. Our platform offers comprehensive astrological services including <strong>Birth Chart Analysis</strong> revealing your planetary positions and their influences, <strong>Compatibility Matching</strong> using the traditional Ashtakoot system to assess relationship harmony, <strong>Dasha Predictions</strong> forecasting life phases based on planetary periods, and <strong>Expert Consultations</strong> with experienced Vedic astrologers who provide personalized guidance based on authentic traditional principles.
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#374151",
+                    fontStyle: "normal",
+                    marginBottom: 0,
+                    fontFamily: "'Inter', sans-serif",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Vedic Astrology, also known as <strong>Jyotish</strong>, is an
+                  ancient Indian system of astrology that has been practiced for
+                  thousands of years. It provides insights into your life
+                  through the analysis of planetary positions at the time of
+                  your birth. Our platform offers comprehensive astrological
+                  services including <strong>Birth Chart Analysis</strong>{" "}
+                  revealing your planetary positions and their influences,{" "}
+                  <strong>Compatibility Matching</strong> using the traditional
+                  Ashtakoot system to assess relationship harmony,{" "}
+                  <strong>Dasha Predictions</strong> forecasting life phases
+                  based on planetary periods, and{" "}
+                  <strong>Expert Consultations</strong> with experienced Vedic
+                  astrologers who provide personalized guidance based on
+                  authentic traditional principles.
                 </p>
               </div>
             </div>
@@ -2658,11 +2898,13 @@ export default function Home() {
           {/* FOOTER */}
           <footer className="home-footer">
             <p>
-              {t.footer.madeBy} ✨ by <span className="footer-brand">{t.footer.team}</span> - <span className="text-gold font-semibold">{t.footer.company}</span>
+              {t.footer.madeBy} ✨ by{" "}
+              <span className="footer-brand">{t.footer.team}</span> -{" "}
+              <span className="text-gold font-semibold">
+                {t.footer.company}
+              </span>
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              🌟 {t.footer.tagline}
-            </p>
+            <p className="text-xs text-gray-400 mt-1">🌟 {t.footer.tagline}</p>
           </footer>
         </main>
       </div>
@@ -2722,7 +2964,7 @@ export default function Home() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "cancel-call", callId }),
-              }).catch(() => { });
+              }).catch(() => {});
 
               await fetch("/api/calls", {
                 method: "PATCH",
@@ -2731,7 +2973,7 @@ export default function Home() {
                   callId,
                   status: "cancelled",
                 }),
-              }).catch(() => { });
+              }).catch(() => {});
             }
             setConnectingCallType(null);
             setCallStatus("connecting");
