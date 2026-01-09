@@ -1921,6 +1921,16 @@ export default function PredictionsPage() {
                 </div>
                 <div className="table-scroll-container">
                   <table className="planet-table">
+                    <colgroup>
+  <col style={{ width: "14%" }} /> {/* Planet */}
+  <col style={{ width: "14%" }} /> {/* Sign */}
+  <col style={{ width: "8%" }} />  {/* House */}
+  <col style={{ width: "18%" }} /> {/* Nakshatra */}
+  <col style={{ width: "16%" }} /> {/* Degrees */}
+  <col style={{ width: "10%" }} /> {/* Strength */}
+  <col style={{ width: "10%" }} /> {/* Ishta */}
+  <col style={{ width: "10%" }} /> {/* Kashta */}
+</colgroup>
                     <thead>
                       <tr>
                         <th>Planet</th>

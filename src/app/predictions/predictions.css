@@ -103,253 +103,179 @@
   height: 36px;
 }
 
-/* ===============================
-   RESPONSIVE PLANET TABLE FIX
-   =============================== */
+/* =========================================================
+   PLANET PLACEMENTS TABLE — BULLETPROOF RESPONSIVE VERSION
+   ========================================================= */
 
-/* Wrapper scrolls horizontally instead of crushing columns */
+/* ---------- Scroll Wrapper ---------- */
 .table-scroll-container {
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  position: relative;
   border-radius: 0.75rem;
-  scrollbar-color: rgba(200, 160, 40, 0.4) transparent;
-}
-.table-scroll-container::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;  
 }
 
-.table-scroll-container::-webkit-scrollbar-thumb {
-  background: rgba(200, 160, 40, 0.4);
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Let columns size naturally, not fixed */
+/* ---------- Core Table Reset ---------- */
 .planet-table {
   width: 100%;
+  min-width: 900px;              /* forces scroll instead of squeeze */
   border-collapse: collapse;
-  table-layout: fixed; /* Use fixed layout for better alignment */
-  min-width: 900px;    /* ✅ force scroll instead of squish */
+  table-layout: auto;            /* 🔑 CRITICAL: prevents header overlap */
 }
 
-/* Prevent ugly wrapping that breaks layout */
+/* Force browser to treat this as a real table */
+.planet-table thead {
+  display: table-header-group;
+}
+
+.planet-table tbody {
+  display: table-row-group;
+}
+
+.planet-table tr {
+  display: table-row;
+}
+
 .planet-table th,
 .planet-table td {
+  display: table-cell;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
   vertical-align: middle;
   text-align: left;
-  padding: 0.75rem 1rem;
+  white-space: nowrap;
 }
 
-/* Header styling */
+/* ---------- Header Styling ---------- */
 .planet-table th {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
   font-weight: 600;
   color: #1f2937;
-  border-bottom: 2px solid rgba(212, 175, 55, 0.3);
-  white-space: nowrap;
-}
-
-/* 1st column: Planet */
-.planet-table th:nth-child(1),
-.planet-table td:nth-child(1) {
-  width: 12%;
-  min-width: 100px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 2nd column: Sign */
-.planet-table th:nth-child(2),
-.planet-table td:nth-child(2) {
-  width: 15%;
-  min-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 3rd column: House */
-.planet-table th:nth-child(3),
-.planet-table td:nth-child(3) {
-  width: 8%;
-  min-width: 70px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* 4th column: Nakshatra (Pada) - Allow wrapping */
-.planet-table th:nth-child(4),
-.planet-table td:nth-child(4) {
-  width: 20%;
-  min-width: 180px;
-  white-space: normal;
-  word-break: break-word;
-}
-
-/* 5th column: Degrees */
-.planet-table th:nth-child(5),
-.planet-table td:nth-child(5) {
-  width: 15%;
-  min-width: 140px;
-  white-space: normal;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.12),
+    rgba(212, 175, 55, 0.06)
+  );
+  border-bottom: 2px solid rgba(212, 175, 55, 0.35);
   line-height: 1.4;
 }
 
-/* 6th column: Strength */
-.planet-table th:nth-child(6),
-.planet-table td:nth-child(6) {
-  width: 12%;
-  min-width: 110px;
-  text-align: center;
-  white-space: nowrap;
+/* ---------- Body Rows ---------- */
+.planet-table td {
+  color: #374151;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* 7th column: Ishta */
-.planet-table th:nth-child(7),
-.planet-table td:nth-child(7) {
-  width: 9%;
-  min-width: 120px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.planet-table td:nth-child(7) {
-  width: auto !important;
-  min-width: 120px;
-}
-
-/* 8th column: Kashta */
-.planet-table th:nth-child(8),
-.planet-table td:nth-child(8) {
-  width: 9%;
-  min-width: 120px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.planet-table td:nth-child(8) {
-  width: auto !important;
-  min-width: 120px;
-}
-
-/* Strength container alignment */
-.planet-table .strength-container {
+/* ---------- Planet Cell ---------- */
+.planet-cell {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-width: 100px;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
-.planet-table .strength-bar {
-  flex: 1;
-  max-width: 80px;
-  height: 8px;
-  background: rgba(212, 175, 55, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.planet-table .strength-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #d4af37, #b8972e);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.planet-table .strength-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1f2937;
+.planet-main {
+  font-weight: 500;
   white-space: nowrap;
-  min-width: 45px;
-  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Medium screens: reduce padding only (NO font changes) */
-@media (max-width: 900px) {
-  .planet-table th,
-  .planet-table td {
-    padding: 0.6rem 0.75rem;
-  }
+.planet-retro {
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
-/* Small screens: keep readable width, allow scroll */
-@media (max-width: 640px) {
-  .planet-table {
-    min-width: 800px;
-  }
-
-  .planet-table th,
-  .planet-table td {
-    padding: 0.5rem 0.6rem;
-    font-size: 0.875rem;
-  }
-}
-
-/* Helps flex parents not break horizontal scroll */
-.card {
-  min-width: 0;
-}
-
-/* Ensure planet placements card doesn't overlap chat */
-#planet-placements.card {
-  position: relative;
-  z-index: 1;
-}
-/* Degrees column: allow stacked lines - already defined above */
-
+/* ---------- Degrees Column ---------- */
 .degrees-stack {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  line-height: 1.2; 
+  line-height: 1.2;
+  white-space: normal;
 }
-/* Planet cell layout: name top, retro below */
-.planet-cell {
+
+/* ---------- Strength Bars ---------- */
+.strength-container {
   display: flex;
-  flex-direction: column;
-  line-height: 1.1;  /* just spacing, not font */
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 140px;
+  margin: 0 auto;
 }
 
-/* keep normal text */
-.planet-main {
-  white-space: nowrap;
+.strength-bar {
+  flex: 1;
+  max-width: 80px;
+  height: 8px;
+  background: rgba(212, 175, 55, 0.12);
+  border-radius: 999px;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* retro on its own line, never ellipsized */
-.planet-retro {
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+.strength-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #b8972e);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.strength-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* ---------- Column Separators (subtle, premium) ---------- */
+.planet-table th:not(:last-child),
+.planet-table td:not(:last-child) {
+  border-right: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+/* ---------- Hover Effect ---------- */
+.planet-table tbody tr:hover {
+  background: rgba(212, 175, 55, 0.06);
+}
+
+/* ---------- Mobile Safety ---------- */
+@media (max-width: 768px) {
+  .planet-table {
+    min-width: 820px;            /* ensures horizontal scroll */
+  }
+
+  .planet-table th,
+  .planet-table td {
+    font-size: 0.875rem;
+  }
+}
+
+/* ---------- Card Safety ---------- */
+.card {
+  min-width: 0;
+}
+
+#planet-placements.card {
+  position: relative;
+  z-index: 1;
 }
 
 
-.planet-table td:nth-child(7) .retro-badge {
-  color: #6b7280;
-}
+/* =========================
+   Progress Pill (Responsive)
+   ========================= */
 
-.planet-table td:nth-child(7) span {
-  font-weight: 500;
-}
-
-/* Progress bars */
 .progress-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
+/* Progress bar */
 .progress-bar {
   flex: 1;
   height: 0.5rem;
@@ -365,13 +291,40 @@
   transition: width 0.3s ease;
 }
 
+/* Percentage label */
 .progress-label {
   font-size: 0.75rem;
   font-weight: 500;
   color: #4b5563;
   min-width: 3rem;
   text-align: right;
+  white-space: nowrap;
 }
+
+/* =========================
+   MOBILE BEHAVIOR
+   ========================= */
+
+@media (max-width: 640px) {
+  .progress-container {
+    flex-direction: column;      /* ⬇ stack vertically */
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  /* Label ABOVE the bar */
+  .progress-label {
+    order: -1;                   /* move label to top */
+    text-align: left;
+    font-size: 0.7rem;
+  }
+
+  /* Bar takes full width */
+  .progress-bar {
+    width: 100%;
+  }
+}
+
 
 /* New custom classes for Antar Dasha and AI Predictions Modals */
 .modal-loading {

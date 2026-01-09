@@ -34,7 +34,7 @@ import { PageLoading } from "@/components/LoadingStates";
 
 export default function TalkToAstrologer() {
   const { t } = useTranslation();
-      /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,6 +59,8 @@ export default function TalkToAstrologer() {
   const [callHistoryCacheTime, setCallHistoryCacheTime] = useState(0);
   const [showAllCalls, setShowAllCalls] = useState(false);
   const [loadingAllCalls, setLoadingAllCalls] = useState(false);
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
 
@@ -66,72 +68,77 @@ export default function TalkToAstrologer() {
   /*  Helper: Invalidate Cache & Force Refresh                      */
   /* --------------------------------------------------------------- */
   const invalidateCache = (userId) => {
-    console.log('🗑️ Invalidating cache for user', userId)
-    const cacheKey = `tgs:callHistory:${userId}`
+    console.log("🗑️ Invalidating cache for user", userId);
+    const cacheKey = `tgs:callHistory:${userId}`;
     try {
-      localStorage.removeItem(cacheKey)
-      setCallHistoryCache(null)
-      setCallHistoryCacheTime(0)
+      localStorage.removeItem(cacheKey);
+      setCallHistoryCache(null);
+      setCallHistoryCacheTime(0);
     } catch (e) {
-      console.warn('Error invalidating cache:', e)
+      console.warn("Error invalidating cache:", e);
     }
-  }
+  };
 
   /* --------------------------------------------------------------- */
   /*  useEffect: Periodic balance refresh (every 5 seconds)         */
   /* --------------------------------------------------------------- */
   useEffect(() => {
-    const userId = localStorage.getItem("tgs:userId")
-    if (!userId) return
+    const userId = localStorage.getItem("tgs:userId");
+    if (!userId) return;
 
-    console.log('🔄 Setting up periodic balance refresh for user:', userId)
+    console.log("🔄 Setting up periodic balance refresh for user:", userId);
 
     // Fetch balance immediately
-    let previousBalance = null
+    let previousBalance = null;
     const fetchBalance = async () => {
       try {
         const response = await fetch("/api/payments/wallet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "get-balance", userId }),
-        })
+        });
         if (response.ok) {
-          const data = await response.json()
+          const data = await response.json();
           if (data.success && data.wallet) {
-            const newBalance = data.wallet.balance || 0
-            
+            const newBalance = data.wallet.balance || 0;
+
             // If balance changed, invalidate cache
             if (previousBalance !== null && previousBalance !== newBalance) {
-              console.log(`💰 Balance changed: ₹${previousBalance} → ₹${newBalance}`)
-              invalidateCache(userId)
+              console.log(
+                `💰 Balance changed: ₹${previousBalance} → ₹${newBalance}`
+              );
+              invalidateCache(userId);
             }
-            
-            previousBalance = newBalance
-            setBalance(newBalance)
+
+            previousBalance = newBalance;
+            setBalance(newBalance);
           }
         }
       } catch (error) {
-        console.error('Error fetching balance:', error)
+        console.error("Error fetching balance:", error);
       }
-    }
+    };
 
     // Fetch immediately
-    fetchBalance()
+    fetchBalance();
 
     // Then poll every 5 seconds for real-time feel
-    const intervalId = setInterval(fetchBalance, 5000)
+    const intervalId = setInterval(fetchBalance, 5000);
 
     return () => {
-      console.log('🔌 Stopping balance refresh')
-      clearInterval(intervalId)
-    }
-  }, []) // Run once on mount
+      console.log("🔌 Stopping balance refresh");
+      clearInterval(intervalId);
+    };
+  }, []); // Run once on mount
 
   /* --------------------------------------------------------------- */
   /*  Modal open state for body scroll lock                         */
   /* --------------------------------------------------------------- */
   const isAnyModalOpen =
-    isBalanceModalOpen || isReviewModalOpen || !!connectingCallType || isCallHistoryModalOpen;
+    isBalanceModalOpen ||
+    isReviewModalOpen ||
+    !!connectingCallType ||
+    isCallHistoryModalOpen;
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -196,7 +203,9 @@ export default function TalkToAstrologer() {
         try {
           const pricingData = await pricingResponse.json();
           if (pricingData.success) {
-            pricingData.pricing.forEach((p) => (pricingMap[p.astrologerId] = p));
+            pricingData.pricing.forEach(
+              (p) => (pricingMap[p.astrologerId] = p)
+            );
           }
         } catch (e) {
           console.error("Pricing parse error:", e);
@@ -220,7 +229,7 @@ export default function TalkToAstrologer() {
       // Group reviews requests to avoid too many simultaneous requests
       const BATCH_SIZE = 10; // Process 10 at a time to avoid overwhelming the server
       const updated = [];
-      
+
       for (let i = 0; i < list.length; i += BATCH_SIZE) {
         const batch = list.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
@@ -247,7 +256,7 @@ export default function TalkToAstrologer() {
           })
         );
         updated.push(...batchResults);
-        
+
         // Update UI incrementally for better perceived performance
         if (i === 0) {
           setAstrologers(updated);
@@ -272,16 +281,27 @@ export default function TalkToAstrologer() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterSpecialization]);
+
   // Auto-start call if coming from profile page
   useEffect(() => {
-    const profileCallAstrologerId = localStorage.getItem("tgs:profileCallAstrologerId");
+    const profileCallAstrologerId = localStorage.getItem(
+      "tgs:profileCallAstrologerId"
+    );
     const profileCallType = localStorage.getItem("tgs:profileCallType");
-    
-    if (profileCallAstrologerId && profileCallType && !connectingCallType && astrologers.length > 0) {
+
+    if (
+      profileCallAstrologerId &&
+      profileCallType &&
+      !connectingCallType &&
+      astrologers.length > 0
+    ) {
       // Clear the localStorage values immediately to prevent re-triggering
       localStorage.removeItem("tgs:profileCallAstrologerId");
       localStorage.removeItem("tgs:profileCallType");
-      
+
       // Start the call
       startCall(profileCallType, profileCallAstrologerId);
     }
@@ -298,6 +318,13 @@ export default function TalkToAstrologer() {
       !filterSpecialization || a.specialization === filterSpecialization;
     return matchesSearch && matchesFilter;
   });
+
+  const totalPages = Math.ceil(filteredAstrologers.length / ITEMS_PER_PAGE);
+
+  const paginatedAstrologers = filteredAstrologers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   /* --------------------------------------------------------------- */
   /*  Voice / Video call handlers                                    */
@@ -416,7 +443,9 @@ export default function TalkToAstrologer() {
 
       /* ---- Billing will start automatically when both participants join and audio track is published ---- */
       /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
-      console.log("Call created. Billing will start automatically when call connects.");
+      console.log(
+        "Call created. Billing will start automatically when call connects."
+      );
 
       /* ---- REAL-TIME listener for INSTANT status updates ---- */
       const callDocRef = doc(db, "calls", call.id);
@@ -426,135 +455,145 @@ export default function TalkToAstrologer() {
       console.log("📡 Setting up real-time listener for call:", call.id);
 
       // Use Firestore real-time listener for instant updates (no 2s delay!)
-      unsubscribe = onSnapshot(callDocRef, async (snapshot) => {
-        if (!snapshot.exists()) {
-          console.error("❌ Call document no longer exists");
-          return;
-        }
-
-        const c = snapshot.data();
-        console.log(`📡 Real-time update - Call status: ${c.status}`, c);
-
-        if (c?.status === "active" && c?.roomName) {
-          console.log("✅ Call accepted by astrologer! Joining room:", c.roomName);
-          
-          // Clean up listener and timeout
-          if (unsubscribe) unsubscribe();
-          if (timeoutId) clearTimeout(timeoutId);
-
-          // Track call accepted
-          trackEvent("call_accepted", {
-            call_id: call.id,
-            call_type: type,
-            astrologer_id: astrologerId,
-          });
-
-          const sessRes = await fetch("/api/livekit/create-session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              astrologerId,
-              userId,
-              callId: call.id,
-              roomName: c.roomName,
-              callType: type,
-              role: "user",
-              displayName: "User",
-            }),
-          });
-          if (sessRes.ok) {
-            const { roomName } = await sessRes.json();
-
-            // Track successful call connection
-            trackActionComplete("astrologer_booking", {
-              call_id: call.id,
-              call_type: type,
-              astrologer_id: astrologerId,
-              room_name: roomName,
-              success: true,
-            });
-            trackEvent("call_connected", {
-              call_id: call.id,
-              call_type: type,
-              astrologer_id: astrologerId,
-            });
-
-            setConnectingCallType(null);
-            setConnectingAstrologerId(null);
-            setLoading(false);
-            
-            console.log("🚀 Redirecting user to call room:", roomName);
-            router.push(
-              type === "video"
-                ? `/talk-to-astrologer/room/${roomName}`
-                : `/talk-to-astrologer/voice/${roomName}`
-            );
-          } else {
-            trackActionAbandon("astrologer_booking", "session_creation_failed");
-            trackEvent("call_failed", {
-              reason: "session_creation_failed",
-              call_id: call.id,
-            });
-            setConnectingCallType(null);
-            setConnectingAstrologerId(null);
-            setLoading(false);
-            alert("Failed to join room.");
+      unsubscribe = onSnapshot(
+        callDocRef,
+        async (snapshot) => {
+          if (!snapshot.exists()) {
+            console.error("❌ Call document no longer exists");
+            return;
           }
-        } else if (c?.status === "rejected") {
-          console.log("❌ Call rejected by astrologer");
-          
-          // Clean up listener and timeout
-          if (unsubscribe) unsubscribe();
-          if (timeoutId) clearTimeout(timeoutId);
 
-          // Track call rejected
-          trackActionAbandon("astrologer_booking", "astrologer_rejected");
-          trackEvent("call_rejected", {
-            call_id: call.id,
-            call_type: type,
-            astrologer_id: astrologerId,
-          });
+          const c = snapshot.data();
+          console.log(`📡 Real-time update - Call status: ${c.status}`, c);
 
-          await fetch("/api/billing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "cancel-call", callId: call.id }),
-          }).catch(() => {});
-          setCallStatus("rejected");
-          setTimeout(() => {
+          if (c?.status === "active" && c?.roomName) {
+            console.log(
+              "✅ Call accepted by astrologer! Joining room:",
+              c.roomName
+            );
+
+            // Clean up listener and timeout
+            if (unsubscribe) unsubscribe();
+            if (timeoutId) clearTimeout(timeoutId);
+
+            // Track call accepted
+            trackEvent("call_accepted", {
+              call_id: call.id,
+              call_type: type,
+              astrologer_id: astrologerId,
+            });
+
+            const sessRes = await fetch("/api/livekit/create-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                astrologerId,
+                userId,
+                callId: call.id,
+                roomName: c.roomName,
+                callType: type,
+                role: "user",
+                displayName: "User",
+              }),
+            });
+            if (sessRes.ok) {
+              const { roomName } = await sessRes.json();
+
+              // Track successful call connection
+              trackActionComplete("astrologer_booking", {
+                call_id: call.id,
+                call_type: type,
+                astrologer_id: astrologerId,
+                room_name: roomName,
+                success: true,
+              });
+              trackEvent("call_connected", {
+                call_id: call.id,
+                call_type: type,
+                astrologer_id: astrologerId,
+              });
+
+              setConnectingCallType(null);
+              setConnectingAstrologerId(null);
+              setLoading(false);
+
+              console.log("🚀 Redirecting user to call room:", roomName);
+              router.push(
+                type === "video"
+                  ? `/talk-to-astrologer/room/${roomName}`
+                  : `/talk-to-astrologer/voice/${roomName}`
+              );
+            } else {
+              trackActionAbandon(
+                "astrologer_booking",
+                "session_creation_failed"
+              );
+              trackEvent("call_failed", {
+                reason: "session_creation_failed",
+                call_id: call.id,
+              });
+              setConnectingCallType(null);
+              setConnectingAstrologerId(null);
+              setLoading(false);
+              alert("Failed to join room.");
+            }
+          } else if (c?.status === "rejected") {
+            console.log("❌ Call rejected by astrologer");
+
+            // Clean up listener and timeout
+            if (unsubscribe) unsubscribe();
+            if (timeoutId) clearTimeout(timeoutId);
+
+            // Track call rejected
+            trackActionAbandon("astrologer_booking", "astrologer_rejected");
+            trackEvent("call_rejected", {
+              call_id: call.id,
+              call_type: type,
+              astrologer_id: astrologerId,
+            });
+
+            await fetch("/api/billing", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "cancel-call", callId: call.id }),
+            }).catch(() => {});
+            setCallStatus("rejected");
+            setTimeout(() => {
+              setConnectingCallType(null);
+              setConnectingAstrologerId(null);
+              setCallStatus("connecting");
+              setLoading(false);
+            }, 2000);
+          } else if (c?.status === "cancelled") {
+            console.log("⚠️ Call cancelled");
+
+            // Clean up listener and timeout
+            if (unsubscribe) unsubscribe();
+            if (timeoutId) clearTimeout(timeoutId);
+
+            // Track call cancelled
+            trackActionAbandon("astrologer_booking", "user_cancelled");
+            trackEvent("call_cancelled", {
+              call_id: call.id,
+              call_type: type,
+              astrologer_id: astrologerId,
+            });
+
             setConnectingCallType(null);
             setConnectingAstrologerId(null);
             setCallStatus("connecting");
             setLoading(false);
-          }, 2000);
-        } else if (c?.status === "cancelled") {
-          console.log("⚠️ Call cancelled");
-          
-          // Clean up listener and timeout
-          if (unsubscribe) unsubscribe();
-          if (timeoutId) clearTimeout(timeoutId);
-
-          // Track call cancelled
-          trackActionAbandon("astrologer_booking", "user_cancelled");
-          trackEvent("call_cancelled", {
-            call_id: call.id,
-            call_type: type,
-            astrologer_id: astrologerId,
-          });
-
-          setConnectingCallType(null);
-          setConnectingAstrologerId(null);
-          setCallStatus("connecting");
-          setLoading(false);
+          }
+        },
+        (error) => {
+          console.error("❌ Error in call status listener:", error);
         }
-      }, (error) => {
-        console.error("❌ Error in call status listener:", error);
-      });
+      );
 
       // Timeout after 60 seconds
       timeoutId = setTimeout(() => {
         console.log("⏱️ Call timed out - astrologer not responding");
-        
+
         // Clean up listener
         if (unsubscribe) unsubscribe();
 
@@ -597,19 +636,20 @@ export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
   /*  Call History helpers                                           */
   /* --------------------------------------------------------------- */
-  
+
   // Background fetch to update cache without blocking UI
   const fetchCallHistoryInBackground = async (userId, cacheKey) => {
     try {
-      const [recentCallsResponse, statsResponse, balanceResponse] = await Promise.all([
-        fetch(`/api/calls/history?userId=${userId}&limit=20`),
-        fetch(`/api/user/stats?userId=${userId}`),
-        fetch("/api/payments/wallet", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "get-balance", userId }),
-        }),
-      ]);
+      const [recentCallsResponse, statsResponse, balanceResponse] =
+        await Promise.all([
+          fetch(`/api/calls/history?userId=${userId}&limit=20`),
+          fetch(`/api/user/stats?userId=${userId}`),
+          fetch("/api/payments/wallet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get-balance", userId }),
+          }),
+        ]);
 
       let recentCalls = [];
       if (recentCallsResponse.ok) {
@@ -658,11 +698,11 @@ export default function TalkToAstrologer() {
         timestamp: Date.now(),
       };
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
           localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (e) {
-          console.warn('Error updating cache:', e);
+          console.warn("Error updating cache:", e);
         }
       }
 
@@ -689,8 +729,8 @@ export default function TalkToAstrologer() {
     const cacheKey = `tgs:callHistory:${userId}`;
     const cacheTimeout = 30 * 1000; // 30 seconds (reduced from 10 minutes)
     const now = Date.now();
-    
-    if (!forceRefresh && typeof window !== 'undefined') {
+
+    if (!forceRefresh && typeof window !== "undefined") {
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
@@ -707,7 +747,7 @@ export default function TalkToAstrologer() {
           }
         }
       } catch (e) {
-        console.warn('Error reading cache:', e);
+        console.warn("Error reading cache:", e);
       }
     }
 
@@ -730,24 +770,28 @@ export default function TalkToAstrologer() {
       // STRATEGY: Fetch ALL calls once, then slice first 20 for "Recent Calls"
       // This ensures both "Recent Calls" and "View All" use the same fresh data
       const timestamp = Date.now();
-      const [allCallsResponse, statsResponse, balanceResponse] = await Promise.all([
-        fetch(`/api/calls/history?userId=${userId}&limit=1000&_t=${timestamp}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        }), // Fetch ALL calls (up to 1000)
-        fetch(`/api/user/stats?userId=${userId}&_t=${timestamp}`, {
-          cache: 'no-store'
-        }), // Optimized spending stats from cache
-        fetch("/api/payments/wallet", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache"
-          },
-          body: JSON.stringify({ action: "get-balance", userId }),
-          cache: 'no-store'
-        }),
-      ]);
+      const [allCallsResponse, statsResponse, balanceResponse] =
+        await Promise.all([
+          fetch(
+            `/api/calls/history?userId=${userId}&limit=1000&_t=${timestamp}`,
+            {
+              cache: "no-store",
+              headers: { "Cache-Control": "no-cache" },
+            }
+          ), // Fetch ALL calls (up to 1000)
+          fetch(`/api/user/stats?userId=${userId}&_t=${timestamp}`, {
+            cache: "no-store",
+          }), // Optimized spending stats from cache
+          fetch("/api/payments/wallet", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache",
+            },
+            body: JSON.stringify({ action: "get-balance", userId }),
+            cache: "no-store",
+          }),
+        ]);
 
       // Process ALL calls - store everything
       let allCalls = [];
@@ -766,10 +810,14 @@ export default function TalkToAstrologer() {
           setCallHistory([]);
         }
       } else {
-        console.error("❌ Call history API error:", allCallsResponse.status, allCallsResponse.statusText);
+        console.error(
+          "❌ Call history API error:",
+          allCallsResponse.status,
+          allCallsResponse.statusText
+        );
         setCallHistory([]);
       }
-      
+
       const recentCalls = allCalls; // For cache, we store all
 
       // Process spending stats (from optimized API)
@@ -786,7 +834,11 @@ export default function TalkToAstrologer() {
           console.error("❌ Error parsing stats response:", jsonError);
         }
       } else {
-        console.error("❌ Stats API error:", statsResponse.status, statsResponse.statusText);
+        console.error(
+          "❌ Stats API error:",
+          statsResponse.status,
+          statsResponse.statusText
+        );
       }
 
       setTotalSpending(total);
@@ -816,7 +868,11 @@ export default function TalkToAstrologer() {
           console.error("Response was:", await balanceResponse.text());
         }
       } else {
-        console.error("❌ Balance API error:", balanceResponse.status, balanceResponse.statusText);
+        console.error(
+          "❌ Balance API error:",
+          balanceResponse.status,
+          balanceResponse.statusText
+        );
         try {
           const errorText = await balanceResponse.text();
           console.error("Error response:", errorText);
@@ -825,7 +881,7 @@ export default function TalkToAstrologer() {
         }
         // Keep existing balance if API fails
       }
-      
+
       // Update cache even if some APIs failed
       const cacheData = {
         recentCalls,
@@ -834,16 +890,16 @@ export default function TalkToAstrologer() {
         balance: balance || 0,
         timestamp: now,
       };
-      
+
       // Save to localStorage
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
           localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (e) {
-          console.warn('Error saving to localStorage:', e);
+          console.warn("Error saving to localStorage:", e);
         }
       }
-      
+
       // Update in-memory cache
       setCallHistoryCache(recentCalls);
       setCallHistoryCacheTime(now);
@@ -880,21 +936,20 @@ export default function TalkToAstrologer() {
       .reduce((sum, call) => sum + (call.cost || 0), 0);
   };
 
-
   const handleOpenCallHistory = () => {
     setIsCallHistoryModalOpen(true);
     setShowAllCalls(false); // Reset to recent calls view
-    
+
     // CRITICAL: Clear ALL cached data immediately
-    const userId = localStorage.getItem("tgs:userId")
+    const userId = localStorage.getItem("tgs:userId");
     if (userId) {
-      invalidateCache(userId)
+      invalidateCache(userId);
     }
-    
+
     // Clear state immediately to show loading
     setCallHistory([]);
     setLoadingCallHistory(true);
-    
+
     // Force a small delay to ensure state clears before fetch
     setTimeout(() => {
       fetchCallHistory(true); // Force refresh, bypass all caches
@@ -1203,7 +1258,10 @@ export default function TalkToAstrologer() {
             </div>
 
             {/* Astrologers Card Container */}
-            <div className="card" style={{ marginTop: "1.5rem", padding: "1.5rem" }}>
+            <div
+
+              style={{ marginTop: "1.5rem", padding: "1.5rem" }}
+            >
               {/* Call History + My Appointments Buttons */}
               <div
                 style={{
@@ -1223,7 +1281,8 @@ export default function TalkToAstrologer() {
                     gap: "0.5rem",
                     fontSize: "0.875rem",
                     padding: "0.5rem 1rem",
-                    background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                    background:
+                      "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                     color: "white",
                     border: "none",
                     borderRadius: "var(--radius-md)",
@@ -1235,12 +1294,14 @@ export default function TalkToAstrologer() {
                   onMouseEnter={(e) => {
                     if (!connectingCallType) {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 20px rgba(212, 175, 55, 0.4)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 12px rgba(212, 175, 55, 0.3)";
                   }}
                 >
                   <CalendarCheck
@@ -1261,7 +1322,8 @@ export default function TalkToAstrologer() {
                     gap: "0.5rem",
                     fontSize: "0.875rem",
                     padding: "0.5rem 1rem",
-                    background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                    background:
+                      "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                     color: "white",
                     border: "none",
                     borderRadius: "var(--radius-md)",
@@ -1273,12 +1335,14 @@ export default function TalkToAstrologer() {
                   onMouseEnter={(e) => {
                     if (!connectingCallType) {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 20px rgba(212, 175, 55, 0.4)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 12px rgba(212, 175, 55, 0.3)";
                   }}
                 >
                   <Clock
@@ -1363,346 +1427,340 @@ export default function TalkToAstrologer() {
 
               {!fetchingAstrologers && filteredAstrologers.length > 0 && (
                 <div
-                  className="astrologers-scroll-container"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                   style={{
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    maxHeight: "820px", // Shows max 6 cards (2 rows of 3 cards)
-                    paddingRight: "0.5rem",
-                    paddingBottom: "0.5rem",
+                    opacity: !!connectingCallType ? 0.5 : 1,
+                    pointerEvents: !!connectingCallType ? "none" : "auto",
                   }}
                 >
-                  <div
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                    style={{
-                      opacity: !!connectingCallType ? 0.5 : 1,
-                      pointerEvents: !!connectingCallType ? "none" : "auto",
-                    }}
-                  >
-                {filteredAstrologers.map((a) => (
-                  <Link
-                    href={`/account/astrologer/${a.id}`}
-                    key={a.id}
-                    className="card group"
-                    style={{
-                      padding: "1.5rem",
-                      transition: "var(--transition-smooth)",
-                      cursor: !!connectingCallType ? "default" : "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
-                      textDecoration: "none",
-                      color: "inherit",
-                      pointerEvents: !!connectingCallType ? "none" : "auto",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!!connectingCallType) return;
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow =
-                        "var(--shadow-xl), var(--shadow-glow)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow =
-                        "var(--shadow-lg), var(--shadow-glow)";
-                    }}
-                  >
-                    {/* Top Row: Avatar + Name + Spec + Experience + Rating + Review */}
-                    <div
+                  {paginatedAstrologers.map((a) => (
+                    <Link
+                      href={`/account/astrologer/${a.id}`}
+                      key={a.id}
+                      className="card group"
                       style={{
+                        padding: "1.5rem",
+                        transition: "var(--transition-smooth)",
+                        cursor: !!connectingCallType ? "default" : "pointer",
                         display: "flex",
-                        alignItems: "flex-start",
-                        gap: "1rem",
-                        marginBottom: "1rem",
+                        flexDirection: "column",
                         position: "relative",
-                        zIndex: 20,
+                        textDecoration: "none",
+                        color: "inherit",
+                        pointerEvents: !!connectingCallType ? "none" : "auto",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!!connectingCallType) return;
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                        e.currentTarget.style.boxShadow =
+                          "var(--shadow-xl), var(--shadow-glow)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow =
+                          "var(--shadow-lg), var(--shadow-glow)";
                       }}
                     >
-                      {/* Avatar + Status Badge (with tooltip/title + aria) */}
-                      <div style={{ position: "relative", flexShrink: 0 }}>
-                        <div
-                          style={{
-                            width: "4rem",
-                            height: "4rem",
-                            background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontWeight: 700,
-                            fontSize: "1.25rem",
-                          }}
-                        >
-                          {a.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
-
-                        {/* Compact colored badge with tooltip (uses title + aria for accessibility) */}
-                        <div
-                          title={
-                            a.status === "online"
-                              ? "Available now"
-                              : a.status === "busy"
-                              ? "Currently busy"
-                              : "Currently offline"
-                          }
-                          aria-label={
-                            a.status === "online"
-                              ? "Available now"
-                              : a.status === "busy"
-                              ? "Currently busy"
-                              : "Currently offline"
-                          }
-                          style={{
-                            position: "absolute",
-                            bottom: "-0.3rem",
-                            right: "-0.3rem",
-                            width: "1rem",
-                            height: "1rem",
-                            borderRadius: "50%",
-                            border: "2px solid white",
-                            background:
-                              a.status === "online"
-                                ? "#10b981" // green
-                                : a.status === "busy"
-                                ? "#f59e0b" // yellow
-                                : "#9ca3af", // gray
-                            boxShadow:
-                              a.status === "online"
-                                ? "0 0 6px rgba(16, 185, 129, 0.6)"
-                                : a.status === "busy"
-                                ? "0 0 6px rgba(245, 158, 11, 0.6)"
-                                : "none",
-                            animation:
-                              a.status === "online" || a.status === "busy"
-                                ? "pulse 2s infinite"
-                                : "none",
-                            cursor: "default",
-                          }}
-                        />
-                      </div>
-
-                      {/* Name, Spec, Experience */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: "1rem",
-                          }}
-                        >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h3
-                              style={{
-                                fontSize: "1.5rem",
-                                fontWeight: 700,
-                                color: "var(--color-gray-900)",
-                                margin: 0,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                fontFamily: "var(--font-heading)",
-                                lineHeight: 1.3,
-                              }}
-                              title={a.name}
-                            >
-                              {a.name}
-                            </h3>
-                            <p
-                              style={{
-                                fontSize: "0.875rem",
-                                fontWeight: 500,
-                                color: "var(--color-indigo)",
-                                margin: "0.125rem 0 0",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                fontFamily: "var(--font-body)",
-                              }}
-                              title={a.specialization}
-                            >
-                              {a.specialization}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--color-gray-500)",
-                                margin: "0.25rem 0 0",
-                                fontWeight: 500,
-                                fontFamily: "Courier New, monospace",
-                              }}
-                            >
-                              {a.experience}
-                            </p>
+                      {/* Top Row: Avatar + Name + Spec + Experience + Rating + Review */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "1rem",
+                          marginBottom: "1rem",
+                          position: "relative",
+                          zIndex: 20,
+                        }}
+                      >
+                        {/* Avatar + Status Badge (with tooltip/title + aria) */}
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                          <div
+                            style={{
+                              width: "4rem",
+                              height: "4rem",
+                              background:
+                                "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                              borderRadius: "50%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontWeight: 700,
+                              fontSize: "1.25rem",
+                            }}
+                          >
+                            {a.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </div>
 
-                          {/* Rating + compact Review button (small text) */}
+                          {/* Compact colored badge with tooltip (uses title + aria for accessibility) */}
+                          <div
+                            title={
+                              a.status === "online"
+                                ? "Available now"
+                                : a.status === "busy"
+                                ? "Currently busy"
+                                : "Currently offline"
+                            }
+                            aria-label={
+                              a.status === "online"
+                                ? "Available now"
+                                : a.status === "busy"
+                                ? "Currently busy"
+                                : "Currently offline"
+                            }
+                            style={{
+                              position: "absolute",
+                              bottom: "-0.3rem",
+                              right: "-0.3rem",
+                              width: "1rem",
+                              height: "1rem",
+                              borderRadius: "50%",
+                              border: "2px solid white",
+                              background:
+                                a.status === "online"
+                                  ? "#10b981" // green
+                                  : a.status === "busy"
+                                  ? "#f59e0b" // yellow
+                                  : "#9ca3af", // gray
+                              boxShadow:
+                                a.status === "online"
+                                  ? "0 0 6px rgba(16, 185, 129, 0.6)"
+                                  : a.status === "busy"
+                                  ? "0 0 6px rgba(245, 158, 11, 0.6)"
+                                  : "none",
+                              animation:
+                                a.status === "online" || a.status === "busy"
+                                  ? "pulse 2s infinite"
+                                  : "none",
+                              cursor: "default",
+                            }}
+                          />
+                        </div>
+
+                        {/* Name, Spec, Experience */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
                               display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-end",
-                              gap: "0.5rem",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: "1rem",
                             }}
                           >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.375rem",
-                                background: "var(--color-amber-50)",
-                                color: "var(--color-amber-700)",
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontFamily: "Courier New, monospace",
-                                fontSize: "0.75rem",
-                                fontWeight: 600,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              <Star
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h3
                                 style={{
-                                  width: "0.875rem",
-                                  height: "0.875rem",
-                                  fill: "#f59e0b",
-                                  color: "#f59e0b",
+                                  fontSize: "1.5rem",
+                                  fontWeight: 700,
+                                  color: "var(--color-gray-900)",
+                                  margin: 0,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  fontFamily: "var(--font-heading)",
+                                  lineHeight: 1.3,
                                 }}
-                              />
-                              {a.rating}{" "}
-                              <span
+                                title={a.name}
+                              >
+                                {a.name}
+                              </h3>
+                              <p
                                 style={{
+                                  fontSize: "0.875rem",
+                                  fontWeight: 500,
+                                  color: "var(--color-indigo)",
+                                  margin: "0.125rem 0 0",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  fontFamily: "var(--font-body)",
+                                }}
+                                title={a.specialization}
+                              >
+                                {a.specialization}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
                                   color: "var(--color-gray-500)",
-                                  marginLeft: "0.125rem",
+                                  margin: "0.25rem 0 0",
+                                  fontWeight: 500,
                                   fontFamily: "Courier New, monospace",
                                 }}
                               >
-                                ({a.reviews})
-                              </span>
+                                {a.experience}
+                              </p>
                             </div>
 
-                            {/* Small written 'Review' button (compact) */}
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenReview(a);
-                              }}
-                              disabled={!!connectingCallType}
-                              title="Leave a review"
+                            {/* Rating + compact Review button (small text) */}
+                            <div
                               style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "0.72rem",
-                                lineHeight: 1,
-                                padding: "0.25rem 0.6rem",
-                                borderRadius: "8px",
-                                border: "1px solid var(--color-gray-200)",
-                                background: "white",
-                                color: "var(--color-gray-700)",
-                                cursor: !!connectingCallType
-                                  ? "not-allowed"
-                                  : "pointer",
-                                minWidth: "56px",
-                                height: "28px",
-                                gap: "0.25rem",
-                                fontWeight: 600,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                gap: "0.5rem",
                               }}
                             >
-                              Review
-                            </button>
-
-                            {/* Price tag - right under Review button */}
-                            {a.perMinuteCharge && (
                               <div
                                 style={{
-                                  fontSize: "0.9375rem",
-                                  fontWeight: 700,
-                                  color: "#059669",
-                                  textAlign: "right",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.375rem",
+                                  background: "var(--color-amber-50)",
+                                  color: "var(--color-amber-700)",
+                                  padding: "0.25rem 0.5rem",
+                                  borderRadius: "9999px",
+                                  fontFamily: "Courier New, monospace",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                ₹{a.perMinuteCharge}/min
+                                <Star
+                                  style={{
+                                    width: "0.875rem",
+                                    height: "0.875rem",
+                                    fill: "#f59e0b",
+                                    color: "#f59e0b",
+                                  }}
+                                />
+                                {a.rating}{" "}
+                                <span
+                                  style={{
+                                    color: "var(--color-gray-500)",
+                                    marginLeft: "0.125rem",
+                                    fontFamily: "Courier New, monospace",
+                                  }}
+                                >
+                                  ({a.reviews})
+                                </span>
+                              </div>
+
+                              {/* Small written 'Review' button (compact) */}
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenReview(a);
+                                }}
+                                disabled={!!connectingCallType}
+                                title="Leave a review"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "0.72rem",
+                                  lineHeight: 1,
+                                  padding: "0.25rem 0.6rem",
+                                  borderRadius: "8px",
+                                  border: "1px solid var(--color-gray-200)",
+                                  background: "white",
+                                  color: "var(--color-gray-700)",
+                                  cursor: !!connectingCallType
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  minWidth: "56px",
+                                  height: "28px",
+                                  gap: "0.25rem",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Review
+                              </button>
+
+                              {/* Price tag - right under Review button */}
+                              {a.perMinuteCharge && (
+                                <div
+                                  style={{
+                                    fontSize: "0.9375rem",
+                                    fontWeight: 700,
+                                    color: "#059669",
+                                    textAlign: "right",
+                                  }}
+                                >
+                                  ₹{a.perMinuteCharge}/min
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Verified Badge (kept) */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                              marginTop: "0.5rem",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {a.verified && (
+                              <div
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "0.25rem",
+                                  background: "var(--color-indigo-light)",
+                                  color: "var(--color-indigo)",
+                                  padding: "0.25rem 0.5rem",
+                                  borderRadius: "9999px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                <CheckCircle
+                                  style={{
+                                    width: "0.75rem",
+                                    height: "0.75rem",
+                                  }}
+                                />
+                                Verified
                               </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Verified Badge (kept) */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            marginTop: "0.5rem",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {a.verified && (
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.25rem",
-                                background: "var(--color-indigo-light)",
-                                color: "var(--color-indigo)",
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "9999px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500,
-                              }}
-                            >
-                              <CheckCircle
-                                style={{ width: "0.75rem", height: "0.75rem" }}
-                              />
-                              Verified
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    </div>
 
-                    <p
-                      style={{
-                        fontSize: "0.875rem",
-                        fontFamily: "var(--font-body)",
-                        color: "var(--color-gray-600)",
-                        marginBottom: "1rem",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        position: "relative",
-                        zIndex: 20,
-                      }}
-                    >
-                      {a.bio}
-                    </p>
+                      <p
+                        style={{
+                          fontSize: "0.875rem",
+                          fontFamily: "var(--font-body)",
+                          color: "var(--color-gray-600)",
+                          marginBottom: "1rem",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          position: "relative",
+                          zIndex: 20,
+                        }}
+                      >
+                        {a.bio}
+                      </p>
 
-                    {/* --- Speaks & Expertise as two columns --- */}
-                    <div
-                      style={{
-                        marginBottom: "1rem",
-                        position: "relative",
-                        zIndex: 20,
-                        display: "grid",
-                        gridTemplateColumns: "1fr", 
-                        gap: "0.75rem",
-                      }}
-                    >
-                      {/* make two columns on wider screens */}
+                      {/* --- Speaks & Expertise as two columns --- */}
                       <div
                         style={{
+                          marginBottom: "1rem",
+                          position: "relative",
+                          zIndex: 20,
                           display: "grid",
                           gridTemplateColumns: "1fr",
                           gap: "0.75rem",
                         }}
                       >
-                        <style>{`
+                        {/* make two columns on wider screens */}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr",
+                            gap: "0.75rem",
+                          }}
+                        >
+                          <style>{`
       @media (min-width: 520px) {
         .speaks-expertise-row {
           display: grid !important;
@@ -1713,60 +1771,15 @@ export default function TalkToAstrologer() {
       }
     `}</style>
 
-                        <div
-                          className="speaks-expertise-row"
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr",
-                            gap: "0.75rem",
-                          }}
-                        >
-                          {/* Column A: Speaks */}
-                          <div>
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                fontWeight: 600,
-                                color: "var(--color-gray-600)",
-                                marginBottom: "0.5rem",
-                              }}
-                            >
-                              Speaks:
-                            </p>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.375rem",
-                              }}
-                            >
-                              {a.languages && a.languages.length > 0 ? (
-                                a.languages.map((l, i) => (
-                                  <span
-                                    key={l + i}
-                                    style={{
-                                      padding: "0.25rem 0.625rem",
-                                      background: "var(--color-indigo-light)",
-                                      color: "var(--color-indigo)",
-                                      fontSize: "0.75rem",
-                                      fontWeight: 700,
-                                      borderRadius: "9999px",
-                                    }}
-                                  >
-                                    {l}
-                                  </span>
-                                ))
-                              ) : (
-                                <div style={{ color: "var(--color-gray-500)" }}>
-                                  Not specified
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Column B: Expertise — only render if areasOfExpertise present */}
-                          {a.areasOfExpertise &&
-                          a.areasOfExpertise.length > 0 ? (
+                          <div
+                            className="speaks-expertise-row"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr",
+                              gap: "0.75rem",
+                            }}
+                          >
+                            {/* Column A: Speaks */}
                             <div>
                               <p
                                 style={{
@@ -1776,7 +1789,7 @@ export default function TalkToAstrologer() {
                                   marginBottom: "0.5rem",
                                 }}
                               >
-                                Expertise:
+                                Speaks:
                               </p>
                               <div
                                 style={{
@@ -1785,264 +1798,379 @@ export default function TalkToAstrologer() {
                                   gap: "0.375rem",
                                 }}
                               >
-                                {a.areasOfExpertise.map((ex, i) => (
-                                  <span
-                                    key={ex + i}
-                                    style={{
-                                      padding: "0.25rem 0.625rem",
-                                      background: "#fff7ed",
-                                      color: "#92400e",
-                                      fontSize: "0.75rem",
-                                      fontWeight: 700,
-                                      borderRadius: "9999px",
-                                      border: "1px solid rgba(245,158,11,0.12)",
-                                    }}
+                                {a.languages && a.languages.length > 0 ? (
+                                  a.languages.map((l, i) => (
+                                    <span
+                                      key={l + i}
+                                      style={{
+                                        padding: "0.25rem 0.625rem",
+                                        background: "var(--color-indigo-light)",
+                                        color: "var(--color-indigo)",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        borderRadius: "9999px",
+                                      }}
+                                    >
+                                      {l}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <div
+                                    style={{ color: "var(--color-gray-500)" }}
                                   >
-                                    {ex}
-                                  </span>
-                                ))}
+                                    Not specified
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            // if you prefer nothing shown when no expertise, keep this empty (or remove this else).
-                            <div style={{ display: "none" }} />
-                          )}
+
+                            {/* Column B: Expertise — only render if areasOfExpertise present */}
+                            {a.areasOfExpertise &&
+                            a.areasOfExpertise.length > 0 ? (
+                              <div>
+                                <p
+                                  style={{
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    color: "var(--color-gray-600)",
+                                    marginBottom: "0.5rem",
+                                  }}
+                                >
+                                  Expertise:
+                                </p>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "0.375rem",
+                                  }}
+                                >
+                                  {a.areasOfExpertise.map((ex, i) => (
+                                    <span
+                                      key={ex + i}
+                                      style={{
+                                        padding: "0.25rem 0.625rem",
+                                        background: "#fff7ed",
+                                        color: "#92400e",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        borderRadius: "9999px",
+                                        border:
+                                          "1px solid rgba(245,158,11,0.12)",
+                                      }}
+                                    >
+                                      {ex}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              // if you prefer nothing shown when no expertise, keep this empty (or remove this else).
+                              <div style={{ display: "none" }} />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Action buttons – Bottom */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.75rem",
-                        marginTop: "auto",
-                        position: "relative",
-                        zIndex: 30,
-                        alignItems: "stretch",
-                      }}
-                    >
-                      {/* Schedule Button - Matching My Appointments/Call History style */}
-                      <Button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          router.push(`/appointments/book/${a.id}`);
-                        }}
-                        className="btn btn-primary"
-                        disabled={!!connectingCallType}
+                      {/* Action buttons – Bottom */}
+                      <div
                         style={{
-                          flex: 1,
-                          height: "3rem",
-                          padding: "0 1.5rem",
-                          fontSize: "1rem",
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "0.5rem",
-                          background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "var(--radius-md)",
-                          fontWeight: 600,
-                          boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-                          transition: "all 0.3s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!connectingCallType) {
-                            e.currentTarget.style.transform = "translateY(-2px)";
-                            e.currentTarget.style.boxShadow = "0 8px 20px rgba(212, 175, 55, 0.4)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(212, 175, 55, 0.3)";
+                          gap: "0.75rem",
+                          marginTop: "auto",
+                          position: "relative",
+                          zIndex: 30,
+                          alignItems: "stretch",
                         }}
                       >
-                        <CalendarCheck
-                          style={{
-                            width: "1rem",
-                            height: "1rem",
+                        {/* Schedule Button - Matching My Appointments/Call History style */}
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push(`/appointments/book/${a.id}`);
                           }}
-                        />
-                        Schedule
-                      </Button>
+                          className="btn btn-primary"
+                          disabled={!!connectingCallType}
+                          style={{
+                            flex: 1,
+                            height: "3rem",
+                            padding: "0 1.5rem",
+                            fontSize: "1rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.5rem",
+                            background:
+                              "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "var(--radius-md)",
+                            fontWeight: 600,
+                            boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                            transition: "all 0.3s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!connectingCallType) {
+                              e.currentTarget.style.transform =
+                                "translateY(-2px)";
+                              e.currentTarget.style.boxShadow =
+                                "0 8px 20px rgba(212, 175, 55, 0.4)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(212, 175, 55, 0.3)";
+                          }}
+                        >
+                          <CalendarCheck
+                            style={{
+                              width: "1rem",
+                              height: "1rem",
+                            }}
+                          />
+                          Schedule
+                        </Button>
 
-                      {/* Voice Call Icon Button - Half size of original voice call button */}
-                      <Button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleVoiceCall(a.id);
-                        }}
-                        disabled={
-                          !a.isOnline || loading || !!connectingCallType
-                        }
-                        variant="outline"
-                        className="btn btn-outline"
-                        style={{
-                          flex: 0.5,
-                          height: "3rem",
-                          width: "3rem",
-                          padding: 0,
-                          minWidth: "3rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                        title={a.isOnline ? "Voice Call" : "Offline"}
-                      >
-                        {loading && connectingCallType === "voice" ? (
-                          <Loader2
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                        ) : (
-                          <Phone
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                            }}
-                          />
-                        )}
-                      </Button>
+                        {/* Voice Call Icon Button - Half size of original voice call button */}
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleVoiceCall(a.id);
+                          }}
+                          disabled={
+                            !a.isOnline || loading || !!connectingCallType
+                          }
+                          variant="outline"
+                          className="btn btn-outline"
+                          style={{
+                            flex: 0.5,
+                            height: "3rem",
+                            width: "3rem",
+                            padding: 0,
+                            minWidth: "3rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          title={a.isOnline ? "Voice Call" : "Offline"}
+                        >
+                          {loading && connectingCallType === "voice" ? (
+                            <Loader2
+                              style={{
+                                width: "1rem",
+                                height: "1rem",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                          ) : (
+                            <Phone
+                              style={{
+                                width: "1rem",
+                                height: "1rem",
+                              }}
+                            />
+                          )}
+                        </Button>
 
-                      {/* Video Call Icon Button - Half size of original voice call button */}
-                      <Button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleVideoCall(a.id);
-                        }}
-                        disabled={
-                          !a.isOnline || loading || !!connectingCallType
-                        }
-                        variant="outline"
-                        className="btn btn-outline"
-                        style={{
-                          flex: 0.5,
-                          height: "3rem",
-                          width: "3rem",
-                          padding: 0,
-                          minWidth: "3rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                        title={a.isOnline ? "Video Call" : "Offline"}
-                      >
-                        {loading && connectingCallType === "video" ? (
-                          <Loader2
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                        ) : (
-                          <Video
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                            }}
-                          />
-                        )}
-                      </Button>
-                    </div>
-                  </Link>
-                ))}
+                        {/* Video Call Icon Button - Half size of original voice call button */}
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleVideoCall(a.id);
+                          }}
+                          disabled={
+                            !a.isOnline || loading || !!connectingCallType
+                          }
+                          variant="outline"
+                          className="btn btn-outline"
+                          style={{
+                            flex: 0.5,
+                            height: "3rem",
+                            width: "3rem",
+                            padding: 0,
+                            minWidth: "3rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          title={a.isOnline ? "Video Call" : "Offline"}
+                        >
+                          {loading && connectingCallType === "video" ? (
+                            <Loader2
+                              style={{
+                                width: "1rem",
+                                height: "1rem",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                          ) : (
+                            <Video
+                              style={{
+                                width: "1rem",
+                                height: "1rem",
+                              }}
+                            />
+                          )}
+                        </Button>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!fetchingAstrologers && filteredAstrologers.length === 0 && (
-              <div style={{ textAlign: "center", padding: "4rem 0" }}>
+              )}
+              {totalPages > 1 && (
                 <div
                   style={{
-                    width: "6rem",
-                    height: "6rem",
-                    background: "var(--color-gray-100)",
-                    borderRadius: "50%",
                     display: "flex",
-                    alignItems: "center",
                     justifyContent: "center",
-                    margin: "0 auto 1rem auto",
+                    gap: "0.5rem",
+                    marginTop: "2rem",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <Search
-                    style={{
-                      width: "3rem",
-                      height: "3rem",
-                      color: "var(--color-gray-400)",
-                    }}
-                  />
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                  >
+                    Previous
+                  </Button>
+
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const page = i + 1;
+                    return (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "default" : "outline"}
+                        onClick={() => setCurrentPage(page)}
+                        style={{
+                          minWidth: "2.5rem",
+                          fontWeight: page === currentPage ? 700 : 500,
+                        }}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    Next
+                  </Button>
                 </div>
-                <h3
-                  style={{
-                    fontSize: "1.25rem",
-                    fontWeight: 600,
-                    color: "var(--color-gray-700)",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  No Astrologers Found
-                </h3>
-                <p
-                  style={{
-                    color: "var(--color-gray-500)",
-                    maxWidth: "36rem",
-                    margin: "0 auto",
-                  }}
-                >
-                  Try adjusting your search or filter to find the right
-                  astrologer for you.
-                </p>
-              </div>
-            )}
+              )}
+
+              {/* Empty state */}
+              {!fetchingAstrologers && filteredAstrologers.length === 0 && (
+                <div style={{ textAlign: "center", padding: "4rem 0" }}>
+                  <div
+                    style={{
+                      width: "6rem",
+                      height: "6rem",
+                      background: "var(--color-gray-100)",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 1rem auto",
+                    }}
+                  >
+                    <Search
+                      style={{
+                        width: "3rem",
+                        height: "3rem",
+                        color: "var(--color-gray-400)",
+                      }}
+                    />
+                  </div>
+                  <h3
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: 600,
+                      color: "var(--color-gray-700)",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    No Astrologers Found
+                  </h3>
+                  <p
+                    style={{
+                      color: "var(--color-gray-500)",
+                      maxWidth: "36rem",
+                      margin: "0 auto",
+                    }}
+                  >
+                    Try adjusting your search or filter to find the right
+                    astrologer for you.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Explanation Card - At the end */}
-            <div 
-              className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border" 
-              style={{ 
+            <div
+              className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+              style={{
                 marginTop: "2rem",
-                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
                 borderColor: "rgba(212, 175, 55, 0.3)",
                 maxWidth: "100%",
               }}
             >
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "1.5rem",
-                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-                marginBottom: "1.5rem",
-              }}>
-                <h2 style={{
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                  color: "#1f2937",
-                  margin: 0,
-                }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingBottom: "1.5rem",
+                  borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    fontSize: "1.5rem",
+                    fontWeight: 700,
+                    color: "#1f2937",
+                    margin: 0,
+                  }}
+                >
                   Understanding Live Astrologer Consultations
                 </h2>
               </div>
               <div style={{ padding: 0 }}>
-                <p style={{
-                  fontSize: "0.875rem",
-                  color: "#374151",
-                  fontStyle: "normal",
-                  marginBottom: 0,
-                  fontFamily: "'Inter', sans-serif",
-                  lineHeight: 1.6,
-                }}>
-                  Connect with experienced <strong>Vedic Astrologers</strong> through live video or voice calls for personalized guidance. Our certified astrologers provide authentic interpretations of your birth chart, analyze planetary influences, and offer insights into various aspects of life including <strong>Career Guidance</strong> based on planetary positions and dasha periods, <strong>Relationship Compatibility</strong> using traditional matching systems, <strong>Remedial Solutions</strong> including gemstone recommendations and spiritual practices, and <strong>Timing Predictions</strong> for important life events. Each consultation is tailored to your unique astrological profile, ensuring accurate and meaningful guidance rooted in ancient Vedic wisdom.
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#374151",
+                    fontStyle: "normal",
+                    marginBottom: 0,
+                    fontFamily: "'Inter', sans-serif",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Connect with experienced <strong>Vedic Astrologers</strong>{" "}
+                  through live video or voice calls for personalized guidance.
+                  Our certified astrologers provide authentic interpretations of
+                  your birth chart, analyze planetary influences, and offer
+                  insights into various aspects of life including{" "}
+                  <strong>Career Guidance</strong> based on planetary positions
+                  and dasha periods, <strong>Relationship Compatibility</strong>{" "}
+                  using traditional matching systems,{" "}
+                  <strong>Remedial Solutions</strong> including gemstone
+                  recommendations and spiritual practices, and{" "}
+                  <strong>Timing Predictions</strong> for important life events.
+                  Each consultation is tailored to your unique astrological
+                  profile, ensuring accurate and meaningful guidance rooted in
+                  ancient Vedic wisdom.
                 </p>
               </div>
             </div>
@@ -2272,8 +2400,18 @@ export default function TalkToAstrologer() {
                     />
                   </div>
                 ) : callHistory.length > 0 ? (
-                  <div style={{ display: "grid", gap: "0.75rem", maxHeight: "400px", overflowY: "auto" }}>
-                    {(showAllCalls ? callHistory : callHistory.slice(0, 20)).map((call) => {
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "0.75rem",
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {(showAllCalls
+                      ? callHistory
+                      : callHistory.slice(0, 20)
+                    ).map((call) => {
                       const statusColor = getStatusColor(call.status);
                       return (
                         <div
@@ -2288,98 +2426,113 @@ export default function TalkToAstrologer() {
                             border: `1px solid ${statusColor.border}`,
                           }}
                         >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.75rem",
-                            flex: 1,
-                          }}
-                        >
                           <div
                             style={{
-                              width: "2.5rem",
-                              height: "2.5rem",
-                              background:
-                                call.type === "video"
-                                  ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
-                                  : "linear-gradient(135deg, #10b981, #059669)",
-                              borderRadius: "50%",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              fontSize: "0.875rem",
-                              fontWeight: 600,
+                              gap: "0.75rem",
+                              flex: 1,
                             }}
                           >
-                            {call.type === "video" ? (
-                              <Video style={{ width: "1.25rem", height: "1.25rem" }} />
-                            ) : (
-                              <Phone style={{ width: "1.25rem", height: "1.25rem" }} />
-                            )}
+                            <div
+                              style={{
+                                width: "2.5rem",
+                                height: "2.5rem",
+                                background:
+                                  call.type === "video"
+                                    ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                                    : "linear-gradient(135deg, #10b981, #059669)",
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontSize: "0.875rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {call.type === "video" ? (
+                                <Video
+                                  style={{
+                                    width: "1.25rem",
+                                    height: "1.25rem",
+                                  }}
+                                />
+                              ) : (
+                                <Phone
+                                  style={{
+                                    width: "1.25rem",
+                                    height: "1.25rem",
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p
+                                style={{
+                                  fontSize: "0.875rem",
+                                  fontWeight: 500,
+                                  color: "var(--color-gray-900)",
+                                  margin: 0,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                                title={call.astrologerName}
+                              >
+                                {call.astrologerName || "Unknown Astrologer"}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "var(--color-gray-500)",
+                                  margin: "0.25rem 0 0 0",
+                                }}
+                              >
+                                {new Date(call.startedAt).toLocaleString()}
+                                {call.duration > 0 &&
+                                  (() => {
+                                    const minutes = Math.floor(call.duration);
+                                    const seconds = Math.round(
+                                      (call.duration - minutes) * 60
+                                    );
+                                    return ` • ${minutes}:${seconds
+                                      .toString()
+                                      .padStart(2, "0")}`;
+                                  })()}
+                              </p>
+                            </div>
                           </div>
-                           <div style={{ flex: 1, minWidth: 0 }}>
-                             <p
-                               style={{
-                                 fontSize: "0.875rem",
-                                 fontWeight: 500,
-                                 color: "var(--color-gray-900)",
-                                 margin: 0,
-                                 whiteSpace: "nowrap",
-                                 overflow: "hidden",
-                                 textOverflow: "ellipsis",
-                               }}
-                               title={call.astrologerName}
-                             >
-                               {call.astrologerName || "Unknown Astrologer"}
-                             </p>
-                             <p
-                               style={{
-                                 fontSize: "0.75rem",
-                                 color: "var(--color-gray-500)",
-                                 margin: "0.25rem 0 0 0",
-                               }}
-                             >
-                               {new Date(call.startedAt).toLocaleString()}
-                               {call.duration > 0 && (() => {
-                                 const minutes = Math.floor(call.duration);
-                                 const seconds = Math.round((call.duration - minutes) * 60);
-                                 return ` • ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                               })()}
-                             </p>
-                           </div>
-                        </div>
-                        <div
-                          style={{
-                            textAlign: "right",
-                            marginLeft: "1rem",
-                          }}
-                        >
-                          <p
+                          <div
                             style={{
-                              fontSize: "0.875rem",
-                              fontWeight: 600,
-                              color: "#dc2626",
-                              margin: 0,
+                              textAlign: "right",
+                              marginLeft: "1rem",
                             }}
                           >
-                            -₹{call.cost?.toFixed(2) || "0.00"}
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              color: statusColor.text,
-                              margin: "0.25rem 0 0 0",
-                              textTransform: "capitalize",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {call.status || "completed"}
-                          </p>
+                            <p
+                              style={{
+                                fontSize: "0.875rem",
+                                fontWeight: 600,
+                                color: "#dc2626",
+                                margin: 0,
+                              }}
+                            >
+                              -₹{call.cost?.toFixed(2) || "0.00"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
+                                color: statusColor.text,
+                                margin: "0.25rem 0 0 0",
+                                textTransform: "capitalize",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {call.status || "completed"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
                     })}
                   </div>
                 ) : (
@@ -2426,24 +2579,6 @@ export default function TalkToAstrologer() {
           }
         }
 
-        /* Custom scrollbar styling for astrologers scroll container */
-        .astrologers-scroll-container::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .astrologers-scroll-container::-webkit-scrollbar-track {
-          background: rgba(212, 175, 55, 0.1);
-          border-radius: 10px;
-        }
-
-        .astrologers-scroll-container::-webkit-scrollbar-thumb {
-          background: rgba(212, 175, 55, 0.4);
-          border-radius: 10px;
-        }
-
-        .astrologers-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: rgba(212, 175, 55, 0.6);
-        }
 
         @keyframes pulse {
           0%,
