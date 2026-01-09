@@ -166,7 +166,7 @@ export default function Home() {
       }
 
       const online = list.filter((a) => a.status === "online");
-      const featured = list.slice(0, 6);
+      const featured = list.slice(0, 9);
 
       setOnlineAstrologers(online);
       setFeaturedAstrologers(featured);
@@ -285,8 +285,8 @@ export default function Home() {
 
         // If API returned structured data, pick online + featured
         if (res && res.online && mounted) {
-          setOnlineAstrologers(res.online.slice(0, 6));
-          setFeaturedAstrologers(res.featured ? res.featured.slice(0, 6) : []);
+          setOnlineAstrologers(res.online.slice(0, 9));
+          setFeaturedAstrologers(res.featured ? res.featured.slice(0, 9) : []);
         } else if (mounted) {
           // fallback mock list
           const fallback = [
@@ -316,9 +316,9 @@ export default function Home() {
             },
             // ...more
           ];
-          setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 6));
+          setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 9));
           setFeaturedAstrologers(
-            fallback.filter((a) => a.isFeatured).slice(0, 6)
+            fallback.filter((a) => a.isFeatured).slice(0, 9)
           );
         }
       } catch (e) {
@@ -2168,6 +2168,12 @@ export default function Home() {
                 <p style={{ color: "#6b7280" }}>Loading astrologers...</p>
               </div>
             ) : (
+
+            <div className="astrologers-scroll-container"
+              style={{
+                overflowY: 'auto',
+                maxHeight: '660px'
+              }}>
               <div
                 className="astrologers-grid-scrollable"
                 role="list"
@@ -2177,7 +2183,7 @@ export default function Home() {
                   ? onlineAstrologers
                   : featuredAstrologers
                 )
-                  .slice(0, 6)
+                  .slice(0, 9)
                   .map((ast) => (
                     <div
                       key={ast.id}
@@ -2520,6 +2526,7 @@ export default function Home() {
                     </div>
                   ))}
               </div>
+            </div>
             )}
           </section>
 

@@ -4047,22 +4047,21 @@ html {
   margin-top: 0.35rem;
 }
 
-/* ================================
-   TOP ASTROLOGERS — SINGLE ROW SCROLL
-   ================================ */
+/* =========================================
+   TOP ASTROLOGERS — CLEAN SCROLL SYSTEM
+   ========================================= */
 
 /* ---------- VARIABLES ---------- */
 :root {
   --astro-card-height: 320px;
   --astro-grid-gap: 16px;
+  --astro-visible-cards: 6;
 }
 
-/* ---------- SECTION RESET ---------- */
+/* ---------- SECTION ---------- */
 .astrologers-section {
-  background: transparent;
-  border: none;
-  box-shadow: none;
   padding: 0;
+  background: transparent;
 }
 
 /* ---------- HEADER ---------- */
@@ -4071,60 +4070,52 @@ html {
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
-/* ---------- SCROLL CONTAINER ---------- */
+/* ---------- SCROLL CONTAINER (ONLY SCROLL HERE) ---------- */
 .astrologers-scroll-container {
-  margin-top: 1.5rem;
-  padding-right: 0.5rem;
+  max-height: calc(
+    (var(--astro-visible-cards) * var(--astro-card-height)) +
+    ((var(--astro-visible-cards) - 1) * var(--astro-grid-gap))
+  );
 
-  /* EXACTLY ONE ROW HEIGHT */
-  max-height: 100% !important;
-
-  overflow-y: visible;
+  overflow-y: auto;
   overflow-x: hidden;
 
-
+  padding-right: 0.5rem;
   scroll-behavior: smooth;
 }
 
 /* ---------- SCROLLBAR ---------- */
 .astrologers-scroll-container::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-track {
-  background: rgba(212, 175, 55, 0.1);
-  border-radius: 6px;
-  margin: 0.5rem 0;
+  background: rgba(212, 175, 55, 0.12);
+  border-radius: 999px;
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-thumb {
   background: rgba(212, 175, 55, 0.55);
-  border-radius: 6px;
-  border: 2px solid rgba(212, 175, 55, 0.15);
+  border-radius: 999px;
 }
 
 .astrologers-scroll-container::-webkit-scrollbar-thumb:hover {
   background: rgba(212, 175, 55, 0.75);
 }
 
-/* ---------- GRID ---------- */
+/* ---------- GRID (NO SCROLL HERE) ---------- */
 .astrologers-grid-scrollable {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--astro-grid-gap);
 }
 
-/* ---------- EACH ROW SNAP POINT ---------- */
-.astrologers-grid-scrollable > * {
-  scroll-snap-align: start;
-}
-
-/* ---------- ASTROLOGER CARD ---------- */
+/* ---------- CARD ---------- */
 .astrologer-card {
-  height: 320px;
+  height: var(--astro-card-height);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -4150,13 +4141,22 @@ html {
   .astrologers-grid-scrollable {
     grid-template-columns: 1fr;
   }
+
+  :root {
+    --astro-visible-cards: 3;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .astrologers-grid-scrollable {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  :root {
+    --astro-visible-cards: 4;
+  }
 }
+
 
 
 
