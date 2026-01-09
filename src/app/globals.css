@@ -1046,6 +1046,7 @@ select {
   background: transparent;
   color: var(--color-gray-700);
   border: 1px solid var(--color-gray-300);
+  font-size: 0.95rem;
 }
 
 .btn-ghost:hover {
@@ -2569,7 +2570,7 @@ body {
 .btn-outline {
   height: 2.5rem !important;
   padding: 0 1rem !important;
-  font-size: 0.875rem !important;
+  font-size: 0.95rem !important;
 }
 
 .btn-primary svg,

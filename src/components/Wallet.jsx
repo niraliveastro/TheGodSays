@@ -224,23 +224,22 @@ export default function Wallet() {
             </div>
 
             {!showAll && visibleCount < sortedTransactions.length && (
-              <div className="mt-4 flex gap-3">
-                <button
-                  onClick={() =>
-                    setVisibleCount((v) => v + ITEMS_PER_LOAD)
-                  }
-                  className="btn btn-primary"
-                >
-                  Load more
-                </button>
+<div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+  <button
+    onClick={() => setVisibleCount((v) => v + ITEMS_PER_LOAD)}
+    className="btn btn-primary w-full sm:w-auto"
+  >
+    Load more
+  </button>
 
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="btn btn-ghost"
-                >
-                  Show all transactions
-                </button>
-              </div>
+  <button
+    onClick={() => setShowAll(true)}
+    className="btn btn-ghost w-full sm:w-auto"
+  >
+    Show all transactions
+  </button>
+</div>
+
             )}
           </>
         )}
