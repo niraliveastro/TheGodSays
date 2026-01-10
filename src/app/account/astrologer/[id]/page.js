@@ -145,13 +145,20 @@ export default function AstrologerProfile() {
             }/api/reviews?astrologerId=${id}`
           );
           const reviewsData = await reviewsRes.json();
-          if (reviewsRes.ok && reviewsData.success && reviewsData.reviews?.length) {
+          if (
+            reviewsRes.ok &&
+            reviewsData.success &&
+            reviewsData.reviews?.length
+          ) {
             const sum = reviewsData.reviews.reduce((s, r) => s + r.rating, 0);
             setRating((sum / reviewsData.reviews.length).toFixed(1));
             setReviewsCount(reviewsData.reviews.length);
             setReviews(reviewsData.reviews.slice(0, 3));
           } else {
-            console.warn("Failed to fetch reviews:", reviewsData.message || "Unknown error");
+            console.warn(
+              "Failed to fetch reviews:",
+              reviewsData.message || "Unknown error"
+            );
             setRating("0.0");
             setReviewsCount(0);
             setReviews([]);
@@ -449,7 +456,7 @@ export default function AstrologerProfile() {
 
   const handleStartCall = async (type) => {
     if (!isOnline) return;
-    
+
     try {
       const userId = localStorage.getItem("tgs:userId");
       if (!userId) {
@@ -461,7 +468,7 @@ export default function AstrologerProfile() {
       // Store astrologer ID and call type for the main page to pick up
       localStorage.setItem("tgs:profileCallAstrologerId", astrologer.id);
       localStorage.setItem("tgs:profileCallType", type);
-      
+
       // Navigate to talk-to-astrologer page which will handle the call
       router.push("/talk-to-astrologer");
     } catch (error) {
@@ -632,7 +639,8 @@ export default function AstrologerProfile() {
                             position: "relative",
                           }}
                         >
-                          {!astrologer.avatar && avatarInitials(astrologer.name)}
+                          {!astrologer.avatar &&
+                            avatarInitials(astrologer.name)}
 
                           {isOnline && (
                             <div
@@ -743,106 +751,92 @@ export default function AstrologerProfile() {
                           {astrologer.specialization}
                         </p>
 
-                        {/* NEW ROW (Option A): Specialties (left) | Areas of Expertise (right) */}
+                        {/* Quick Info Strip */}
                         <div
                           style={{
                             display: "flex",
-                            gap: "1rem",
-                            alignItems: "flex-start",
+                            flexWrap: "wrap",
+                            gap: "1.25rem",
                             marginBottom: "var(--space-lg)",
+                            padding: "0.75rem 1rem",
+                            background: "var(--color-gray-50)",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--color-gray-200)",
                           }}
                         >
-                          {/* Specialties column */}
-                          <div style={{ flex: 1 }}>
-                            <div
+                          {/* Status */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            <Globe
                               style={{
-                                fontSize: "0.875rem",
-                                color: "var(--color-gray-600)",
-                                marginBottom: "0.5rem",
+                                width: "18px",
+                                height: "18px",
+                                color: isOnline
+                                  ? "#10b981"
+                                  : "var(--color-gray-400)",
+                              }}
+                            />
+                            <span
+                              style={{
                                 fontWeight: 600,
+                                color: isOnline
+                                  ? "#10b981"
+                                  : "var(--color-gray-600)",
                               }}
                             >
-                              Specialties
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.75rem",
-                              }}
-                            >
-                              {(specialties || []).map((spec, i) => (
-                                <span
-                                  key={i}
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "0.5rem 0.9rem",
-                                    background: "var(--color-indigo-light)",
-                                    color: "var(--color-indigo)",
-                                    borderRadius: "var(--radius-full)",
-                                    fontSize: "0.875rem",
-                                    fontWeight: 500,
-                                    border: "1px solid rgba(79, 70, 229, 0.2)",
-                                  }}
-                                >
-                                  {spec}
-                                </span>
-                              ))}
-                              {(specialties || []).length === 0 && (
-                                <div style={{ color: "var(--color-gray-500)" }}>
-                                  No specialties listed
-                                </div>
-                              )}
-                            </div>
+                              {isOnline ? "Available Now" : "Offline"}
+                            </span>
                           </div>
 
-                          {/* Areas of Expertise column */}
-                          <div style={{ flex: 1 }}>
-                            <div
+                          {/* Languages */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            <Languages
                               style={{
-                                fontSize: "0.875rem",
-                                color: "var(--color-gray-600)",
-                                marginBottom: "0.5rem",
-                                fontWeight: 600,
+                                width: "18px",
+                                height: "18px",
+                                color: "var(--color-indigo)",
+                              }}
+                            />
+                            <span style={{ fontWeight: 500 }}>
+                              {(astrologer.languages || ["English"]).join(", ")}
+                            </span>
+                          </div>
+
+                          {/* Rate */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            <IndianRupee
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                color: "#059669",
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color: "#059669",
+                                fontFamily: "'Courier New', monospace",
                               }}
                             >
-                              Areas of Expertise
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.75rem",
-                              }}
-                            >
-                              {astrologer.areasOfExpertise &&
-                              astrologer.areasOfExpertise.length > 0 ? (
-                                astrologer.areasOfExpertise.map((area, idx) => (
-                                  <span
-                                    key={idx}
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      padding: "0.45rem 0.95rem",
-                                      background:
-                                        "linear-gradient(180deg,#fff7ed,#ffedd5)",
-                                      color: "#92400e",
-                                      borderRadius: "var(--radius-full)",
-                                      fontSize: "0.9rem",
-                                      fontWeight: 700,
-                                      border: "1px solid rgba(245,158,11,0.12)",
-                                    }}
-                                  >
-                                    {area}
-                                  </span>
-                                ))
-                              ) : (
-                                <div style={{ color: "var(--color-gray-500)" }}>
-                                  No specific expertise selected
-                                </div>
-                              )}
-                            </div>
+                              ₹{perMinuteCharge}/min
+                            </span>
                           </div>
                         </div>
 
@@ -1070,20 +1064,18 @@ export default function AstrologerProfile() {
                     </div>
 
                     {/* buttons */}
-
-
                   </div>
 
                   {/* Right Side */}
                   <div>
-
                     {/* Action Buttons */}
-                    <div className="card" style={{marginBottom: "2rem"}}>
+                    <div className="card" style={{ marginBottom: "2rem" }}>
+                      {/* Buttons row */}
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "row",
                           gap: "var(--space-md)",
+                          flexWrap: "wrap",
                         }}
                       >
                         <button
@@ -1118,7 +1110,9 @@ export default function AstrologerProfile() {
 
                         <button
                           className="btn"
-                          onClick={() => router.push(`/appointments/book/${astrologer.id}`)}
+                          onClick={() =>
+                            router.push(`/appointments/book/${astrologer.id}`)
+                          }
                           style={{
                             height: "52px",
                             fontSize: "1.05rem",
@@ -1132,23 +1126,26 @@ export default function AstrologerProfile() {
                             cursor: "pointer",
                           }}
                         >
-                          <CalendarCheck style={{ width: "20px", height: "20px" }} />
+                          <CalendarCheck
+                            style={{ width: "20px", height: "20px" }}
+                          />
                           Book Appointment
                         </button>
-
-                        {!isOnline && (
-                          <p
-                            style={{
-                              fontSize: "0.875rem",
-                              color: "var(--color-gray-600)",
-                              textAlign: "center",
-                              marginTop: "0.5rem",
-                            }}
-                          >
-                            Astrologer is currently offline
-                          </p>
-                        )}
                       </div>
+
+                      {/* Offline message — NEW LINE */}
+                      {!isOnline && (
+                        <p
+                          style={{
+                            marginTop: "0.75rem",
+                            fontSize: "0.875rem",
+                            color: "var(--color-gray-600)",
+                            textAlign: "center",
+                          }}
+                        >
+                          Currently offline
+                        </p>
+                      )}
                     </div>
 
                     {/* About */}
@@ -1203,7 +1200,8 @@ export default function AstrologerProfile() {
                         }}
                       >
                         {/* Render the new areasOfExpertise if present, otherwise fall back to specialties */}
-                        {(astrologer.areasOfExpertise && astrologer.areasOfExpertise.length > 0
+                        {(astrologer.areasOfExpertise &&
+                        astrologer.areasOfExpertise.length > 0
                           ? astrologer.areasOfExpertise
                           : specialties
                         ).map((specialty, idx) => (
@@ -1273,7 +1271,8 @@ export default function AstrologerProfile() {
                                     style={{
                                       fontWeight: 500,
                                       marginBottom: "0.25rem",
-                                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                                      fontFamily:
+                                        "'Georgia', 'Times New Roman', serif",
                                       fontSize: "1.1rem",
                                     }}
                                   >
@@ -1626,11 +1625,14 @@ export default function AstrologerProfile() {
                           type="button"
                           onClick={() => {
                             setEditForm((prev) => {
-                              const already = prev.areasOfExpertise.includes(area);
+                              const already =
+                                prev.areasOfExpertise.includes(area);
                               return {
                                 ...prev,
                                 areasOfExpertise: already
-                                  ? prev.areasOfExpertise.filter((a) => a !== area)
+                                  ? prev.areasOfExpertise.filter(
+                                      (a) => a !== area
+                                    )
                                   : [...prev.areasOfExpertise, area],
                               };
                             });
@@ -1639,7 +1641,9 @@ export default function AstrologerProfile() {
                             padding: "0.5rem 1rem",
                             borderRadius: "20px",
                             border: "1px solid var(--color-indigo)",
-                            background: selected ? "var(--color-indigo)" : "white",
+                            background: selected
+                              ? "var(--color-indigo)"
+                              : "white",
                             color: selected ? "white" : "var(--color-indigo)",
                             cursor: "pointer",
                             fontSize: "0.875rem",
