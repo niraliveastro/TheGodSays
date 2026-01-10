@@ -1551,7 +1551,7 @@ export default function TalkToAstrologer() {
                               <h3
                                 style={{
                                   fontSize: "1.5rem",
-                                  fontWeight: 700,
+                                  fontWeight: 500,
                                   color: "var(--color-gray-900)",
                                   margin: 0,
                                   whiteSpace: "nowrap",
