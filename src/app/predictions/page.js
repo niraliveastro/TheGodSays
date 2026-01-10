@@ -18,7 +18,7 @@ import {
   Trash2,
   PhoneCallIcon
 } from "lucide-react";
-import "./predictions.css";
+import "./prediction.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
 import { PageLoading } from "@/components/LoadingStates";
@@ -1339,7 +1339,7 @@ export default function PredictionsPage() {
         </div>
       </header>
 
-      <div className="container py-8">
+      <div className=" py-8">
         {error && (
           <div 
             className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
@@ -1457,14 +1457,6 @@ export default function PredictionsPage() {
                         aria-pressed={gender === "Female"}
                       >
                         Female
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGender("Other")}
-                        className={`gender-segment ${gender === "Other" ? "active" : ""}`}
-                        aria-pressed={gender === "Other"}
-                      >
-                        Other
                       </button>
                     </div>
                     <input
@@ -1818,7 +1810,7 @@ export default function PredictionsPage() {
               </div>
             ) : result && !result.westernChartSvg ? (
               <div 
-                className="card mt-8 p-6 border rounded-lg"
+                className="card my-8 p-6 border rounded-lg"
                 style={{
                   background: "#fef9c3",
                   borderColor: "#fde047",
@@ -1912,7 +1904,7 @@ export default function PredictionsPage() {
               <div
                 ref={setPlacementsRef}
                 id="planet-placements"
-                className="card"
+                className="card mb-6"
                 style={{ scrollMarginTop: "96px" }} // keeps it nicely below your fixed header when scrolled
               >
                 <div className="results-header">
@@ -2075,7 +2067,7 @@ export default function PredictionsPage() {
               </div>
             )}
             {/* Vimshottari Maha Dasha */}
-            <div className="card">
+            <div className="card my-6">
               <div className="results-header">
                 <Moon style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Vimshottari Maha Dasha</h3>
