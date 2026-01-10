@@ -847,7 +847,7 @@ export default function AstrologerProfile() {
                         </div>
 
                         {/* Rating */}
-                        <div
+                        {/* <div
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -885,7 +885,7 @@ export default function AstrologerProfile() {
                           <span style={{ color: "var(--color-gray-500)" }}>
                             ({reviewsCount.toLocaleString()} reviews)
                           </span>
-                        </div>
+                        </div> */}
 
                         {/* Quick Stats */}
                         <div
@@ -1069,12 +1069,20 @@ export default function AstrologerProfile() {
                       </div>
                     </div>
 
+                    {/* buttons */}
+
+
+                  </div>
+
+                  {/* Right Side */}
+                  <div>
+
                     {/* Action Buttons */}
-                    <div className="card">
+                    <div className="card" style={{marginBottom: "2rem"}}>
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "column",
+                          flexDirection: "row",
                           gap: "var(--space-md)",
                         }}
                       >
@@ -1142,10 +1150,7 @@ export default function AstrologerProfile() {
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Side */}
-                  <div>
                     {/* About */}
                     <div
                       className="card"
