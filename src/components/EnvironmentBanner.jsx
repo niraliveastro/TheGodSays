@@ -3,24 +3,19 @@ export default function EnvironmentBanner() {
 
   return (
     <div
+      title="Staging / Preview Environment"
       style={{
         position: "fixed",
-        top: "40%",
-        right: "-60px",
-        transform: "rotate(-90deg)",
-        background: "#b91c1c",
-        color: "#fff",
-        padding: "6px 14px",
-        fontSize: "12px",
-        fontWeight: "bold",
-        letterSpacing: "1px",
+        top: "12px",
+        right: "12px",
+        width: "10px",
+        height: "10px",
+        backgroundColor: "#dc2626", // red-600
+        borderRadius: "50%",
         zIndex: 9999,
-        borderRadius: "4px 4px 0 0",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-        pointerEvents: "none", // important: does NOT block clicks
+        boxShadow: "0 0 0 2px rgba(220,38,38,0.25)",
+        pointerEvents: "none", // never blocks UI
       }}
-    >
-      🚧 STAGING
-    </div>
+    />
   );
 }
