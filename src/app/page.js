@@ -2700,22 +2700,32 @@ export default function Home() {
                       {t.panchang.description}
                     </p>
 
-                    {/* Date Selector */}
-                    <div
-                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm ${"bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30"}`}
-                    >
-                      <Calendar className={`w-4 h-4 ${"text-gold"}`} />
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className={`appearance-none bg-transparent border-none outline-none text-center text-sm font-medium cursor-pointer transition-colors ${"text-gray-700 hover:text-gold"}`}
-                        style={{
-                          colorScheme: "light",
-                          background: "transparent",
-                        }}
-                      />
-                    </div>
+{/* Date Selector */}
+<div
+  className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm 
+  bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30`}
+>
+  <input
+    type="date"
+    value={selectedDate}
+    onChange={(e) => setSelectedDate(e.target.value)}
+    className="
+      appearance-none 
+      bg-transparent 
+      border-none 
+      outline-none 
+      text-sm 
+      font-medium 
+      cursor-pointer 
+      text-gray-700 
+      hover:text-gold
+    "
+    style={{
+      colorScheme: "light",
+    }}
+  />
+</div>
+
 
                     <p
                       className="mt-3 text-xs text-slate-500"

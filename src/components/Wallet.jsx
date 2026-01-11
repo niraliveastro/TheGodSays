@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useMemo } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Wallet as WalletIcon,
   Plus,
@@ -9,105 +9,109 @@ import {
   CreditCard,
   Loader2,
   TicketPercent,
-} from 'lucide-react'
+} from "lucide-react";
 
 import {
   trackEvent,
   trackActionStart,
   trackActionComplete,
   trackActionAbandon,
-} from '@/lib/analytics'
+} from "@/lib/analytics";
 
 export default function Wallet() {
-  const { user, getUserId, userProfile } = useAuth()
-  const userId = getUserId()
+  const { user, getUserId, userProfile } = useAuth();
+  const userId = getUserId();
 
-  const [wallet, setWallet] = useState({ balance: 0, transactions: [] })
-  const [loading, setLoading] = useState(true)
+  const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
+  const [loading, setLoading] = useState(true);
 
-  const [rechargeAmount, setRechargeAmount] = useState('')
-  const [showRechargeForm, setShowRechargeForm] = useState(false)
-  const [rechargeLoading, setRechargeLoading] = useState(false)
+  const [rechargeAmount, setRechargeAmount] = useState("");
+  const [showRechargeForm, setShowRechargeForm] = useState(false);
+  const [rechargeLoading, setRechargeLoading] = useState(false);
 
-  const [showCouponField, setShowCouponField] = useState(false)
-  const [couponCode, setCouponCode] = useState('')
-  const [couponStatus, setCouponStatus] = useState(null)
-  const [couponLoading, setCouponLoading] = useState(false)
+  const [showCouponField, setShowCouponField] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponStatus, setCouponStatus] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   /* ---------- TRANSACTION PAGINATION ---------- */
-  const ITEMS_PER_LOAD = 10
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD)
-  const [showAll, setShowAll] = useState(false)
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   /* ------------------------------------------------------------------ */
   /*  FETCH WALLET DATA                                                  */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    if (userId) fetchWalletData()
-  }, [userId])
+    if (userId) fetchWalletData();
+  }, [userId]);
 
   const fetchWalletData = async () => {
     try {
-      const res = await fetch('/api/payments/wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-balance', userId }),
-      })
+      const res = await fetch("/api/payments/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get-balance", userId }),
+      });
       if (res.ok) {
-        const { success, wallet: data } = await res.json()
-        if (success) setWallet(data)
+        const { success, wallet: data } = await res.json();
+        if (success) setWallet(data);
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   /* ------------------------------------------------------------------ */
   /*  HELPERS                                                           */
   /* ------------------------------------------------------------------ */
   const formatCurrency = (amt) =>
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amt)
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amt);
 
   const formatDate = (ts) => {
-    let date
-    if (ts?._seconds) date = new Date(ts._seconds * 1000)
-    else if (ts?.toDate) date = ts.toDate()
-    else if (ts?.seconds) date = new Date(ts.seconds * 1000)
-    else date = new Date(ts)
+    let date;
+    if (ts?._seconds) date = new Date(ts._seconds * 1000);
+    else if (ts?.toDate) date = ts.toDate();
+    else if (ts?.seconds) date = new Date(ts.seconds * 1000);
+    else date = new Date(ts);
 
     return isNaN(date.getTime())
-      ? 'Invalid Date'
-      : date.toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-  }
+      ? "Invalid Date"
+      : date.toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+  };
 
   const getTimestamp = (ts) => {
-    if (!ts) return 0
-    if (ts._seconds) return ts._seconds * 1000
-    if (ts.toDate) return ts.toDate().getTime()
-    if (ts.seconds) return ts.seconds * 1000
-    return new Date(ts).getTime()
-  }
+    if (!ts) return 0;
+    if (ts._seconds) return ts._seconds * 1000;
+    if (ts.toDate) return ts.toDate().getTime();
+    if (ts.seconds) return ts.seconds * 1000;
+    return new Date(ts).getTime();
+  };
 
   const sortedTransactions = useMemo(() => {
     return [...wallet.transactions].sort(
       (a, b) => getTimestamp(b.timestamp) - getTimestamp(a.timestamp)
-    )
-  }, [wallet.transactions])
+    );
+  }, [wallet.transactions]);
 
-  const visibleTransactions = showAll
-    ? sortedTransactions
-    : sortedTransactions.slice(0, visibleCount)
+  const totalPages = Math.ceil(sortedTransactions.length / ITEMS_PER_PAGE);
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return sortedTransactions.slice(start, end);
+  }, [sortedTransactions, currentPage]);
+
 
   /* ------------------------------------------------------------------ */
   /*  LOADING / ACCESS STATES                                            */
@@ -118,10 +122,10 @@ export default function Wallet() {
         <Loader2 className="w-8 h-8 animate-spin text-[var(--color-gold)]" />
         <span className="ml-2 text-gray-600">Loading wallet…</span>
       </div>
-    )
+    );
   }
 
-  if (userProfile?.collection === 'astrologers') {
+  if (userProfile?.collection === "astrologers") {
     return (
       <div className="max-w-3xl mx-auto p-8 text-center">
         <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
@@ -129,7 +133,7 @@ export default function Wallet() {
           Wallet functionality is only available for regular users.
         </p>
       </div>
-    )
+    );
   }
 
   /* ------------------------------------------------------------------ */
@@ -137,7 +141,6 @@ export default function Wallet() {
   /* ------------------------------------------------------------------ */
   return (
     <div className="max-w-3xl mx-auto">
-
       {/* ---------- BALANCE CARD ---------- */}
       <div className="card mb-8">
         <div className="flex items-center gap-4 mb-4">
@@ -165,8 +168,8 @@ export default function Wallet() {
 
           <button
             onClick={() => {
-              setShowCouponField(!showCouponField)
-              setCouponStatus(null)
+              setShowCouponField(!showCouponField);
+              setCouponStatus(null);
             }}
             className="btn btn-outline flex items-center gap-2"
           >
@@ -184,21 +187,17 @@ export default function Wallet() {
         </div>
 
         {wallet.transactions.length === 0 ? (
-          <p className="text-center text-gray-500 p-4">
-            No transactions yet
-          </p>
+          <p className="text-center text-gray-500 p-4">No transactions yet</p>
         ) : (
           <>
             <div className="flex flex-col gap-3">
-              {visibleTransactions.map((t, i) => (
+              {paginatedTransactions.map((t, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {t.description}
-                    </p>
+                    <p className="font-medium text-gray-900">{t.description}</p>
                     <p className="text-sm text-gray-600">
                       {formatDate(t.timestamp)}
                     </p>
@@ -207,12 +206,10 @@ export default function Wallet() {
                   <div className="text-right">
                     <p
                       className={`font-semibold ${
-                        t.type === 'credit'
-                          ? 'text-green-600'
-                          : 'text-red-600'
+                        t.type === "credit" ? "text-green-600" : "text-red-600"
                       }`}
                     >
-                      {t.type === 'credit' ? '+' : '-'}
+                      {t.type === "credit" ? "+" : "-"}
                       {formatCurrency(t.amount)}
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
@@ -223,27 +220,33 @@ export default function Wallet() {
               ))}
             </div>
 
-            {!showAll && visibleCount < sortedTransactions.length && (
-<div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-  <button
-    onClick={() => setVisibleCount((v) => v + ITEMS_PER_LOAD)}
-    className="btn btn-primary w-full sm:w-auto"
-  >
-    Load more
-  </button>
+            {totalPages > 1 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="btn btn-outline disabled:opacity-50 w-full sm:w-auto"
+                >
+                  Previous
+                </button>
 
-  <button
-    onClick={() => setShowAll(true)}
-    className="btn btn-ghost w-full sm:w-auto"
-  >
-    Show all transactions
-  </button>
-</div>
+                <p className="text-sm text-gray-600">
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{totalPages}</span>
+                </p>
 
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="btn btn-primary disabled:opacity-50 w-full sm:w-auto"
+                >
+                  Next
+                </button>
+              </div>
             )}
           </>
         )}
       </div>
     </div>
-  )
+  );
 }
