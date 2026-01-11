@@ -1127,7 +1127,7 @@ export default function TalkToAstrologer() {
               <div className="orb orb3" />
             </div>
             {/* Header */}
-            <header className="header" style={{ textAlign: "center", marginTop: "0.1rem" }}>
+            <header className="header" style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0.1rem" }}>
               <h1 className="title">{t.talkToAstrologer.title}</h1>
               <p className="subtitle">{t.talkToAstrologer.subtitle}</p>
             </header>

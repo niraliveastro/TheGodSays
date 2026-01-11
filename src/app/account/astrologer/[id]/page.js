@@ -1075,7 +1075,10 @@ export default function AstrologerProfile() {
                         style={{
                           display: "flex",
                           gap: "var(--space-md)",
-                          flexWrap: "wrap",
+                          flexWrap: "nowrap", // force single line
+                          alignItems: "center",
+                          WebkitOverflowScrolling: "touch",
+                          paddingBottom: "0.25rem",
                         }}
                       >
                         <button
@@ -1087,6 +1090,8 @@ export default function AstrologerProfile() {
                             fontSize: "1.05rem",
                             opacity: isOnline ? 1 : 0.5,
                             cursor: isOnline ? "pointer" : "not-allowed",
+                            flex: "0 1 auto",
+                            minWidth: "min-content",
                           }}
                         >
                           <Video style={{ width: "20px", height: "20px" }} />
@@ -1102,6 +1107,8 @@ export default function AstrologerProfile() {
                             fontSize: "1.05rem",
                             opacity: isOnline ? 1 : 0.5,
                             cursor: isOnline ? "pointer" : "not-allowed",
+                            flex: "0 1 auto",
+                            minWidth: "min-content",
                           }}
                         >
                           <Phone style={{ width: "20px", height: "20px" }} />
@@ -1124,6 +1131,8 @@ export default function AstrologerProfile() {
                             justifyContent: "center",
                             gap: "0.5rem",
                             cursor: "pointer",
+                            flex: "0 1 auto",
+                            minWidth: "min-content",
                           }}
                         >
                           <CalendarCheck
@@ -1133,19 +1142,7 @@ export default function AstrologerProfile() {
                         </button>
                       </div>
 
-                      {/* Offline message — NEW LINE */}
-                      {!isOnline && (
-                        <p
-                          style={{
-                            marginTop: "0.75rem",
-                            fontSize: "0.875rem",
-                            color: "var(--color-gray-600)",
-                            textAlign: "center",
-                          }}
-                        >
-                          Currently offline
-                        </p>
-                      )}
+                      
                     </div>
 
                     {/* About */}
