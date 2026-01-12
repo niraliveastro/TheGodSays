@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, signOut } = useAuth();
-      /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
   /*  State                                                          */
   /* --------------------------------------------------------------- */
   const [user, setUser] = useState(null);
@@ -88,7 +88,7 @@ export default function ProfilePage() {
 
   // Call history state
   const [historyLoading, setHistoryLoading] = useState(false);
-  
+
   // Get status color theme (same as talk-to-astrologer page)
   const getStatusColor = (status) => {
     const normalizedStatus = (status || "completed").toLowerCase();
@@ -153,7 +153,7 @@ export default function ProfilePage() {
     const cacheKey = `tgs:callHistory:${userId}`;
     const cacheTimeout = 10 * 60 * 1000; // 10 minutes
     const now = Date.now();
-    
+
     if (!forceRefresh && typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem(cacheKey);
@@ -180,7 +180,7 @@ export default function ProfilePage() {
         if (data.success && data.history) {
           const recentCalls = data.history.slice(0, 5); // Show only 5 in profile
           setCallHistory(recentCalls);
-          
+
           // Update cache
           if (typeof window !== 'undefined') {
             try {
@@ -213,14 +213,14 @@ export default function ProfilePage() {
       fetchCallHistory(false); // Use cache if available
     }
   }, [userId, fetchCallHistory]);
-  
+
   // Load call history from cache immediately for instant display
   useEffect(() => {
     if (userId && typeof window !== 'undefined') {
       const cacheKey = `tgs:callHistory:${userId}`;
       const cacheTimeout = 10 * 60 * 1000; // 10 minutes
       const now = Date.now();
-      
+
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
@@ -500,13 +500,13 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center"
         style={{
           background: "#f9fafb",
         }}
       >
-        <p 
+        <p
           className="text-lg"
           style={{
             color: "#4b5563",
@@ -520,7 +520,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div 
+      <div
         className="min-h-screen py-8 relative"
         style={{
           background: "#f9fafb",
@@ -536,11 +536,10 @@ export default function ProfilePage() {
         <div className="app relative">
           {/* Left Toolbar */}
           <div
-            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${
-              showFamilyPanel ? "translate-x-0" : "-translate-x-full"
-            }`}
-            style={{ 
-              width: "320px", 
+            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${showFamilyPanel ? "translate-x-0" : "-translate-x-full"
+              }`}
+            style={{
+              width: "320px",
               zIndex: 30,
               background: "white",
             }}
@@ -588,7 +587,7 @@ export default function ProfilePage() {
                       onClick={() => handleViewPredictions(member)}
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
                           style={{
                             background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
@@ -613,7 +612,7 @@ export default function ProfilePage() {
                         <p>🕐 {member.time}</p>
                         <p>📍 {member.place}</p>
                       </div>
-                      <button 
+                      <button
                         className="mt-3 w-full px-3 py-2 bg-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                         style={{
                           border: "1px solid var(--color-gold)",
@@ -644,7 +643,7 @@ export default function ProfilePage() {
           <button
             onClick={() => setShowFamilyPanel(!showFamilyPanel)}
             className="fixed left-0 top-1/2 -translate-y-1/2 text-white p-3 rounded-r-xl shadow-lg hover:shadow-xl transition-all z-40"
-            style={{ 
+            style={{
               marginLeft: showFamilyPanel ? "320px" : "0",
               background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
             }}
@@ -653,9 +652,21 @@ export default function ProfilePage() {
           </button>
 
           {/* Header */}
-          <header className="header">
-            <h1 className="title">My Profile</h1>
-            <p className="subtitle">
+          {/* Header */}
+          <header
+            className="header mb-10"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              width: "100%",
+              marginTop: "0.01rem",
+            }}
+          >
+            <h1 className="title" style={{ margin: 0 }}>My Profile</h1>
+            <p className="subtitle" style={{ margin: "0.5rem 0 0" }}>
               Manage your account details, wallet balance, and call history.
             </p>
           </header>
@@ -664,8 +675,8 @@ export default function ProfilePage() {
             {/* Left: Profile Card */}
             <div
               className="card"
-              style={{ 
-                padding: "2rem", 
+              style={{
+                padding: "2rem",
                 position: "relative",
               }}
             >
@@ -851,9 +862,9 @@ export default function ProfilePage() {
             {/* Right: Wallet + Stats */}
             <div style={{ display: "grid", gap: "1.5rem" }}>
               {/* Wallet */}
-              <div 
-                className="card" 
-                style={{ 
+              <div
+                className="card"
+                style={{
                   padding: "1.5rem",
                 }}
               >
@@ -879,9 +890,9 @@ export default function ProfilePage() {
                         color: "var(--color-gold)",
                       }}
                     />
-                    <h3 
-                      style={{ 
-                        fontSize: "1.125rem", 
+                    <h3
+                      style={{
+                        fontSize: "1.125rem",
                         fontWeight: 600,
                         color: "#1f2937",
                       }}
@@ -921,9 +932,9 @@ export default function ProfilePage() {
               </div>
 
               {/* Quick Stats */}
-              <div 
-                className="card" 
-                style={{ 
+              <div
+                className="card"
+                style={{
                   padding: "1.5rem",
                 }}
               >

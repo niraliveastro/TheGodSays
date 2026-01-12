@@ -413,21 +413,31 @@ body {
   font-weight: 400; /* Normal weight - removed bold */
   color: #000000; /* Black text */
   text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Only transition colors */
+  border: none !important;
   background: transparent;
   cursor: pointer;
   font-family: inherit;
   position: relative;
   overflow: hidden;
   white-space: nowrap;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  will-change: auto !important;
 }
 
 .nav-language-dropdown-button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent !important;
   color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  border: none !important;
 }
 
 .nav-language-dropdown-button svg {
@@ -436,10 +446,16 @@ body {
   color: #000000; /* Black icons */
   margin-right: 0;
   transition: transform 0.3s ease;
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-language-dropdown-button:hover svg {
   color: #ffffff !important; /* White icons on hover */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-language-dropdown-button .dropdown-icon {
@@ -620,22 +636,29 @@ body {
   text-decoration: none !important; /* Remove any underlines */
   transition: all 0.3s ease;
   border: 1px solid #e5e7eb; /* Light gray border */
+  border-bottom: 3px solid #9ca3af !important; /* Darker, thicker bottom border for visibility */
   background: #ffffff; /* White background */
   cursor: pointer;
   font-family: inherit;
   position: relative;
-  overflow: hidden;
+  z-index: 10 !important; /* Ensure buttons are above other elements */
+  overflow: visible !important; /* Changed from hidden to visible to ensure border shows */
   white-space: nowrap;
   color: #374151; /* Dark gray text */
+  margin-bottom: -1px !important; /* Pull border forward */
+  box-shadow: 0 3px 0 0 #9ca3af !important; /* Additional shadow to make bottom border visible */
 }
 
 .nav-link:hover, .nav-button:hover {
   background: linear-gradient(135deg, #d4af37, #b8972e); /* Golden gradient on hover */
   color: #ffffff; /* White text on hover */
   border-color: #d4af37;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  border-bottom: 3px solid #a08526 !important; /* Darker golden bottom border on hover */
+  box-shadow: 0 3px 0 0 #a08526, 0 2px 8px rgba(212, 175, 55, 0.3) !important; /* Shadow to make bottom border visible */
   transform: translateY(-1px);
   text-decoration: none !important; /* Remove underlines on hover */
+  z-index: 11 !important; /* Higher z-index on hover */
+  margin-bottom: -1px !important; /* Pull border forward */
 }
 
 .nav-link svg, .nav-button svg {
@@ -686,19 +709,54 @@ body {
   font-size: 0.9375rem; /* Slightly larger text */
   white-space: nowrap;
   border-radius: 12px; /* Rounded corners */
-  border: none;
+  border: none !important;
   background: transparent; /* Transparent by default */
   text-decoration: none !important;
-  transition: all 0.3s ease; /* Smooth transition */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Only transition colors, not transform */
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  will-change: auto !important;
 }
 
 /* Hover state - transparent rounded rectangle */
 .nav-bottom-row .nav-link:hover,
 .nav-bottom-row .nav-button:hover {
-  background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
+  background: transparent !important;
   color: #ffffff !important; /* White text on hover */
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure no pseudo-elements create shadows */
+.nav-bottom-row .nav-link::before,
+.nav-bottom-row .nav-link::after,
+.nav-bottom-row .nav-button::before,
+.nav-bottom-row .nav-button::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.nav-bottom-row .nav-link:hover::before,
+.nav-bottom-row .nav-link:hover::after,
+.nav-bottom-row .nav-button:hover::before,
+.nav-bottom-row .nav-button:hover::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 /* Override dropdown button styles in bottom nav - rounded rectangles */
@@ -709,32 +767,94 @@ body {
   padding: 0.5rem 1rem !important; /* Match other nav items */
   font-weight: 400 !important; /* Normal weight - removed bold */
   color: #000000 !important; /* Black text */
-  transition: all 0.3s ease !important;
+  transition: background-color 0.3s ease, color 0.3s ease !important; /* Only transition colors */
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  will-change: auto !important;
 }
 
 .nav-bottom-row .nav-dropdown-button:hover {
-  background: rgba(255, 255, 255, 0.2) !important; /* Semi-transparent white */
+  background: transparent !important;
   border: none !important;
   color: #ffffff !important; /* White text on hover */
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.nav-bottom-row .nav-dropdown-button::before,
+.nav-bottom-row .nav-dropdown-button::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.nav-bottom-row .nav-dropdown-button:hover::before,
+.nav-bottom-row .nav-dropdown-button:hover::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 .nav-bottom-row .nav-dropdown-button:hover svg {
   color: #ffffff !important; /* White icons on hover */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-bottom-row .nav-link-active {
   color: #ffffff; /* White text when active */
   font-weight: 400; /* Normal weight - removed bold */
   background: rgba(255, 255, 255, 0.25) !important; /* Slightly more opaque */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: none;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  border: none !important;
+  outline: none !important;
+  transform: none !important;
+  will-change: auto !important;
 }
 
 .nav-bottom-row .nav-link-active:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-1px);
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.nav-bottom-row .nav-link-active::before,
+.nav-bottom-row .nav-link-active::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.nav-bottom-row .nav-link-active:hover::before,
+.nav-bottom-row .nav-link-active:hover::after {
+  display: none !important;
+  content: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 /* Icons in bottom nav - white on golden background */
@@ -744,11 +864,17 @@ body {
   height: 18px;
   color: #000000; /* Black icons */
   margin-right: 0.5rem; /* Space between icon and text */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-bottom-row .nav-link:hover svg,
 .nav-bottom-row .nav-button:hover svg {
   color: #ffffff !important; /* White icons on hover */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-link-active {
@@ -909,22 +1035,29 @@ body {
   text-decoration: none !important; /* Remove any underlines */
   transition: all 0.3s ease;
   border: 1px solid #e5e7eb; /* Light gray border */
+  border-bottom: 3px solid #9ca3af !important; /* Darker, thicker bottom border for visibility */
   background: #ffffff; /* White background */
   cursor: pointer;
   font-family: inherit;
   position: relative;
-  overflow: hidden;
+  z-index: 10 !important; /* Ensure buttons are above other elements */
+  overflow: visible !important; /* Changed from hidden to visible to ensure border shows */
   white-space: nowrap;
   color: #374151;
+  margin-bottom: -1px !important; /* Pull border forward */
+  box-shadow: 0 3px 0 0 #9ca3af !important; /* Additional shadow to make bottom border visible */
 }
 
 .nav-dropdown-button:hover {
   background: linear-gradient(135deg, #d4af37, #b8972e); /* Golden gradient on hover */
   color: #ffffff;
   border-color: #d4af37;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  border-bottom: 3px solid #a08526 !important; /* Darker golden bottom border on hover */
+  box-shadow: 0 3px 0 0 #a08526, 0 2px 8px rgba(212, 175, 55, 0.3) !important; /* Shadow to make bottom border visible */
   transform: translateY(-1px);
   text-decoration: none !important; /* Remove underlines on hover */
+  z-index: 11 !important; /* Higher z-index on hover */
+  margin-bottom: -1px !important; /* Pull border forward */
 }
 
 .nav-dropdown-button.active {
@@ -942,6 +1075,9 @@ body {
 /* Bottom nav dropdown button icons - black by default */
 .nav-bottom-row .nav-dropdown-button svg {
   color: #000000; /* Black icons */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .nav-dropdown-menu {
