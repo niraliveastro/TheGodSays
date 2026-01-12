@@ -510,16 +510,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-
   background: linear-gradient(145deg, #fffaf0, #f8f5eb);
   border: 1px solid #f1e9d2;
   box-shadow: 0 12px 30px rgba(212, 175, 55, 0.12);
   border-radius: 16px;
   padding: 12px;
-
   cursor: pointer;
   max-height: 240px;
-
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -676,6 +673,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 @media (max-width: 720px) {
   .history-card-body {
     flex-direction: column;
+  }
+  .history-card{
+    max-height: 100%;
   }
 
   .person-divider {

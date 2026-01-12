@@ -2365,8 +2365,8 @@ select.form-field-input:focus {
 
 .how-it-works-title {
   font-size: 1.75rem;
-  font-weight: 700; /* Bold */
-  color: #000000; /* Changed from golden to black */
+  font-weight: 400; /* Normal weight */
+  color: #000000; /* Black color */
   margin-bottom: 0.5rem;
   font-family: 'Georgia', 'Times New Roman', serif;
   text-align: center;
@@ -4534,3 +4534,8 @@ section {
   box-shadow: 0 8px 20px rgba(184, 151, 46, 0.35) !important;
 }
 
+/* Override font-weight for specific headings to be normal (not bold) */
+#loyalty-title,
+#panchang-title {
+  font-weight: 400 !important;
+}
