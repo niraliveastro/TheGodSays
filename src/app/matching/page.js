@@ -2814,7 +2814,7 @@ export default function MatchingPage() {
 
 
                 {/* Explanation Card - Below form and history */}
-        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem" }}>
+        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem", margin: "0 auto" }}>
           <div 
             className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
             style={{
