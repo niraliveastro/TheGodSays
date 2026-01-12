@@ -516,7 +516,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: 16px;
   padding: 12px;
   cursor: pointer;
-  max-height: 100%;
+  max-height: 240px;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -673,6 +673,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 @media (max-width: 720px) {
   .history-card-body {
     flex-direction: column;
+  }
+  .history-card{
+    max-height: 100%;
   }
 
   .person-divider {
