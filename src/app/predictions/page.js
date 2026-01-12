@@ -1371,7 +1371,6 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
-                <div className="step-badge">Step 1 of 2: Birth Details</div>
                 <h3 className="form-title">{t.predictions.enterDetails}</h3>
                 <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
@@ -1380,7 +1379,7 @@ export default function PredictionsPage() {
             {/* ---- Birth Details Section ---- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end" style = {{width: '100%'}}>
               {/* Full Name */}
-              <div>
+              <div className="w-full md:w-48">
                 <label className="form-field-label flex items-center gap-2 mb-2">
                   Name
                 </label>
@@ -1400,7 +1399,7 @@ export default function PredictionsPage() {
               </div>
 
               {/* Date of Birth */}
-              <div>
+              <div style={{ marginLeft: '-0.25rem' }}>
                 <label className="form-field-label flex items-center gap-2 mb-2">
                   Date of Birth
                 </label>
@@ -1472,41 +1471,46 @@ export default function PredictionsPage() {
                   </div>
 
                   {/* Place of Birth */}
-                  <div className="flex-1 place-wrapper">
+                  <div>
                     <label className="form-field-label flex items-center gap-2 mb-2">
                       Place
                     </label>
-
                     <div className="relative">
-                      <div className="place-input-wrapper">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={place}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setPlace(q);
-                            setSelectedCoords(null);
-                            fetchSuggestions(q);
-                          }}
-                          className="form-field-input form-input-field place-input"
-                          autoComplete="off"
-                          required
-                        />
-
-                        <button
-                          type="button"
-                          onClick={useMyLocation}
-                          disabled={locating}
-                          className="place-btn"
-                        >
-                          {locating ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <MapPin className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-
+                      <input
+                        placeholder="e.g., Mumbai, India"
+                        value={place}
+                        onChange={(e) => {
+                          const q = e.target.value;
+                          setPlace(q);
+                          setSelectedCoords(null);
+                          fetchSuggestions(q);
+                        }}
+                        className="form-field-input form-input-field"
+                        autoComplete="off"
+                        required
+                        style={{ paddingRight: '2.5rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={useMyLocation}
+                        disabled={locating}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: locating ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Use current location"
+                      >
+                        {locating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#d4af37' }} />
+                        ) : (
+                          <MapPin className="w-4 h-4" style={{ color: '#6b7280' }} />
+                        )}
+                      </button>
                       {suggestions.length > 0 && (
                         <div className="suggest-list">
                           {suggestions.map((s, i) => (
@@ -1525,9 +1529,7 @@ export default function PredictionsPage() {
                         </div>
                       )}
                     </div>
-
-                    {/* helper, absolutely positioned -> doesn't affect column height */}
-                    <p className="form-field-helper place-helper">
+                    <p className="form-field-helper">
                       Choose the nearest city for accurate calculation
                     </p>
                   </div>
@@ -2075,9 +2077,9 @@ export default function PredictionsPage() {
 
               {mahaRows.length > 0 ? (
                 <>
-                  {/* ==== Horizontal Railway Style Maha Dasha Timeline ==== */}
-                  <div className="horizontal-railway-container">
-                    <div className="horizontal-railway-track">
+                  {/* ==== Vertical Timeline Style Maha Dasha ==== */}
+                  <div className="vertical-timeline-container">
+                    <div className="vertical-timeline-track">
                       {mahaRows.map((row, i) => {
                         const start = new Date(row.start).toLocaleDateString(
                           "en-GB",
@@ -2100,80 +2102,128 @@ export default function PredictionsPage() {
                         return (
                           <div
                             key={row.key}
-                            className="railway-segment"
-                            style={{ "--i": i }}
+                            className="vertical-timeline-segment"
                           >
-                            <div className="segment-inner">
-                              <div className="planet-header">
-                                <span className="planet-name">{row.lord}</span>
-                                <button
-                                  className="analysis-btn"
-                                  onClick={() => openAntarInlineFor(row.lord)}
-                                >
-                                  Analysis
-                                </button>
-                              </div>
-
-                              <div className="segment-row">
-                                <span className="date-label">{start}</span>
-
-                                <div className="segment-bar">
-                                  <div className="dot start-dot"></div>
-                                  <div className="bar-line"></div>
-                                  <div className="dot end-dot"></div>
+                            <div className="vertical-segment-content">
+                              {/* Left side: Planet name, dates, vertical line */}
+                              <div className="vertical-segment-left">
+                                <div className="vertical-planet-header">
+                                  <span className="vertical-planet-name">{row.lord}</span>
+                                  <button
+                                    className="analysis-btn"
+                                    onClick={() => openAntarInlineFor(row.lord)}
+                                  >
+                                    Analysis
+                                  </button>
                                 </div>
-
-                                <span className="date-label">{end}</span>
-                              </div>
-                            </div>
-
-                            {/* === INLINE ANTAR PERIODS === */}
-                            {openAntarFor === row.lord && (
-                              <div className="antar-inline-box">
-                                {antarLoadingFor === row.lord ? (
-                                  <div className="antar-loading">Loading...</div>
-                                ) : antarRows[0]?.error ? (
-                                  <div className="antar-error">
-                                    {antarRows[0].error}
+                                
+                                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                                  <div className="vertical-timeline-line-wrapper">
+                                    <div className="vertical-timeline-dot top-dot"></div>
+                                    <div className="vertical-timeline-line"></div>
+                                    <div className="vertical-timeline-dot bottom-dot"></div>
                                   </div>
-                                ) : (
-                                  <table className="antar-table">
-                                    <thead>
-                                      <tr>
-                                        <th>Antar Lord</th>
-                                        <th>Start</th>
-                                        <th>End</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {antarRows.map((ad, i) => (
-                                        <tr key={i}>
-                                          <td>{ad.lord}</td>
-                                          <td>
-                                            {new Date(
-                                              ad.start
-                                            ).toLocaleDateString("en-GB", {
-                                              year: "numeric",
-                                              month: "short",
-                                              day: "numeric",
-                                            })}
-                                          </td>
-                                          <td>
-                                            {new Date(
-                                              ad.end
-                                            ).toLocaleDateString("en-GB", {
-                                              year: "numeric",
-                                              month: "short",
-                                              day: "numeric",
-                                            })}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                )}
+                                  
+                                  <div className="vertical-dates">
+                                    <div className="vertical-date-item">
+                                      <span className="vertical-date-label">START:</span>
+                                      <span className="vertical-date-value">{start}</span>
+                                    </div>
+                                    <div className="vertical-date-item">
+                                      <span className="vertical-date-label">END:</span>
+                                      <span className="vertical-date-value">{end}</span>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            )}
+
+                              {/* Right side: Transposed Antar Dasha Table (Desktop) / Traditional Table (Mobile) */}
+                              {openAntarFor === row.lord && (
+                                <div className="vertical-antar-box">
+                                  {antarLoadingFor === row.lord ? (
+                                    <div className="antar-loading">Loading...</div>
+                                  ) : antarRows[0]?.error ? (
+                                    <div className="antar-error">
+                                      {antarRows[0].error}
+                                    </div>
+                                  ) : antarRows.length > 0 ? (
+                                    <>
+                                      {/* Desktop: Transposed Table */}
+                                      <div className="transposed-antar-table">
+                                        <div className="transposed-row">
+                                          <div className="transposed-label">Antar Lord:</div>
+                                          <div className="transposed-values">
+                                            {antarRows.map((ad, idx) => (
+                                              <span key={idx} className="transposed-value">{ad.lord}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div className="transposed-row">
+                                          <div className="transposed-label">Start:</div>
+                                          <div className="transposed-values">
+                                            {antarRows.map((ad, idx) => (
+                                              <span key={idx} className="transposed-value">
+                                                {new Date(ad.start).toLocaleDateString("en-GB", {
+                                                  year: "numeric",
+                                                  month: "short",
+                                                  day: "numeric",
+                                                })}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div className="transposed-row">
+                                          <div className="transposed-label">End:</div>
+                                          <div className="transposed-values">
+                                            {antarRows.map((ad, idx) => (
+                                              <span key={idx} className="transposed-value">
+                                                {new Date(ad.end).toLocaleDateString("en-GB", {
+                                                  year: "numeric",
+                                                  month: "short",
+                                                  day: "numeric",
+                                                })}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Mobile: Traditional Table */}
+                                      <table className="antar-table mobile-antar-table">
+                                        <thead>
+                                          <tr>
+                                            <th>Antar Lord</th>
+                                            <th>Start</th>
+                                            <th>End</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {antarRows.map((ad, i) => (
+                                            <tr key={i}>
+                                              <td>{ad.lord}</td>
+                                              <td>
+                                                {new Date(ad.start).toLocaleDateString("en-GB", {
+                                                  year: "numeric",
+                                                  month: "short",
+                                                  day: "numeric",
+                                                })}
+                                              </td>
+                                              <td>
+                                                {new Date(ad.end).toLocaleDateString("en-GB", {
+                                                  year: "numeric",
+                                                  month: "short",
+                                                  day: "numeric",
+                                                })}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

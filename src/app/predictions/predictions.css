@@ -64,14 +64,12 @@
 
 /* Place input wrapper */
 .place-input-wrapper {
-  display: flex;
-  gap: 0.5rem;
   position: relative;
   min-width: 0;
 }
 
 .place-input {
-  flex: 1;
+  width: 100%;
 }
 
 .suggest-list {
