@@ -56,12 +56,17 @@ export default function AuthLanding() {
         {/* Header – Branding and introductory messaging */}
         <div className={styles["auth-landing-header"]}>
           <div className={styles["landing-logo-badge"]}>
-            <Infinity 
+            <Infinity
               className={styles["landing-logo-icon"]}
               style={{ width: '100%', height: '100%' }}
             />
           </div>
-          <h1 className={styles["landing-title"]}>Welcome to NiraLive Astro</h1>
+          <h1
+            className={styles["landing-title"]}
+            style={{ textAlign: "center", width: "100%", display: "block" }}
+          >
+            Welcome to NiraLive Astro
+          </h1>
           <p className={styles["landing-subtitle"]}>
             Connect with experienced astrologers or share your expertise with
             seekers worldwide.
@@ -83,7 +88,12 @@ export default function AuthLanding() {
               >
                 <User className={styles["card-icon"]} /> {/* User icon */}
               </div>
-              <h2 className={styles["card-title"]}>I am a User</h2>
+              <h2
+                className={styles["card-title"]}
+                style={{ textAlign: "center", width: "100%", display: "block" }}
+              >
+                I am a User
+              </h2>
               <p className={styles["card-description"]}>
                 Seek guidance from experienced astrologers for life questions,
                 career decisions, and personal growth.
@@ -136,7 +146,12 @@ export default function AuthLanding() {
                 <Star className={styles["card-icon"]} />{" "}
                 {/* Star icon for expertise */}
               </div>
-              <h2 className={styles["card-title"]}>I am an Astrologer</h2>
+              <h2
+                className={styles["card-title"]}
+                style={{ textAlign: "center", width: "100%", display: "block" }}
+              >
+                I am an Astrologer
+              </h2>
               <p className={styles["card-description"]}>
                 Share your astrological expertise and help people find clarity
                 while building your practice.
