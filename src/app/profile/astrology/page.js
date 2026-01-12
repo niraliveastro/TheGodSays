@@ -498,7 +498,8 @@ export default function AstrologerProfilePage() {
         style={{
           minHeight: "100vh",
           background: "var(--color-gray-50)",
-          padding: "2rem 0",
+          padding: "0.01rem 0",
+          marginTop: "0.01rem"
         }}
       >
         <div className="app">
@@ -516,7 +517,7 @@ export default function AstrologerProfilePage() {
           </div>
 
           {/* Header */}
-          <header className="header">
+          <header className="header" style={{marginTop: "0.01rem"}}>
             <h1 className="title">Account Settings</h1>
             <p className="subtitle">
               Manage your profile, availability, pricing, and earnings.
@@ -1451,6 +1452,10 @@ export default function AstrologerProfilePage() {
           display: grid;
           gap: 2rem;
           grid-template-columns: 1fr;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 2rem;
         }
 
         @media (min-width: 768px) {
