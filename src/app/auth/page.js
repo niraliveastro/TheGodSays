@@ -56,7 +56,7 @@ export default function AuthLanding() {
         {/* Header – Branding and introductory messaging */}
         <div className={styles["auth-landing-header"]}>
           <div className={styles["landing-logo-badge"]}>
-            <Infinity
+            <img src= "favicon.png"
               className={styles["landing-logo-icon"]}
               style={{ width: '100%', height: '100%' }}
             />
