@@ -4,59 +4,73 @@
  * Light theme only - matches NiraLive Astro theme with gold accents
  */
 
-import { getBlogBySlug, getAllBlogSlugs, getPublishedBlogs } from '@/lib/blog'
-import { generateExcerpt } from '@/lib/blog-utils'
-import { transformBlogContentImages, getOptimizedImageUrl } from '@/lib/image-optimize'
-import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
-import './blog-detail.css'
+import { getBlogBySlug, getAllBlogSlugs, getPublishedBlogs } from "@/lib/blog";
+import { generateExcerpt } from "@/lib/blog-utils";
+import {
+  transformBlogContentImages,
+  getOptimizedImageUrl,
+} from "@/lib/image-optimize";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import "./blog-detail.css";
+import { PhoneCallIcon } from "lucide-react";
+import { StarIcon } from "lucide-react";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 // Use ISR (Incremental Static Regeneration) for better SEO
 // Revalidate every 60 seconds to keep content fresh while allowing static generation
-export const revalidate = 60
+export const revalidate = 60;
 
 // Generate static params for all blog posts (for SSG/ISR)
 export async function generateStaticParams() {
   try {
-    const slugs = await getAllBlogSlugs()
+    const slugs = await getAllBlogSlugs();
     return slugs.map((item) => ({
       slug: item.slug,
-    }))
+    }));
   } catch (error) {
-    console.error('Error generating static params:', error)
-    return []
+    console.error("Error generating static params:", error);
+    return [];
   }
 }
 
 // Generate metadata for each blog post
 export async function generateMetadata({ params }) {
-  const { slug } = await params
-  const blog = await getBlogBySlug(slug)
+  const { slug } = await params;
+  const blog = await getBlogBySlug(slug);
 
   if (!blog) {
     return {
-      title: 'Blog Post Not Found | NiraLive Astro',
-    }
+      title: "Blog Post Not Found | NiraLive Astro",
+    };
   }
 
-  const title = blog.metaTitle || blog.title
-  const description = blog.metaDescription || blog.content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Read this insightful astrology article on NiraLive Astro.'
-  const imageUrl = blog.featuredImage || `${SITE_URL}/og-image.png`
-  const url = `${SITE_URL}/blog/${slug}`
+  const title = blog.metaTitle || blog.title;
+  const description =
+    blog.metaDescription ||
+    blog.content?.substring(0, 160).replace(/<[^>]*>/g, "") ||
+    "Read this insightful astrology article on NiraLive Astro.";
+  const imageUrl = blog.featuredImage || `${SITE_URL}/og-image.png`;
+  const url = `${SITE_URL}/blog/${slug}`;
 
   return {
     title: `${title} | NiraLive Astro Blog`,
     description,
-    keywords: blog.tags || ['vedic astrology', 'astrology', 'numerology', 'spiritual guidance'],
-    authors: [{ name: blog.author || 'NiraLive Astro' }],
+    keywords: blog.tags || [
+      "vedic astrology",
+      "astrology",
+      "numerology",
+      "spiritual guidance",
+    ],
+    authors: [{ name: blog.author || "NiraLive Astro" }],
     openGraph: {
       title,
       description,
       url,
-      siteName: 'NiraLive Astro',
+      siteName: "NiraLive Astro",
       images: [
         {
           url: imageUrl,
@@ -65,71 +79,83 @@ export async function generateMetadata({ params }) {
           alt: blog.title,
         },
       ],
-      locale: 'en_US',
-      type: 'article',
+      locale: "en_US",
+      type: "article",
       publishedTime: blog.publishedAt,
       modifiedTime: blog.updatedAt || blog.publishedAt,
-      authors: [blog.author || 'NiraLive Astro'],
+      authors: [blog.author || "NiraLive Astro"],
       tags: blog.tags || [],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title,
       description,
       images: [imageUrl],
-      creator: '@niraliveastro',
+      creator: "@niraliveastro",
     },
     alternates: {
       canonical: url,
     },
-  }
+  };
 }
 
 export default async function BlogPostPage({ params }) {
-  const { slug } = await params
-  const blog = await getBlogBySlug(slug)
+  const { slug } = await params;
+  const blog = await getBlogBySlug(slug);
 
   if (!blog) {
-    notFound()
+    notFound();
   }
 
   // Fetch related blogs (exclude current blog)
-  const allBlogs = await getPublishedBlogs()
+  const allBlogs = await getPublishedBlogs();
   const relatedBlogs = allBlogs
-    .filter(b => b.id !== blog.id && b.slug !== slug)
-    .slice(0, 6) // Show up to 6 related blogs
+    .filter((b) => b.id !== blog.id && b.slug !== slug)
+    .slice(0, 6); // Show up to 6 related blogs
 
   const publishedDate = blog.publishedAt
-    ? new Date(blog.publishedAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+    ? new Date(blog.publishedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       })
-    : ''
+    : "";
 
-  const updatedDate = blog.updatedAt && blog.updatedAt !== blog.publishedAt
-    ? new Date(blog.updatedAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const updatedDate =
+    blog.updatedAt && blog.updatedAt !== blog.publishedAt
+      ? new Date(blog.updatedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : null;
 
   // Transform content to use optimized images
-  const content = transformBlogContentImages(blog.content || '')
-  
+  const content = transformBlogContentImages(blog.content || "");
+
   // Get optimized featured image URL (use desktop variant for featured image)
-  const optimizedFeaturedImage = blog.featuredImage 
-    ? getOptimizedImageUrl(blog.featuredImage, 'desktop')
-    : null
+  const optimizedFeaturedImage = blog.featuredImage
+    ? getOptimizedImageUrl(blog.featuredImage, "desktop")
+    : null;
 
   return (
     <div className="blog-detail-page">
       {/* Back to Blog Link */}
       <div className="blog-article">
         <Link href="/blog" className="blog-back-link">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
           </svg>
           Back to Blog
         </Link>
@@ -154,7 +180,6 @@ export default async function BlogPostPage({ params }) {
 
           {/* Meta Information */}
           <div className="blog-meta">
-
             {/* {updatedDate && (
               <div className="blog-meta-item">
                 <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,37 +190,82 @@ export default async function BlogPostPage({ params }) {
             )} */}
             {blog.author && (
               <div className="blog-meta-item">
-                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <svg
+                  className="blog-meta-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
                 </svg>
                 By {blog.author}
               </div>
             )}
 
-                        {publishedDate && (
+            {publishedDate && (
               <div className="blog-meta-item">
-                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="blog-meta-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
                 Published: {publishedDate}
               </div>
             )}
           </div>
-
-
         </header>
+        {/* CTA Section */}
+        <section className="blog-cta-section">
+          <div className="card blog-cta-container">
+            <h2 className="blog-cta-title">
+              Connect with an astrologer via <strong>Call / Chat @ ₹49.99</strong>
+            </h2>
+
+            <div className="blog-cta-actions" >
+              <Link href="/predictions" className="btn btn-primary" style={{textDecoration: "none"}}>
+               <StarIcon/> AI Predictions
+              </Link>
+
+              <Link
+                href="/talk-to-astrologer"
+                className="btn btn-secondary"
+                style={{textDecoration: "none", backgroundColor: "var(--color-gold)"}}
+              >
+               <PhoneCallIcon/> Talk to Astrologer
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* Article Content */}
-        <div className="blog-content" dangerouslySetInnerHTML={{ __html: content }} />
+        <div
+          className="blog-content"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
 
-                  {/* Tags */}
-          {blog.tags && blog.tags.length > 0 && (
-            <div className="blog-tags">
-              {blog.tags.map((tag, idx) => (
-                <span key={idx} className="blog-tag">{tag}</span>
-              ))}
-            </div>
-          )}
+        {/* Tags */}
+        {blog.tags && blog.tags.length > 0 && (
+          <div className="blog-tags">
+            {blog.tags.map((tag, idx) => (
+              <span key={idx} className="blog-tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Related Blogs Section */}
@@ -203,26 +273,41 @@ export default async function BlogPostPage({ params }) {
         <div className="related-blogs-section">
           <div className="related-blogs-container">
             <h2 className="related-blogs-title">More Articles</h2>
-            <p className="related-blogs-subtitle">Continue reading our latest astrology insights</p>
-            
+            <p className="related-blogs-subtitle">
+              Continue reading our latest astrology insights
+            </p>
+
             <div className="related-blogs-grid">
               {relatedBlogs.map((relatedBlog) => {
-                const excerpt = generateExcerpt(relatedBlog.content || relatedBlog.excerpt || '', 120)
+                const excerpt = generateExcerpt(
+                  relatedBlog.content || relatedBlog.excerpt || "",
+                  120
+                );
                 const relatedPublishedDate = relatedBlog.publishedAt
-                  ? new Date(relatedBlog.publishedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })
-                  : ''
+                  ? new Date(relatedBlog.publishedAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )
+                  : "";
 
                 return (
-                  <Link key={relatedBlog.id} href={`/blog/${relatedBlog.slug}`} className="related-blog-card">
+                  <Link
+                    key={relatedBlog.id}
+                    href={`/blog/${relatedBlog.slug}`}
+                    className="related-blog-card"
+                  >
                     {/* Featured Image */}
                     {relatedBlog.featuredImage && (
                       <div className="related-blog-image">
                         <Image
-                          src={getOptimizedImageUrl(relatedBlog.featuredImage, 'mobile')}
+                          src={getOptimizedImageUrl(
+                            relatedBlog.featuredImage,
+                            "mobile"
+                          )}
                           alt={relatedBlog.title}
                           fill
                           className="object-cover"
@@ -237,25 +322,37 @@ export default async function BlogPostPage({ params }) {
                       {relatedBlog.tags && relatedBlog.tags.length > 0 && (
                         <div className="related-blog-tags">
                           {relatedBlog.tags.slice(0, 2).map((tag, idx) => (
-                            <span key={idx} className="related-blog-tag">{tag}</span>
+                            <span key={idx} className="related-blog-tag">
+                              {tag}
+                            </span>
                           ))}
                         </div>
                       )}
 
                       {/* Title */}
-                      <h3 className="related-blog-title">{relatedBlog.title}</h3>
+                      <h3 className="related-blog-title">
+                        {relatedBlog.title}
+                      </h3>
 
                       {/* Excerpt */}
-                      {excerpt && <p className="related-blog-excerpt">{excerpt}</p>}
+                      {excerpt && (
+                        <p className="related-blog-excerpt">{excerpt}</p>
+                      )}
 
                       {/* Meta Info */}
                       <div className="related-blog-meta">
-                        {relatedPublishedDate && <span>{relatedPublishedDate}</span>}
-                        {relatedBlog.author && <span className="related-blog-author">By {relatedBlog.author}</span>}
+                        {relatedPublishedDate && (
+                          <span>{relatedPublishedDate}</span>
+                        )}
+                        {relatedBlog.author && (
+                          <span className="related-blog-author">
+                            By {relatedBlog.author}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Link>
-                )
+                );
               })}
             </div>
           </div>
@@ -267,34 +364,38 @@ export default async function BlogPostPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BlogPosting',
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
             headline: blog.title,
-            description: blog.metaDescription || blog.content?.substring(0, 160).replace(/<[^>]*>/g, '') || '',
+            description:
+              blog.metaDescription ||
+              blog.content?.substring(0, 160).replace(/<[^>]*>/g, "") ||
+              "",
             image: blog.featuredImage || `${SITE_URL}/og-image.png`,
             datePublished: blog.publishedAt,
             dateModified: blog.updatedAt || blog.publishedAt,
             author: {
-              '@type': 'Organization',
-              name: blog.author || 'NiraLive Astro',
+              "@type": "Organization",
+              name: blog.author || "NiraLive Astro",
             },
             publisher: {
-              '@type': 'Organization',
-              name: 'NiraLive Astro',
+              "@type": "Organization",
+              name: "NiraLive Astro",
               url: SITE_URL,
               logo: {
-                '@type': 'ImageObject',
+                "@type": "ImageObject",
                 url: `${SITE_URL}/icon-512x512.png`,
               },
             },
             mainEntityOfPage: {
-              '@type': 'WebPage',
-              '@id': `${SITE_URL}/blog/${slug}`,
+              "@type": "WebPage",
+              "@id": `${SITE_URL}/blog/${slug}`,
             },
-            keywords: blog.tags?.join(', ') || 'vedic astrology, astrology, numerology',
+            keywords:
+              blog.tags?.join(", ") || "vedic astrology, astrology, numerology",
           }),
         }}
       />
     </div>
-  )
+  );
 }
