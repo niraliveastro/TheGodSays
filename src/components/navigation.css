@@ -817,7 +817,7 @@ body {
 .nav-bottom-row .nav-link-active {
   color: #ffffff; /* White text when active */
   font-weight: 400; /* Normal weight - removed bold */
-  background: rgba(255, 255, 255, 0.25) !important; /* Slightly more opaque */
+  background: transparent !important; /* Transparent background */
   box-shadow: none !important;
   text-shadow: none !important;
   filter: none !important;
@@ -829,6 +829,7 @@ body {
 
 .nav-bottom-row .nav-link-active:hover {
   background: transparent !important;
+  color: #ffffff !important; /* Keep white text on hover */
   transform: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
@@ -872,6 +873,15 @@ body {
 .nav-bottom-row .nav-link:hover svg,
 .nav-bottom-row .nav-button:hover svg {
   color: #ffffff !important; /* White icons on hover */
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Active state icons - white */
+.nav-bottom-row .nav-link-active svg,
+.nav-bottom-row .nav-link-active svg {
+  color: #ffffff !important; /* White icons when active */
   filter: none !important;
   box-shadow: none !important;
   text-shadow: none !important;

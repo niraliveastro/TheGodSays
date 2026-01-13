@@ -33,33 +33,35 @@ async function calculateQuickStats(userId) {
       .get()
     
     let totalCalls = 0
-    let totalMinutes = 0
+    const completedCalls = []
     
+    // Filter completed/active calls first
     for (const callDoc of callsSnapshot.docs) {
       const callData = callDoc.data()
-      
-      // Only count completed or active calls
       if (callData.status === 'completed' || callData.status === 'active') {
         totalCalls++
-        
-        // Try to get duration from call_billing collection
-        try {
-          const billingDoc = await db.collection('call_billing').doc(callDoc.id).get()
-          if (billingDoc.exists) {
-            const billingData = billingDoc.data()
-            const duration = billingData.durationMinutes || 0
-            totalMinutes += typeof duration === 'number' ? duration : parseFloat(duration) || 0
-          } else {
-            // If no billing data, use default estimation
-            totalMinutes += 10 // Default 10 minutes per call
-          }
-        } catch (error) {
-          console.error('Error fetching billing data for call:', callDoc.id, error)
-          // Add default duration if billing fetch fails
-          totalMinutes += 10
-        }
+        completedCalls.push(callDoc.id)
       }
     }
+    
+    // Fetch all billing data in parallel instead of sequentially
+    const billingPromises = completedCalls.map(callId => 
+      db.collection('call_billing').doc(callId).get().catch(() => null)
+    )
+    
+    const billingDocs = await Promise.all(billingPromises)
+    
+    let totalMinutes = 0
+    billingDocs.forEach((billingDoc, index) => {
+      if (billingDoc && billingDoc.exists) {
+        const billingData = billingDoc.data()
+        const duration = billingData.durationMinutes || 0
+        totalMinutes += typeof duration === 'number' ? duration : parseFloat(duration) || 0
+      } else {
+        // If no billing data, use default estimation
+        totalMinutes += 10 // Default 10 minutes per call
+      }
+    })
     
     return { totalCalls, totalMinutes }
   } catch (error) {
@@ -90,18 +92,20 @@ export async function GET(request) {
 
     const userData = snap.data() || {}
     
-    // Fetch wallet balance from wallets collection
-    let balance = 0
-    try {
-      const walletData = await WalletService.getWallet(userId)
-      balance = walletData.balance || 0
-    } catch (error) {
-      console.warn('Failed to fetch wallet balance:', error.message)
-      // Don't fail the entire request if wallet fetch fails
-    }
+    // Fetch wallet balance and quick stats in parallel for better performance
+    const [walletResult, statsResult] = await Promise.allSettled([
+      WalletService.getWallet(userId).catch(() => ({ balance: 0 })),
+      calculateQuickStats(userId).catch(() => ({ totalCalls: 0, totalMinutes: 0 }))
+    ])
     
-    // Calculate Quick Stats from call history
-    const { totalCalls, totalMinutes } = await calculateQuickStats(userId)
+    // Extract results safely
+    const balance = walletResult.status === 'fulfilled' 
+      ? (walletResult.value.balance || 0) 
+      : 0
+    
+    const { totalCalls, totalMinutes } = statsResult.status === 'fulfilled'
+      ? statsResult.value
+      : { totalCalls: 0, totalMinutes: 0 }
     
     return NextResponse.json({
       success: true,
@@ -122,6 +126,8 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
+    // Initialize db lazily to avoid build-time errors
+    const db = getFirestore()
     const payload = await request.json()
     const { userId, name, email, phone } = payload || {}
     if (!userId) {
@@ -144,17 +150,20 @@ export async function PUT(request) {
     const updated = await userRef.get()
     const updatedUserData = updated.data() || {}
     
-    // Also fetch wallet balance for PUT response
-    let balance = 0
-    try {
-      const walletData = await WalletService.getWallet(userId)
-      balance = walletData.balance || 0
-    } catch (error) {
-      console.warn('Failed to fetch wallet balance:', error.message)
-    }
+    // Fetch wallet balance and quick stats in parallel for better performance
+    const [walletResult, statsResult] = await Promise.allSettled([
+      WalletService.getWallet(userId).catch(() => ({ balance: 0 })),
+      calculateQuickStats(userId).catch(() => ({ totalCalls: 0, totalMinutes: 0 }))
+    ])
     
-    // Calculate Quick Stats for PUT response
-    const { totalCalls, totalMinutes } = await calculateQuickStats(userId)
+    // Extract results safely
+    const balance = walletResult.status === 'fulfilled' 
+      ? (walletResult.value.balance || 0) 
+      : 0
+    
+    const { totalCalls, totalMinutes } = statsResult.status === 'fulfilled'
+      ? statsResult.value
+      : { totalCalls: 0, totalMinutes: 0 }
     
     return NextResponse.json({
       success: true,

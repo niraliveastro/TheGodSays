@@ -1775,6 +1775,7 @@ export default function MatchingPage() {
                     required
                     className="form-field-input form-input-field"
                   />
+                  <p className="form-field-helper">Enter full name as per records</p>
                 </div>
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.dateOfBirth}</label>
@@ -1796,11 +1797,12 @@ export default function MatchingPage() {
                     <button
                       type="button"
                       onClick={() => fDateInputRef.current?.showPicker?.() || fDateInputRef.current?.click()}
-                      className="input-icon-btn"
+                      className="input-icon-btn calendar-icon-btn"
                     >
                       <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
                   </div>
+                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
@@ -1825,21 +1827,6 @@ export default function MatchingPage() {
                       type="button"
                       onClick={() => fTimeInputRef.current?.showPicker?.() || fTimeInputRef.current?.click()}
                       className="clock-icon-btn"
-                      style={{ 
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                        transition: "opacity 0.2s",
-                      }}
                     >
                       <Clock className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
@@ -1868,20 +1855,6 @@ export default function MatchingPage() {
                       onClick={useMyLocationFemale}
                       disabled={fLocating}
                       className="location-icon-btn"
-                      style={{ 
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: fLocating ? "wait" : "pointer",
-                        padding: "0.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1,
-                      }}
                     >
                       {fLocating ? (
                         <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#ec4899" }} />
@@ -1890,6 +1863,7 @@ export default function MatchingPage() {
                       )}
                     </button>
                   </div>
+                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
                   {fSuggest.length > 0 && (
                     <div className="suggestions">
                       {fSuggest.map((s, i) => (
@@ -1945,6 +1919,7 @@ export default function MatchingPage() {
                     required
                     className="form-field-input form-input-field"
                   />
+                  <p className="form-field-helper">Enter full name as per records</p>
                 </div>
                 <div className="form-field">
                   <label className="form-field-label">{t.matching.dateOfBirth}</label>
@@ -1966,11 +1941,12 @@ export default function MatchingPage() {
                     <button
                       type="button"
                       onClick={() => mDateInputRef.current?.showPicker?.() || mDateInputRef.current?.click()}
-                      className="input-icon-btn"
+                      className="input-icon-btn calendar-icon-btn"
                     >
                       <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
                   </div>
+                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
                 </div>
                 {/* Row 2: Time + Place */}
                 <div className="form-field">
@@ -1995,21 +1971,6 @@ export default function MatchingPage() {
                       type="button"
                       onClick={() => mTimeInputRef.current?.showPicker?.() || mTimeInputRef.current?.click()}
                       className="clock-icon-btn"
-                      style={{ 
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                        transition: "opacity 0.2s",
-                      }}
                     >
                       <Clock className="w-5 h-5" style={{ color: "#000000" }} />
                     </button>
@@ -2038,20 +1999,6 @@ export default function MatchingPage() {
                       onClick={useMyLocationMale}
                       disabled={mLocating}
                       className="location-icon-btn"
-                      style={{ 
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: mLocating ? "wait" : "pointer",
-                        padding: "0.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1,
-                      }}
                     >
                       {mLocating ? (
                         <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#3b82f6" }} />
@@ -2060,6 +2007,7 @@ export default function MatchingPage() {
                       )}
                     </button>
                   </div>
+                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
                   {mSuggest.length > 0 && (
                     <div className="suggestions">
                       {mSuggest.map((s, i) => (
