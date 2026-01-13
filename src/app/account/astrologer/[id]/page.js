@@ -527,6 +527,7 @@ export default function AstrologerProfile() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                marginTop: "-16px"
               }}
             >
               <button
@@ -840,46 +841,7 @@ export default function AstrologerProfile() {
                           </div>
                         </div>
 
-                        {/* Rating */}
-                        {/* <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.75rem",
-                            marginBottom: "var(--space-lg)",
-                            paddingBottom: "var(--space-lg)",
-                            borderBottom: "1px solid var(--color-gray-200)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem",
-                            }}
-                          >
-                            <Star
-                              style={{
-                                width: "20px",
-                                height: "20px",
-                                fill: "#f59e0b",
-                                color: "#f59e0b",
-                              }}
-                            />
-                            <span
-                              style={{
-                                fontSize: "1.25rem",
-                                fontWeight: 500,
-                                fontFamily: "'Courier New', monospace",
-                              }}
-                            >
-                              {rating || "N/A"}
-                            </span>
-                          </div>
-                          <span style={{ color: "var(--color-gray-500)" }}>
-                            ({reviewsCount.toLocaleString()} reviews)
-                          </span>
-                        </div> */}
+                        
 
                         {/* Quick Stats */}
                         <div
@@ -946,124 +908,10 @@ export default function AstrologerProfile() {
                           })}
                         </div>
 
-                        {/* Details */}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "var(--space-md)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                            }}
-                          >
-                            <Languages
-                              style={{
-                                width: "20px",
-                                height: "20px",
-                                color: "var(--color-indigo)",
-                              }}
-                            />
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: "0.875rem",
-                                  color: "var(--color-gray-600)",
-                                  marginBottom: "0.125rem",
-                                }}
-                              >
-                                Languages
-                              </div>
-                              <div style={{ fontWeight: 500 }}>
-                                {(astrologer.languages || ["English"]).join(
-                                  ", "
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                            }}
-                          >
-                            <Globe
-                              style={{
-                                width: "20px",
-                                height: "20px",
-                                color: "var(--color-indigo)",
-                              }}
-                            />
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: "0.875rem",
-                                  color: "var(--color-gray-600)",
-                                  marginBottom: "0.125rem",
-                                }}
-                              >
-                                Status
-                              </div>
-                              <div
-                                style={{
-                                  fontWeight: 500,
-                                  color: isOnline
-                                    ? "#10b981"
-                                    : "var(--color-gray-700)",
-                                }}
-                              >
-                                {isOnline ? "Available Now" : "Offline"}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.75rem",
-                            }}
-                          >
-                            <IndianRupee
-                              style={{
-                                width: "20px",
-                                height: "20px",
-                                color: "var(--color-indigo)",
-                              }}
-                            />
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: "0.875rem",
-                                  color: "var(--color-gray-600)",
-                                  marginBottom: "0.125rem",
-                                }}
-                              >
-                                Consultation Rate
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "1.25rem",
-                                  fontWeight: 700,
-                                  color: "#059669",
-                                  fontFamily: "'Courier New', monospace",
-                                }}
-                              >
-                                ₹{perMinuteCharge}/min
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        
                       </div>
                     </div>
 
-                    {/* buttons */}
                   </div>
 
                   {/* Right Side */}
@@ -1075,10 +923,12 @@ export default function AstrologerProfile() {
                         style={{
                           display: "flex",
                           gap: "var(--space-md)",
-                          flexWrap: "nowrap", // force single line
+                          flexWrap: "wrap", 
                           alignItems: "center",
                           WebkitOverflowScrolling: "touch",
                           paddingBottom: "0.25rem",
+                          justifyContent: "center",
+                          width: "100%"
                         }}
                       >
                         <button
@@ -1156,7 +1006,8 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Georgia', 'Times New Roman', serif",
+                          fontFamily:
+                                        "'Cormorant Garamond', sans-serif",
                         }}
                       >
                         About
@@ -1184,7 +1035,8 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Georgia', 'Times New Roman', serif",
+                          fontFamily:
+                                        "'Cormorant Garamond', sans-serif",
                         }}
                       >
                         Areas of Expertise
@@ -1230,7 +1082,8 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-lg)",
                           color: "var(--color-gray-900)",
-                          fontFamily: "'Georgia', 'Times New Roman', serif",
+                          fontFamily:
+                                        "'Cormorant Garamond', sans-serif",
                         }}
                       >
                         Recent Reviews
@@ -1269,7 +1122,7 @@ export default function AstrologerProfile() {
                                       fontWeight: 500,
                                       marginBottom: "0.25rem",
                                       fontFamily:
-                                        "'Georgia', 'Times New Roman', serif",
+                                        "'Cormorant Garamond', sans-serif",
                                       fontSize: "1.1rem",
                                     }}
                                   >
