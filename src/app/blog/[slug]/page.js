@@ -14,8 +14,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import "./blog-detail.css";
-import { PhoneCallIcon } from "lucide-react";
-import { StarIcon } from "lucide-react";
+import BlogFloatingCTA from './BlogFloatingCTA'
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
@@ -180,14 +179,25 @@ export default async function BlogPostPage({ params }) {
 
           {/* Meta Information */}
           <div className="blog-meta">
-            {/* {updatedDate && (
+            {publishedDate && (
               <div className="blog-meta-item">
-                <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className="blog-meta-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
-                Updated: {updatedDate}
+                {publishedDate}
               </div>
-            )} */}
+            )}
+
             {blog.author && (
               <div className="blog-meta-item">
                 <svg
@@ -206,49 +216,10 @@ export default async function BlogPostPage({ params }) {
                 By {blog.author}
               </div>
             )}
-
-            {publishedDate && (
-              <div className="blog-meta-item">
-                <svg
-                  className="blog-meta-icon"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                Published: {publishedDate}
-              </div>
-            )}
           </div>
         </header>
-        {/* CTA Section */}
-        <section className="blog-cta-section">
-          <div className="card blog-cta-container">
-            <h2 className="blog-cta-title">
-              Connect with an astrologer via <strong>Call / Chat @ ₹49.99</strong>
-            </h2>
-
-            <div className="blog-cta-actions" >
-              <Link href="/predictions" className="btn btn-primary" style={{textDecoration: "none"}}>
-               <StarIcon/> AI Predictions
-              </Link>
-
-              <Link
-                href="/talk-to-astrologer"
-                className="btn btn-secondary"
-                style={{textDecoration: "none", backgroundColor: "var(--color-gold)"}}
-              >
-               <PhoneCallIcon/> Talk to Astrologer
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* CTA Section - Floating */}
+        <BlogFloatingCTA />
 
         {/* Article Content */}
         <div

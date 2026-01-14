@@ -5,11 +5,14 @@
  */
 
 import { getPublishedBlogs } from '@/lib/blog'
-import { generateExcerpt } from '@/lib/blog-utils'
+import { generateExcerpt, calculateReadTime } from '@/lib/blog-utils'
 import { getOptimizedImageUrl } from '@/lib/image-optimize'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import BlogListClient from './BlogListClient'
+import BlogFilters from './BlogFilters'
+import BlogFloatingCTA from './BlogFloatingCTA'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
@@ -55,20 +58,127 @@ export async function generateMetadata() {
   }
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }) {
   // Fetch blogs server-side for initial render (SEO-friendly)
-  const blogs = await getPublishedBlogs()
+  const allBlogs = await getPublishedBlogs()
+  
+  // Await searchParams in Next.js 15+
+  const params = await searchParams
+  
+  // Filter blogs based on category parameter
+  let categoryFilter = 'all'
+  if (params?.category) {
+    try {
+      categoryFilter = decodeURIComponent(params.category).toLowerCase().trim()
+    } catch (e) {
+      // Fallback if decoding fails
+      categoryFilter = params.category.toLowerCase().trim()
+    }
+  }
+  
+  // Category mapping function (matches BlogFilters.js logic)
+  const mapTagToCategory = (tag) => {
+    const normalizedTag = tag.toLowerCase().trim()
+    
+    // Primary categories
+    const primaryCategories = [
+      'Love & Relationships',
+      'Marriage & Match Making',
+      'Career & Job',
+      'Business & Money',
+      'Health & Well-Being',
+      'Sleep & Mental Peace',
+      'Home & Vastu',
+      'Spiritual Growth',
+      'Daily / Monthly Predictions'
+    ]
+    
+    // Secondary categories
+    const secondaryCategories = [
+      'Astrology Basics',
+      'Planets & Grahas',
+      'Houses (Bhavas)',
+      'Yogas & Doshas',
+      'Remedies & Upay',
+      'Dasha & Transits',
+      'Muhurat & Auspicious Time',
+      'Panchang',
+      'Festivals & Rituals',
+      'Yearly Forecasts'
+    ]
+    
+    // Check primary categories
+    for (const category of primaryCategories) {
+      const catNormalized = category.toLowerCase().replace(/[&/]/g, '').replace(/\s+/g, '')
+      if (normalizedTag.includes(catNormalized) || catNormalized.includes(normalizedTag)) {
+        return category.toLowerCase().trim()
+      }
+    }
+    
+    // Check secondary categories
+    for (const category of secondaryCategories) {
+      const catNormalized = category.toLowerCase().replace(/[&()]/g, '').replace(/\s+/g, '')
+      if (normalizedTag.includes(catNormalized) || catNormalized.includes(normalizedTag)) {
+        return category.toLowerCase().trim()
+      }
+    }
+    
+    // Common mappings
+    const mappings = {
+      'vastu': 'home & vastu',
+      'relationship': 'love & relationships',
+      'marriage': 'marriage & match making',
+      'career': 'career & job',
+      'business': 'business & money',
+      'health': 'health & well-being',
+      'sleep': 'sleep & mental peace',
+      'spiritual': 'spiritual growth',
+      'prediction': 'daily / monthly predictions',
+      'astrology': 'astrology basics',
+      'planet': 'planets & grahas',
+      'house': 'houses (bhavas)',
+      'yoga': 'yogas & doshas',
+      'remedy': 'remedies & upay',
+      'dasha': 'dasha & transits',
+      'muhurat': 'muhurat & auspicious time',
+      'panchang': 'panchang',
+      'festival': 'festivals & rituals'
+    }
+    
+    for (const [key, category] of Object.entries(mappings)) {
+      if (normalizedTag.includes(key)) {
+        return category
+      }
+    }
+    
+    return normalizedTag
+  }
+
+  const blogs = categoryFilter === 'all' 
+    ? allBlogs 
+    : allBlogs.filter(blog => {
+        if (!blog.tags || !Array.isArray(blog.tags)) return false
+        return blog.tags.some(tag => {
+          const mappedCategory = mapTagToCategory(tag)
+          return mappedCategory === categoryFilter
+        })
+      })
 
   return (
     <div className="blog-listing-page">
       {/* Hero Section */}
-      <div className="blog-hero" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+      <div className="blog-hero" style={{ paddingTop: '0.25rem', marginTop: '0.01rem' }}>
         <h1>Astrology Blog</h1>
         <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
       </div>
 
+      {/* Category Filters */}
+      <Suspense fallback={<div className="blog-filters"><div className="blog-filter-btn">Loading...</div></div>}>
+        <BlogFilters blogs={allBlogs} />
+      </Suspense>
+
       {/* Blog Posts Grid - Server-rendered for SEO */}
-      <div className="blog-container" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+      <div className="blog-container">
         {blogs.length === 0 ? (
           <div className="empty-state">
             <svg className="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,19 +192,23 @@ export default async function BlogPage() {
             {/* Server-rendered blog list for SEO */}
             <div className="blog-grid">
               {blogs.map((blog) => {
-                const excerpt = generateExcerpt(blog.content || blog.excerpt || '', 120)
+                const excerpt = generateExcerpt(blog.content || blog.excerpt || '', 100)
+                const readTime = calculateReadTime(blog.content || '')
                 const publishedDate = blog.publishedAt
                   ? new Date(blog.publishedAt).toLocaleDateString('en-US', {
                       year: 'numeric',
-                      month: 'long',
+                      month: 'short',
                       day: 'numeric',
                     })
                   : ''
+                
+                // Get primary category from first tag
+                const primaryCategory = blog.tags && blog.tags.length > 0 ? blog.tags[0] : 'Article'
 
                 return (
                   <div key={blog.id} className="blog-card-wrapper">
                     <Link href={`/blog/${blog.slug}`} className="blog-card">
-                      {/* Featured Image */}
+                      {/* Featured Image with Category Pill */}
                       {blog.featuredImage && (
                         <div className="blog-image">
                           <Image
@@ -104,20 +218,13 @@ export default async function BlogPage() {
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
+                          {/* Category Pill */}
+                          <span className="blog-category-pill">{primaryCategory}</span>
                         </div>
                       )}
 
                       {/* Content */}
                       <div className="blog-content">
-                        {/* Tags */}
-                        {blog.tags && blog.tags.length > 0 && (
-                          <div className="blog-tags">
-                            {blog.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="blog-tag">{tag}</span>
-                            ))}
-                          </div>
-                        )}
-
                         {/* Title */}
                         <h2 className="blog-title">{blog.title}</h2>
 
@@ -126,8 +233,26 @@ export default async function BlogPage() {
 
                         {/* Meta Info */}
                         <div className="blog-meta">
-                          <span>{publishedDate}</span>
-                          {blog.author && <span className="blog-author">By {blog.author}</span>}
+                          <div className="blog-meta-item">
+                            <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="blog-read-time">{readTime} min read</span>
+                          </div>
+                          <div className="blog-meta-item">
+                            <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{publishedDate}</span>
+                          </div>
+                          {blog.author && (
+                            <div className="blog-meta-item">
+                              <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="blog-author">By {blog.author}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -141,6 +266,9 @@ export default async function BlogPage() {
           </>
         )}
       </div>
+
+      {/* Floating CTA */}
+      <BlogFloatingCTA />
 
       {/* Schema.org JSON-LD for Blog/CollectionPage */}
       <script
