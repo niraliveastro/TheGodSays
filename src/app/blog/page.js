@@ -8,11 +8,12 @@ import { getPublishedBlogs } from '@/lib/blog'
 import { generateExcerpt, calculateReadTime } from '@/lib/blog-utils'
 import { getOptimizedImageUrl } from '@/lib/image-optimize'
 import Image from 'next/image'
-import Link from 'next/link'
 import { Suspense } from 'react'
 import BlogListClient from './BlogListClient'
 import BlogFilters from './BlogFilters'
 import BlogFloatingCTA from './BlogFloatingCTA'
+import BlogTextFixer from './BlogTextFixer'
+import BackButtonHandler from './BackButtonHandler'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
@@ -29,6 +30,9 @@ export async function generateMetadata() {
     description: 'Discover insightful articles on Vedic astrology, numerology, planetary influences, spiritual remedies, and cosmic guidance. Read expert astrology blogs on NiraLive Astro.',
     keywords: ['vedic astrology', 'astrology blog', 'numerology', 'planetary influences', 'spiritual remedies', 'astrology articles', 'cosmic guidance', 'horoscope insights'],
     authors: [{ name: 'NiraLive Astro' }],
+    other: {
+      'font-display': 'block',
+    },
     openGraph: {
       title: 'Astrology Blog | NiraLive Astro',
       description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
@@ -165,12 +169,95 @@ export default async function BlogPage({ searchParams }) {
       })
 
   return (
-    <div className="blog-listing-page">
-      {/* Hero Section */}
-      <div className="blog-hero" style={{ paddingTop: '0.25rem', marginTop: '0.01rem' }}>
-        <h1>Astrology Blog</h1>
-        <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
-      </div>
+    <>
+      {/* PRE-HYDRATION SCRIPT - Runs IMMEDIATELY before React loads */}
+      <script dangerouslySetInnerHTML={{__html: `
+        (function() {
+          // Apply styles immediately on page load
+          const style = document.createElement('style');
+          style.id = 'emergency-text-fix';
+          style.textContent = \`
+            html, body, * {
+              text-align: left !important;
+              text-justify: none !important;
+              word-spacing: 0 !important;
+              letter-spacing: 0 !important;
+              text-align-last: left !important;
+            }
+            .blog-hero, .blog-hero * {
+              text-align: center !important;
+              text-align-last: center !important;
+            }
+          \`;
+          document.head.insertBefore(style, document.head.firstChild);
+        })();
+      `}} />
+      
+      {/* IMMEDIATE STYLE RESET - Applied before React hydration */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* FORCE RESET ALL TEXT PROPERTIES GLOBALLY FOR BLOG PAGE */
+        html, body {
+          text-align: left !important;
+          text-justify: none !important;
+          word-spacing: 0 !important;
+          letter-spacing: 0 !important;
+        }
+        
+        /* Immediate CSS injection with maximum specificity */
+        .blog-listing-page,
+        .blog-listing-page *,
+        .blog-listing-page .blog-card,
+        .blog-listing-page .blog-card *,
+        .blog-listing-page .blog-content,
+        .blog-listing-page .blog-content *,
+        .blog-listing-page .blog-title,
+        .blog-listing-page .blog-excerpt,
+        .blog-listing-page .blog-meta,
+        .blog-listing-page .blog-meta *,
+        .blog-listing-page .blog-meta-date,
+        .blog-listing-page .blog-meta-author,
+        .blog-listing-page p,
+        .blog-listing-page h2,
+        .blog-listing-page span,
+        .blog-listing-page div {
+          text-align: left !important;
+          text-align-last: left !important;
+          text-justify: none !important;
+          word-spacing: 0px !important;
+          letter-spacing: 0px !important;
+          hyphens: none !important;
+          -webkit-hyphens: none !important;
+          -moz-hyphens: none !important;
+          white-space: normal !important;
+          word-break: normal !important;
+          overflow-wrap: normal !important;
+          font-feature-settings: normal !important;
+          font-variant: normal !important;
+          text-rendering: optimizeLegibility !important;
+        }
+        
+        /* Hero needs center alignment */
+        .blog-listing-page .blog-hero,
+        .blog-listing-page .blog-hero *,
+        .blog-listing-page .blog-hero h1,
+        .blog-listing-page .blog-hero p {
+          text-align: center !important;
+          text-align-last: center !important;
+        }
+        
+        /* Meta author needs right alignment */
+        .blog-listing-page .blog-meta-author {
+          text-align: right !important;
+          text-align-last: right !important;
+        }
+      `}} />
+      
+      <div className="blog-listing-page" key={categoryFilter}>
+        {/* Hero Section */}
+        <div className="blog-hero" style={{ paddingTop: '0.25rem', marginTop: '0.01rem' }}>
+          <h1>Astrology Blog</h1>
+          <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
+        </div>
 
       {/* Category Filters */}
       <Suspense fallback={<div className="blog-filters"><div className="blog-filter-btn">Loading...</div></div>}>
@@ -207,8 +294,8 @@ export default async function BlogPage({ searchParams }) {
 
                 return (
                   <div key={blog.id} className="blog-card-wrapper">
-                    <Link href={`/blog/${blog.slug}`} className="blog-card">
-                      {/* Featured Image with Category Pill */}
+                    <a href={`/blog/${blog.slug}`} className="blog-card">
+                      {/* Featured Image with Category Overlay */}
                       {blog.featuredImage && (
                         <div className="blog-image">
                           <Image
@@ -218,44 +305,28 @@ export default async function BlogPage({ searchParams }) {
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
-                          {/* Category Pill */}
-                          <span className="blog-category-pill">{primaryCategory}</span>
+                          {/* Category Overlay Text */}
+                          <span className="blog-category-overlay">{primaryCategory}</span>
                         </div>
                       )}
 
                       {/* Content */}
                       <div className="blog-content">
+                        {/* Meta Info - Date by Author */}
+                        <div className="blog-meta">
+                          <span className="blog-meta-date">{publishedDate}</span>
+                          {blog.author && (
+                            <span className="blog-meta-author">by {blog.author}</span>
+                          )}
+                        </div>
+
                         {/* Title */}
                         <h2 className="blog-title">{blog.title}</h2>
 
                         {/* Excerpt */}
                         {excerpt && <p className="blog-excerpt">{excerpt}</p>}
-
-                        {/* Meta Info */}
-                        <div className="blog-meta">
-                          <div className="blog-meta-item">
-                            <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="blog-read-time">{readTime} min read</span>
-                          </div>
-                          <div className="blog-meta-item">
-                            <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>{publishedDate}</span>
-                          </div>
-                          {blog.author && (
-                            <div className="blog-meta-item">
-                              <svg className="blog-meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <span className="blog-author">By {blog.author}</span>
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    </Link>
+                    </a>
                   </div>
                 )
               })}
@@ -269,6 +340,12 @@ export default async function BlogPage({ searchParams }) {
 
       {/* Floating CTA */}
       <BlogFloatingCTA />
+      
+      {/* Text alignment fixer - prevents spreading on navigation */}
+      <BlogTextFixer />
+      
+      {/* Back button handler - forces reload when navigating back from blog detail */}
+      <BackButtonHandler />
 
       {/* Schema.org JSON-LD for Blog/CollectionPage */}
       <script
@@ -313,6 +390,7 @@ export default async function BlogPage({ searchParams }) {
           }),
         }}
       />
-    </div>
+      </div>
+    </>
   )
 }

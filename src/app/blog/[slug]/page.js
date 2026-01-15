@@ -265,64 +265,66 @@ export default async function BlogPostPage({ params }) {
                     )
                   : "";
 
-                return (
-                  <Link
-                    key={relatedBlog.id}
-                    href={`/blog/${relatedBlog.slug}`}
-                    className="related-blog-card"
-                  >
-                    {/* Featured Image */}
-                    {relatedBlog.featuredImage && (
-                      <div className="related-blog-image">
-                        <Image
-                          src={getOptimizedImageUrl(
-                            relatedBlog.featuredImage,
-                            "mobile"
-                          )}
-                          alt={relatedBlog.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                      </div>
-                    )}
+                // Get primary category from first tag
+                const primaryCategory = relatedBlog.tags && relatedBlog.tags.length > 0 ? relatedBlog.tags[0] : 'Article'
+                
+                // Format date like blog listing page
+                const formattedDate = relatedBlog.publishedAt
+                  ? new Date(relatedBlog.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : ''
 
-                    {/* Content */}
-                    <div className="related-blog-content">
-                      {/* Tags */}
-                      {relatedBlog.tags && relatedBlog.tags.length > 0 && (
-                        <div className="related-blog-tags">
-                          {relatedBlog.tags.slice(0, 2).map((tag, idx) => (
-                            <span key={idx} className="related-blog-tag">
-                              {tag}
-                            </span>
-                          ))}
+                return (
+                  <div key={relatedBlog.id} className="related-blog-card-wrapper">
+                    <Link
+                      href={`/blog/${relatedBlog.slug}`}
+                      className="related-blog-card"
+                    >
+                      {/* Featured Image with Category Overlay */}
+                      {relatedBlog.featuredImage && (
+                        <div className="related-blog-image">
+                          <Image
+                            src={getOptimizedImageUrl(
+                              relatedBlog.featuredImage,
+                              "mobile"
+                            )}
+                            alt={relatedBlog.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                          {/* Category Overlay Text */}
+                          <span className="related-blog-category-overlay">{primaryCategory}</span>
                         </div>
                       )}
 
-                      {/* Title */}
-                      <h3 className="related-blog-title">
-                        {relatedBlog.title}
-                      </h3>
+                      {/* Content */}
+                      <div className="related-blog-content">
+                        {/* Meta Info - Date by Author */}
+                        <div className="related-blog-meta">
+                          {formattedDate && (
+                            <span className="related-blog-meta-date">{formattedDate}</span>
+                          )}
+                          {relatedBlog.author && (
+                            <span className="related-blog-meta-author">by {relatedBlog.author}</span>
+                          )}
+                        </div>
 
-                      {/* Excerpt */}
-                      {excerpt && (
-                        <p className="related-blog-excerpt">{excerpt}</p>
-                      )}
+                        {/* Title */}
+                        <h3 className="related-blog-title">
+                          {relatedBlog.title}
+                        </h3>
 
-                      {/* Meta Info */}
-                      <div className="related-blog-meta">
-                        {relatedPublishedDate && (
-                          <span>{relatedPublishedDate}</span>
-                        )}
-                        {relatedBlog.author && (
-                          <span className="related-blog-author">
-                            By {relatedBlog.author}
-                          </span>
+                        {/* Excerpt */}
+                        {excerpt && (
+                          <p className="related-blog-excerpt">{excerpt}</p>
                         )}
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 );
               })}
             </div>
