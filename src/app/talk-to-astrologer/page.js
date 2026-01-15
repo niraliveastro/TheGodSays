@@ -1133,7 +1133,7 @@ export default function TalkToAstrologer() {
             </header>
 
             {/* Search + Filter */}
-            <div className="card" style={{ marginTop: "1.5rem" }}>
+            <div className="card search-filter-card" style={{ marginTop: "1.5rem", padding: "1rem" }}>
               <div
                 style={{
                   display: "flex",
@@ -1141,16 +1141,18 @@ export default function TalkToAstrologer() {
                   gap: "1rem",
                 }}
               >
-                {/* Search + Filter Side by Side */}
+                {/* Search + Filter Side by Side - Responsive */}
                 <div
+                  className="search-filter-container"
                   style={{
                     display: "flex",
                     gap: "1rem",
                     alignItems: "stretch",
+                    flexDirection: "row",
                   }}
                 >
                   {/* Search Bar */}
-                  <div style={{ flex: 1, position: "relative" }}>
+                  <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
                     <Search
                       style={{
                         position: "absolute",
@@ -1195,10 +1197,12 @@ export default function TalkToAstrologer() {
 
                   {/* Filter Dropdown */}
                   <div
+                    className="filter-dropdown-wrapper"
                     style={{
                       position: "relative",
                       minWidth: "16rem",
                       maxWidth: "16rem",
+                      width: "16rem",
                     }}
                   >
                     <Filter
@@ -1261,11 +1265,13 @@ export default function TalkToAstrologer() {
             >
               {/* Call History + My Appointments Buttons */}
               <div
+                className="action-buttons-container"
                 style={{
                   display: "flex",
                   justifyContent: "flex-end",
                   gap: "0.75rem",
                   marginBottom: "1.5rem",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -2562,6 +2568,75 @@ export default function TalkToAstrologer() {
 
       {/* Local animations */}
       <style jsx>{`
+        /* Responsive Search + Filter Container */
+        @media (max-width: 768px) {
+          .search-filter-card {
+            padding: 0.75rem !important;
+            margin-top: 1rem !important;
+          }
+          
+          .search-filter-container {
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+          }
+          
+          .filter-dropdown-wrapper {
+            min-width: 100% !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .search-filter-card {
+            padding: 0.625rem !important;
+          }
+          
+          .search-filter-container {
+            gap: 0.5rem !important;
+          }
+          
+          .search-filter-container input,
+          .search-filter-container select {
+            font-size: 0.9375rem !important;
+            padding: 0.625rem 0.875rem 0.625rem 2.25rem !important;
+          }
+        }
+
+        /* Responsive Action Buttons - Always Side by Side */
+        @media (max-width: 640px) {
+          .action-buttons-container {
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+            flex-wrap: nowrap !important;
+          }
+          
+          .action-buttons-container button {
+            flex: 1 !important;
+            min-width: 0 !important;
+            font-size: 0.8125rem !important;
+            padding: 0.5rem 0.75rem !important;
+            white-space: nowrap !important;
+          }
+          
+          .action-buttons-container button svg {
+            width: 0.875rem !important;
+            height: 0.875rem !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .action-buttons-container {
+            gap: 0.375rem !important;
+          }
+          
+          .action-buttons-container button {
+            font-size: 0.75rem !important;
+            padding: 0.5rem 0.5rem !important;
+          }
+        }
+
         @media (min-width: 640px) {
           .astrologer-grid {
             grid-template-columns: repeat(2, 1fr) !important;

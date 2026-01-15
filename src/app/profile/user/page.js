@@ -86,8 +86,28 @@ export default function ProfilePage() {
     retry: 1, // Only retry once on failure
   });
 
-  // Call history state
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // Fetch call history with React Query for parallel loading and caching
+  const { data: callHistoryData, isLoading: historyLoading } = useQuery({
+    queryKey: ['callHistory', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.success ? (data.history || []).slice(0, 5) : [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
+    retry: 1,
+  });
+
+  // Update call history state when data is fetched
+  useEffect(() => {
+    if (callHistoryData) {
+      setCallHistory(callHistoryData);
+    }
+  }, [callHistoryData]);
 
   // Get status color theme (same as talk-to-astrologer page)
   const getStatusColor = (status) => {
@@ -120,121 +140,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Background fetch to update cache without blocking UI
-  const fetchCallHistoryInBackground = useCallback(async (userId, cacheKey) => {
-    try {
-      const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.history) {
-          const cacheData = {
-            recentCalls: data.history,
-            timestamp: Date.now(),
-          };
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            } catch (e) {
-              console.warn('Error updating cache:', e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error in background fetch:", error);
-    }
-  }, []);
-
-  // Fetch call history with caching (same logic as talk-to-astrologer page)
-  const fetchCallHistory = useCallback(async (forceRefresh = false) => {
-    if (!userId) return;
-
-    // Check localStorage cache first (10 minute cache for instant loading)
-    const cacheKey = `tgs:callHistory:${userId}`;
-    const cacheTimeout = 10 * 60 * 1000; // 10 minutes
-    const now = Date.now();
-
-    if (!forceRefresh && typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const cacheData = JSON.parse(cached);
-          if (cacheData.timestamp && now - cacheData.timestamp < cacheTimeout) {
-            // Use cached data for instant display
-            setCallHistory((cacheData.recentCalls || []).slice(0, 5));
-            // Still fetch in background to update cache
-            fetchCallHistoryInBackground(userId, cacheKey);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('Error reading cache:', e);
-      }
-    }
-
-    setHistoryLoading(true);
-    try {
-      const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.history) {
-          const recentCalls = data.history.slice(0, 5); // Show only 5 in profile
-          setCallHistory(recentCalls);
-
-          // Update cache
-          if (typeof window !== 'undefined') {
-            try {
-              const cacheData = {
-                recentCalls: data.history,
-                timestamp: now,
-              };
-              localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            } catch (e) {
-              console.warn('Error saving to localStorage:', e);
-            }
-          }
-        } else {
-          setCallHistory([]);
-        }
-      } else {
-        setCallHistory([]);
-      }
-    } catch (error) {
-      console.error("Error fetching call history:", error);
-      setCallHistory([]);
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [userId, fetchCallHistoryInBackground]);
-
-  // Fetch call history on mount
-  useEffect(() => {
-    if (userId) {
-      fetchCallHistory(false); // Use cache if available
-    }
-  }, [userId, fetchCallHistory]);
-
-  // Load call history from cache immediately for instant display
-  useEffect(() => {
-    if (userId && typeof window !== 'undefined') {
-      const cacheKey = `tgs:callHistory:${userId}`;
-      const cacheTimeout = 10 * 60 * 1000; // 10 minutes
-      const now = Date.now();
-
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const cacheData = JSON.parse(cached);
-          if (cacheData.timestamp && now - cacheData.timestamp < cacheTimeout) {
-            // Use cached data immediately for instant display
-            setCallHistory((cacheData.recentCalls || []).slice(0, 5));
-          }
-        }
-      } catch (e) {
-        // Ignore cache errors
-      }
-    }
-  }, [userId]);
 
   // Fetch family members with React Query
   const { data: familyData } = useQuery({
@@ -277,11 +182,11 @@ export default function ProfilePage() {
       return;
     }
     // Show page immediately as soon as we have profile data
-    // Don't wait for other data - show page right away
+    // Don't wait for call history or family members - they load in parallel
     if (profileData || user) {
       setLoading(false);
     } else if (profileLoading) {
-      // Only show loading if we're still fetching and have no data
+      // Only show loading if we're still fetching profile and have no data
       setLoading(true);
     }
   }, [userId, profileLoading, profileData, user, router]);
@@ -1041,7 +946,7 @@ export default function ProfilePage() {
               </Button>
             </div>
 
-            {historyLoading ? (
+            {historyLoading && callHistory.length === 0 ? (
               // Skeleton loader for call history
               <div style={{ display: "grid", gap: "0.75rem" }}>
                 {[1, 2, 3].map((i) => (

@@ -1685,7 +1685,7 @@ export default function Home() {
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
           <section className="max-w-7xl mx-auto mt-16 px-4">
             <div className="text-center mb-10">
-              <h2 className="text-4xl mb-3" style={{ color: '#000000', fontWeight: 700 }}>
+              <h2 className="text-4xl mb-3 justify-center" style={{ fontFamily: "var(--font-heading)", color: '#000000' }}>
                 {t.services.sectionTitle}
               </h2>
               <p className="text-slate-600 text-lg">
@@ -2073,8 +2073,8 @@ export default function Home() {
                   <Star className="w-6 h-6 text-amber-600" />
                 </div>
                 <h2
-                  className="text-3xl md:text-4xl font-bold text-gold"
-                  style={{ fontFamily: "var(--font-heading)" }}
+                  className="text-3xl md:text-4xl"
+                  style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}
                 >
                   {t.astrologers.title}
                 </h2>
@@ -2282,17 +2282,18 @@ export default function Home() {
                             <h3
                               style={{
                                 fontSize: "1.125rem",
-                                fontWeight: 700,
+                                fontWeight: 400,
                                 color: "#1f2937",
                                 margin: 0,
                                 marginBottom: "0.25rem",
                                 fontFamily: "var(--font-heading)",
                                 lineHeight: 1.3,
-                                textTransform: "lowercase",
                               }}
                               title={ast.name}
                             >
-                              {ast.name}
+                              {ast.name.split(' ').map(word => 
+                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                              ).join(' ')}
                             </h3>
                             <p
                               style={{
@@ -2560,7 +2561,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 id="loyalty-title" className="text-4xl text-gold">
+                  <h3 id="loyalty-title" className="text-4xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}>
                     {t.compatibility.title}
                   </h3>
                   <p
@@ -2681,7 +2682,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 id="panchang-title" className="text-4xl text-gold">
+                    <h3 id="panchang-title" className="text-4xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}>
                       {selectedDate === new Date().toISOString().split("T")[0]
                         ? t.panchang.title
                         : `${t.panchang.titleFor} ${new Date(
@@ -2802,8 +2803,8 @@ export default function Home() {
                   <div className="flex-1">
                     <h2
                       id="advanced-vedic-tools-title"
-                      className="text-4xl text-gold"
-                      style={{ fontFamily: "var(--font-heading)" }}
+                      className="text-4xl"
+                      style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}
                     >
                       {t.tools.title}
                     </h2>

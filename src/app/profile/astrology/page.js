@@ -25,6 +25,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import "../astrology.css"
 
 export default function AstrologerProfilePage() {
   const { t } = useTranslation();
@@ -498,8 +499,6 @@ export default function AstrologerProfilePage() {
         style={{
           minHeight: "100vh",
           background: "var(--color-gray-50)",
-          padding: "0.01rem 0",
-          marginTop: "0.01rem"
         }}
       >
         <div className="app">
@@ -517,7 +516,7 @@ export default function AstrologerProfilePage() {
           </div>
 
           {/* Header */}
-          <header className="header" style={{marginTop: "0.01rem"}}>
+          <header className="astrologer-header" style={{marginTop: "-50px"}} >
             <h1 className="title">Account Settings</h1>
             <p className="subtitle">
               Manage your profile, availability, pricing, and earnings.

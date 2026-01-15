@@ -137,6 +137,7 @@
   padding-bottom: 1rem;
   border-bottom: 3px solid var(--color-gold);
   position: relative;
+  justify-content: center;
 }
 
 @media (min-width: 640px) {

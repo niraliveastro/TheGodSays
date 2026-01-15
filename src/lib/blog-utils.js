@@ -40,3 +40,27 @@ export function generateExcerpt(content, maxLength = 150) {
     ? truncated.substring(0, lastSpace) + '...'
     : truncated + '...'
 }
+
+/**
+ * Calculate reading time in minutes
+ * Average reading speed: 200-250 words per minute
+ * @param {string} content - Blog content (HTML or plain text)
+ * @returns {number} Reading time in minutes (minimum 1)
+ */
+export function calculateReadTime(content) {
+  if (!content) return 1
+  
+  // Remove HTML tags and get plain text
+  const text = content.replace(/<[^>]*>/g, ' ').trim()
+  
+  // Count words (split by whitespace and filter empty strings)
+  const words = text.split(/\s+/).filter(word => word.length > 0)
+  const wordCount = words.length
+  
+  // Average reading speed: 225 words per minute
+  const wordsPerMinute = 225
+  const minutes = Math.ceil(wordCount / wordsPerMinute)
+  
+  // Minimum 1 minute
+  return Math.max(1, minutes)
+}
