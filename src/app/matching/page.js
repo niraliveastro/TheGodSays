@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
+import ChatDock from "@/components/ChatDock";
 import {
   Sparkles,
   Sun,
@@ -148,6 +149,7 @@ export default function MatchingPage() {
 
   // === Chat State ===
   const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
+  const [dockOpen, setDockOpen] = useState(false); // Chat dock visibility
   const [chatSessionId, setChatSessionId] = useState(0); // Chat session counter for reset
   const [shouldResetChat, setShouldResetChat] = useState(false);
   const [chatData, setChatData] = useState(null); // Data to pass to chat component
@@ -294,6 +296,7 @@ export default function MatchingPage() {
     setChatSessionId(prev => prev + 1);
     setShouldResetChat(true);
     setChatData(null);
+    setDockOpen(false);
     previousFormDataHashRef.current = null;
     setCurrentFormDataHash(null);
   };
@@ -1126,6 +1129,7 @@ export default function MatchingPage() {
       prepareChatData();
       setChatSessionId(prev => prev + 1);
       setChatOpen(true);
+      setDockOpen(false);
       scrollToChat();
     }
   };
@@ -2338,12 +2342,14 @@ export default function MatchingPage() {
                             prepareChatData();
                             setChatSessionId(prev => prev + 1);
                             setChatOpen(true);
+                            setDockOpen(false);
                             scrollToChat();
                           }, 2000);
                         } else {
                           prepareChatData();
                           setChatSessionId(prev => prev + 1);
                           setChatOpen(true);
+                          setDockOpen(false);
                           scrollToChat();
                         }
                       }}
@@ -2808,292 +2814,53 @@ export default function MatchingPage() {
 
 
       {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
-      <div
-        className="fixed bottom-6 right-6 z-50 ai-assistant-card"
-        style={{
-          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {(!result || isAssistantMinimized) ? (
-          // Minimized Icon - Astrologer + AI Assistant
-          <button
-            onClick={() => {
-              if (result) {
-                setIsAssistantMinimized(false);
-              }
-            }}
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "20px",
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Golden Infinity Icon (tilted 45 degrees) */}
-            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            {/* Pulsing indicator */}
-            <div
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "8px",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                animation: "pulse 2s infinite",
-              }}
+     {/* Chat Dock */}
+      <div className="relative z-[100]">
+        <ChatDock
+          isOpen={dockOpen}
+          onToggle={() => { const newOpen = !dockOpen; setDockOpen(newOpen); if (newOpen) setChatOpen(false); }}
+          onClose={() => setDockOpen(false)}
+        >
+          <div className="h-full flex flex-col bg-white">
+            {/* If we need to pass props to Chat to make it fit better, we can do it here. 
+                 Assuming Chat takes remaining height. */}
+            <Chat
+              key={`matching-dock-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
+              pageTitle="Matching"
+              initialData={(() => {
+                const data = chatData || {
+                  female: {
+                    input: {
+                      name: female.fullName,
+                      dob: female.dob,
+                      tob: female.tob,
+                      place: female.place,
+                      coords: fCoords,
+                    },
+                    details: fDetails,
+                  },
+                  male: {
+                    input: {
+                      name: male.fullName,
+                      dob: male.dob,
+                      tob: male.tob,
+                      place: male.place,
+                      coords: mCoords,
+                    },
+                    details: mDetails,
+                  },
+                  match: result || null,
+                };
+                return data;
+              })()}
+              onClose={() => setDockOpen(false)}
+              chatType="matchmaking"
+              shouldReset={shouldResetChat}
+              formDataHash={currentFormDataHash}
+              embedded={true} // Hint to Chat component it's embedded if it supports it
             />
-          </button>
-        ) : (
-          <div
-            className="chat-assistant-card"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              borderRadius: "20px",
-              padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-            }}
-            onClick={() => {
-              // Check if form is filled
-              const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
-                male.fullName && male.dob && male.tob && male.place;
-              if (!isFormFilled) {
-                setError("Please complete all birth details for both individuals before using the chat.");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-                return;
-              }
-              if (!result) {
-                // Submit form if no result yet
-                const form = document.querySelector("form");
-                if (form) {
-                  form.requestSubmit();
-                  setTimeout(() => {
-                    setChatSessionId(prev => prev + 1);
-                    setChatOpen(true);
-                    setTimeout(() => {
-                      document
-                        .querySelector(".ai-astrologer-section")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }, 100);
-                  }, 2000);
-                }
-              } else {
-                setChatSessionId(prev => prev + 1);
-                setChatOpen(true);
-                setTimeout(() => {
-                  document
-                    .querySelector(".ai-astrologer-section")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
-              }
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Minimize Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAssistantMinimized(true);
-              }}
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                width: "28px",
-                height: "28px",
-                borderRadius: "8px",
-                background: "rgba(212, 175, 55, 0.1)",
-                border: "1px solid rgba(212, 175, 55, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                zIndex: 10,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
-                e.currentTarget.style.transform = "scale(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              <X size={16} color="#b8972e" />
-            </button>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "14px",
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-                }}
-              >
-                <img
-                  src="/infinity-symbol.svg"
-                  alt="Infinity"
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    transform: "rotate(-45deg)",
-                    transformOrigin: "center center",
-                    filter: "brightness(0) invert(1)",
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    color: "#111827",
-                    margin: "0 0 4px 0",
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Astrologer Assistant
-                </h3>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    margin: 0,
-                    lineHeight: "1.5",
-                  }}
-                >
-                  Get personalized insights about your birth chart, planetary positions, and astrological predictions
-                </p>
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingTop: "12px",
-                borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#10b981",
-                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                    animation: "pulse 2s infinite",
-                  }}
-                />
-                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                  Online
-                </span>
-              </div>
-              <button
-                disabled={submitting}
-                style={{
-                  background: submitting 
-                    ? "rgba(212, 175, 55, 0.5)" 
-                    : "linear-gradient(135deg, #d4af37, #b8972e)",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "8px 16px",
-                  color: "#1f2937",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: submitting ? "not-allowed" : "pointer",
-                  transition: "all 0.2s ease",
-                  boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-                  opacity: submitting ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!submitting) {
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                    e.currentTarget.style.transform = "scale(1.05)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!submitting) {
-                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }
-                }}
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering card click
-                  if (submitting) return;
-                  
-                  // Since we only show full card when result exists, we can directly open chat
-                  if (result) {
-                    setChatSessionId(prev => prev + 1);
-                    setChatOpen(true);
-                    setTimeout(() => {
-                      document
-                        .querySelector(".ai-astrologer-section")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }, 100);
-                  }
-                }}
-              >
-                {submitting ? "Loading..." : "Start Chat"}
-              </button>
-            </div>
           </div>
-        )}
-
+        </ChatDock>
       </div>
 
 

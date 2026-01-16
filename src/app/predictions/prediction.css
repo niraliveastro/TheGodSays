@@ -261,8 +261,11 @@ select.form-field-input {
   border-radius: 0.75rem !important;
 }
 
+
 .place-btn {
   transition: all 0.2s ease;
+  margin-left: 0.25rem;
+  margin-right: 0.5rem; /* Add space between icon and Get Predictions button */
 }
 
 .place-btn:hover {
