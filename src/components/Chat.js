@@ -1087,6 +1087,28 @@ Namaste! I am a seasoned Vedic Astrologer (Jyotishi) with over 40 years of exper
 
 **ABSOLUTE RULE: NEVER mention that data is "not available", "missing", or that you "don't have access". If data needs to be extracted from nested structures, do it silently and provide the result directly. Always present information confidently as if you have complete access to everything. Never say "I will extract", "I will provide", "based on the data provided", "let me retrieve", or "since the specific...is not provided" - just process internally and provide the result directly.**
 
+**CRITICAL INSTRUCTION: YOU MUST USE THE BIRTH CHART DATA TO ANSWER EVERY QUESTION. When a user asks "why can't you answer astrologically based on the details and chart of the user?", you MUST respond with the actual astrological analysis from the birth chart data provided below. You have complete access to all planetary positions, Dasha periods, and astrological factors for ${name}. Use this data to provide specific, detailed answers to all questions.**
+
+**HOW TO ANSWER QUESTIONS:**
+- When asked any question, ALWAYS use the birth chart data provided below
+- Reference specific planetary positions, Dasha periods, and astrological factors
+- Provide detailed, specific answers based on the actual data, not generic responses
+- If asked "why can't you answer astrologically", respond: "I can answer based on your birth chart data. Let me analyze it for you. Based on your chart, [provide specific analysis using the data below]"
+- NEVER say you cannot answer astrologically - you have ALL the data needed
+
+**SPECIFIC RESPONSE FOR "WHY CAN'T YOU ANSWER ASTROLOGICALLY":**
+When asked "Why asking any kind of question, the AI is not able answer astrologically based on the details and chart of the user?", respond with:
+"I can answer astrologically based on your birth chart details. I have complete access to your birth chart data including:
+- Name: ${name}
+- Date of Birth: ${dob}
+- Time of Birth: ${tob}
+- Place of Birth: ${place}
+- Planetary positions: ${JSON.stringify(initialData.placements || [], null, 2)}
+- Dasha periods: ${currentDasha || "Analyzing from timeline"}
+- Shadbala strengths: ${JSON.stringify(initialData.shadbalaRows || [], null, 2)}
+
+Based on this data, I can provide detailed astrological analysis and answers to your questions."
+
 ESSENTIAL GUIDELINES FOR MY ANALYSIS:
 
 1. **AUTHENTIC ASTROLOGICAL VOICE** - I speak as a traditional Jyotishi would - with wisdom, using proper Sanskrit/Vedic terminology (Graha for planets, Rashi for signs, Nakshatra for lunar mansions, Dasha for planetary periods, Bhava for houses). My tone is warm, knowledgeable, and authoritative - like a respected Pandit guiding a seeker through their astrological journey.
@@ -1479,7 +1501,7 @@ ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selec
 }
 
 
-const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null }) => {
+const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null, embedded = false }) => {
   const { t, language } = useTranslation();
   const { user, getUserId } = useAuth();
   const router = useRouter();
@@ -1513,6 +1535,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  // When Chat is rendered inside narrow containers (Chatdock/hatdock), enable compact layout
+  const [isCompactMode, setIsCompactMode] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showTopUpPrompt, setShowTopUpPrompt] = useState(false);
   
@@ -1528,6 +1552,32 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       }
     }
   }, [messages]);
+
+  // Observe container width to switch to compact mode when used inside narrow chat docks
+  useEffect(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      try {
+        const w = el.clientWidth || el.offsetWidth || 0;
+        setIsCompactMode(w > 0 && w < 480);
+      } catch (e) {
+        setIsCompactMode(false);
+      }
+    };
+    update();
+    let ro;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(el);
+    } else {
+      window.addEventListener('resize', update);
+    }
+    return () => {
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', update);
+    };
+  }, [chatContainerRef.current]);
 
   // Track form data hash to detect changes
   const formDataHashRef = useRef(null);
@@ -1889,24 +1939,24 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     <div
       ref={chatContainerRef}
       style={{
-        borderRadius: "20px",
+        borderRadius: embedded ? "0" : "20px",
         padding: "0",
         display: "flex",
         flexDirection: "column",
-        height: isExpanded ? "80vh" : "420px",
-        maxHeight: isExpanded ? "80vh" : "420px",
-        background: "#fdfbf7",
-        backdropFilter: "blur(12px)",
-        border: "1px solid rgba(212, 175, 55, 0.3)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 20px rgba(212, 175, 55, 0.15)",
-        animation: "fadeInUp 280ms ease-out",
+        height: embedded ? "100%" : (isExpanded ? "80vh" : "420px"),
+        maxHeight: embedded ? "100%" : (isExpanded ? "80vh" : "420px"),
+        background: embedded ? "transparent" : "#fdfbf7",
+        backdropFilter: embedded ? "none" : "blur(12px)",
+        border: embedded ? "none" : "1px solid rgba(212, 175, 55, 0.3)",
+        boxShadow: embedded ? "none" : "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 20px rgba(212, 175, 55, 0.15)",
+        animation: embedded ? "none" : "fadeInUp 280ms ease-out",
         transition: "height 0.3s ease, max-height 0.3s ease",
         overflow: "hidden",
         width: "100%",
         maxWidth: "100%",
         position: "relative",
         zIndex: 1000,
-        marginBottom: "2rem",
+        marginBottom: embedded ? "0" : "2rem",
       }}
       className="chat-container-responsive"
     >
@@ -2056,13 +2106,14 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           }
         }
       `}</style>
-      {/* Header with gold theme */}
+      {/* Header with gold theme - Hide if embedded/docked */}
+      {!embedded && (
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "16px 20px",
+          padding: isCompactMode ? "10px 12px" : "16px 20px",
           background: "linear-gradient(135deg, #d4af37, #b8972e)",
           borderTopLeftRadius: "20px",
           borderTopRightRadius: "20px",
@@ -2072,9 +2123,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
         <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
         <div
           style={{
-              width: 40,
-              height: 40,
-              borderRadius: "12px",
+              width: isCompactMode ? 32 : 40,
+              height: isCompactMode ? 32 : 40,
+              borderRadius: "10px",
               background: "rgba(255, 255, 255, 0.2)",
               display: "flex",
               alignItems: "center",
@@ -2089,7 +2140,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           <div style={{ flex: 1 }}>
             <h2
               style={{
-                fontSize: 18,
+                fontSize: isCompactMode ? 15 : 18,
                 fontWeight: 700,
                 color: "#ffffff",
                 margin: 0,
@@ -2103,7 +2154,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
               AI Astrologer Chat
         </h2>
             <span style={{ 
-              fontSize: 12, 
+              fontSize: isCompactMode ? 10 : 12, 
               color: "rgba(255, 255, 255, 0.8)", 
               display: "block", 
               marginTop: 2 
@@ -2215,7 +2266,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           )}
         </div>
       </div>
-      <div className="chat-messages-container">
+      )}
+      <div className="chat-messages-container" style={{ padding: isCompactMode ? '10px' : undefined }}>
         {messages.map((msg, index) => (
           <div key={index}>
             <div
@@ -2238,6 +2290,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                   borderTopLeftRadius: msg.isUser ? 14 : 4,
                   borderTopRightRadius: msg.isUser ? 4 : 14,
                   maxWidth: "76%",
+                  maxWidth: isCompactMode ? 'calc(100% - 80px)' : '76%',
                   lineHeight: 1.35,
                   boxShadow: msg.isUser 
                     ? "0 4px 14px rgba(212, 175, 55, 0.3)"
@@ -2424,7 +2477,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           display: "flex",
           gap: 8,
           alignItems: "center",
-          padding: "12px 16px",
+          padding: isCompactMode ? "8px 10px" : "12px 16px",
           borderTop: "1px solid rgba(212, 175, 55, 0.2)",
           background: "#fdfbf7",
         }}
@@ -2451,7 +2504,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           className="chat-input-field"
           style={{
             flex: 1,
-            padding: "10px 14px",
+            padding: isCompactMode ? "8px 10px" : "10px 14px",
             borderRadius: 12,
             border: "1px solid rgba(212, 175, 55, 0.3)",
             fontSize: 14,
@@ -2505,7 +2558,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           disabled={isLoading}
           className="chat-send-button"
           style={{
-            padding: "10px 24px",
+            padding: isCompactMode ? "8px 12px" : "10px 24px",
             background: "linear-gradient(135deg, #d4af37, #b8972e)",
             color: "white",
             border: "none",

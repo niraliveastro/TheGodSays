@@ -3,6 +3,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
+import ChatDock from "@/components/ChatDock";
 import {
   Sparkles,
   History,
@@ -24,12 +25,12 @@ import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, 
 import { PageLoading } from "@/components/LoadingStates";
 export default function PredictionsPage() {
   const { t } = useTranslation();
-      // Track page view on mount
+  // Track page view on mount
   useEffect(() => {
     trackPageView('/predictions', 'Astrological Predictions');
   }, []);
 
-  
+
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
@@ -46,15 +47,9 @@ export default function PredictionsPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  // Automatically show full assistant card when results are generated
-  useEffect(() => {
-    if (result) {
-      setIsAssistantMinimized(false);
-    } else {
-      setIsAssistantMinimized(true);
-    }
-  }, [result]);
+  /* Removed unused useEffect for assistant card */
   const [selectedMaha, setSelectedMaha] = useState(null);
+
   const [antarOpen, setAntarOpen] = useState(false);
   const [antarLoading, setAntarLoading] = useState(false);
   const [antarError, setAntarError] = useState("");
@@ -74,17 +69,18 @@ export default function PredictionsPage() {
   const [showHistory, setShowHistory] = useState(true); // Control history visibility
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
+  const [inlineChatOpen, setInlineChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
   const [shouldResetChat, setShouldResetChat] = useState(false);
   const lastResultRef = useRef(null); // Track last result to detect new submissions
   const [showNotification, setShowNotification] = useState(false);
-  const [isAssistantMinimized, setIsAssistantMinimized] = useState(true);
+
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
   const [gender, setGender] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  
+
   // Form data hash for chat conversation management
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
@@ -125,12 +121,12 @@ export default function PredictionsPage() {
    */
   const checkAndResetChatOnFormChange = () => {
     const newHash = generateFormDataHash();
-    
+
     // If form is empty, don't reset
     if (!fullName && !dob && !tob && !place) {
       return;
     }
-    
+
     // If hash changed, reset chat
     if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
       console.log('[Predictions] Form data changed, resetting chat:', {
@@ -141,7 +137,7 @@ export default function PredictionsPage() {
       setChatSessionId(prev => prev + 1);
       setShouldResetChat(true);
     }
-    
+
     // Update the hash
     previousFormDataHashRef.current = newHash;
     setCurrentFormDataHash(newHash);
@@ -213,7 +209,7 @@ export default function PredictionsPage() {
     setSuggestions([]);
     setError("");
     setResult(null); // optional: clear old result so user explicitly re-runs
-    
+
     // Generate hash for loaded history item to check if chat should be restored
     const loadedHash = (() => {
       const formData = {
@@ -232,14 +228,14 @@ export default function PredictionsPage() {
       }
       return hash.toString();
     })();
-    
+
     // If this matches previous hash, don't reset chat (same data)
     // Otherwise, reset chat (different data loaded)
     if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
       setChatSessionId(prev => prev + 1);
       setShouldResetChat(true);
     }
-    
+
     // Update hash reference
     previousFormDataHashRef.current = loadedHash;
     setCurrentFormDataHash(loadedHash);
@@ -257,10 +253,10 @@ export default function PredictionsPage() {
       const savedData = localStorage.getItem("tgs:aiPredictionForm");
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        
+
         // Hide history when coming from landing page
         setShowHistory(false);
-        
+
         // Populate form fields
         if (parsedData.name && parsedData.name.trim()) {
           setFullName(parsedData.name.trim());
@@ -301,7 +297,7 @@ export default function PredictionsPage() {
 
         // Clear the saved data so it doesn't auto-fill again next time
         localStorage.removeItem("tgs:aiPredictionForm");
-        
+
         // Scroll to top to avoid scrolling through history cards
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -333,7 +329,7 @@ export default function PredictionsPage() {
   useEffect(() => {
     if (shouldAutoSubmit.current && dob && tob && place && gender && fullName && !submitting && !result) {
       shouldAutoSubmit.current = false; // Reset flag
-      
+
       // Trigger form submission after a short delay to ensure all state is updated
       const timer = setTimeout(() => {
         const form = document.querySelector('form');
@@ -397,12 +393,12 @@ export default function PredictionsPage() {
       // Otherwise, sync with form height
       const formHeight = formRef.current?.offsetHeight || 0;
       if (!formHeight) return;
-      
+
       // Store the initial height before results are generated
       if (!initialHistoryHeightRef.current) {
         initialHistoryHeightRef.current = formHeight;
       }
-      
+
       historyCardRef.current.style.height = `${formHeight}px`;
       historyCardRef.current.style.maxHeight = `${formHeight}px`;
     };
@@ -549,10 +545,10 @@ export default function PredictionsPage() {
     e.preventDefault();
     setError("");
     setResult(null);
-    
+
     // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-    
+
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
 
@@ -562,11 +558,11 @@ export default function PredictionsPage() {
       setError(validationError);
       return;
     }
-    
+
     // Track form submission
     trackActionStart('predictions_generation');
     trackEvent('form_submit', { form_name: 'predictions' });
-    
+
     // Hide history during submission to avoid visual clutter
     setShowHistory(false);
     setSubmitting(true);
@@ -651,7 +647,7 @@ export default function PredictionsPage() {
           }
         }
       }
-      
+
       // Log for debugging
       if (errors?.["western/natal-wheel-chart"]) {
         console.warn("[Western Chart] Error:", errors["western/natal-wheel-chart"]);
@@ -662,7 +658,7 @@ export default function PredictionsPage() {
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
         : null;
-      
+
       // Debug vimsottari parsing
       if (!vimsParsed) {
         console.warn('[Predictions] vimsRaw is null or empty:', vimsRaw);
@@ -753,7 +749,7 @@ export default function PredictionsPage() {
         has_coordinates: !!(geo.latitude && geo.longitude)
       });
       trackEvent('predictions_generated', { success: true });
-      
+
       setResult({
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
@@ -765,13 +761,13 @@ export default function PredictionsPage() {
         westernChartSvg,
         apiErrors: { ...errors },
       });
-      
+
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
         setChatSessionId(prev => prev + 1);
         setShouldResetChat(false);
       }
-      
+
       // Lock history card height to prevent expansion after results are generated
       if (historyCardRef.current && initialHistoryHeightRef.current) {
         historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
@@ -801,7 +797,7 @@ export default function PredictionsPage() {
       mahaType: typeof result?.maha,
       mahaSample: result?.maha ? (typeof result.maha === 'string' ? result.maha.substring(0, 100) : JSON.stringify(result.maha).substring(0, 100)) : null
     });
-    
+
     const m = result?.maha;
     if (m) {
       const obj = typeof m === "string" ? safeParse(m) : m;
@@ -810,12 +806,12 @@ export default function PredictionsPage() {
         if (entries.length > 0) {
           const now = new Date();
           let currentMaha = null;
-          
+
           // Find the maha dasha that is currently active based on dates
           for (const [key, value] of entries) {
             const startDate = value.start_time || value.start;
             const endDate = value.end_time || value.end;
-            
+
             if (startDate && endDate) {
               try {
                 const start = new Date(startDate);
@@ -835,7 +831,7 @@ export default function PredictionsPage() {
               console.log('[Predictions] Using maha dasha without date check:', currentMaha);
             }
           }
-          
+
           // If no current found by date, use the first one (earliest start)
           if (!currentMaha && entries.length > 0) {
             const sorted = entries.sort((a, b) => {
@@ -851,14 +847,14 @@ export default function PredictionsPage() {
             currentMaha = first[1].Lord || first[1].lord || first[1].planet || first[0];
             console.log('[Predictions] Using first maha dasha (sorted by start date):', currentMaha);
           }
-          
+
           // Final fallback: just use the first entry
           if (!currentMaha && entries.length > 0) {
             const first = entries[0];
             currentMaha = first[1].Lord || first[1].lord || first[1].planet || first[0];
             console.log('[Predictions] Using first maha dasha (fallback):', currentMaha);
           }
-          
+
           if (currentMaha) {
             console.log('[Predictions] Dasha extracted from maha data:', currentMaha);
             return String(currentMaha).trim();
@@ -866,14 +862,14 @@ export default function PredictionsPage() {
         }
       }
     }
-    
+
     // PRIORITY 2: Try vimsottari data (if API call succeeded)
     const v = result?.vimsottari;
     if (!v) {
       console.warn('[Predictions] No vimsottari data found in result (API call may have failed)');
       return null;
     }
-    
+
     // Enhanced extraction logic - try multiple paths
     // First, try current/running/now structure
     const current = v.current || v.running || v.now || v?.mahadasha?.current;
@@ -893,13 +889,13 @@ export default function PredictionsPage() {
         return dashaChain;
       }
     }
-    
+
     // Try mahadasha_list structure
     const md = (v.mahadasha_list || v.mahadasha || v.md || [])[0];
     if (md) {
       const adList = v.antardasha_list || v.antardasha || v.ad || {};
       const firstMdKey = md?.key || md?.planet || md?.name;
-      
+
       // Try to get antardasha
       let ad = null;
       if (firstMdKey && adList[firstMdKey]) {
@@ -911,7 +907,7 @@ export default function PredictionsPage() {
         const firstKey = Object.keys(adList)[0];
         ad = Array.isArray(adList[firstKey]) ? adList[firstKey][0] : adList[firstKey];
       }
-      
+
       // Try to get pratyantar
       const pdList = v.pratyantar_list || v.pd || {};
       let pd = null;
@@ -926,7 +922,7 @@ export default function PredictionsPage() {
           pd = Array.isArray(pdList[firstKey]) ? pdList[firstKey][0] : pdList[firstKey];
         }
       }
-      
+
       const dashaChain = [
         md?.name || md?.planet || md?.key,
         ad?.name || ad?.planet || ad?.key,
@@ -935,12 +931,12 @@ export default function PredictionsPage() {
         .filter(Boolean)
         .map(x => typeof x === 'string' ? x.trim() : String(x).trim())
         .join(" > ");
-      
+
       if (dashaChain) {
         console.log('[Predictions] Dasha extracted from mahadasha_list structure:', dashaChain);
         return dashaChain;
       }
-      
+
       // If we have at least mahadasha, return it
       const mdName = md?.name || md?.planet || md?.key;
       if (mdName) {
@@ -948,7 +944,7 @@ export default function PredictionsPage() {
         return String(mdName).trim();
       }
     }
-    
+
     // Fallback: Try to get from maha data if available
     const maha = result?.maha;
     if (maha) {
@@ -960,17 +956,17 @@ export default function PredictionsPage() {
           mahaData = maha;
         }
       }
-      
+
       // If it's an object with entries, find the current one
       if (typeof mahaData === 'object' && !Array.isArray(mahaData)) {
         const now = new Date();
         let currentMaha = null;
-        
+
         // Find the maha dasha that is currently active based on dates
         Object.entries(mahaData).forEach(([key, value]) => {
           const startDate = value.start_time || value.start;
           const endDate = value.end_time || value.end;
-          
+
           if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -979,7 +975,7 @@ export default function PredictionsPage() {
             }
           }
         });
-        
+
         // If no current found by date, use the first one (earliest start)
         if (!currentMaha) {
           const entries = Object.entries(mahaData);
@@ -993,7 +989,7 @@ export default function PredictionsPage() {
             currentMaha = first.Lord || first.lord || first.planet || sorted[0][0];
           }
         }
-        
+
         if (currentMaha) {
           console.log('[Predictions] Dasha extracted from maha data (fallback):', currentMaha);
           return String(currentMaha).trim();
@@ -1008,7 +1004,7 @@ export default function PredictionsPage() {
         }
       }
     }
-    
+
     // Log the structure for debugging
     console.warn('[Predictions] Could not extract Dasha. Vimsottari structure:', {
       hasCurrent: !!v.current,
@@ -1021,19 +1017,19 @@ export default function PredictionsPage() {
       keys: Object.keys(v),
       sample: JSON.stringify(v).substring(0, 200)
     });
-    
+
     return null;
   }, [result]);
   function buildPayloadForApi() {
     const inp = result?.input;
     const coords = result?.coords;
     if (!inp || !coords) return null;
-    
+
     // Parse DOB - handle both YYYY-MM-DD (from date input) and DD-MM-YYYY (from text input) formats
     const dobStr = String(inp.dob || "");
     const dobParts = dobStr.split("-").map((n) => parseInt(n, 10));
     let Y, M, D;
-    
+
     if (dobParts.length === 3) {
       if (dobParts[0] > 1900) {
         // YYYY-MM-DD format (standard for HTML5 date inputs)
@@ -1045,7 +1041,7 @@ export default function PredictionsPage() {
     } else {
       throw new Error(`Invalid date format: ${dobStr}. Expected YYYY-MM-DD or DD-MM-YYYY`);
     }
-    
+
     // Validate parsed values
     if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
       throw new Error(`Invalid date values from: ${dobStr}`);
@@ -1053,19 +1049,19 @@ export default function PredictionsPage() {
     if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
     if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
-    
+
     // Parse time
     const tobStr = String(inp.tob || "");
     const timeParts = tobStr.split(":").map((n) => parseInt(n, 10));
     const [H, Min, S = 0] = timeParts;
-    
+
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
       throw new Error(`Invalid time format: ${tobStr}. Expected HH:MM or HH:MM:SS`);
     }
     if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
     if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
     if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
-    
+
     return {
       year: Y,
       month: M,
@@ -1289,7 +1285,7 @@ export default function PredictionsPage() {
   }
 
   return (
-    <div 
+    <div
       className="app"
       style={{
         background: undefined,
@@ -1341,7 +1337,7 @@ export default function PredictionsPage() {
 
       <div className=" py-8">
         {error && (
-          <div 
+          <div
             className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
             style={{
               background: "#fef2f2",
@@ -1354,7 +1350,7 @@ export default function PredictionsPage() {
         )}
 
         {/* === Birth form + History side-by-side === */}
-        <div className="birth-history-layout" style={{width: "100%"}}>
+        <div className="birth-history-layout" style={{ width: "100%" }}>
           {/* ==== FORM ==== */}
           <form
             ref={formRef}
@@ -1371,15 +1367,16 @@ export default function PredictionsPage() {
                 <Moon className="w-6 h-6 text-gold" />
               </div>
               <div className="form-header-text" style={{ flex: 1 }}>
+                <div className="step-badge">Step 1 of 2: Birth Details</div>
                 <h3 className="form-title">{t.predictions.enterDetails}</h3>
                 <p className="form-subtitle">{t.predictions.enterCosmicCoordinates}</p>
               </div>
             </div>
-            
+
             {/* ---- Birth Details Section ---- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end" style = {{width: '100%'}}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end" style={{ width: '100%' }}>
               {/* Full Name */}
-              <div className="w-full md:w-48">
+              <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
                   Name
                 </label>
@@ -1399,7 +1396,7 @@ export default function PredictionsPage() {
               </div>
 
               {/* Date of Birth */}
-              <div style={{ marginLeft: '-0.25rem' }}>
+              <div>
                 <label className="form-field-label flex items-center gap-2 mb-2">
                   Date of Birth
                 </label>
@@ -1471,46 +1468,41 @@ export default function PredictionsPage() {
                   </div>
 
                   {/* Place of Birth */}
-                  <div>
+                  <div className="flex-1 place-wrapper">
                     <label className="form-field-label flex items-center gap-2 mb-2">
                       Place
                     </label>
+
                     <div className="relative">
-                      <input
-                        placeholder="e.g., Mumbai, India"
-                        value={place}
-                        onChange={(e) => {
-                          const q = e.target.value;
-                          setPlace(q);
-                          setSelectedCoords(null);
-                          fetchSuggestions(q);
-                        }}
-                        className="form-field-input form-input-field"
-                        autoComplete="off"
-                        required
-                        style={{ paddingRight: '2.5rem' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={useMyLocation}
-                        disabled={locating}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: locating ? 'wait' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title="Use current location"
-                      >
-                        {locating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#d4af37' }} />
-                        ) : (
-                          <MapPin className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        )}
-                      </button>
+                      <div className="place-input-wrapper">
+                        <input
+                          placeholder="e.g., Mumbai, India"
+                          value={place}
+                          onChange={(e) => {
+                            const q = e.target.value;
+                            setPlace(q);
+                            setSelectedCoords(null);
+                            fetchSuggestions(q);
+                          }}
+                          className="form-field-input form-input-field place-input"
+                          autoComplete="off"
+                          required
+                        />
+
+                        <button
+                          type="button"
+                          onClick={useMyLocation}
+                          disabled={locating}
+                          className="place-btn"
+                        >
+                          {locating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <MapPin className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
                       {suggestions.length > 0 && (
                         <div className="suggest-list">
                           {suggestions.map((s, i) => (
@@ -1529,7 +1521,9 @@ export default function PredictionsPage() {
                         </div>
                       )}
                     </div>
-                    <p className="form-field-helper">
+
+                    {/* helper, absolutely positioned -> doesn't affect column height */}
+                    <p className="form-field-helper place-helper">
                       Choose the nearest city for accurate calculation
                     </p>
                   </div>
@@ -1570,162 +1564,162 @@ export default function PredictionsPage() {
               className="results-section history-side"
               style={{ marginTop: 0 }}
             >
-            <div className="card" ref={historyCardRef}>
-              <div className="results-header">
-                <History style={{ color: "#ca8a04" }} />
-                <h3 className="results-title flex items-center gap-2">
-                  Saved Profiles
-                </h3>
+              <div className="card" ref={historyCardRef}>
+                <div className="results-header">
+                  <History style={{ color: "#ca8a04" }} />
+                  <h3 className="results-title flex items-center gap-2">
+                    Saved Profiles
+                  </h3>
 
-                {history.length > 0 && (
-                  <button
-                    onClick={clearHistory}
-                    className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Clear
-                  </button>
-                )}
-              </div>
-
-              {/* Search input */}
-              {history.length > 0 && (
-                <input
-                  type="text"
-                  placeholder="Search by name, place, or date..."
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                  className="history-search"
-                />
-              )}
-
-              {history.length === 0 ? (
-                <div className="empty-state">No saved profiles yet.</div>
-              ) : filteredHistory.length === 0 ? (
-                <div className="empty-state">No profiles match your search.</div>
-              ) : (
-                <div className="history-list">
-                  {filteredHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      className="history-card-row"
-                      onClick={() => loadFromHistory(item)}
+                  {history.length > 0 && (
+                    <button
+                      onClick={clearHistory}
+                      className="btn btn-ghost text-sm ml-auto flex items-center gap-1"
                     >
-                      <div className="history-row-text">
-                        <div className="h-name">
-                          {item.fullName}{" "}
-                          {item.gender ? `(${item.gender.toLowerCase()})` : ""}
-                        </div>
-                        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-                          <div className="h-date" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
-                            <strong style={{ color: "#374151" }}>DOB:</strong> {item.dob}
-                          </div>
-                          <div className="h-time" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
-                            <strong style={{ color: "#374151" }}>Time:</strong> {item.tob}
-                          </div>
-                        </div>
+                      <RotateCcw className="w-4 h-4" /> Clear
+                    </button>
+                  )}
+                </div>
 
-                        {/* Address */}
-                        <div className="h-place" style={{ marginTop: "0.25rem" }}>
-                          <div
-                            ref={(el) => (addressRefs.current[item.id] = el)}
-                            className={`address ${isAddressExpanded[item.id] ? "show-full" : ""
-                              }`}
-                            title={item.place}
-                            style={{ fontSize: "0.8125rem", color: "#6b7280" }}
-                          >
-                            <strong style={{ color: "#374151" }}>Place:</strong> {item.place}
+                {/* Search input */}
+                {history.length > 0 && (
+                  <input
+                    type="text"
+                    placeholder="Search by name, place, or date..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="history-search"
+                  />
+                )}
+
+                {history.length === 0 ? (
+                  <div className="empty-state">No saved profiles yet.</div>
+                ) : filteredHistory.length === 0 ? (
+                  <div className="empty-state">No profiles match your search.</div>
+                ) : (
+                  <div className="history-list">
+                    {filteredHistory.map((item) => (
+                      <div
+                        key={item.id}
+                        className="history-card-row"
+                        onClick={() => loadFromHistory(item)}
+                      >
+                        <div className="history-row-text">
+                          <div className="h-name">
+                            {item.fullName}{" "}
+                            {item.gender ? `(${item.gender.toLowerCase()})` : ""}
+                          </div>
+                          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+                            <div className="h-date" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
+                              <strong style={{ color: "#374151" }}>DOB:</strong> {item.dob}
+                            </div>
+                            <div className="h-time" style={{ fontSize: "0.8125rem", color: "#6b7280" }}>
+                              <strong style={{ color: "#374151" }}>Time:</strong> {item.tob}
+                            </div>
                           </div>
 
-                          {isOverflowing[item.id] && (
-                            <button
-                              className="show-more-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleAddressVisibility(item.id);
-                              }}
+                          {/* Address */}
+                          <div className="h-place" style={{ marginTop: "0.25rem" }}>
+                            <div
+                              ref={(el) => (addressRefs.current[item.id] = el)}
+                              className={`address ${isAddressExpanded[item.id] ? "show-full" : ""
+                                }`}
+                              title={item.place}
+                              style={{ fontSize: "0.8125rem", color: "#6b7280" }}
                             >
-                              {isAddressExpanded[item.id] ? "Show Less" : "..."}
-                            </button>
+                              <strong style={{ color: "#374151" }}>Place:</strong> {item.place}
+                            </div>
+
+                            {isOverflowing[item.id] && (
+                              <button
+                                className="show-more-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleAddressVisibility(item.id);
+                                }}
+                              >
+                                {isAddressExpanded[item.id] ? "Show Less" : "..."}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Last generated timestamp */}
+                          {item.lastGenerated && (
+                            <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.375rem" }}>
+                              Last generated: {(() => {
+                                const date = new Date(item.lastGenerated);
+                                const now = new Date();
+                                const diffMs = now - date;
+                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                if (diffDays === 0) return "Today";
+                                if (diffDays === 1) return "1 day ago";
+                                if (diffDays < 7) return `${diffDays} days ago`;
+                                return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                              })()}
+                            </div>
                           )}
                         </div>
 
-                        {/* Last generated timestamp */}
-                        {item.lastGenerated && (
-                          <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.375rem" }}>
-                            Last generated: {(() => {
-                              const date = new Date(item.lastGenerated);
-                              const now = new Date();
-                              const diffMs = now - date;
-                              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                              if (diffDays === 0) return "Today";
-                              if (diffDays === 1) return "1 day ago";
-                              if (diffDays < 7) return `${diffDays} days ago`;
-                              return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-                            })()}
-                          </div>
-                        )}
-                      </div>
+                        <div className="history-actions">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              loadFromHistory(item);
+                            }}
+                            className="use-btn"
+                          >
+                            Load
+                          </button>
 
-                      <div className="history-actions">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            loadFromHistory(item);
-                          }}
-                          className="use-btn"
-                        >
-                          Load
-                        </button>
-
-                        {showDeleteConfirm === item.id ? (
-                          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                            <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>Delete?</span>
+                          {showDeleteConfirm === item.id ? (
+                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>Delete?</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteHistoryItem(item.id);
+                                }}
+                                className="delete-btn"
+                                style={{ background: "#dc2626", color: "#fff", padding: "0.25rem 0.5rem" }}
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDeleteConfirm(null);
+                                }}
+                                style={{
+                                  background: "#f3f4f6",
+                                  color: "#374151",
+                                  padding: "0.25rem 0.5rem",
+                                  border: "none",
+                                  borderRadius: "0.25rem",
+                                  fontSize: "0.75rem",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteHistoryItem(item.id);
                               }}
                               className="delete-btn"
-                              style={{ background: "#dc2626", color: "#fff", padding: "0.25rem 0.5rem" }}
                             >
-                              Yes
+                              <Trash2 className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowDeleteConfirm(null);
-                              }}
-                              style={{ 
-                                background: "#f3f4f6", 
-                                color: "#374151", 
-                                padding: "0.25rem 0.5rem",
-                                border: "none",
-                                borderRadius: "0.25rem",
-                                fontSize: "0.75rem",
-                                cursor: "pointer"
-                              }}
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteHistoryItem(item.id);
-                            }}
-                            className="delete-btn"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
           )}
         </div>
 
@@ -1811,14 +1805,14 @@ export default function PredictionsPage() {
                 />
               </div>
             ) : result && !result.westernChartSvg ? (
-              <div 
+              <div
                 className="card my-8 p-6 border rounded-lg"
                 style={{
                   background: "#fef9c3",
                   borderColor: "#fde047",
                 }}
               >
-                <p 
+                <p
                   className="text-sm font-medium"
                   style={{
                     color: "#854d0e",
@@ -1833,11 +1827,11 @@ export default function PredictionsPage() {
             ) : null}
 
             {/* Expert Astrologer CTA / Chat Window */}
-            <div 
+            <div
               className="card mt-8 ai-astrologer-section"
-              style={{ 
+              style={{
                 position: "relative",
-                zIndex: chatOpen ? 200 : 1,
+                zIndex: inlineChatOpen ? 200 : 1,
                 marginBottom: "2rem",
                 background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
                 border: "1px solid rgba(212, 175, 55, 0.3)",
@@ -1845,7 +1839,7 @@ export default function PredictionsPage() {
                 padding: "1.5rem"
               }}
             >
-              {!chatOpen ? (
+              {!inlineChatOpen ? (
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="flex-1">
                     <div
@@ -1877,7 +1871,7 @@ export default function PredictionsPage() {
                       type="button"
                       onClick={() => {
                         setChatSessionId(prev => prev + 1);
-                        setChatOpen(true);
+                        setInlineChatOpen(true);
                       }}
                       className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
                     >
@@ -1888,11 +1882,11 @@ export default function PredictionsPage() {
                 </div>
               ) : (
                 <div className="chat-window-container">
-                  <Chat 
-                    key={`predictions-chat-${chatSessionId}-${currentFormDataHash || 'new'}`} 
-                    pageTitle="Predictions" 
+                  <Chat
+                    key={`predictions-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
+                    pageTitle="Predictions"
                     initialData={chatData}
-                    onClose={() => setChatOpen(false)}
+                    onClose={() => setInlineChatOpen(false)}
                     chatType="prediction"
                     shouldReset={shouldResetChat}
                     formDataHash={currentFormDataHash}
@@ -2267,7 +2261,7 @@ export default function PredictionsPage() {
               <h3 className="text-lg font-semibold text-red-800 mb-2">
                 Unable to Load Data
               </h3>
-              <p 
+              <p
                 className="text-sm border rounded-lg px-4 py-3"
                 style={{
                   background: "#fef2f2",
@@ -2285,7 +2279,7 @@ export default function PredictionsPage() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Moon className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 
+                  <h3
                     className="text-lg font-medium mb-2"
                     style={{
                       color: "#1f2937",
@@ -2293,7 +2287,7 @@ export default function PredictionsPage() {
                   >
                     No Antar Dasha Data
                   </h3>
-                  <p 
+                  <p
                     className="text-sm"
                     style={{
                       color: "#6b7280",
@@ -2365,7 +2359,7 @@ export default function PredictionsPage() {
               </div>
             </div>
           ) : predictionsError ? (
-            <div 
+            <div
               className="py-4 text-sm border rounded-lg px-4"
               style={{
                 background: "#fef2f2",
@@ -2384,7 +2378,7 @@ export default function PredictionsPage() {
                   </div>
                 </div>
               ) : (
-                <div 
+                <div
                   className="text-sm rounded-lg p-4 border"
                   style={{
                     background: "#f9fafb",
@@ -2410,17 +2404,17 @@ export default function PredictionsPage() {
 
 
 
-              {/* Explanation Card - Below form and history */}
-        <div  style={{ marginTop: "2rem", width: "100%", maxWidth: "90rem", marginLeft: "auto", marginRight: "auto" }}>
-          <div 
-            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
-            style={{
-              background: "#ffffff",
-              borderColor: "#eaeaea",
-              maxWidth: "100%",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
+      {/* Explanation Card - Below form and history */}
+      <div style={{ marginTop: "2rem", width: "100%", maxWidth: "90rem", marginLeft: "auto", marginRight: "auto" }}>
+        <div
+          className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+          style={{
+            background: "#ffffff",
+            borderColor: "#eaeaea",
+            maxWidth: "100%",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+          }}
+        >
           <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -2452,299 +2446,44 @@ export default function PredictionsPage() {
             </p>
           </div>
         </div>
-        </div>
-
-      {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
-      <div 
-        className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
-        style={{ 
-          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {(!result || isAssistantMinimized) ? (
-          // Minimized Icon - Astrologer Assistant
-          <button
-            onClick={() => {
-              if (result) {
-                setIsAssistantMinimized(false);
-              }
-            }}
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "20px",
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Golden Infinity Icon (tilted 45 degrees) */}
-            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            {/* Pulsing indicator */}
-            <div
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "8px",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                animation: "pulse 2s infinite",
-              }}
-            />
-          </button>
-        ) : (
-          <div
-            className="chat-assistant-card"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              borderRadius: "20px",
-              padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-            }}
-            onClick={() => {
-            const isFormFilled = fullName && dob && tob && place;
-            if (!isFormFilled) {
-              setError(
-                "Please complete all birth details before using the chat."
-              );
-              window.scrollTo({ top: 0, behavior: "smooth" });
-              return;
-            }
-            if (!result) {
-              document.querySelector("form").requestSubmit();
-              setTimeout(() => {
-                setChatSessionId(prev => prev + 1);
-                setChatOpen(true);
-                setTimeout(() => {
-                  document
-                    .querySelector(".ai-astrologer-section")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
-              }, 2000);
-            } else {
-              setChatSessionId(prev => prev + 1);
-              setChatOpen(true);
-              setTimeout(() => {
-                document
-                  .querySelector(".ai-astrologer-section")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }, 100);
-            }
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-4px)";
-            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-          }}
-        >
-          {/* Minimize Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsAssistantMinimized(true);
-            }}
-            style={{
-              position: "absolute",
-              top: "12px",
-              right: "12px",
-              width: "28px",
-              height: "28px",
-              borderRadius: "8px",
-              background: "rgba(212, 175, 55, 0.1)",
-              border: "1px solid rgba(212, 175, 55, 0.2)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              zIndex: 10,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
-              e.currentTarget.style.transform = "scale(1.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
-            <X size={16} color="#b8972e" />
-          </button>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "14px",
-                background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-              }}
-            >
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 700,
-                  color: "#111827",
-                  margin: "0 0 4px 0",
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Astrologer Assistant
-              </h3>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#6b7280",
-                  margin: 0,
-                  lineHeight: "1.5",
-                }}
-              >
-                Consult with our expert Vedic astrologer for trusted insights about your birth chart, planetary positions, and personalized astrological guidance
-              </p>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingTop: "12px",
-              borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "#10b981",
-                  boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                  animation: "pulse 2s infinite",
-                }}
-              />
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                Online
-              </span>
-            </div>
-            <button
-              disabled={submitting}
-              style={{
-                background: submitting 
-                  ? "rgba(212, 175, 55, 0.5)" 
-                  : "linear-gradient(135deg, #d4af37, #b8972e)",
-                border: "none",
-                borderRadius: "10px",
-                padding: "8px 16px",
-                color: "#1f2937",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: submitting ? "not-allowed" : "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-                opacity: submitting ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                  e.currentTarget.style.transform = "scale(1.05)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                  e.currentTarget.style.transform = "scale(1)";
-                }
-              }}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering card click
-                if (submitting) return;
-                
-                // Since we only show full card when result exists, we can directly open chat
-                if (result) {
-                  setChatSessionId(prev => prev + 1);
-                  setChatOpen(true);
-                  setTimeout(() => {
-                    document
-                      .querySelector(".ai-astrologer-section")
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }, 100);
-                }
-              }}
-            >
-              {submitting ? "Loading..." : "Start Chat"}
-            </button>
-          </div>
-        </div>
-        )}
-
       </div>
 
-            <a
+      {/* Chat Dock */}
+      <div className="relative z-[100]">
+        <ChatDock
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
+          onClose={() => setChatOpen(false)}
+        >
+          <div className="h-full flex flex-col bg-white">
+            {/* If we need to pass props to Chat to make it fit better, we can do it here. 
+                 Assuming Chat takes remaining height. */}
+            <Chat
+              key={`predictions-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
+              pageTitle="Predictions"
+              initialData={result}
+              onClose={() => setChatOpen(false)}
+              chatType="prediction"
+              shouldReset={shouldResetChat}
+              formDataHash={currentFormDataHash}
+              embedded={true} // Hint to Chat component it's embedded if it supports it
+            />
+          </div>
+        </ChatDock>
+      </div>
+
+      <a
         href="/talk-to-astrologer"
         className="global-floater global-floater--astrologer"
         aria-label="Talk to Astrologer"
+        style={{
+          bottom: "20px",
+          right: chatOpen ? "360px" : "100px", // Move out of way or hide
+          transition: "right 0.3s ease",
+          display: "none" // Hiding it as per request to replace floating button, or we can keep it if user wants backup. User said "Replace this floating button".
+        }}
       >
-      <PhoneCallIcon className="global-floater-icon"/>
+        <PhoneCallIcon className="global-floater-icon" />
         <span className="global-floater-text">Talk to Astrologer</span>
       </a>
     </div>
