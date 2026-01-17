@@ -1,0 +1,923 @@
+/* ==========================================
+   ADVANCED COMPONENT STYLES
+   Dosha, Yoga, Metrics, Remedies, Matching
+   ========================================== */
+
+/* ==========================================
+   DOSHA & YOGA SUMMARY
+   ========================================== */
+.dosha-yoga-summary {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px 0;
+}
+
+.dosha-grid,
+.yoga-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dosha-card,
+.yoga-card {
+  border-radius: 10px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+}
+
+.dosha-card.active {
+  background: #fef3c7;
+  border-color: #fbbf24;
+}
+
+.dosha-card.inactive {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.dosha-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dosha-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.dosha-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-none {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.dosha-details {
+  margin-bottom: 12px;
+}
+
+.dosha-effect {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0 0 6px 0;
+}
+
+.dosha-technical {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+.cancellation-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #d1fae5;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #065f46;
+  margin-bottom: 12px;
+}
+
+.cancel-icon {
+  color: #059669;
+}
+
+.remedy-btn {
+  width: 100%;
+  padding: 8px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dosha-absent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  color: #065f46;
+  font-size: 13px;
+}
+
+.absent-icon {
+  color: #059669;
+}
+
+/* Yogas */
+.yoga-card {
+  background: white;
+}
+
+.yoga-card.yoga-strong {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.yoga-card.yoga-moderate {
+  border-color: #3b82f6;
+}
+
+.yoga-card.yoga-partial {
+  border-color: #f59e0b;
+}
+
+.yoga-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.yoga-star {
+  color: #fbbf24;
+}
+
+.yoga-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.yoga-strength-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  width: fit-content;
+}
+
+.yoga-effect {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+.yoga-status {
+  font-size: 12px;
+}
+
+.status-active {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #059669;
+  font-weight: 600;
+}
+
+.status-inactive {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.yoga-details-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 6px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+}
+
+.no-yogas {
+  text-align: center;
+  padding: 24px;
+  color: #9ca3af;
+}
+
+.no-yogas svg {
+  margin-bottom: 12px;
+}
+
+.no-yogas p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.no-yogas .note {
+  font-size: 12px;
+  color: #d1d5db;
+  margin-top: 4px;
+}
+
+.summary-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.summary-card {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.summary-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.summary-card p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==========================================
+   ISHTA / KASHTA METRICS
+   ========================================== */
+.ishta-kashta-metrics {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.metrics-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.metrics-header h3 {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.metrics-intro {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 8px;
+}
+
+.intro-text {
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ishta-kashta-section,
+.shadbala-section,
+.bhava-strength-section {
+  margin-bottom: 24px;
+}
+
+.planet-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.metric-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.interpretation-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.interpretation-badge.favorable {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.interpretation-badge.challenging {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.phala-display {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phala-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.phala-item.ishta .phala-icon {
+  color: #10b981;
+}
+
+.phala-item.kashta .phala-icon {
+  color: #ef4444;
+}
+
+.phala-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.phala-label {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.phala-value {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.phala-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.phala-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.ishta-fill {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.kashta-fill {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+}
+
+.metric-meaning {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.meaning-text {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Shadbala */
+.shadbala-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.shadbala-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.shadbala-planet {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.shadbala-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shadbala-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shadbala-label {
+  width: 100px;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.shadbala-bar {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.shadbala-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 3px;
+}
+
+.shadbala-value {
+  width: 40px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.shadbala-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.total-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.total-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Bhava Strength */
+.bhava-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.bhava-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.bhava-header {
+  margin-bottom: 12px;
+}
+
+.bhava-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.bhava-name {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.bhava-strength-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.strength-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.circle-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.strength-value-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.bhava-details {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.bhava-lord {
+  margin: 0;
+  font-weight: 600;
+}
+
+.metrics-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-note {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.footer-note p {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==========================================
+   REMEDIES & NEXT STEPS
+   ========================================== */
+.remedies-next-steps {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.remedies-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.remedies-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.free-remedies-section,
+.locked-remedies-section {
+  margin-bottom: 24px;
+}
+
+.free-remedies-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.remedy-card {
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+}
+
+.remedy-card.free {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #86efac;
+}
+
+.remedy-card.locked {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+}
+
+.remedy-number {
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  width: 28px;
+  height: 28px;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.remedy-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 10px 0;
+}
+
+.remedy-content {
+  margin-bottom: 12px;
+}
+
+.remedy-action {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.remedy-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.frequency-badge {
+  padding: 4px 8px;
+  background: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.remedy-benefit {
+  display: flex;
+  gap: 4px;
+  font-size: 12px;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+}
+
+.benefit-label {
+  font-weight: 700;
+  color: #059669;
+}
+
+.benefit-text {
+  color: #4b5563;
+}
+
+/* Locked Remedies */
+.locked-remedy-preview {
+  position: relative;
+  min-height: 300px;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preview-content.blurred {
+  filter: blur(4px);
+}
+
+.preview-item h5 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+}
+
+.preview-item p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+}
+
+.unlock-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.unlock-icon {
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.unlock-content h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.unlock-content p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+.plan-includes,
+.unlock-benefits {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.plan-includes h5,
+.unlock-benefits h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+}
+
+.includes-list,
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.includes-list li,
+.benefits-list li {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.blurred-text {
+  filter: blur(2px);
+}
+
+.unlock-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.unlock-btn.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.unlock-btn.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.unlock-note {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.remedies-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-card {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.footer-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.footer-card p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (min-width: 768px) {
+  .dosha-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .yoga-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .planet-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shadbala-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bhava-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .free-remedies-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
