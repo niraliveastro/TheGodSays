@@ -1475,32 +1475,41 @@ export default function PredictionsPage() {
 
                     <div className="relative">
                       <div className="place-input-wrapper">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={place}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setPlace(q);
-                            setSelectedCoords(null);
-                            fetchSuggestions(q);
-                          }}
-                          className="form-field-input form-input-field place-input"
-                          autoComplete="off"
-                          required
-                        />
-
-                        <button
-                          type="button"
-                          onClick={useMyLocation}
-                          disabled={locating}
-                          className="place-btn"
-                        >
-                          {locating ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <MapPin className="w-4 h-4" />
-                          )}
-                        </button>
+<input
+                        placeholder="e.g., Mumbai, India"
+                        value={place}
+                        onChange={(e) => {
+                          const q = e.target.value;
+                          setPlace(q);
+                          setSelectedCoords(null);
+                          fetchSuggestions(q);
+                        }}
+                        className="form-field-input form-input-field"
+                        autoComplete="off"
+                        required
+                        style={{ paddingRight: '2.5rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={useMyLocation}
+                        disabled={locating}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: locating ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Use current location"
+                      >
+                        {locating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#d4af37' }} />
+                        ) : (
+                          <MapPin className="w-4 h-4" style={{ color: '#6b7280' }} />
+                        )}
+                      </button>
                       </div>
 
                       {suggestions.length > 0 && (
