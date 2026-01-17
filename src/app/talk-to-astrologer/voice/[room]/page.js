@@ -354,9 +354,6 @@ function VoiceCallParticipantStatus() {
     fetchProfiles();
   }, []);
 
-
-  
-
   // Get current user profile from AuthContext first, then fallback to fetched profiles
   const currentUserId = localStorage.getItem("tgs:userId");
   const currentAstrologerId = localStorage.getItem("tgs:astrologerId");
@@ -2116,12 +2113,11 @@ export default function VoiceCallRoom() {
   return (
     <div
       style={{
-        height: "100%",
+        minHeight: "100vh",
         background: "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        overflow: "hidden"
       }}
     >
       {/* Golden background orbs */}

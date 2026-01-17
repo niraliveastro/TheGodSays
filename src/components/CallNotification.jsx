@@ -128,10 +128,10 @@ export default function CallNotification({ call, onAccept, onReject, onClose, us
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" style={{ zIndex: 99999 }}>
-      <Card className="card max-w-md w-full mx-4 my-6 bg-white shadow-2xl">
-        <div className="p-8">
+      <Card className="max-w-md w-full mx-4 bg-white shadow-2xl border-2 border-blue-200">
+        <div className="p-6">
           {/* Header */}
-          <div className="flex p-8 items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
                 <Phone className="w-6 h-6 text-white" />
