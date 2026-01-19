@@ -4,7 +4,6 @@ import React from "react";
 import { Phone, Video, XCircle, X } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import "./styles/callconnectingnotification.css";
 
 // Simplified Modal component
 function Modal({ open, onClose, children }) {
