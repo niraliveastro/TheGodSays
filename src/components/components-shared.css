@@ -1,0 +1,738 @@
+/* ==========================================
+   SHARED COMPONENT STYLES
+   Vedic Astrology Platform
+   ========================================== */
+
+/* ==========================================
+   KUNDLI QUICK VIEW
+   ========================================== */
+.kundli-quick-view {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.kundli-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.kundli-header h3 {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.legitimacy-badge {
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.kundli-basics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.basic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.basic-label {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.basic-value {
+  font-size: 15px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.kundli-charts {
+  display: grid;
+  gap: 16px;
+}
+
+.chart-container h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.chart {
+  aspect-ratio: 1;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* North Indian Chart */
+.north-chart .chart-diamond {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border: 2px solid #667eea;
+  transform: rotate(45deg);
+  border-radius: 4px;
+}
+
+.north-chart .house {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+/* South Indian Chart */
+.south-chart .chart-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #667eea;
+  border: 2px solid #667eea;
+}
+
+.south-chart .house {
+  aspect-ratio: 1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.south-chart .house.center {
+  background: #f3f4f6;
+}
+
+.expand-chart-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+/* ==========================================
+   PLANET PLACEMENT TABLE
+   ========================================== */
+.planet-placement-table {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.table-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.planet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.planet-table th {
+  text-align: left;
+  padding: 10px 8px;
+  background: #f9fafb;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.planet-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.planet-row:hover {
+  background: #f9fafb;
+}
+
+.planet-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.planet-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: #f3f4f6;
+}
+
+.planet-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strength-bar-mini {
+  width: 60px;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.strength-value {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.badge-retro {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-combust {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-normal {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.table-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ==========================================
+   DASHA ENGINE
+   ========================================== */
+.dasha-engine {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dasha-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.dasha-header h3 {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.urgency-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.current-dasha-card {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.dasha-main,
+.dasha-sub {
+  margin-bottom: 12px;
+}
+
+.dasha-planet {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.planet-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.planet-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.dasha-dates {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dasha-impact {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #d1d5db;
+}
+
+.dasha-impact h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.impact-item {
+  text-align: center;
+}
+
+.impact-label {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.impact-value {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.impact-excellent,
+.impact-high,
+.impact-good {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.impact-medium,
+.impact-neutral {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.impact-challenging,
+.impact-slow {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.upcoming-dashas h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.transitions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transition-card {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 14px;
+  border-left: 3px solid #667eea;
+}
+
+.transition-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.transition-icon {
+  color: #667eea;
+}
+
+.transition-planet {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.life-shift-badge {
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.transition-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.transition-preview {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.dasha-technical {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.technical-note {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ==========================================
+   TIMING CALENDAR
+   ========================================== */
+.timing-calendar {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.calendar-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.calendar-content {
+  position: relative;
+}
+
+.calendar-content.locked-content {
+  min-height: 300px;
+}
+
+.calendar-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.calendar-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.favorable-icon {
+  color: #10b981;
+}
+
+.caution-icon {
+  color: #ef4444;
+}
+
+.days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.day-item.blurred {
+  filter: blur(3px);
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.day-activity {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.lock-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.lock-icon {
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.lock-content h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.lock-content p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+.unlock-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unlock-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.option-icon {
+  width: 32px;
+  height: 32px;
+  background: #d1fae5;
+  color: #059669;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option-text strong {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.option-text span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.unlock-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.unlock-btn:not(.premium) {
+  background: #667eea;
+  color: white;
+}
+
+.unlock-btn.premium {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+}
+
+.calendar-benefits {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.calendar-benefits h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.benefits-list li {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (min-width: 768px) {
+  .kundli-basics {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .kundli-charts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .impact-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
