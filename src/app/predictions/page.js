@@ -1333,21 +1333,24 @@ export default function PredictionsPage() {
             <span>Saved profiles</span>
           </span>
         </div>
-      </header>
 
-      <div className=" py-8">
         {error && (
           <div
-            className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
+            className="mt-10 p-4 rounded-lg border text-sm flex items-center gap-2"
             style={{
               background: "#fef2f2",
               borderColor: "#fecaca",
               color: "#b91c1c",
             }}
           >
-            <span>Warning</span> {error}
+            <span>Warning:</span> {error}
           </div>
         )}
+
+      </header>
+
+      <div className=" py-8">
+
 
         {/* === Birth form + History side-by-side === */}
         <div className="birth-history-layout" style={{ width: "100%" }}>
@@ -1475,41 +1478,41 @@ export default function PredictionsPage() {
 
                     <div className="relative">
                       <div className="place-input-wrapper">
-<input
-                        placeholder="e.g., Mumbai, India"
-                        value={place}
-                        onChange={(e) => {
-                          const q = e.target.value;
-                          setPlace(q);
-                          setSelectedCoords(null);
-                          fetchSuggestions(q);
-                        }}
-                        className="form-field-input form-input-field"
-                        autoComplete="off"
-                        required
-                        style={{ paddingRight: '2.5rem' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={useMyLocation}
-                        disabled={locating}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: locating ? 'wait' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        title="Use current location"
-                      >
-                        {locating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#d4af37' }} />
-                        ) : (
-                          <MapPin className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        )}
-                      </button>
+                        <input
+                          placeholder="e.g., Mumbai, India"
+                          value={place}
+                          onChange={(e) => {
+                            const q = e.target.value;
+                            setPlace(q);
+                            setSelectedCoords(null);
+                            fetchSuggestions(q);
+                          }}
+                          className="form-field-input form-input-field"
+                          autoComplete="off"
+                          required
+                          style={{ paddingRight: '2.5rem' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={useMyLocation}
+                          disabled={locating}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: locating ? 'wait' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          title="Use current location"
+                        >
+                          {locating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#d4af37' }} />
+                          ) : (
+                            <MapPin className="w-4 h-4" style={{ color: '#6b7280' }} />
+                          )}
+                        </button>
                       </div>
 
                       {suggestions.length > 0 && (
@@ -2119,14 +2122,14 @@ export default function PredictionsPage() {
                                     Analysis
                                   </button>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
                                   <div className="vertical-timeline-line-wrapper">
                                     <div className="vertical-timeline-dot top-dot"></div>
                                     <div className="vertical-timeline-line"></div>
                                     <div className="vertical-timeline-dot bottom-dot"></div>
                                   </div>
-                                  
+
                                   <div className="vertical-dates">
                                     <div className="vertical-date-item">
                                       <span className="vertical-date-label">START:</span>
@@ -2190,7 +2193,7 @@ export default function PredictionsPage() {
                                           </div>
                                         </div>
                                       </div>
-                                      
+
                                       {/* Mobile: Traditional Table */}
                                       <table className="antar-table mobile-antar-table">
                                         <thead>
@@ -2461,7 +2464,14 @@ export default function PredictionsPage() {
       <div className="relative z-[100]">
         <ChatDock
           isOpen={chatOpen}
-          onToggle={() => setChatOpen(!chatOpen)}
+          onToggle={() => {
+            if (!result) {
+              setError("Please enter all required birth details and click 'Get Prediction' to enable the AI assistant.");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              return;
+            }
+            setChatOpen(!chatOpen);
+          }}
           onClose={() => setChatOpen(false)}
         >
           <div className="h-full flex flex-col bg-white">
