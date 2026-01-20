@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
@@ -219,6 +219,7 @@ export default function MatchingPage() {
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
   const [history, setHistory] = useState([]); // Array of history entries
+  const [historySearch, setHistorySearch] = useState(""); // Search filter for history
   /**
    * Retrieves matching history from localStorage.
    * @returns {array} Array of history objects or empty array on error.
@@ -264,7 +265,23 @@ export default function MatchingPage() {
   const clearHistory = () => {
     localStorage.removeItem(MATCHING_HISTORY_KEY);
     setHistory([]);
+    setHistorySearch("");
   };
+
+  // Filter history based on search query
+  const filteredHistory = useMemo(() => {
+    if (!historySearch.trim()) return history;
+    const searchLower = historySearch.toLowerCase();
+    return history.filter((item) => {
+      const femaleNameMatch = (item.femaleName || "").toLowerCase().includes(searchLower);
+      const maleNameMatch = (item.maleName || "").toLowerCase().includes(searchLower);
+      const femalePlaceMatch = (item.femalePlace || "").toLowerCase().includes(searchLower);
+      const malePlaceMatch = (item.malePlace || "").toLowerCase().includes(searchLower);
+      const femaleDobMatch = (item.femaleDob || "").includes(searchLower);
+      const maleDobMatch = (item.maleDob || "").includes(searchLower);
+      return femaleNameMatch || maleNameMatch || femalePlaceMatch || malePlaceMatch || femaleDobMatch || maleDobMatch;
+    });
+  }, [history, historySearch]);
 
   const resetAllFields = () => {
     setFemale({
@@ -658,6 +675,7 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
+        lastGenerated: new Date().toISOString(),
       });
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -1689,7 +1707,7 @@ export default function MatchingPage() {
         </div>
         {error && <div className="error" style={{ maxWidth: "1600px", margin: "2rem auto", padding: "0 2rem" }}>{error}</div>}
         {/* Header Section */}
-        <header className="header" style={{ textAlign: "center", marginTop: "0.01rem", marginBottom: "2rem" }}>
+        <header className="header" style={{ textAlign: "center", marginTop: "0.01rem", marginBottom: "1rem" }}>
           <div className="headerIcon" style={{ 
             width: "64px", 
             height: "64px", 
@@ -1698,7 +1716,7 @@ export default function MatchingPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            margin: "0 auto 1rem",
+            margin: "0 auto 0.75rem",
             boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)"
           }}>
             <IoHeartCircle style={{ color: "white", width: "36px", height: "36px" }} />
@@ -1718,6 +1736,7 @@ export default function MatchingPage() {
           <p className="subtitle" style={{
             color: "#555",
             marginTop: "0.5rem",
+            marginBottom: "0",
             fontSize: "1rem"
           }}>
             Enter birth details for both to get Ashtakoot score
@@ -2044,7 +2063,7 @@ export default function MatchingPage() {
                       Calculating…
                     </>
                   ) : (
-                    <>It's a Match?</>
+                    <>Check Compatibility</>
                   )}
                 </button>
                 <button
@@ -2062,7 +2081,7 @@ export default function MatchingPage() {
           <div className="history-header">
             <h3 className="history-title">
               <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
-              Matching History
+              Saved Profiles
             </h3>
 
             {history.length > 0 && (
@@ -2076,13 +2095,26 @@ export default function MatchingPage() {
             )}
           </div>
 
+          {/* Search input */}
+          {history.length > 0 && (
+            <input
+              type="text"
+              placeholder="Search by name, place, or date..."
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              className="history-search"
+            />
+          )}
+
           {/* 🔥 NEW SCROLL CONTAINER */}
           <div className="history-scroll-area">
             {history.length === 0 ? (
               <div className="empty-state">No matching history yet.</div>
+            ) : filteredHistory.length === 0 ? (
+              <div className="empty-state">No matches found for your search.</div>
             ) : (
               <div className="history-cards">
-                {history.map((item) => {
+                {filteredHistory.map((item) => {
                   const isExpanded = expandedAddresses[`${item.id}-female`] || expandedAddresses[`${item.id}-male`];
                   return (
                     <div key={item.id} className={`history-card ${isExpanded ? 'expanded' : ''}`} onClick={() => loadHistoryIntoForm(item)}>
@@ -2092,18 +2124,9 @@ export default function MatchingPage() {
                           <span className="dot-separator">↔</span>
                           <span className="pill pill-male"> {item.maleName || "Male"} </span>
                         </div>
-                        <div className="history-actions">
-                          <button className="use-btn" onClick={(e) => { e.stopPropagation(); loadHistoryIntoForm(item); }}>
-                            Use
-                          </button>
-                          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}>
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
                       <div className="history-card-body">
                         <div className="person-block">
-                          <div className="person-label">FEMALE</div>
                           <div className="person-meta">
                             <Calendar className="meta-icon" />
                             <span> {item.femaleDob || "-"} · {item.femaleTob || "-"} </span>
@@ -2135,7 +2158,6 @@ export default function MatchingPage() {
                         <div className="person-divider" />
 
                         <div className="person-block">
-                          <div className="person-label">MALE</div>
                           <div className="person-meta">
                             <Calendar className="meta-icon" />
                             <span> {item.maleDob || "-"} · {item.maleTob || "-"} </span>
@@ -2164,6 +2186,30 @@ export default function MatchingPage() {
                               )}
                             </div>
                           </div>
+                        </div>
+                      </div>
+                      {item.lastGenerated && (
+                        <div className="history-last-generated">
+                          Last generated: {(() => {
+                            const date = new Date(item.lastGenerated);
+                            const now = new Date();
+                            const diffMs = now - date;
+                            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            if (diffDays === 0) return "Today";
+                            if (diffDays === 1) return "1 day ago";
+                            if (diffDays < 7) return `${diffDays} days ago`;
+                            return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                          })()}
+                        </div>
+                      )}
+                      <div className="history-card-footer">
+                        <div className="history-actions">
+                          <button className="use-btn" onClick={(e) => { e.stopPropagation(); loadHistoryIntoForm(item); }}>
+                            Load
+                          </button>
+                          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -2492,245 +2538,275 @@ export default function MatchingPage() {
             {(fDetails || mDetails) && (
               <div className="grid md:grid-cols-2 gap-6 mt-6">
                 {/* Female Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Moon style={{ color: "#a78bfa" }} />
-                    <h3 className="results-title">{t.matching.femaleDetails}</h3>
-                  </div>
+                <div className="flex flex-col gap-6">
+                  {/* Female Shadbala Card */}
+                  {fDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Moon style={{ color: "#a78bfa" }} />
+                        <h3 className="results-title">{t.matching.femaleDetails} - Shadbala</h3>
+                      </div>
 
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div>
-                    <table className="planet-table shadbala-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength</th>
-                          <th>Ishta</th>
-                          <th>Kashta</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
-                            <td>
-                              {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                            </td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.ishta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.ishta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.kashta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.kashta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table placements-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Nakshatra (Pada)</th>
-                          <th>Degrees</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
-
-                          return (
-                            <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>
-                                <div className="planet-cell">
-                                  <span>{p.name}</span>
-                                  {p.retro && (
-                                    <span className="planet-retro">
-                                      (Retro)
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td>{p.currentSign || "—"}</td>
-                              <td>{p.house ?? "—"}</td>
-                              <td>{nakshatraDisplay}</td>
-                              <td>
-                                <div className="deg-cell">
-                                  {typeof p.fullDegree === "number" && (
-                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
-                                  )}
-                                  {typeof p.normDegree === "number" && (
-                                    <div className="deg-norm">
-                                      Norm: {p.normDegree.toFixed(2)}°
-                                    </div>
-                                  )}
-                                  {typeof p.fullDegree !== "number" &&
-                                    typeof p.normDegree !== "number" &&
-                                    "—"}
-                                </div>
-                              </td>
+                      {/* Shadbala / Ishta-Kashta */}
+                      <div>
+                        <table className="planet-table shadbala-table">
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: "center" }}>Planet</th>
+                              <th style={{ textAlign: "center" }}>Strength</th>
+                              <th style={{ textAlign: "center" }}>Ishta</th>
+                              <th style={{ textAlign: "center" }}>Kashta</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          </thead>
+                          <tbody>
+                            {(fDetails?.shadbalaRows || []).map((p, i) => (
+                              <tr key={i}>
+                                <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
+                                <td>
+                                  {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
+                                </td>
+                                <td>
+                                  {p.ishta != null ? (
+                                    <div className="progress-container">
+                                      <div className="progress-bar">
+                                        <div
+                                          className="progress-fill"
+                                          style={{ width: `${p.ishta}%` }}
+                                        />
+                                      </div>
+                                      <div className="progress-label">
+                                        {p.ishta.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                                <td>
+                                  {p.kashta != null ? (
+                                    <div className="progress-container">
+                                      <div className="progress-bar">
+                                        <div
+                                          className="progress-fill"
+                                          style={{ width: `${p.kashta}%` }}
+                                        />
+                                      </div>
+                                      <div className="progress-label">
+                                        {p.kashta.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Female Planet Placements Card */}
+                  {fDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Moon style={{ color: "#a78bfa" }} />
+                        <h3 className="results-title">{t.matching.femaleDetails} - Planet Placements</h3>
+                      </div>
+
+                      {/* Planet Placements */}
+                      <div className="table-scroll-container">
+                        <table className="planet-table placements-table">
+                          <thead>
+                            <tr>
+                              <th>Planet</th>
+                              <th>Sign</th>
+                              <th>House</th>
+                              <th>Nakshatra</th>
+                              <th>Degrees</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(fDetails?.placements || []).map((p, i) => {
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
+                                })`;
+
+                              return (
+                                <tr key={i}>
+                                  <td style={{ fontWeight: 500 }}>
+                                    <div className="planet-cell">
+                                      <span>{p.name}</span>
+                                      {p.retro && (
+                                        <span className="planet-retro">
+                                          (Retro)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td>{p.currentSign || "—"}</td>
+                                  <td>{p.house ?? "—"}</td>
+                                  <td>{nakshatraDisplay}</td>
+                                  <td>
+                                    <div className="deg-cell">
+                                      {typeof p.fullDegree === "number" && (
+                                        <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                      )}
+                                      {typeof p.normDegree === "number" && (
+                                        <div className="deg-norm">
+                                          Norm: {p.normDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.fullDegree !== "number" &&
+                                        typeof p.normDegree !== "number" &&
+                                        "—"}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Male Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Sun style={{ color: "#d4af37" }} />
-                    <h3 className="results-title">{t.matching.maleDetails}</h3>
-                  </div>
+                <div className="flex flex-col gap-6">
+                  {/* Male Shadbala Card */}
+                  {mDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Sun style={{ color: "#d4af37" }} />
+                        <h3 className="results-title">{t.matching.maleDetails} - Shadbala</h3>
+                      </div>
 
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div>
-                    <table className="planet-table shadbala-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength</th>
-                          <th>Ishta</th>
-                          <th>Kashta</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
-                            <td>
-                              {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                            </td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.ishta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.ishta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.kashta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.kashta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table placements-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Nakshatra (Pada)</th>
-                          <th>Degrees</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
-
-                          return (
-                            <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>
-                                <div className="planet-cell">
-                                  <span>{p.name}</span>
-                                  {p.retro && (
-                                    <span className="planet-retro">
-                                      (Retro)
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td>{p.currentSign || "—"}</td>
-                              <td>{p.house ?? "—"}</td>
-                              <td>{nakshatraDisplay}</td>
-                              <td>
-                                <div className="deg-cell">
-                                  {typeof p.fullDegree === "number" && (
-                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
-                                  )}
-                                  {typeof p.normDegree === "number" && (
-                                    <div className="deg-norm">
-                                      Norm: {p.normDegree.toFixed(2)}°
-                                    </div>
-                                  )}
-                                  {typeof p.fullDegree !== "number" &&
-                                    typeof p.normDegree !== "number" &&
-                                    "—"}
-                                </div>
-                              </td>
+                      {/* Shadbala / Ishta-Kashta */}
+                      <div>
+                        <table className="planet-table shadbala-table">
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: "center" }}>Planet</th>
+                              <th style={{ textAlign: "center" }}>Strength</th>
+                              <th style={{ textAlign: "center" }}>Ishta</th>
+                              <th style={{ textAlign: "center" }}>Kashta</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          </thead>
+                          <tbody>
+                            {(mDetails?.shadbalaRows || []).map((p, i) => (
+                              <tr key={i}>
+                                <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
+                                <td>
+                                  {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
+                                </td>
+                                <td>
+                                  {p.ishta != null ? (
+                                    <div className="progress-container">
+                                      <div className="progress-bar">
+                                        <div
+                                          className="progress-fill"
+                                          style={{ width: `${p.ishta}%` }}
+                                        />
+                                      </div>
+                                      <div className="progress-label">
+                                        {p.ishta.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                                <td>
+                                  {p.kashta != null ? (
+                                    <div className="progress-container">
+                                      <div className="progress-bar">
+                                        <div
+                                          className="progress-fill"
+                                          style={{ width: `${p.kashta}%` }}
+                                        />
+                                      </div>
+                                      <div className="progress-label">
+                                        {p.kashta.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Male Planet Placements Card */}
+                  {mDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Sun style={{ color: "#d4af37" }} />
+                        <h3 className="results-title">{t.matching.maleDetails} - Planet Placements</h3>
+                      </div>
+
+                      {/* Planet Placements */}
+                      <div className="table-scroll-container">
+                        <table className="planet-table placements-table">
+                          <thead>
+                            <tr>
+                              <th>Planet</th>
+                              <th>Sign</th>
+                              <th>House</th>
+                              <th>Nakshatra</th>
+                              <th>Degrees</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(mDetails?.placements || []).map((p, i) => {
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
+                                })`;
+
+                              return (
+                                <tr key={i}>
+                                  <td style={{ fontWeight: 500 }}>
+                                    <div className="planet-cell">
+                                      <span>{p.name}</span>
+                                      {p.retro && (
+                                        <span className="planet-retro">
+                                          (Retro)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td>{p.currentSign || "—"}</td>
+                                  <td>{p.house ?? "—"}</td>
+                                  <td>{nakshatraDisplay}</td>
+                                  <td>
+                                    <div className="deg-cell">
+                                      {typeof p.fullDegree === "number" && (
+                                        <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                      )}
+                                      {typeof p.normDegree === "number" && (
+                                        <div className="deg-norm">
+                                          Norm: {p.normDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.fullDegree !== "number" &&
+                                        typeof p.normDegree !== "number" &&
+                                        "—"}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -190,7 +190,7 @@ input:focus {
   grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 100%;
-  margin: 2rem auto;
+  margin: 0.5rem auto 2rem;
   padding: 1.5rem;
 }
 
@@ -615,7 +615,23 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .history-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.375rem;
+}
+
+.history-header .btn-ghost {
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1.5;
+}
+
+.history-header .btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .history-title {
@@ -625,6 +641,27 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Search input for history */
+.history-search {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.history-search:focus {
+  outline: 2px solid rgba(212, 175, 55, 0.4);
+  outline-offset: 2px;
+  border-color: #d4af37;
 }
 
 /* Container MUST be column-based */
@@ -649,6 +686,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   padding: 12px;
   cursor: pointer;
   max-height: 240px;
+  display: flex;
+  flex-direction: column;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -668,7 +707,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .history-card-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -676,8 +714,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .history-card-names {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 /* Pills */
@@ -713,6 +753,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   gap: 16px;
   align-items: stretch;
+  flex: 1;
+  margin-bottom: 12px;
 }
 
 .person-block {
@@ -758,47 +800,164 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   -webkit-line-clamp: unset;
 }
 
+.show-more-btn {
+  background: transparent;
+  border: none;
+  color: #ca8a04;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.show-more-btn:hover {
+  color: #7a5c14;
+}
+
 /* Divider */
 .person-divider {
   width: 1px;
   background: linear-gradient(180deg, transparent, #e5d7ad, transparent);
 }
 
+/* Last generated meta */
+.history-last-generated {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.125rem;
+  border-top: 1px solid rgba(241, 233, 210, 0.3);
+}
+
+/* Card footer */
+.history-card-footer {
+  margin-top: auto;
+  padding-top: 0.375rem;
+  padding-bottom: 0;
+  border-top: 1px solid rgba(241, 233, 210, 0.5);
+  box-sizing: border-box;
+}
+
 /* Actions */
 .history-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: row;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
 }
 
 .use-btn {
-  background: #fff8e6;
-  color: #8b6b15;
-  border: 1px solid #f5d276;
-  padding: 0.35rem 0.75rem;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  color: #1f2937;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 0.5rem 0.5rem;
   border-radius: 0.5rem;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  flex: 0 0 60%;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(212, 175, 55, 0.2);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .use-btn:hover {
-  background: #fff3d4;
+  background: linear-gradient(135deg, #b8972e, #a08526);
+  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
 }
 
 .delete-btn {
   background: transparent;
-  border: none;
+  border: 1px solid rgba(220, 38, 38, 0.3);
   color: #dc2626;
-  padding: 0.35rem;
+  padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
+  flex: 0 0 20%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .delete-btn:hover {
   background: rgba(220, 38, 38, 0.1);
   color: #b91c1c;
-  transform: scale(1.1);
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 1.5rem 0;
+}
+
+/* ========================================== */
+/* PLANET TABLE - Reduced Column Spacing */
+/* ========================================== */
+.planet-table th,
+.planet-table td {
+  padding: 0.5rem 0.5rem !important;
+}
+
+.planet-table th {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.planet-table td {
+  font-size: 0.875rem;
+}
+
+/* Shadbala table - center aligned headers and cells */
+.planet-table.shadbala-table th,
+.planet-table.shadbala-table td {
+  text-align: center !important;
+}
+
+.planet-table.shadbala-table th:first-child,
+.planet-table.shadbala-table td:first-child {
+  text-align: left !important;
+}
+
+/* Placements table - left aligned all columns */
+.planet-table.placements-table th,
+.planet-table.placements-table td {
+  text-align: left !important;
+}
+
+/* Reduce spacing for Nakshatra column to make room for Degrees */
+.planet-table.placements-table th:nth-child(4),
+.planet-table.placements-table td:nth-child(4) {
+  padding-right: 0.375rem !important;
+  max-width: 120px;
+}
+
+/* Ensure Degrees column has proper spacing */
+.planet-table.placements-table th:nth-child(5),
+.planet-table.placements-table td:nth-child(5) {
+  padding-left: 0.375rem !important;
+  white-space: normal !important;
+}
+
+@media (max-width: 768px) {
+  .planet-table th,
+  .planet-table td {
+    padding: 0.5rem 0.375rem !important;
+    font-size: 0.8125rem;
+  }
 }
 
 /* Mobile behavior */
