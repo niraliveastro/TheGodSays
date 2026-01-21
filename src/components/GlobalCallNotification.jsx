@@ -106,65 +106,43 @@ export default function GlobalCallNotification() {
     };
   }, [isAstrologer, astrologerId, isCallPage, incomingCall?.id]);
 
-  // Fetch user names for display - IMPROVED VERSION
+  // Fetch user names for display - AGGRESSIVE VERSION
   useEffect(() => {
     if (!incomingCall?.userId) return;
-
-    // If name already cached, skip fetching
-    if (userNames[incomingCall.userId]) {
-      console.log(`GlobalCallNotification: Name already cached: ${userNames[incomingCall.userId]}`);
-      return;
-    }
 
     console.log(`GlobalCallNotification: Fetching name for userId: ${incomingCall.userId}`);
 
     const fetchUserName = async () => {
       try {
-        const collectionNames = ["users", "user", "user_profiles", "profiles"];
-        let userName = null;
-
-        for (const collectionName of collectionNames) {
-          try {
-            console.log(`  Checking ${collectionName} for ${incomingCall.userId}`);
-            const userDoc = await getDoc(
-              doc(db, collectionName, incomingCall.userId)
-            );
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              console.log(`  ✅ Found user in ${collectionName}:`, userData);
-              
-              userName =
-                userData.name ||
-                userData.displayName ||
-                userData.fullName ||
-                userData.firstName ||
-                userData.username ||
-                (userData.email ? userData.email.split("@")[0] : null);
-              
-              if (userName) {
-                if (userName.includes("@")) {
-                  userName = userName.split("@")[0];
-                }
-                console.log(`✅ GlobalCallNotification: Resolved name: ${userName}`);
-                setUserNames((prev) => ({
-                  ...prev,
-                  [incomingCall.userId]: userName,
-                }));
-                return; // Success, exit
-              } else {
-                console.warn(`  ⚠️ User found but no name field. Available fields:`, Object.keys(userData));
-              }
-            } else {
-              console.log(`  ❌ User not found in ${collectionName}`);
-            }
-          } catch (collectionError) {
-            console.warn(`  ⚠️ Error checking ${collectionName}:`, collectionError.message);
-            // Continue to next collection
+        // Try 'users' collection first (most common)
+        console.log(`  Checking users collection for ${incomingCall.userId}`);
+        const userDoc = await getDoc(doc(db, "users", incomingCall.userId));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log(`  ✅ Found user in users collection:`, userData);
+          
+          const userName =
+            userData.name ||
+            userData.displayName ||
+            userData.fullName ||
+            userData.firstName ||
+            userData.username ||
+            (userData.email ? userData.email.split("@")[0] : null);
+          
+          if (userName) {
+            const cleanName = userName.includes("@") ? userName.split("@")[0] : userName;
+            console.log(`✅ GlobalCallNotification: Setting name to: ${cleanName}`);
+            setUserNames((prev) => ({
+              ...prev,
+              [incomingCall.userId]: cleanName,
+            }));
+            return;
+          } else {
+            console.warn(`  ⚠️ User found but no name field. Available fields:`, Object.keys(userData));
           }
-        }
-
-        if (!userName) {
-          console.warn(`❌ GlobalCallNotification: Could not find name for ${incomingCall.userId}`);
+        } else {
+          console.log(`  ❌ User not found in users collection`);
         }
       } catch (error) {
         console.error("❌ GlobalCallNotification: Error fetching user name:", error);
@@ -172,8 +150,7 @@ export default function GlobalCallNotification() {
     };
 
     fetchUserName();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingCall?.userId]); // Only depend on userId, not userNames to avoid loops
+  }, [incomingCall?.userId]); // Fetch every time userId changes
 
   const handleCallAction = async (callId, action) => {
     try {

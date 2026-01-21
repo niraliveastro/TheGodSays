@@ -564,7 +564,7 @@ function VoiceCallParticipantStatus() {
 }
 
 // Wrapper to access LiveKit hooks
-function VoiceCallChatWrapper({ onUnreadChange }) {
+function VoiceCallChatWrapper({ callId }) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext(); // FIXED: Use useRoomContext hook to get room instance
   
@@ -592,105 +592,62 @@ function VoiceCallChatWrapper({ onUnreadChange }) {
     );
   }
   
-  return <VoiceCallChat room={room} localParticipant={localParticipant} onUnreadChange={onUnreadChange} />;
+  return <VoiceCallChat room={room} localParticipant={localParticipant} callId={callId} />;
 }
 
 // Chat component for LiveKit room
-function VoiceCallChat({ room, localParticipant, onUnreadChange }) {
+function VoiceCallChat({ room, localParticipant, callId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const userRole = localStorage.getItem("tgs:role") || "user";
+  const userName = localStorage.getItem("tgs:name") || (userRole === "astrologer" ? "Astrologer" : "User");
   const isAstrologer = userRole === "astrologer";
 
-  // Listen for incoming messages via room events
+  // Get Firebase auth UID
   useEffect(() => {
-    if (!room) {
-      console.log("❌ Chat: Room not available yet");
-      return;
-    }
-
-    if (!localParticipant) {
-      console.log("❌ Chat: Local participant not available yet");
-      return;
-    }
-
-    console.log("✅ Chat: Setting up message listener", {
-      roomName: room.name,
-      roomState: room.state,
-      localIdentity: localParticipant.identity,
-      remoteParticipants: room.remoteParticipants?.size || 0
+    import('@/lib/firebase').then(({ auth }) => {
+      if (auth && auth.currentUser) {
+        setCurrentUserId(auth.currentUser.uid);
+      } else {
+        // Wait for auth state
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) {
+            setCurrentUserId(user.uid);
+          }
+        });
+        return () => unsubscribe();
+      }
     });
+  }, []);
 
-    const handleDataReceived = (payload, participant, kind) => {
-      console.log("📨 Chat: Raw data received", {
-        kind,
-        fromParticipant: participant?.identity,
-        payloadSize: payload?.length
+  // Subscribe to Firestore messages for persistence
+  useEffect(() => {
+    if (!callId || !currentUserId) {
+      console.log("❌ Chat: No callId or userId available yet");
+      return;
+    }
+
+    console.log("✅ Chat: Subscribing to Firestore messages for callId:", callId);
+    
+    // Import the message service
+    import('@/lib/callMessages').then(({ subscribeToMessages }) => {
+      const unsubscribe = subscribeToMessages(callId, (firestoreMessages) => {
+        const formatted = firestoreMessages.map(msg => ({
+          id: msg.id,
+          text: msg.message,
+          sender: msg.senderName,
+          isUser: msg.senderId === currentUserId,
+          timestamp: msg.timestamp,
+          read: msg.read,
+        }));
+        setMessages(formatted);
       });
 
-      try {
-        const decoder = new TextDecoder();
-        const text = decoder.decode(payload);
-        const data = JSON.parse(text);
-        
-        console.log("📦 Chat: Parsed data", data);
-        
-        // Handle call-ended signal
-        if (data.type === "call-ended") {
-          console.log("📞 Received call-ended signal from other party");
-          return;
-        }
-        
-        // Handle chat messages
-        if (data.type === "chat" && data.message) {
-          const isFromMe = participant?.identity === localParticipant.identity;
-          
-          console.log("💬 Chat: Message received", {
-            message: data.message,
-            sender: data.sender,
-            fromParticipant: participant?.identity,
-            isFromMe,
-            localIdentity: localParticipant.identity
-          });
-          
-          // Only add if not from me (we already added it locally)
-          if (!isFromMe) {
-            console.log("✅ Adding received message to chat");
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                text: data.message,
-                sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
-                isUser: false,
-                timestamp: new Date(),
-              },
-            ]);
-            // Notify parent about new message
-            if (onUnreadChange) {
-              onUnreadChange(true);
-            }
-          } else {
-            console.log("⏭️ Skipping own message (already added locally)");
-          }
-        }
-      } catch (error) {
-        console.error("❌ Error parsing data message:", error);
-      }
-    };
-
-    // Use RoomEvent.DataReceived - this is critical for receiving messages
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-    console.log("✅ Chat: Message listener attached to room");
-
-    return () => {
-      if (room) {
-        room.off(RoomEvent.DataReceived, handleDataReceived);
-        console.log("🔌 Chat: Message listener removed");
-      }
-    };
-  }, [room, localParticipant, onUnreadChange]);
+      return () => unsubscribe();
+    });
+  }, [callId, currentUserId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -706,62 +663,27 @@ function VoiceCallChat({ room, localParticipant, onUnreadChange }) {
       return;
     }
     
-    if (!room) {
-      console.error("❌ Chat: Room not available for sending message");
-      alert("Chat not connected. Please wait a moment and try again.");
-      return;
-    }
-    
-    if (!localParticipant) {
-      console.error("❌ Chat: Local participant not available for sending message");
-      alert("Chat not connected. Please wait a moment and try again.");
+    if (!callId) {
+      console.error("❌ Chat: No callId available");
+      alert("Chat not ready. Please wait a moment and try again.");
       return;
     }
 
-    // Check room connection state
-    if (room.state !== "connected") {
-      console.error("❌ Chat: Room not connected, state:", room.state);
-      alert("Chat connecting... Please wait and try again.");
+    if (!currentUserId) {
+      console.error("❌ Chat: User not authenticated");
+      alert("Please sign in to send messages.");
       return;
     }
-
-    const messageData = {
-      type: "chat",
-      message: input.trim(),
-      sender: isAstrologer ? "Astrologer" : "User",
-    };
 
     try {
-      console.log("📤 Chat: Sending message", {
-        message: messageData.message,
-        sender: messageData.sender,
-        roomState: room.state,
-        localIdentity: localParticipant.identity,
-        remoteParticipants: room.remoteParticipants?.size || 0
-      });
+      console.log("📤 Chat: Sending message via Firestore");
 
-      const encoder = new TextEncoder();
-      const data = encoder.encode(JSON.stringify(messageData));
-      
-      // Use localParticipant directly (from hook, not room.localParticipant)
-      await localParticipant.publishData(data, { reliable: true });
-      
-      console.log("✅ Chat: Data published successfully");
-      
-      // Add message to local state immediately for better UX
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(),
-          text: input.trim(),
-          sender: isAstrologer ? "Astrologer" : "User",
-          isUser: true,
-          timestamp: new Date(),
-        },
-      ]);
+      // Import and use the message service
+      const { sendMessage } = await import('@/lib/callMessages');
+      await sendMessage(callId, currentUserId, userName, input.trim(), isAstrologer);
       
       setInput("");
-      console.log("✅ Chat: Message sent and added to local state");
+      console.log("✅ Chat: Message sent successfully");
     } catch (error) {
       console.error("❌ Chat: Error sending message:", error);
       alert("Failed to send message. Please try again.");
@@ -922,12 +844,13 @@ export default function VoiceCallRoom() {
   const [room, setRoom] = useState(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const roomRef = useRef(null);
   const callIdRef = useRef(null);
   const isDisconnectingRef = useRef(false);
   const firebaseUnsubscribeRef = useRef(null);
   const mediaTracksRef = useRef([]);
+  const unreadUnsubscribeRef = useRef(null);
 
   // Request microphone permission before connecting
   useEffect(() => {
@@ -1238,6 +1161,66 @@ export default function VoiceCallRoom() {
       }
     };
   }, [isConnected]); // Re-run when connection status changes
+
+  // Get Firebase auth UID for unread count
+  const [currentUserId, setCurrentUserId] = useState(null);
+  
+  useEffect(() => {
+    import('@/lib/firebase').then(({ auth }) => {
+      if (auth && auth.currentUser) {
+        setCurrentUserId(auth.currentUser.uid);
+      } else {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) {
+            setCurrentUserId(user.uid);
+          }
+        });
+        return () => unsubscribe();
+      }
+    });
+  }, []);
+
+  // Subscribe to unread messages for notification badge
+  useEffect(() => {
+    const callId = callIdRef.current ||
+      localStorage.getItem("tgs:currentCallId") ||
+      localStorage.getItem("tgs:callId");
+
+    if (!callId || !currentUserId) return;
+
+    // Subscribe to unread count
+    import('@/lib/callMessages').then(({ subscribeToUnreadCount }) => {
+      const unsubscribe = subscribeToUnreadCount(callId, currentUserId, (count) => {
+        setUnreadCount(count);
+      });
+      
+      unreadUnsubscribeRef.current = unsubscribe;
+    });
+
+    return () => {
+      if (unreadUnsubscribeRef.current) {
+        unreadUnsubscribeRef.current();
+        unreadUnsubscribeRef.current = null;
+      }
+    };
+  }, [currentUserId]);
+
+  // Clear unread count when chat is opened
+  useEffect(() => {
+    if (showChat && currentUserId) {
+      setUnreadCount(0);
+      // Also mark messages as read
+      const callId = callIdRef.current ||
+        localStorage.getItem("tgs:currentCallId") ||
+        localStorage.getItem("tgs:callId");
+      
+      if (callId) {
+        import('@/lib/callMessages').then(({ markMessagesAsRead }) => {
+          markMessagesAsRead(callId, currentUserId);
+        });
+      }
+    }
+  }, [showChat, currentUserId]);
 
   // Note: updateCallStatus removed - call status is managed by backend via webhooks
   // Frontend only reads state from Firestore
@@ -2446,9 +2429,6 @@ export default function VoiceCallRoom() {
                     <button
                       onClick={() => {
                         setShowChat(!showChat);
-                        if (!showChat) {
-                          setHasUnreadMessages(false); // Clear unread indicator when opening chat
-                        }
                       }}
                       className="btn"
                       style={{
@@ -2470,17 +2450,27 @@ export default function VoiceCallRoom() {
                     >
                       <MessageSquare style={{ width: "1.125rem", height: "1.125rem" }} />
                       <span>Chat</span>
-                      {hasUnreadMessages && !showChat && (
-                        <span style={{
+                      {unreadCount > 0 && !showChat && (
+                        <div style={{
                           position: "absolute",
-                          top: "0.5rem",
-                          right: "0.5rem",
-                          width: "0.5rem",
-                          height: "0.5rem",
+                          top: "0.4rem",
+                          right: "0.4rem",
                           background: "#ef4444",
+                          color: "white",
                           borderRadius: "50%",
-                          animation: "pulse 2s infinite",
-                        }} />
+                          minWidth: "1.2rem",
+                          height: "1.2rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.7rem",
+                          fontWeight: "bold",
+                          padding: "0.15rem",
+                          border: "2px solid white",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                        }}>
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </div>
                       )}
                     </button>
                     <button
@@ -2513,11 +2503,7 @@ export default function VoiceCallRoom() {
                     marginTop: "1rem",
                     paddingTop: "1rem",
                   }}>
-                    <VoiceCallChatWrapper onUnreadChange={(hasNew) => {
-                      if (hasNew && !showChat) {
-                        setHasUnreadMessages(true);
-                      }
-                    }} />
+                    <VoiceCallChatWrapper callId={callIdRef.current} />
                   </div>
                 )}
               </div>

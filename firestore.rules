@@ -1,0 +1,241 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAstrologer() {
+      return isSignedIn() && exists(/databases/$(database)/documents/astrologers/$(request.auth.uid));
+    }
+    
+    function isUser() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Allow users to read their own profile
+      allow read: if isOwner(userId);
+      
+      // Allow ANY authenticated user to read user profiles (for call notifications)
+      // This allows astrologers to see user names when calls come in
+      allow get: if isSignedIn();
+      
+      // Allow users to write their own profile
+      allow write: if isOwner(userId);
+    }
+    
+    // Astrologers collection
+    match /astrologers/{astrologerId} {
+      // Allow anyone (signed in) to read astrologer profiles (for browsing)
+      allow read: if isSignedIn();
+      
+      // Only allow astrologer to update their own profile
+      allow write: if isOwner(astrologerId);
+    }
+    
+    // Calls collection
+    match /calls/{callId} {
+      // Allow users and astrologers to read calls they're part of
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.astrologerId == request.auth.uid
+      );
+      
+      // Allow users to create calls
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Allow users and astrologers to update calls they're part of
+      allow update: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.astrologerId == request.auth.uid
+      );
+      
+      // Don't allow deletion
+      allow delete: if false;
+    }
+    
+    // Call billing collection
+    match /call_billing/{callId} {
+      // Allow users and astrologers to read billing for their calls
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.astrologerId == request.auth.uid
+      );
+      
+      // Only system (server-side) can write billing
+      allow write: if false;
+    }
+    
+    // Wallets collection
+    match /wallets/{userId} {
+      // Only allow users to read their own wallet
+      allow read: if isOwner(userId);
+      
+      // Only system (server-side) can write wallets
+      allow write: if false;
+    }
+    
+    // Astrologer pricing collection
+    match /astrologer_pricing/{astrologerId} {
+      // Anyone can read pricing
+      allow read: if isSignedIn();
+      
+      // Only astrologer can update their own pricing
+      allow write: if isOwner(astrologerId);
+    }
+    
+    // Astrologer earnings collection
+    match /astrologer_earnings/{astrologerId} {
+      // Only astrologer can read their own earnings
+      allow read: if isOwner(astrologerId);
+      
+      // Only system (server-side) can write earnings
+      allow write: if false;
+    }
+    
+    // Conversations collection
+    match /conversations/{conversationId} {
+      // Allow users to read conversations they're part of
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.participants
+      );
+      
+      // Allow users to create and update conversations they're part of
+      allow create: if isSignedIn() && (
+        request.auth.uid in request.resource.data.participants
+      );
+      
+      allow update: if isSignedIn() && (
+        request.auth.uid in resource.data.participants
+      );
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+    
+    // Blogs collection
+    match /blogs/{blogId} {
+      // Anyone can read published blogs
+      allow read: if resource.data.status == 'published' || isSignedIn();
+      
+      // Only admins can write (you'll need to add admin check)
+      allow write: if false; // Use admin SDK for blog management
+    }
+    
+    // Orders collection (for payments)
+    match /orders/{orderId} {
+      // Users can read their own orders
+      allow read: if isOwner(resource.data.userId);
+      
+      // Users can create their own orders
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // System updates orders
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      // Users and astrologers can read appointments they're part of
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.astrologerId == request.auth.uid
+      );
+      
+      // Users can create appointments
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Users and astrologers can update appointments they're part of
+      allow update: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.astrologerId == request.auth.uid
+      );
+      
+      allow delete: if false;
+    }
+    
+    // Appointment availability collection
+    match /appointment_availability/{astrologerId} {
+      // Anyone can read availability
+      allow read: if isSignedIn();
+      
+      // Only astrologer can update their own availability
+      allow write: if isOwner(astrologerId);
+    }
+    
+    // OTP verifications collection
+    match /otp_verifications/{docId} {
+      // Users can read their own OTP
+      allow read: if isSignedIn();
+      
+      // System manages OTP (server-side only)
+      allow write: if false;
+    }
+    
+    // Coupons collection
+    match /coupons/{couponId} {
+      // Anyone signed in can read coupons
+      allow read: if isSignedIn();
+      
+      // Only system can write coupons
+      allow write: if false;
+    }
+    
+    // User stats collection
+    match /user_stats/{userId} {
+      // Users can read their own stats
+      allow read: if isOwner(userId);
+      
+      // Only system can write stats
+      allow write: if false;
+    }
+    
+    // Family members collection
+    match /users/{userId}/family_members/{memberId} {
+      // Users can read/write their own family members
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Call messages collection (for real-time chat during calls)
+    match /call_messages/{messageId} {
+      // Allow authenticated users to read messages
+      allow read: if isSignedIn();
+      
+      // Allow authenticated users to create messages if senderId matches their auth UID
+      allow create: if isSignedIn() && 
+        request.resource.data.senderId == request.auth.uid &&
+        request.resource.data.callId != null &&
+        request.resource.data.message != null &&
+        request.resource.data.senderName != null;
+      
+      // Allow users to update messages to mark as read (only the read field can change)
+      allow update: if isSignedIn() && 
+        request.resource.data.read == true &&
+        resource.data.read == false &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      
+      // Don't allow deletion
+      allow delete: if false;
+    }
+    
+    // Default: deny all access to other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

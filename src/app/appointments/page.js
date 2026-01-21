@@ -91,16 +91,49 @@ export default function Appointments() {
     router.push('/talk-to-astrologer')
   }
 
-  const filteredAppointments = appointments.filter(appointment => {
+  // Helper function to determine display status based on appointment data
+  const getDisplayStatus = (appointment) => {
     const now = new Date()
-    const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
+    const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`)
+    
+    // If explicitly cancelled, always show as cancelled
+    if (appointment.status === 'cancelled') {
+      return 'cancelled'
+    }
+    
+    // If explicitly completed, always show as completed
+    if (appointment.status === 'completed') {
+      return 'completed'
+    }
+    
+    // If status is 'confirmed', determine based on date/time
+    if (appointment.status === 'confirmed') {
+      if (appointmentDateTime > now) {
+        return 'upcoming'
+      } else {
+        // Past appointment that wasn't completed = missed
+        return 'missed'
+      }
+    }
+    
+    // Default fallback for 'pending' or other statuses
+    if (appointment.status === 'pending') {
+      return appointmentDateTime > now ? 'upcoming' : 'missed'
+    }
+    
+    // Default to missed for any other status
+    return 'missed'
+  }
+
+  const filteredAppointments = appointments.filter(appointment => {
+    const displayStatus = getDisplayStatus(appointment)
     
     if (filter === 'upcoming') {
-      return appointment.status === 'confirmed' && appointmentDate > now
+      return displayStatus === 'upcoming'
     } else if (filter === 'past') {
-      return appointmentDate < now || appointment.status === 'completed'
+      return displayStatus === 'completed' || displayStatus === 'missed'
     } else if (filter === 'cancelled') {
-      return appointment.status === 'cancelled'
+      return displayStatus === 'cancelled'
     }
     return true
   })
@@ -225,27 +258,56 @@ export default function Appointments() {
           }}>
             {filteredAppointments.map(appointment => {
               const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
-              const isUpcoming = appointmentDate > new Date() && appointment.status === 'confirmed'
-              const isPast = appointmentDate < new Date() || appointment.status === 'completed'
+              const displayStatus = getDisplayStatus(appointment)
               
               // Check if this is user's own booking (for users viewing their appointments)
               const isUserBooking = !isAstrologer && appointment.userId === user?.uid
+              
+              // Status badge styles
+              const statusBadgeStyles = {
+                upcoming: {
+                  backgroundColor: '#d1fae5',
+                  color: '#065f46'
+                },
+                completed: {
+                  backgroundColor: '#dbeafe',
+                  color: '#1e40af'
+                },
+                missed: {
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e'
+                },
+                cancelled: {
+                  backgroundColor: '#fee2e2',
+                  color: '#991b1b'
+                }
+              }
+              
+              // Card border styles based on status
+              const getCardBorder = () => {
+                if (displayStatus === 'cancelled') {
+                  return '1px solid #fee2e2'
+                } else if (displayStatus === 'upcoming' && isUserBooking) {
+                  return '2px solid #10b981'
+                } else if (displayStatus === 'upcoming') {
+                  return '1px solid #d1fae5'
+                } else if (displayStatus === 'completed') {
+                  return '1px solid #dbeafe'
+                } else if (displayStatus === 'missed') {
+                  return '1px solid #fef3c7'
+                }
+                return '1px solid #e5e7eb'
+              }
               
               return (
                 <div
                   key={appointment.id}
                   style={{
-                    backgroundColor: isUserBooking && appointment.status === 'confirmed' ? '#f0fdf4' : '#fff',
+                    backgroundColor: isUserBooking && displayStatus === 'upcoming' ? '#f0fdf4' : '#fff',
                     borderRadius: '0.75rem',
                     padding: '1.5rem',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    border: appointment.status === 'cancelled' 
-                      ? '1px solid #fee2e2' 
-                      : isUserBooking && appointment.status === 'confirmed'
-                        ? '2px solid #10b981' // Green border for user's bookings
-                        : isUpcoming 
-                          ? '1px solid #d1fae5' 
-                          : '1px solid #e5e7eb'
+                    border: getCardBorder()
                   }}
                 >
                   <div style={{
@@ -268,42 +330,16 @@ export default function Appointments() {
                         }}>
                           {isAstrologer ? appointment.userName : appointment.astrologerName}
                         </span>
-                        {appointment.status === 'confirmed' && isUpcoming && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#d1fae5',
-                            color: '#065f46',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Upcoming
-                          </span>
-                        )}
-                        {appointment.status === 'cancelled' && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#fee2e2',
-                            color: '#991b1b',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Cancelled
-                          </span>
-                        )}
-                        {appointment.status === 'completed' && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#e0e7ff',
-                            color: '#3730a3',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Completed
-                          </span>
-                        )}
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          ...statusBadgeStyles[displayStatus],
+                          borderRadius: '0.25rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'capitalize'
+                        }}>
+                          {displayStatus}
+                        </span>
                       </div>
                       
                       <div style={{
@@ -367,7 +403,7 @@ export default function Appointments() {
                       gap: '0.5rem',
                       alignItems: 'flex-end'
                     }}>
-                      {isUpcoming && (
+                      {displayStatus === 'upcoming' && (
                         <button
                           onClick={() => handleConnect(appointment)}
                           style={{
@@ -388,7 +424,7 @@ export default function Appointments() {
                           Connect
                         </button>
                       )}
-                      {appointment.status === 'confirmed' && (
+                      {displayStatus === 'upcoming' && appointment.status === 'confirmed' && (
                         <button
                           onClick={() => handleCancelAppointment(appointment.id)}
                           disabled={cancelling === appointment.id}

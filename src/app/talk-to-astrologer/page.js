@@ -182,6 +182,7 @@ export default function TalkToAstrologer() {
           isOnline: d.status === "online",
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
+          photo: d.photo || d.profilePicture || d.photoURL || d.avatar || null,
           areasOfExpertise: Array.isArray(d.areasOfExpertise)
             ? d.areasOfExpertise
             : Array.isArray(d.specialties)
@@ -1481,8 +1482,9 @@ export default function TalkToAstrologer() {
                             style={{
                               width: "4rem",
                               height: "4rem",
-                              background:
-                                "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                              background: a.photo
+                                ? `url(${a.photo}) center/cover`
+                                : "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                               borderRadius: "50%",
                               display: "flex",
                               alignItems: "center",
@@ -1492,10 +1494,11 @@ export default function TalkToAstrologer() {
                               fontSize: "1.25rem",
                             }}
                           >
-                            {a.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {!a.photo &&
+                              a.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
                           </div>
 
                           {/* Compact colored badge with tooltip (uses title + aria for accessibility) */}
