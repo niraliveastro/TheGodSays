@@ -151,7 +151,7 @@ export default function HighConvertingInsights({
 
         <div className="astrologer-cta-visual">
           <img
-            src="/images/astrologer.png"
+            src="/images/astrologer2.png"
             alt="Astrologer guidance"
             width={400}
             height={500}
