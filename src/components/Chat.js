@@ -1479,7 +1479,7 @@ ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selec
 }
 
 
-const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null }) => {
+const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null, embedded = false, onMessageSent = null }) => {
   const { t, language } = useTranslation();
   const { user, getUserId } = useAuth();
   const router = useRouter();
@@ -1870,6 +1870,16 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
         await loadWalletBalance();
       }
       
+      // Trigger onMessageSent callback for parent component
+      if (onMessageSent) {
+        onMessageSent();
+      }
+      
+      // Emit custom event for wallet updates
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chatMessageSent'));
+      }
+      
       // Save conversation to Firestore
       if (userId) {
         await saveConversation(finalMessages);
@@ -2056,7 +2066,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           }
         }
       `}</style>
-      {/* Header with gold theme */}
+      {/* Header with gold theme - hidden when embedded */}
+      {!embedded && (
       <div
         style={{
           display: "flex",
@@ -2215,6 +2226,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           )}
         </div>
       </div>
+      )}
       <div className="chat-messages-container">
         {messages.map((msg, index) => (
           <div key={index}>
