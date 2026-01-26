@@ -1677,6 +1677,51 @@ export default function MatchingPage() {
       </div>
     </section>
   );
+
+
+  const getCompatibilityVerdict = (score = 0, outOf = 36) => {
+  const pct = (Number(score) / Number(outOf)) * 100;
+
+  if (pct >= 85) {
+    return {
+      label: "Excellent Compatibility",
+      tone: "success",
+      description: "Strong emotional, mental, and spiritual alignment. This match flows naturally.",
+    };
+  }
+
+  if (pct >= 70) {
+    return {
+      label: "Very Good Match",
+      tone: "info",
+      description: "Harmonious with minor adjustments needed in communication and expectations.",
+    };
+  }
+
+  if (pct >= 55) {
+    return {
+      label: "Acceptable Match",
+      tone: "neutral",
+      description: "Moderate compatibility. Success depends on mutual effort and understanding.",
+    };
+  }
+
+  if (pct >= 40) {
+    return {
+      label: "Challenging Match",
+      tone: "warn",
+      description: "Differences may cause friction. Conscious compromise is essential.",
+    };
+  }
+
+  return {
+    label: "Highly Challenging",
+    tone: "warn",
+    description: "Significant emotional and temperament gaps. Requires strong commitment and guidance.",
+  };
+};
+
+
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
@@ -2455,7 +2500,7 @@ export default function MatchingPage() {
                 </div>
               )}
             </div>
-
+              
             {/* Verdict Card */}
             <div className="card mt-6">
               <div className="results-header">
@@ -2463,17 +2508,37 @@ export default function MatchingPage() {
                 <h3 className="results-title">Ashtakoot Compatibility</h3>
               </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-4xl font-bold text-gold">
-                  {Number(result?.total_score ?? 0)}
-                  <span className="text-gray-500 text-xl">
-                    /{Number(result?.out_of ?? 36)}
-                  </span>
-                </div>
-                <div className="liveBadge">
-                  <div className="pulseDot" /> Score Summary
-                </div>
-              </div>
+{(() => {
+  const verdict = getCompatibilityVerdict(
+    result?.total_score,
+    result?.out_of
+  );
+
+  return (
+    <div className="flex flex-col gap-2 mb-6">
+      <div className="flex items-center gap-3">
+        <div className="text-4xl font-bold text-gold">
+          {Number(result?.total_score ?? 0)}
+          <span className="text-gray-500 text-xl">
+            /{Number(result?.out_of ?? 36)}
+          </span>
+        </div>
+
+        <Badge tone={verdict.tone}>
+          {verdict.label}
+        </Badge>
+
+        <div className="liveBadge">
+          <div className="pulseDot" /> Score Summary
+        </div>
+      </div>
+
+      <p className="text-sm text-gray-600 max-w-xl">
+        {verdict.description}
+      </p>
+    </div>
+  );
+})()}
 
               {/* Koot Table */}
               <div className="table-scroll-container mt-4">
