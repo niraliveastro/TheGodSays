@@ -131,6 +131,11 @@ export default function TalkToAstrologer() {
     };
   }, []); // Run once on mount
 
+
+  const fastNavigate = (router, path) => {
+  router.push(path);
+};
+
   /* --------------------------------------------------------------- */
   /*  Modal open state for body scroll lock                         */
   /* --------------------------------------------------------------- */
@@ -273,6 +278,13 @@ export default function TalkToAstrologer() {
     }
   };
 
+  const getSpecializations = (a) => {
+if (Array.isArray(a.specialties)) return a.specialties;
+if (Array.isArray(a.specialization)) return a.specialization;
+if (typeof a.specialization === "string") return [a.specialization];
+return [];
+};
+
   useEffect(() => {
     // Track page view
     trackPageView("/talk-to-astrologer", "Talk to Astrologer");
@@ -311,14 +323,23 @@ export default function TalkToAstrologer() {
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
   /* --------------------------------------------------------------- */
-  const filteredAstrologers = astrologers.filter((a) => {
-    const matchesSearch =
-      a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.specialization.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter =
-      !filterSpecialization || a.specialization === filterSpecialization;
-    return matchesSearch && matchesFilter;
-  });
+const filteredAstrologers = astrologers.filter((a) => {
+  const search = searchTerm.toLowerCase();
+
+  const specializations = getSpecializations(a).map(s =>
+    s.toLowerCase()
+  );
+
+  const matchesSearch =
+    a.name?.toLowerCase().includes(search) ||
+    specializations.some(s => s.includes(search));
+
+  const matchesFilter =
+    !filterSpecialization ||
+    specializations.includes(filterSpecialization.toLowerCase());
+
+  return matchesSearch && matchesFilter;
+});
 
   const totalPages = Math.ceil(filteredAstrologers.length / ITEMS_PER_PAGE);
 
@@ -326,6 +347,11 @@ export default function TalkToAstrologer() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  useEffect(() => {
+console.log("Astrologers loaded:", astrologers.length);
+console.log("Filtered astrologers:", filteredAstrologers.length);
+}, [astrologers, filteredAstrologers]);
 
   /* --------------------------------------------------------------- */
   /*  Voice / Video call handlers                                    */
@@ -1465,564 +1491,316 @@ export default function TalkToAstrologer() {
                           "var(--shadow-lg), var(--shadow-glow)";
                       }}
                     >
-                      {/* Top Row: Avatar + Name + Spec + Experience + Rating + Review */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: "1rem",
-                          marginBottom: "1rem",
-                          position: "relative",
-                          zIndex: 20,
-                        }}
-                      >
-                        {/* Avatar + Status Badge (with tooltip/title + aria) */}
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                          <div
-                            style={{
-                              width: "4rem",
-                              height: "4rem",
-                              background: a.photo
-                                ? `url(${a.photo}) center/cover`
-                                : "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              fontWeight: 700,
-                              fontSize: "1.25rem",
-                            }}
-                          >
-                            {!a.photo &&
-                              a.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                          </div>
-
-                          {/* Compact colored badge with tooltip (uses title + aria for accessibility) */}
-                          <div
-                            title={
-                              a.status === "online"
-                                ? "Available now"
-                                : a.status === "busy"
-                                ? "Currently busy"
-                                : "Currently offline"
-                            }
-                            aria-label={
-                              a.status === "online"
-                                ? "Available now"
-                                : a.status === "busy"
-                                ? "Currently busy"
-                                : "Currently offline"
-                            }
-                            style={{
-                              position: "absolute",
-                              bottom: "-0.3rem",
-                              right: "-0.3rem",
-                              width: "1rem",
-                              height: "1rem",
-                              borderRadius: "50%",
-                              border: "2px solid white",
-                              background:
-                                a.status === "online"
-                                  ? "#10b981" // green
-                                  : a.status === "busy"
-                                  ? "#f59e0b" // yellow
-                                  : "#9ca3af", // gray
-                              boxShadow:
-                                a.status === "online"
-                                  ? "0 0 6px rgba(16, 185, 129, 0.6)"
-                                  : a.status === "busy"
-                                  ? "0 0 6px rgba(245, 158, 11, 0.6)"
-                                  : "none",
-                              animation:
-                                a.status === "online" || a.status === "busy"
-                                  ? "pulse 2s infinite"
-                                  : "none",
-                              cursor: "default",
-                            }}
-                          />
-                        </div>
-
-                        {/* Name, Spec, Experience */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              gap: "1rem",
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <h3
-                                style={{
-                                  fontSize: "1.5rem",
-                                  fontWeight: 500,
-                                  color: "var(--color-gray-900)",
-                                  margin: 0,
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  fontFamily: "var(--font-heading)",
-                                  lineHeight: 1.3,
-                                }}
-                                title={a.name}
-                              >
-                                {a.name}
-                              </h3>
-                              <p
-                                style={{
-                                  fontSize: "0.875rem",
-                                  fontWeight: 500,
-                                  color: "var(--color-indigo)",
-                                  margin: "0.125rem 0 0",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  fontFamily: "var(--font-body)",
-                                }}
-                                title={a.specialization}
-                              >
-                                {a.specialization}
-                              </p>
-                              <p
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "var(--color-gray-500)",
-                                  margin: "0.25rem 0 0",
-                                  fontWeight: 500,
-                                  fontFamily: "Courier New, monospace",
-                                }}
-                              >
-                                {a.experience}
-                              </p>
-                            </div>
-
-                            {/* Rating + compact Review button (small text) */}
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-end",
-                                gap: "0.5rem",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "0.375rem",
-                                  background: "var(--color-amber-50)",
-                                  color: "var(--color-amber-700)",
-                                  padding: "0.25rem 0.5rem",
-                                  borderRadius: "9999px",
-                                  fontFamily: "Courier New, monospace",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 600,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                <Star
-                                  style={{
-                                    width: "0.875rem",
-                                    height: "0.875rem",
-                                    fill: "#f59e0b",
-                                    color: "#f59e0b",
-                                  }}
-                                />
-                                {a.rating}{" "}
-                                <span
-                                  style={{
-                                    color: "var(--color-gray-500)",
-                                    marginLeft: "0.125rem",
-                                    fontFamily: "Courier New, monospace",
-                                  }}
-                                >
-                                  ({a.reviews})
-                                </span>
-                              </div>
-
-                              {/* Small written 'Review' button (compact) */}
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleOpenReview(a);
-                                }}
-                                disabled={!!connectingCallType}
-                                title="Leave a review"
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: "0.72rem",
-                                  lineHeight: 1,
-                                  padding: "0.25rem 0.6rem",
-                                  borderRadius: "8px",
-                                  border: "1px solid var(--color-gray-200)",
-                                  background: "white",
-                                  color: "var(--color-gray-700)",
-                                  cursor: !!connectingCallType
-                                    ? "not-allowed"
-                                    : "pointer",
-                                  minWidth: "56px",
-                                  height: "28px",
-                                  gap: "0.25rem",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                Review
-                              </button>
-
-                              {/* Price tag - right under Review button */}
-                              {a.perMinuteCharge && (
-                                <div
-                                  style={{
-                                    fontSize: "0.9375rem",
-                                    fontWeight: 700,
-                                    color: "#059669",
-                                    textAlign: "right",
-                                  }}
-                                >
-                                  ₹{a.perMinuteCharge}/min
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Verified Badge (kept) */}
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem",
-                              marginTop: "0.5rem",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {a.verified && (
-                              <div
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "0.25rem",
-                                  background: "var(--color-indigo-light)",
-                                  color: "var(--color-indigo)",
-                                  padding: "0.25rem 0.5rem",
-                                  borderRadius: "9999px",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 500,
-                                }}
-                              >
-                                <CheckCircle
-                                  style={{
-                                    width: "0.75rem",
-                                    height: "0.75rem",
-                                  }}
-                                />
-                                Verified
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <p
-                        style={{
-                          fontSize: "0.875rem",
-                          fontFamily: "var(--font-body)",
-                          color: "var(--color-gray-600)",
-                          marginBottom: "1rem",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          position: "relative",
-                          zIndex: 20,
-                        }}
-                      >
-                        {a.bio}
-                      </p>
-
-                      {/* --- Speaks & Expertise as two columns --- */}
-                      <div
-                        style={{
-                          marginBottom: "1rem",
-                          position: "relative",
-                          zIndex: 20,
-                          display: "grid",
-                          gridTemplateColumns: "1fr",
-                          gap: "0.75rem",
-                        }}
-                      >
-                        {/* make two columns on wider screens */}
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr",
-                            gap: "0.75rem",
-                          }}
-                        >
-                          <style>{`
-      @media (min-width: 520px) {
-        .speaks-expertise-row {
-          display: grid !important;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem !important;
-          align-items: start;
-        }
-      }
-    `}</style>
-
-                          <div
-                            className="speaks-expertise-row"
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr",
-                              gap: "0.75rem",
-                            }}
-                          >
-                            {/* Column A: Speaks */}
-                            <div>
-                              <p
-                                style={{
-                                  fontSize: "0.75rem",
-                                  fontWeight: 600,
-                                  color: "var(--color-gray-600)",
-                                  marginBottom: "0.5rem",
-                                }}
-                              >
-                                Speaks:
-                              </p>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: "0.375rem",
-                                }}
-                              >
-                                {a.languages && a.languages.length > 0 ? (
-                                  a.languages.map((l, i) => (
-                                    <span
-                                      key={l + i}
-                                      style={{
-                                        padding: "0.25rem 0.625rem",
-                                        background: "var(--color-indigo-light)",
-                                        color: "var(--color-indigo)",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 700,
-                                        borderRadius: "9999px",
-                                      }}
-                                    >
-                                      {l}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <div
-                                    style={{ color: "var(--color-gray-500)" }}
-                                  >
-                                    Not specified
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Column B: Expertise — only render if areasOfExpertise present */}
-                            {a.areasOfExpertise &&
-                            a.areasOfExpertise.length > 0 ? (
-                              <div>
-                                <p
-                                  style={{
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    color: "var(--color-gray-600)",
-                                    marginBottom: "0.5rem",
-                                  }}
-                                >
-                                  Expertise:
-                                </p>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "0.375rem",
-                                  }}
-                                >
-                                  {a.areasOfExpertise.map((ex, i) => (
-                                    <span
-                                      key={ex + i}
-                                      style={{
-                                        padding: "0.25rem 0.625rem",
-                                        background: "#fff7ed",
-                                        color: "#92400e",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 700,
-                                        borderRadius: "9999px",
-                                        border:
-                                          "1px solid rgba(245,158,11,0.12)",
-                                      }}
-                                    >
-                                      {ex}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : (
-                              // if you prefer nothing shown when no expertise, keep this empty (or remove this else).
-                              <div style={{ display: "none" }} />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action buttons – Bottom */}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.75rem",
-                          marginTop: "auto",
-                          position: "relative",
-                          zIndex: 30,
-                          alignItems: "stretch",
-                        }}
-                      >
-                        {/* Schedule Button - Matching My Appointments/Call History style */}
-                        <Button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(`/appointments/book/${a.id}`);
-                          }}
-                          className="btn btn-primary"
-                          disabled={!!connectingCallType}
-                          style={{
-                            flex: 1,
-                            height: "3rem",
-                            padding: "0 1.5rem",
-                            fontSize: "1rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "0.5rem",
-                            background:
-                              "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "var(--radius-md)",
-                            fontWeight: 600,
-                            boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-                            transition: "all 0.3s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!connectingCallType) {
-                              e.currentTarget.style.transform =
-                                "translateY(-2px)";
-                              e.currentTarget.style.boxShadow =
-                                "0 8px 20px rgba(212, 175, 55, 0.4)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow =
-                              "0 4px 12px rgba(212, 175, 55, 0.3)";
-                          }}
-                        >
-                          <CalendarCheck
-                            style={{
-                              width: "1rem",
-                              height: "1rem",
-                            }}
-                          />
-                          Schedule
-                        </Button>
-
-                        {/* Voice Call Icon Button - Half size of original voice call button */}
-                        <Button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleVoiceCall(a.id);
-                          }}
-                          disabled={
-                            !a.isOnline || loading || !!connectingCallType
-                          }
-                          variant="outline"
-                          className="btn btn-outline"
-                          style={{
-                            flex: 0.5,
-                            height: "3rem",
-                            width: "3rem",
-                            padding: 0,
-                            minWidth: "3rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          title={a.isOnline ? "Voice Call" : "Offline"}
-                        >
-                          {loading && connectingCallType === "voice" ? (
-                            <Loader2
-                              style={{
-                                width: "1rem",
-                                height: "1rem",
-                                animation: "spin 1s linear infinite",
-                              }}
-                            />
-                          ) : (
-                            <Phone
-                              style={{
-                                width: "1rem",
-                                height: "1rem",
-                              }}
-                            />
-                          )}
-                        </Button>
-
-                        {/* Video Call Icon Button - Half size of original voice call button */}
-                        <Button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleVideoCall(a.id);
-                          }}
-                          disabled={
-                            !a.isOnline || loading || !!connectingCallType
-                          }
-                          variant="outline"
-                          className="btn btn-outline"
-                          style={{
-                            flex: 0.5,
-                            height: "3rem",
-                            width: "3rem",
-                            padding: 0,
-                            minWidth: "3rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          title={a.isOnline ? "Video Call" : "Offline"}
-                        >
-                          {loading && connectingCallType === "video" ? (
-                            <Loader2
-                              style={{
-                                width: "1rem",
-                                height: "1rem",
-                                animation: "spin 1s linear infinite",
-                              }}
-                            />
-                          ) : (
-                            <Video
-                              style={{
-                                width: "1rem",
-                                height: "1rem",
-                              }}
-                            />
-                          )}
-                        </Button>
-                      </div>
+                      {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                alignItems: "flex-start",
+                                                justifyContent: "space-between",
+                                                gap: "1rem",
+                                                marginBottom: "1rem",
+                                                position: "relative",
+                                                zIndex: 20,
+                                              }}
+                                            >
+                                              {/* Left Side: Avatar + Name + Spec + Experience */}
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  gap: "0.75rem",
+                                                  flex: 1,
+                                                  minWidth: 0,
+                                                }}
+                                              >
+                                                {/* Avatar + Status Indicator Dot */}
+                                                <div style={{ position: "relative", flexShrink: 0 }}>
+                                                  <div
+                                                    style={{
+                                                      width: "4rem",
+                                                      height: "4rem",
+                                                      background:
+                                                        "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                                      borderRadius: "50%",
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      justifyContent: "center",
+                                                      color: "white",
+                                                      fontWeight: 700,
+                                                      fontSize: "1.125rem",
+                                                      textTransform: "uppercase",
+                                                    }}
+                                                  >
+                                                    {a.name
+                                                      .split(" ")
+                                                      .map((n) => n[0])
+                                                      .join("")}
+                                                  </div>
+                                                  {/* Status Indicator Dot - properly aligned at avatar */}
+                                                  {(a.online || a.isOnline) && (
+                                                    <div
+                                                      style={{
+                                                        position: "absolute",
+                                                        bottom: "2px",
+                                                        right: "2px",
+                                                        width: "0.875rem",
+                                                        height: "0.875rem",
+                                                        borderRadius: "50%",
+                                                        border: "2.5px solid white",
+                                                        background: "#10b981",
+                                                        zIndex: 10,
+                                                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
+                                                      }}
+                                                    />
+                                                  )}
+                                                </div>
+                      
+                                                {/* Name, Spec, Experience */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                  <h3
+                                                    style={{
+                                                      fontSize: "1.125rem",
+                                                      fontWeight: 400,
+                                                      color: "#1f2937",
+                                                      margin: 0,
+                                                      marginBottom: "0.25rem",
+                                                      fontFamily: "var(--font-heading)",
+                                                      lineHeight: 1.3,
+                                                    }}
+                                                    title={a.name}
+                                                  >
+                                                    {a.name.split(' ').map(word => 
+                                                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                                    ).join(' ')}
+                                                  </h3>
+                                                  <p
+                                                    style={{
+                                                      fontSize: "0.8125rem",
+                                                      fontWeight: 500,
+                                                      color: "var(--color-indigo)",
+                                                      margin: "0 0 0.125rem 0",
+                                                      fontFamily: "var(--font-body)",
+                                                    }}
+                                                    title={a.specialization ?? "Astrology"}
+                                                  >
+                                                    {a.specialization ?? "Astrology"}
+                                                  </p>
+                                                  <p
+                                                    style={{
+                                                      fontSize: "0.75rem",
+                                                      color: "#6b7280",
+                                                      margin: "0",
+                                                      fontWeight: 400,
+                                                    }}
+                                                  >
+                                                    {a.experience ?? "Experienced in astrology"}
+                                                  </p>
+                                                </div>
+                                              </div>
+                      
+                                              {/* Right Side: Rating + Review Button + Price */}
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  flexDirection: "column",
+                                                  alignItems: "flex-end",
+                                                  gap: "0.5rem",
+                                                  flexShrink: 0,
+                                                }}
+                                              >
+                                                {/* Rating */}
+                                                <div
+                                                  style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.25rem",
+                                                    fontSize: "0.875rem",
+                                                    fontWeight: 600,
+                                                    color: "#1f2937",
+                                                  }}
+                                                >
+                                                  <Star
+                                                    style={{
+                                                      width: "0.875rem",
+                                                      height: "0.875rem",
+                                                      fill: "#f59e0b",
+                                                      color: "#f59e0b",
+                                                    }}
+                                                  />
+                                                  <span>{a.rating ?? 4.5}</span>
+                                                  <span
+                                                    style={{
+                                                      color: "#6b7280",
+                                                      fontWeight: 400,
+                                                      marginLeft: "0.125rem",
+                                                    }}
+                                                  >
+                                                    ({a.reviews ?? 2})
+                                                  </span>
+                                                </div>
+                      
+                                                {/* Review Button */}
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    handleOpenReview(a);
+                                                  }}
+                                                  style={{
+                                                    fontSize: "0.75rem",
+                                                    padding: "0.25rem 0.625rem",
+                                                    height: "auto",
+                                                    border: "1px solid #d1d5db",
+                                                    borderRadius: "0.375rem",
+                                                    background: "white",
+                                                    color: "#374151",
+                                                    cursor: "pointer",
+                                                    fontWeight: 500,
+                                                  }}
+                                                >
+                                                  Review
+                                                </button>
+                      
+                                                {/* Price - moved to where ONLINE was */}
+                                                {a.perMinuteCharge && (
+                                                  <div
+                                                    style={{
+                                                      fontSize: "0.9375rem",
+                                                      fontWeight: 700,
+                                                      color: "#059669",
+                                                    }}
+                                                  >
+                                                    ₹{a.perMinuteCharge}/min
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                      
+                                            {/* Middle Section: Bio */}
+                                            <p
+                                              style={{
+                                                fontSize: "0.875rem",
+                                                fontFamily: "var(--font-body)",
+                                                color: "#4b5563",
+                                                marginBottom: "0.75rem",
+                                                lineHeight: 1.5,
+                                                position: "relative",
+                                                zIndex: 20,
+                                              }}
+                                            >
+                                              {a.bio ??
+                                                `Experienced astrologer providing guidance and insights.`}
+                                            </p>
+                      
+                                            {/* Languages */}
+                                            {a.languages?.length > 0 && (
+                                              <div
+                                                style={{
+                                                  marginBottom: "0.75rem",
+                                                  position: "relative",
+                                                  zIndex: 20,
+                                                }}
+                                              >
+                                                <p
+                                                  style={{
+                                                    fontSize: "0.75rem",
+                                                    fontWeight: 600,
+                                                    color: "#4b5563",
+                                                    marginBottom: "0.5rem",
+                                                  }}
+                                                >
+                                                  Speaks:
+                                                </p>
+                                                <div
+                                                  style={{
+                                                    display: "flex",
+                                                    flexWrap: "wrap",
+                                                    gap: "0.375rem",
+                                                  }}
+                                                >
+                                                  {a.languages.map((l, i) => (
+                                                    <span
+                                                      key={l + i}
+                                                      style={{
+                                                        padding: "0.25rem 0.625rem",
+                                                        background: "#E0E7FF",
+                                                        color: "#4F46E5",
+                                                        fontSize: "0.75rem",
+                                                        fontWeight: 500,
+                                                        borderRadius: "9999px",
+                                                      }}
+                                                    >
+                                                      {l}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                      
+                                            {/* Bottom Section: Connect Button */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                marginTop: "auto",
+                                                position: "relative",
+                                                zIndex: 30,
+                                              }}
+                                            >
+                                              <button
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  fastNavigate(
+                                                    router,
+                                                    `/account/astrologer/${a.id}`
+                                                  );
+                                                }}
+                                                style={{
+                                                  width: "100%",
+                                                  height: "2.75rem",
+                                                  padding: "0 1.25rem",
+                                                  fontSize: "0.9375rem",
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  justifyContent: "center",
+                                                  gap: "0.5rem",
+                                                  fontWeight: 600,
+                                                  background: "white",
+                                                  border: "1px solid rgba(212, 175, 55, 0.4)",
+                                                  borderRadius: "0.5rem",
+                                                  color: "#D4AF37",
+                                                  cursor: "pointer",
+                                                  transition: "all 0.2s ease",
+                                                }}
+                                                type="button"
+                                                aria-label={`Connect with ${a.name}`}
+                                                onMouseEnter={(e) => {
+                                                  e.currentTarget.style.borderColor =
+                                                    "rgba(212, 175, 55, 0.6)";
+                                                  e.currentTarget.style.boxShadow =
+                                                    "0 2px 8px rgba(212, 175, 55, 0.15)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                  e.currentTarget.style.borderColor =
+                                                    "rgba(212, 175, 55, 0.4)";
+                                                  e.currentTarget.style.boxShadow = "none";
+                                                }}
+                                              >
+                                                <svg
+                                                  width="16"
+                                                  height="16"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  strokeWidth="2"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                >
+                                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                  <circle cx="12" cy="7" r="4" />
+                                                </svg>
+                                                Connect with {a.name.split(" ")[0].toLowerCase()}
+                                              </button>
+                                            </div>
                     </Link>
                   ))}
                 </div>
