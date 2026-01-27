@@ -34,11 +34,34 @@ export const createRazorpayOrder = async (amount, currency = 'INR', receipt, not
       notes,
     }
 
+    console.log('Creating Razorpay order with options:', {
+      amount: options.amount,
+      currency: options.currency,
+      receipt: options.receipt,
+      keyId: process.env.RAZORPAY_KEY_ID?.substring(0, 10) + '...'
+    })
+
     const order = await razorpay.orders.create(options)
+    console.log('Razorpay order created successfully:', order.id)
     return order
   } catch (error) {
     console.error('Error creating Razorpay order:', error)
-    throw new Error('Failed to create payment order')
+    console.error('Error details:', {
+      message: error.message,
+      statusCode: error.statusCode,
+      error: error.error
+    })
+    
+    // Provide more specific error messages
+    if (error.statusCode === 400) {
+      throw new Error('Invalid payment details. Please check the amount and try again.')
+    } else if (error.statusCode === 401) {
+      throw new Error('Payment gateway authentication failed. Please contact support.')
+    } else if (error.statusCode === 500) {
+      throw new Error('Payment gateway server error. Please try again later or contact support.')
+    }
+    
+    throw new Error('Failed to create payment order. Please try again.')
   }
 }
 

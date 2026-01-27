@@ -279,7 +279,10 @@ export default async function BlogPage({ searchParams }) {
             {/* Server-rendered blog list for SEO */}
             <div className="blog-grid">
               {blogs.map((blog) => {
-                const excerpt = generateExcerpt(blog.content || blog.excerpt || '', 100)
+                // Prioritize metaDescription or excerpt field, then fall back to content
+                const excerpt = blog.metaDescription 
+                  || blog.excerpt 
+                  || generateExcerpt(blog.content || '', 100)
                 const readTime = calculateReadTime(blog.content || '')
                 const publishedDate = blog.publishedAt
                   ? new Date(blog.publishedAt).toLocaleDateString('en-US', {
