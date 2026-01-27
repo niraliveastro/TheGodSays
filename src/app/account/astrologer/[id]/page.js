@@ -398,7 +398,6 @@ export default function AstrologerProfile() {
             style={{
               color: "var(--color-gray-900)",
               marginBottom: "var(--space-md)",
-              fontFamily: "'Georgia', 'Times New Roman', serif",
             }}
           >
             Astrologer Not Found
@@ -636,7 +635,6 @@ export default function AstrologerProfile() {
                             textTransform: "uppercase",
                             border: "4px solid white",
                             boxShadow: "var(--shadow-lg)",
-                            fontFamily: "'Georgia', 'Times New Roman', serif",
                             position: "relative",
                           }}
                         >
@@ -734,7 +732,6 @@ export default function AstrologerProfile() {
                             fontWeight: 500,
                             marginBottom: "0.5rem",
                             color: "var(--color-gray-900)",
-                            fontFamily: "'Georgia', 'Times New Roman', serif",
                           }}
                         >
                           {astrologer.name}
@@ -746,7 +743,6 @@ export default function AstrologerProfile() {
                             color: "var(--color-indigo)",
                             fontWeight: 500,
                             marginBottom: "var(--space-md)",
-                            fontFamily: "'Georgia', 'Times New Roman', serif",
                           }}
                         >
                           {astrologer.specialization}
@@ -886,8 +882,7 @@ export default function AstrologerProfile() {
                                       fontWeight: 800,
                                       textTransform: "uppercase",
                                       letterSpacing: "0.05em",
-                                      fontFamily:
-                                        "'Cormorant Garamond', sans-serif",
+                                     
                                     }}
                                   >
                                     {item.label}
@@ -1006,8 +1001,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily:
-                                        "'Cormorant Garamond', sans-serif",
+                          
                         }}
                       >
                         About
@@ -1035,8 +1029,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-md)",
                           color: "var(--color-gray-900)",
-                          fontFamily:
-                                        "'Cormorant Garamond', sans-serif",
+                          
                         }}
                       >
                         Areas of Expertise
@@ -1082,8 +1075,7 @@ export default function AstrologerProfile() {
                           fontWeight: 500,
                           marginBottom: "var(--space-lg)",
                           color: "var(--color-gray-900)",
-                          fontFamily:
-                                        "'Cormorant Garamond', sans-serif",
+                         
                         }}
                       >
                         Recent Reviews
@@ -1239,7 +1231,6 @@ export default function AstrologerProfile() {
                   style={{
                     fontSize: "1.25rem",
                     fontWeight: 600,
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
                   }}
                 >
                   Edit Profile
@@ -1585,7 +1576,7 @@ export default function AstrologerProfile() {
             50% { opacity: 0.5; }
           }
           
-          body {
+          body, h1, h2, h3, h4, h5, h6, p, span, div {
             font-family: 'Georgia', 'Times New Roman', serif;
           }
         `}</style>
