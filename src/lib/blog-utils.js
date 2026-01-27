@@ -27,8 +27,34 @@ export function generateSlug(title) {
 export function generateExcerpt(content, maxLength = 150) {
   if (!content) return ''
   
-  // Remove HTML tags if present
-  const text = content.replace(/<[^>]*>/g, '').trim()
+  // Remove style tags and their contents
+  let text = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+  
+  // Remove script tags and their contents
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+  
+  // Remove CSS comments (/* ... */)
+  text = text.replace(/\/\*[\s\S]*?\*\//g, '')
+  
+  // Remove CSS blocks (anything between { and })
+  text = text.replace(/\{[^}]*\}/g, ' ')
+  
+  // Remove CSS selectors (lines starting with . or # followed by CSS-like syntax)
+  text = text.replace(/[.#][\w-]+\s*\{[\s\S]*?\}/g, ' ')
+  
+  // Remove any remaining CSS property-like patterns (key: value;)
+  text = text.replace(/[\w-]+\s*:\s*[^;]+;/g, ' ')
+  
+  // Remove all HTML tags
+  text = text.replace(/<[^>]*>/g, ' ')
+  
+  // Remove multiple spaces and trim
+  text = text.replace(/\s+/g, ' ').trim()
+  
+  // If the text still looks like CSS or is too short, return a default message
+  if (!text || text.length < 10 || text.match(/^[\s.#:;{}\-\w]*$/)) {
+    return 'Read more about this astrology topic...'
+  }
   
   if (text.length <= maxLength) return text
   
