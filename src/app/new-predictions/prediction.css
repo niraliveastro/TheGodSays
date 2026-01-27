@@ -640,12 +640,148 @@ select.form-field-input {
   white-space: normal;
 }
 
-/* History Table */
+/* History Table
 .history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+} */
+
+/* ============================================= */
+/* HISTORY CARD – CLEAN & STABLE                 */
+/* ============================================= */
+
+.history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  min-height: 420px;
+  /* max-width: 30%; */
+}
+
+/* Header */
+.history-card .results-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.history-card .results-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* Search */
+.history-card .history-search {
+  height: 44px;
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+/* Empty states */
+.history-card .empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* List container */
+.history-card .history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 0.25rem;
+  scrollbar-width: none;
+}
+
+.history-card .history-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* History rows */
+.history-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #eaeaea;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-card-row:hover {
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Text column */
+.history-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-row-text > div {
+  font-size: 0.8125rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+/* Name */
+.h-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Address clamp */
+.history-row-text .address {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-row-text .address.show-full {
+  -webkit-line-clamp: unset;
+}
+
+/* Actions */
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Desktop layout */
+@media (min-width: 1024px) {
+  .birth-history-layout .history-card {
+    max-height: 640px;
+  }
 }
 
 .history-card {
@@ -681,9 +817,9 @@ select.form-field-input {
   border-color: #d4af37;
 }
 
-.history-table-container {
+/* .history-table-container {
   overflow-x: auto;
-}
+} */
 
 .history-table {
   width: 100%;
@@ -776,11 +912,11 @@ select.form-field-input {
   gap: 0.5rem;
 }
 
-.history-side .card {
+/* .history-side .card {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
+} */
 
 /* Antar Dasha Table */
 .antar-inline-box {
@@ -1966,10 +2102,10 @@ select.form-field-input {
   }
 
   .birth-history-layout > .card {
-    flex: 0 0 60%;
-    max-width: 60%;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    /* flex: 0 0 60%;
+    max-width: 60%; */
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .birth-history-layout .history-side {
@@ -2271,5 +2407,29 @@ select.form-field-input {
   .vertical-antar-box {
     flex: 1;
     min-width: 0;
+  }
+}
+
+
+@media (min-width: 1024px) {
+  .birth-history-layout {
+    gap: 2.5rem;
+  }
+
+  /* Form = main focus */
+  .birth-history-layout form {
+    flex: 0 0 62%;
+    max-width: 62%;
+  }
+
+  /* History = secondary panel */
+  .birth-history-layout .history-side {
+    flex: 0 0 38%;
+    max-width: 38%;
+    min-width: 380px; /* prevents squishing */
+  }
+
+  .birth-history-layout .history-card {
+    width: 100%;
   }
 }
