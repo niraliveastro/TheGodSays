@@ -46,7 +46,7 @@ export default function ProfilePage() {
   });
   const [saving, setSaving] = useState(false);
   const [callHistory, setCallHistory] = useState([]);
-  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+  // const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [familyForm, setFamilyForm] = useState({
     name: "",
@@ -57,26 +57,30 @@ export default function ProfilePage() {
   });
   const [selectedMember, setSelectedMember] = useState(null);
   const [showPredictions, setShowPredictions] = useState(false);
-  const [showFamilyPanel, setShowFamilyPanel] = useState(false);
+  // const [showFamilyPanel, setShowFamilyPanel] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   /* --------------------------------------------------------------- */
   /*  Fetch user + call history + family members with React Query   */
   /* --------------------------------------------------------------- */
   const userId = useMemo(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return localStorage.getItem("tgs:userId");
     }
     return null;
   }, []);
 
   // Fetch profile data with React Query for caching and faster loading
-  const { data: profileData, isLoading: profileLoading, error: profileError } = useQuery({
-    queryKey: ['userProfile', userId],
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
+    queryKey: ["userProfile", userId],
     queryFn: async () => {
       if (!userId) return null;
       const res = await fetch(`/api/user/profile?userId=${userId}`);
-      if (!res.ok) throw new Error('Failed to fetch profile');
+      if (!res.ok) throw new Error("Failed to fetch profile");
       const data = await res.json();
       return data.success ? data.user : null;
     },
@@ -88,7 +92,7 @@ export default function ProfilePage() {
 
   // Fetch call history with React Query for parallel loading and caching
   const { data: callHistoryData, isLoading: historyLoading } = useQuery({
-    queryKey: ['callHistory', userId],
+    queryKey: ["callHistory", userId],
     queryFn: async () => {
       if (!userId) return [];
       const res = await fetch(`/api/calls/history?userId=${userId}&limit=20`);
@@ -140,16 +144,15 @@ export default function ProfilePage() {
     }
   };
 
-
   // Fetch family members with React Query
   const { data: familyData } = useQuery({
-    queryKey: ['familyMembers', userId],
+    queryKey: ["familyMembers", userId],
     queryFn: async () => {
       if (!userId) return [];
       const res = await fetch(`/api/family/members?userId=${userId}`);
       if (!res.ok) return [];
       const data = await res.json();
-      return data.success ? (data.members || []) : [];
+      return data.success ? data.members || [] : [];
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes cache
@@ -167,7 +170,6 @@ export default function ProfilePage() {
       });
     }
   }, [profileData]);
-
 
   useEffect(() => {
     if (familyData) {
@@ -321,7 +323,7 @@ export default function ProfilePage() {
               }
             },
             "image/jpeg",
-            quality
+            quality,
           );
         };
         img.onerror = reject;
@@ -353,7 +355,7 @@ export default function ProfilePage() {
     // Validate original file size (max 2MB before compression)
     if (file.size > 2 * 1024 * 1024) {
       alert(
-        "Image size should be less than 2MB (will be compressed automatically)"
+        "Image size should be less than 2MB (will be compressed automatically)",
       );
       return;
     }
@@ -439,10 +441,11 @@ export default function ProfilePage() {
         </div>
 
         <div className="app relative">
-          {/* Left Toolbar */}
+          {/* Left Toolbar
           <div
-            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${showFamilyPanel ? "translate-x-0" : "-translate-x-full"
-              }`}
+            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${
+              showFamilyPanel ? "translate-x-0" : "-translate-x-full"
+            }`}
             style={{
               width: "320px",
               zIndex: 30,
@@ -452,7 +455,10 @@ export default function ProfilePage() {
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Users className="w-5 h-5" style={{ color: "var(--color-gold)" }} />
+                  <Users
+                    className="w-5 h-5"
+                    style={{ color: "var(--color-gold)" }}
+                  />
                   Family Members
                 </h3>
                 <button
@@ -467,7 +473,8 @@ export default function ProfilePage() {
                 onClick={() => setIsFamilyModalOpen(true)}
                 className="w-full mb-4 px-4 py-3 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 style={{
-                  background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                  background:
+                    "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                 }}
               >
                 <Plus className="w-4 h-4" />
@@ -487,7 +494,8 @@ export default function ProfilePage() {
                         e.currentTarget.style.borderColor = "var(--color-gold)";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "var(--color-gray-200)";
+                        e.currentTarget.style.borderColor =
+                          "var(--color-gray-200)";
                       }}
                       onClick={() => handleViewPredictions(member)}
                     >
@@ -495,7 +503,8 @@ export default function ProfilePage() {
                         <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
                           style={{
-                            background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                            background:
+                              "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
                           }}
                         >
                           {member.name
@@ -524,7 +533,8 @@ export default function ProfilePage() {
                           color: "var(--color-gold-dark)",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "rgba(212, 175, 55, 0.1)";
+                          e.currentTarget.style.backgroundColor =
+                            "rgba(212, 175, 55, 0.1)";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = "white";
@@ -542,19 +552,20 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-          </div>
+          </div> */}
 
-          {/* Toggle Button */}
+          {/* Toggle Button
           <button
             onClick={() => setShowFamilyPanel(!showFamilyPanel)}
             className="fixed left-0 top-1/2 -translate-y-1/2 text-white p-3 rounded-r-xl shadow-lg hover:shadow-xl transition-all z-40"
             style={{
               marginLeft: showFamilyPanel ? "320px" : "0",
-              background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+              background:
+                "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
             }}
           >
             <Users className="w-5 h-5" />
-          </button>
+          </button> */}
 
           {/* Header */}
           {/* Header */}
@@ -570,7 +581,9 @@ export default function ProfilePage() {
               marginTop: "0.01rem",
             }}
           >
-            <h1 className="title" style={{ margin: 0 }}>My Profile</h1>
+            <h1 className="title" style={{ margin: 0 }}>
+              My Profile
+            </h1>
             <p className="subtitle" style={{ margin: "0.5rem 0 0" }}>
               Manage your account details, wallet balance, and call history.
             </p>
@@ -672,7 +685,7 @@ export default function ProfilePage() {
                   >
                     Member since{" "}
                     {new Date(
-                      user.createdAt || Date.now()
+                      user.createdAt || Date.now(),
                     ).toLocaleDateString()}
                   </p>
                 </div>
@@ -747,6 +760,22 @@ export default function ProfilePage() {
                     }}
                   />
                   Edit Profile
+                </Button>
+                <Button
+                  onClick={() => router.push("/profile/family")}
+                  className="btn btn-primary"
+                  style={{
+                    width: "100%",
+                    height: "3rem",
+                    fontSize: "1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <Users style={{ width: "1rem", height: "1rem" }} />
+                  My Family
                 </Button>
                 <Button
                   onClick={handleSignOut}
@@ -959,7 +988,8 @@ export default function ProfilePage() {
                       padding: "0.75rem",
                       background: "rgba(243, 244, 246, 0.8)",
                       borderRadius: "0.5rem",
-                      animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                      animation:
+                        "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                     }}
                   >
                     <div
@@ -1064,9 +1094,13 @@ export default function ProfilePage() {
                           }}
                         >
                           {call.type === "video" ? (
-                            <Video style={{ width: "1.25rem", height: "1.25rem" }} />
+                            <Video
+                              style={{ width: "1.25rem", height: "1.25rem" }}
+                            />
                           ) : (
-                            <Phone style={{ width: "1.25rem", height: "1.25rem" }} />
+                            <Phone
+                              style={{ width: "1.25rem", height: "1.25rem" }}
+                            />
                           )}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1305,7 +1339,7 @@ export default function ProfilePage() {
       </Modal>
 
       {/* Add Family Member Modal */}
-      <Modal
+      {/* <Modal
         open={isFamilyModalOpen}
         onClose={() => setIsFamilyModalOpen(false)}
         title="Add Family Member"
@@ -1415,7 +1449,7 @@ export default function ProfilePage() {
             </Button>
           </div>
         </div>
-      </Modal>
+      </Modal> */}
 
       {/* AI Predictions - Full Featured Modal */}
       {showPredictions && selectedMember && (
@@ -1485,7 +1519,8 @@ export default function ProfilePage() {
         }
 
         @keyframes pulse {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 1;
           }
           50% {
