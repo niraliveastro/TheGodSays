@@ -57,10 +57,15 @@ export default function AstrologerAssistant({
   const fetchWalletBalance = useCallback(async () => {
     if (user) {
       try {
-        const walletRes = await fetch('/api/payments/wallet');
+        const userId = user.uid;
+        const walletRes = await fetch('/api/payments/wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-balance', userId })
+        });
         if (walletRes.ok) {
           const walletData = await walletRes.json();
-          setWalletBalance(walletData.balance || 0);
+          setWalletBalance(walletData.wallet?.balance || 0);
         }
       } catch (error) {
         console.error('Error fetching wallet:', error);
