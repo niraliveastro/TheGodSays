@@ -5,6 +5,7 @@ import "./globals-responsive.css";
 import { Providers } from "./providers";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import AstrologerRedirect from "@/components/AstrologerRedirect";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MicrosoftClarity from "@/components/MicrosoftClarity";
@@ -161,6 +162,7 @@ export default function RootLayout({ children }) {
           <AstrologerRedirect />
           <Navigation />
           {children}
+          <Footer />
           <ServiceWorkerRegistration />
         </Providers>
       </body>
