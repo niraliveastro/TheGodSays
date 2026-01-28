@@ -66,6 +66,10 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
+    // Increase body size limit for file uploads (50MB)
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
   },
   // Enable faster routing
   reactStrictMode: true,
