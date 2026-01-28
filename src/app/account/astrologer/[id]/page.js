@@ -21,7 +21,11 @@ import {
   Save,
   Camera,
   CalendarCheck,
+  Image as ImageIcon,
+  Play,
 } from "lucide-react";
+import GalleryModal from "@/components/GalleryModal";
+import MediaViewer from "@/components/MediaViewer";
 
 /**
  * AstrologerProfile Component
@@ -69,6 +73,11 @@ export default function AstrologerProfile() {
     status: "offline",
     areasOfExpertise: [], // NEW: store as array
   });
+
+  // Gallery state
+  const [gallery, setGallery] = useState([]);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [selectedMediaItem, setSelectedMediaItem] = useState(null);
 
   // Listen to auth state
   useEffect(() => {
@@ -168,6 +177,20 @@ export default function AstrologerProfile() {
           setRating("0.0");
           setReviewsCount(0);
           setReviews([]);
+        }
+
+        // Gallery
+        try {
+          const galleryRes = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/astrologer/gallery?astrologerId=${id}`
+          );
+          const galleryData = await galleryRes.json();
+          if (galleryRes.ok && galleryData.gallery) {
+            setGallery(galleryData.gallery);
+          }
+        } catch (e) {
+          console.error("Gallery fetch error:", e);
+          setGallery([]);
         }
 
         setLoading(false);
@@ -1184,6 +1207,247 @@ export default function AstrologerProfile() {
                         </p>
                       )}
                     </div>
+
+                    {/* Gallery Section */}
+                    <div className="card">
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "var(--space-lg)",
+                        }}
+                      >
+                        <h2
+                          style={{
+                            fontSize: "1.5rem",
+                            fontWeight: 500,
+                            color: "var(--color-gray-900)",
+                            fontFamily: "'Cormorant Garamond', 'Georgia', serif",
+                          }}
+                        >
+                          Gallery
+                        </h2>
+                        {currentUser?.uid === id && (
+                          <button
+                            onClick={() => setIsGalleryModalOpen(true)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.5rem",
+                              padding: "0.5rem 1rem",
+                              background: "#d4af37",
+                              border: "none",
+                              borderRadius: "var(--radius-full)",
+                              cursor: "pointer",
+                              color: "#fff",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = "#b8972e";
+                              e.target.style.transform = "translateY(-2px)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = "#d4af37";
+                              e.target.style.transform = "translateY(0)";
+                            }}
+                          >
+                            <Edit2 style={{ width: "16px", height: "16px" }} />
+                            Manage Gallery
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Gallery Grid Display */}
+                      {gallery.length > 0 ? (
+                        <>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                              gap: "var(--space-lg)",
+                            }}
+                          >
+                            {gallery.slice(0, 6).map((item) => (
+                              <div
+                                key={item.id}
+                                style={{
+                                  borderRadius: "var(--radius-md)",
+                                  overflow: "hidden",
+                                  background: "#fff",
+                                  border: "1px solid var(--color-gray-200)",
+                                  cursor: "pointer",
+                                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                                }}
+                                onClick={() => setSelectedMediaItem(item)}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = "translateY(-4px)";
+                                  e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.12)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = "translateY(0)";
+                                  e.currentTarget.style.boxShadow = "none";
+                                }}
+                              >
+                                {/* Media */}
+                                <div
+                                  style={{
+                                    position: "relative",
+                                    paddingBottom: "75%",
+                                    background: "#f0f0f0",
+                                  }}
+                                >
+                                  {item.mediaType === "image" ? (
+                                    <img
+                                      src={item.mediaUrl}
+                                      alt={item.title || "Gallery item"}
+                                      style={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                  ) : (
+                                    <>
+                                      <video
+                                        src={item.mediaUrl}
+                                        style={{
+                                          position: "absolute",
+                                          top: 0,
+                                          left: 0,
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                      <div
+                                        style={{
+                                          position: "absolute",
+                                          top: "50%",
+                                          left: "50%",
+                                          transform: "translate(-50%, -50%)",
+                                          background: "rgba(0,0,0,0.6)",
+                                          borderRadius: "50%",
+                                          padding: "1rem",
+                                          pointerEvents: "none",
+                                        }}
+                                      >
+                                        <Play
+                                          style={{
+                                            width: "24px",
+                                            height: "24px",
+                                            color: "#fff",
+                                          }}
+                                        />
+                                      </div>
+                                    </>
+                                  )}
+                                  {/* Media type badge */}
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      top: "8px",
+                                      left: "8px",
+                                      background: "rgba(0,0,0,0.7)",
+                                      padding: "0.25rem 0.5rem",
+                                      borderRadius: "var(--radius-sm)",
+                                      color: "#fff",
+                                      fontSize: "0.7rem",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "0.25rem",
+                                    }}
+                                  >
+                                    {item.mediaType === "image" ? (
+                                      <ImageIcon style={{ width: "10px", height: "10px" }} />
+                                    ) : (
+                                      <Video style={{ width: "10px", height: "10px" }} />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                {(item.title || item.description) && (
+                                  <div style={{ padding: "var(--space-md)" }}>
+                                    {item.title && (
+                                      <h3
+                                        style={{
+                                          fontSize: "1rem",
+                                          fontWeight: 600,
+                                          marginBottom: "0.25rem",
+                                          fontFamily: "'Cormorant Garamond', 'Georgia', serif",
+                                          color: "var(--color-gray-900)",
+                                        }}
+                                      >
+                                        {item.title}
+                                      </h3>
+                                    )}
+                                    {item.description && (
+                                      <p
+                                        style={{
+                                          fontSize: "0.8125rem",
+                                          color: "var(--color-gray-600)",
+                                          margin: 0,
+                                          lineHeight: 1.5,
+                                          display: "-webkit-box",
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: "vertical",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        {item.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {gallery.length > 6 && (
+                            <button
+                              onClick={() => setIsGalleryModalOpen(true)}
+                              style={{
+                                marginTop: "var(--space-lg)",
+                                padding: "0.75rem",
+                                background: "transparent",
+                                border: "1px solid #d4af37",
+                                borderRadius: "var(--radius-md)",
+                                cursor: "pointer",
+                                color: "#d4af37",
+                                fontSize: "0.95rem",
+                                fontWeight: 600,
+                                transition: "all 0.2s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = "#d4af37";
+                                e.target.style.color = "#fff";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = "transparent";
+                                e.target.style.color = "#d4af37";
+                              }}
+                            >
+                              View All {gallery.length} Items
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <p
+                          style={{
+                            color: "var(--color-gray-500)",
+                            textAlign: "center",
+                            padding: "var(--space-xl) 0",
+                          }}
+                        >
+                          No gallery items yet
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1568,6 +1832,32 @@ export default function AstrologerProfile() {
             </div>
           </div>
         )}
+
+        {/* Gallery Modal */}
+        <GalleryModal
+          isOpen={isGalleryModalOpen}
+          onClose={() => {
+            setIsGalleryModalOpen(false);
+            // Refresh gallery
+            fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/astrologer/gallery?astrologerId=${id}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.gallery) {
+                  setGallery(data.gallery);
+                }
+              })
+              .catch(console.error);
+          }}
+          astrologerId={id}
+          isOwner={currentUser?.uid === id}
+        />
+
+        {/* Media Viewer Modal */}
+        <MediaViewer
+          isOpen={!!selectedMediaItem}
+          onClose={() => setSelectedMediaItem(null)}
+          item={selectedMediaItem}
+        />
 
         {/* Animations */}
         <style>{`
