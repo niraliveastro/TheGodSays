@@ -109,23 +109,6 @@ export default function HighConvertingInsights({
         ))}
       </div>
 
-      {/* Timeline
-      <h2 className="section-title mt-8">Upcoming Timeline</h2>
-      {timeline.future.map((e, i) => (
-        <div className="timeline-card locked">
-          <div className="timeline-date">{e.date}</div>
-          <div className="timeline-event">{e.label}</div>
-          <p className="timeline-confidence">{e.description}</p>
-
-          <div className="timeline-lock-overlay">
-            <Lock size={20} />
-            <span>Unlock full timeline</span>
-            <button className="unlock-btn" onClick={handleUnlockClick}>
-              Unlock →
-            </button>
-          </div>
-        </div>
-      ))} */}
 
       <LockedDeepPredictions
        title="Advanced Career & Marriage Timings"
@@ -151,7 +134,7 @@ export default function HighConvertingInsights({
 
         <div className="astrologer-cta-visual">
           <img
-            src="/images/astrologer.png"
+            src="/images/astrologer2.png"
             alt="Astrologer guidance"
             width={400}
             height={500}
@@ -220,3 +203,5 @@ function Snapshot({ label, icon: Icon, data }) {
     </div>
   );
 }
+
+

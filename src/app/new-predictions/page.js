@@ -1593,7 +1593,7 @@ export default function PredictionsPage() {
           <form
             ref={formRef}
             onSubmit={onSubmit}
-            className="card backdrop-blur-xl p-6 md:p-10 rounded-3xl shadow-xl border max-w-4xl mx-auto"
+            className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl"
             style={{
               background: "#ffffff",
               borderColor: "#eaeaea",
@@ -1820,11 +1820,8 @@ export default function PredictionsPage() {
 
           {/* Prediction History to the RIGHT of the form */}
           {showHistory && (
-            <section
-              className="results-section history-side"
-              style={{ marginTop: 0 }}
-            >
-              <div className="card" ref={historyCardRef}>
+            <div className="history-side">
+              <div className="card history-card mx-auto" ref={historyCardRef}>
                 <div className="results-header">
                   <History style={{ color: "#ca8a04" }} />
                   <h3 className="results-title flex items-center gap-2">
@@ -2048,7 +2045,7 @@ export default function PredictionsPage() {
                   </div>
                 )}
               </div>
-            </section>
+            </div>
           )}
         </div>
 

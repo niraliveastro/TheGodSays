@@ -16,7 +16,7 @@ import {
   X,
   LoaderCircle,
   Star,
-  PhoneCallIcon
+  PhoneCallIcon,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistant from "@/components/AstrologerAssistant";
@@ -112,7 +112,7 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
-      // Form state for female and male individuals
+  // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
     dob: "",
@@ -155,25 +155,24 @@ export default function MatchingPage() {
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
 
-
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
-  
+
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
    * This hash is used to identify if form data has changed
    */
   const generateFormDataHash = () => {
     const formData = {
-      femaleName: (female.fullName || '').trim().toUpperCase(),
-      femaleDob: (female.dob || '').trim(),
-      femaleTob: (female.tob || '').trim(),
-      femalePlace: (female.place || '').trim().toUpperCase(),
-      maleName: (male.fullName || '').trim().toUpperCase(),
-      maleDob: (male.dob || '').trim(),
-      maleTob: (male.tob || '').trim(),
-      malePlace: (male.place || '').trim().toUpperCase(),
+      femaleName: (female.fullName || "").trim().toUpperCase(),
+      femaleDob: (female.dob || "").trim(),
+      femaleTob: (female.tob || "").trim(),
+      femalePlace: (female.place || "").trim().toUpperCase(),
+      maleName: (male.fullName || "").trim().toUpperCase(),
+      maleDob: (male.dob || "").trim(),
+      maleTob: (male.tob || "").trim(),
+      malePlace: (male.place || "").trim().toUpperCase(),
     };
     // Create a consistent hash from the form data
     const hashString = JSON.stringify(formData);
@@ -181,36 +180,39 @@ export default function MatchingPage() {
     let hash = 0;
     for (let i = 0; i < hashString.length; i++) {
       const char = hashString.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash.toString();
   };
-  
+
   /**
    * Checks if form data has changed and resets chat if needed
    */
   const checkAndResetChatOnFormChange = () => {
     const newHash = generateFormDataHash();
-    
+
     // If form is empty, don't reset
     if (!female.fullName && !male.fullName && !female.dob && !male.dob) {
       return;
     }
-    
+
     // If hash changed, reset chat
-    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
-      console.log('[Matching] Form data changed, resetting chat:', {
+    if (
+      previousFormDataHashRef.current !== null &&
+      previousFormDataHashRef.current !== newHash
+    ) {
+      console.log("[Matching] Form data changed, resetting chat:", {
         previousHash: previousFormDataHashRef.current,
         newHash: newHash,
       });
       // Reset chat by incrementing session ID
-      setChatSessionId(prev => prev + 1);
+      setChatSessionId((prev) => prev + 1);
       setShouldResetChat(true);
       // Clear any existing chat data
       setChatData(null);
     }
-    
+
     // Update the hash
     previousFormDataHashRef.current = newHash;
     setCurrentFormDataHash(newHash);
@@ -238,12 +240,14 @@ export default function MatchingPage() {
    */
   const saveToHistory = (entry) => {
     let current = getHistory();
-    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${entry.femaleDob
-      }-${entry.maleDob}`;
+    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${
+      entry.femaleDob
+    }-${entry.maleDob}`;
     current = current.filter(
       (it) =>
-        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${it.femaleDob
-        }-${it.maleDob}` !== key
+        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${
+          it.femaleDob
+        }-${it.maleDob}` !== key,
     );
     current.unshift(entry);
     if (current.length > 10) current = current.slice(0, 10);
@@ -273,13 +277,28 @@ export default function MatchingPage() {
     if (!historySearch.trim()) return history;
     const searchLower = historySearch.toLowerCase();
     return history.filter((item) => {
-      const femaleNameMatch = (item.femaleName || "").toLowerCase().includes(searchLower);
-      const maleNameMatch = (item.maleName || "").toLowerCase().includes(searchLower);
-      const femalePlaceMatch = (item.femalePlace || "").toLowerCase().includes(searchLower);
-      const malePlaceMatch = (item.malePlace || "").toLowerCase().includes(searchLower);
+      const femaleNameMatch = (item.femaleName || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const maleNameMatch = (item.maleName || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const femalePlaceMatch = (item.femalePlace || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const malePlaceMatch = (item.malePlace || "")
+        .toLowerCase()
+        .includes(searchLower);
       const femaleDobMatch = (item.femaleDob || "").includes(searchLower);
       const maleDobMatch = (item.maleDob || "").includes(searchLower);
-      return femaleNameMatch || maleNameMatch || femalePlaceMatch || malePlaceMatch || femaleDobMatch || maleDobMatch;
+      return (
+        femaleNameMatch ||
+        maleNameMatch ||
+        femalePlaceMatch ||
+        malePlaceMatch ||
+        femaleDobMatch ||
+        maleDobMatch
+      );
     });
   }, [history, historySearch]);
 
@@ -306,9 +325,9 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-    
+
     // Reset chat when form is cleared
-    setChatSessionId(prev => prev + 1);
+    setChatSessionId((prev) => prev + 1);
     setShouldResetChat(true);
     setChatData(null);
     previousFormDataHashRef.current = null;
@@ -337,37 +356,40 @@ export default function MatchingPage() {
     // Optional: Reset coords so user must re-select or re-run
     setFCoords(null);
     setMCoords(null);
-    
+
     // Generate hash for loaded history item to check if chat should be restored
     const loadedHash = (() => {
       const formData = {
-        femaleName: (item.femaleName || '').trim().toUpperCase(),
-        femaleDob: (item.femaleDob || '').trim(),
-        femaleTob: (item.femaleTob || '').trim(),
-        femalePlace: (item.femalePlace || '').trim().toUpperCase(),
-        maleName: (item.maleName || '').trim().toUpperCase(),
-        maleDob: (item.maleDob || '').trim(),
-        maleTob: (item.maleTob || '').trim(),
-        malePlace: (item.malePlace || '').trim().toUpperCase(),
+        femaleName: (item.femaleName || "").trim().toUpperCase(),
+        femaleDob: (item.femaleDob || "").trim(),
+        femaleTob: (item.femaleTob || "").trim(),
+        femalePlace: (item.femalePlace || "").trim().toUpperCase(),
+        maleName: (item.maleName || "").trim().toUpperCase(),
+        maleDob: (item.maleDob || "").trim(),
+        maleTob: (item.maleTob || "").trim(),
+        malePlace: (item.malePlace || "").trim().toUpperCase(),
       };
       const hashString = JSON.stringify(formData);
       let hash = 0;
       for (let i = 0; i < hashString.length; i++) {
         const char = hashString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash;
       }
       return hash.toString();
     })();
-    
+
     // If this matches previous hash, don't reset chat (same data)
     // Otherwise, reset chat (different data loaded)
-    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
-      setChatSessionId(prev => prev + 1);
+    if (
+      previousFormDataHashRef.current !== null &&
+      previousFormDataHashRef.current !== loadedHash
+    ) {
+      setChatSessionId((prev) => prev + 1);
       setShouldResetChat(true);
       setChatData(null);
     }
-    
+
     // Update hash reference
     previousFormDataHashRef.current = loadedHash;
     setCurrentFormDataHash(loadedHash);
@@ -429,7 +451,7 @@ export default function MatchingPage() {
           }
           try {
             const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-              v
+              v,
             )}`;
             const res = await fetch(url, {
               headers: { "Accept-Language": "en" },
@@ -440,7 +462,7 @@ export default function MatchingPage() {
                 label: it.display_name,
                 latitude: parseFloat(it.lat),
                 longitude: parseFloat(it.lon),
-              }))
+              })),
             );
           } catch {
             suggestSetter([]);
@@ -470,16 +492,27 @@ export default function MatchingPage() {
         [D, M, Y] = dobParts;
       }
     } else {
-      throw new Error(`Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`);
+      throw new Error(
+        `Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`,
+      );
     }
 
-    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+    if (
+      !Y ||
+      !M ||
+      !D ||
+      Number.isNaN(Y) ||
+      Number.isNaN(M) ||
+      Number.isNaN(D)
+    ) {
       throw new Error(`Invalid date values: ${dob}`);
     }
 
     // Validate date ranges
-    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (Y < 1900 || Y > 2100)
+      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12)
+      throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
     // Parse time
@@ -488,13 +521,18 @@ export default function MatchingPage() {
     const [H, Min, S = 0] = timeParts;
 
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
-      throw new Error(`Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`);
+      throw new Error(
+        `Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`,
+      );
     }
 
     // Validate time ranges
-    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    if (H < 0 || H > 23)
+      throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59)
+      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59)
+      throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
@@ -539,7 +577,7 @@ export default function MatchingPage() {
       setFSuggest([]);
     } catch (e) {
       setError(
-        "Could not access your location. Please allow permission or type the city manually."
+        "Could not access your location. Please allow permission or type the city manually.",
       );
     } finally {
       setFLocating(false);
@@ -569,7 +607,7 @@ export default function MatchingPage() {
       setMSuggest([]);
     } catch (e) {
       setError(
-        "Could not access your location. Please allow permission or type the city manually."
+        "Could not access your location. Please allow permission or type the city manually.",
       );
     } finally {
       setMLocating(false);
@@ -632,10 +670,10 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-    
+
     // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-    
+
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
     if (
@@ -649,7 +687,7 @@ export default function MatchingPage() {
       !male.place
     ) {
       setError(
-        "Please complete all fields for both individuals, including names."
+        "Please complete all fields for both individuals, including names.",
       );
       return;
     }
@@ -658,7 +696,7 @@ export default function MatchingPage() {
       const payload = await buildPayload();
       const res = await astrologyAPI.getSingleCalculation(
         "match-making/ashtakoot-score",
-        payload
+        payload,
       );
       const out =
         typeof res?.output === "string"
@@ -702,42 +740,49 @@ export default function MatchingPage() {
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
-      
+
       // Validate that both API calls succeeded
       if (!fCalc || !fCalc.results) {
-        console.error('[Matching] Female calculation failed:', fCalc);
-        throw new Error('Failed to fetch female individual data. Please try again.');
+        console.error("[Matching] Female calculation failed:", fCalc);
+        throw new Error(
+          "Failed to fetch female individual data. Please try again.",
+        );
       }
       if (!mCalc || !mCalc.results) {
-        console.error('[Matching] Male calculation failed:', mCalc);
-        throw new Error('Failed to fetch male individual data. Please try again.');
+        console.error("[Matching] Male calculation failed:", mCalc);
+        throw new Error(
+          "Failed to fetch male individual data. Please try again.",
+        );
       }
-      
+
       // Check for errors in API responses
       if (fCalc.errors && Object.keys(fCalc.errors).length > 0) {
-        console.warn('[Matching] Female calculation errors:', fCalc.errors);
+        console.warn("[Matching] Female calculation errors:", fCalc.errors);
       }
       if (mCalc.errors && Object.keys(mCalc.errors).length > 0) {
-        console.warn('[Matching] Male calculation errors:', mCalc.errors);
+        console.warn("[Matching] Male calculation errors:", mCalc.errors);
       }
-      
+
       // If Maha Dasha API call failed, retry separately for each individual
       const retryMahaDashaIfNeeded = async (calc, payload, gender) => {
         const mahaError = calc.errors?.["vimsottari/maha-dasas"];
         const hasMahaData = calc.results?.["vimsottari/maha-dasas"];
-        
+
         if (mahaError || !hasMahaData) {
-          console.warn(`[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`, {
-            error: mahaError,
-            hasData: !!hasMahaData,
-          });
-          
+          console.warn(
+            `[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`,
+            {
+              error: mahaError,
+              hasData: !!hasMahaData,
+            },
+          );
+
           try {
             const retryResult = await astrologyAPI.getSingleCalculation(
               "vimsottari/maha-dasas",
-              payload
+              payload,
             );
-            
+
             if (retryResult && calc.results) {
               calc.results["vimsottari/maha-dasas"] = retryResult;
               // Remove error if retry succeeded
@@ -747,35 +792,41 @@ export default function MatchingPage() {
               console.log(`[Matching] ${gender} Maha Dasha retry successful`);
             }
           } catch (retryError) {
-            console.error(`[Matching] ${gender} Maha Dasha retry failed:`, retryError);
+            console.error(
+              `[Matching] ${gender} Maha Dasha retry failed:`,
+              retryError,
+            );
             // Continue with existing data even if retry fails
           }
         }
       };
-      
+
       // Retry Maha Dasha for both if needed
       await Promise.all([
-        retryMahaDashaIfNeeded(fCalc, fPayload, 'Female'),
-        retryMahaDashaIfNeeded(mCalc, mPayload, 'Male'),
+        retryMahaDashaIfNeeded(fCalc, fPayload, "Female"),
+        retryMahaDashaIfNeeded(mCalc, mPayload, "Male"),
       ]);
-      
+
       // If Vimsottari data is missing, retry separately for each individual
       const retryVimsottariIfNeeded = async (calc, payload, gender) => {
         const vimsError = calc.errors?.["vimsottari/dasa-information"];
         const hasVimsData = calc.results?.["vimsottari/dasa-information"];
-        
+
         if (vimsError || !hasVimsData) {
-          console.warn(`[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`, {
-            error: vimsError,
-            hasData: !!hasVimsData,
-          });
-          
+          console.warn(
+            `[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`,
+            {
+              error: vimsError,
+              hasData: !!hasVimsData,
+            },
+          );
+
           try {
             const retryResult = await astrologyAPI.getSingleCalculation(
               "vimsottari/dasa-information",
-              payload
+              payload,
             );
-            
+
             if (retryResult && calc.results) {
               calc.results["vimsottari/dasa-information"] = retryResult;
               // Remove error if retry succeeded
@@ -785,23 +836,26 @@ export default function MatchingPage() {
               console.log(`[Matching] ${gender} Vimsottari retry successful`);
             }
           } catch (retryError) {
-            console.error(`[Matching] ${gender} Vimsottari retry failed:`, retryError);
+            console.error(
+              `[Matching] ${gender} Vimsottari retry failed:`,
+              retryError,
+            );
             // Continue with existing data even if retry fails
           }
         }
       };
-      
+
       // Retry Vimsottari for both if needed
       await Promise.all([
-        retryVimsottariIfNeeded(fCalc, fPayload, 'Female'),
-        retryVimsottariIfNeeded(mCalc, mPayload, 'Male'),
+        retryVimsottariIfNeeded(fCalc, fPayload, "Female"),
+        retryVimsottariIfNeeded(mCalc, mPayload, "Male"),
       ]);
-      
+
       // Log to verify both have vimsottari data (only in development)
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         const fVims = fCalc.results["vimsottari/dasa-information"];
         const mVims = mCalc.results["vimsottari/dasa-information"];
-        console.log('[Matching] API Results:', {
+        console.log("[Matching] API Results:", {
           femaleHasVimsottari: !!fVims,
           maleHasVimsottari: !!mVims,
           femaleResultsKeys: Object.keys(fCalc.results || {}),
@@ -899,7 +953,7 @@ export default function MatchingPage() {
         if (Array.isArray(sb))
           sb = sb.reduce(
             (acc, it) => (typeof it === "object" ? { ...acc, ...it } : acc),
-            {}
+            {},
           );
         const maybePlanets = sb.planets || sb || {};
         return Object.keys(maybePlanets)
@@ -1010,11 +1064,11 @@ export default function MatchingPage() {
         const shadbala = parseShadbala(r["shadbala/summary"]);
         const vims = r["vimsottari/dasa-information"]
           ? safeParse(
-            safeParse(
-              r["vimsottari/dasa-information"].output ??
-              r["vimsottari/dasa-information"]
+              safeParse(
+                r["vimsottari/dasa-information"].output ??
+                  r["vimsottari/dasa-information"],
+              ),
             )
-          )
           : null;
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
         const planets = parsePlanets(r["planets/extended"]);
@@ -1028,34 +1082,48 @@ export default function MatchingPage() {
       };
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
-      
+
       // Validate that both have vimsottari data (warn only if endpoint failed, not if it's just missing)
       if (!fDetailsBuilt.vimsottari) {
         const vimsError = fCalc.errors?.["vimsottari/dasa-information"];
         if (vimsError) {
-          console.warn('[Matching] ⚠️ Female vimsottari endpoint failed:', vimsError);
-        } else if (process.env.NODE_ENV === 'development') {
-          console.warn('[Matching] ⚠️ Female vimsottari data is missing (no error reported)', {
-            fCalcResults: Object.keys(fCalc.results || {}),
-            hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
-          });
+          console.warn(
+            "[Matching] ⚠️ Female vimsottari endpoint failed:",
+            vimsError,
+          );
+        } else if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Matching] ⚠️ Female vimsottari data is missing (no error reported)",
+            {
+              fCalcResults: Object.keys(fCalc.results || {}),
+              hasVimsottariEndpoint:
+                !!fCalc.results["vimsottari/dasa-information"],
+            },
+          );
         }
       }
       if (!mDetailsBuilt.vimsottari) {
         const vimsError = mCalc.errors?.["vimsottari/dasa-information"];
         if (vimsError) {
-          console.warn('[Matching] ⚠️ Male vimsottari endpoint failed:', vimsError);
-        } else if (process.env.NODE_ENV === 'development') {
-          console.warn('[Matching] ⚠️ Male vimsottari data is missing (no error reported)', {
-            mCalcResults: Object.keys(mCalc.results || {}),
-            hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
-          });
+          console.warn(
+            "[Matching] ⚠️ Male vimsottari endpoint failed:",
+            vimsError,
+          );
+        } else if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Matching] ⚠️ Male vimsottari data is missing (no error reported)",
+            {
+              mCalcResults: Object.keys(mCalc.results || {}),
+              hasVimsottariEndpoint:
+                !!mCalc.results["vimsottari/dasa-information"],
+            },
+          );
         }
       }
-      
+
       setFDetails(fDetailsBuilt);
       setMDetails(mDetailsBuilt);
-      
+
       // Prepare chat data with all details when results are ready
       // Use setTimeout to ensure state updates are complete
       setTimeout(() => {
@@ -1068,17 +1136,20 @@ export default function MatchingPage() {
 
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
-        setChatSessionId(prev => prev + 1);
+        setChatSessionId((prev) => prev + 1);
         setShouldResetChat(false);
       }
-      
+
       // Update hash reference after successful submission
       previousFormDataHashRef.current = newHash;
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
         if (resultsRef.current) {
-          resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          resultsRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }
       }, 100);
 
@@ -1120,7 +1191,7 @@ export default function MatchingPage() {
     // Check if birth details are filled
     if (!validateBirthDetails()) {
       setError(
-        "Please complete all fields for both individuals, including names, before using the chat."
+        "Please complete all fields for both individuals, including names, before using the chat.",
       );
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1130,23 +1201,28 @@ export default function MatchingPage() {
     // If no result exists, calculate it first
     if (!result) {
       // Create a synthetic event to trigger form submission and await the computed result
-      const syntheticEvent = { preventDefault: () => { } };
+      const syntheticEvent = { preventDefault: () => {} };
       const computed = await onSubmit(syntheticEvent);
       if (computed) {
         // result state is set inside onSubmit; prepare chat and open
         prepareChatData();
-        setChatSessionId(prev => prev + 1);
+        setChatSessionId((prev) => prev + 1);
         setChatOpen(true);
         scrollToChat();
       }
     } else {
       // Result exists, prepare data and open chat
       prepareChatData();
-      setChatSessionId(prev => prev + 1);
+      setChatSessionId((prev) => prev + 1);
       setChatOpen(true);
       scrollToChat();
     }
   };
+
+
+  const onTalkToAstrologer = () => {
+  router.push("/talk-to-astrologer");
+};
 
   /**
    * Prepares the data to be passed to the Chat component.
@@ -1155,13 +1231,16 @@ export default function MatchingPage() {
   const prepareChatData = () => {
     // Ensure we have all the data before preparing
     if (!result || !fDetails || !mDetails) {
-      console.warn('[Matching] prepareChatData called but data is incomplete:', {
-        hasResult: !!result,
-        hasFDetails: !!fDetails,
-        hasMDetails: !!mDetails,
-      });
+      console.warn(
+        "[Matching] prepareChatData called but data is incomplete:",
+        {
+          hasResult: !!result,
+          hasFDetails: !!fDetails,
+          hasMDetails: !!mDetails,
+        },
+      );
     }
-    
+
     const data = {
       female: {
         input: {
@@ -1199,10 +1278,10 @@ export default function MatchingPage() {
       // This includes: total_score, out_of, rasi_kootam, graha_maitri_kootam, yoni_kootam, gana_kootam, nadi_kootam
       match: result || null,
     };
-    
+
     // Log data structure for debugging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Matching] Chat data prepared:', {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Matching] Chat data prepared:", {
         femaleName: data.female.input.name,
         maleName: data.male.input.name,
         hasMatch: !!data.match,
@@ -1220,7 +1299,7 @@ export default function MatchingPage() {
         maleHasShadbala: !!data.male.details?.shadbalaRows,
       });
     }
-    
+
     setChatData(data);
     return data;
   };
@@ -1253,43 +1332,70 @@ export default function MatchingPage() {
         match: result,
       };
       setChatData(data);
-      
+
       // Update form data hash when results are ready
       const newHash = generateFormDataHash();
       setCurrentFormDataHash(newHash);
       previousFormDataHashRef.current = newHash;
     }
   }, [result, fDetails, mDetails, female, male, fCoords, mCoords]);
-  
+
   // Monitor form data changes and reset chat if needed (before submission)
   useEffect(() => {
     // Only check if we have some form data filled
     if (female.fullName || male.fullName || female.dob || male.dob) {
       const newHash = generateFormDataHash();
       // Only reset if hash changed and we had a previous hash (not on initial load)
-      if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
-        console.log('[Matching] Form data changed before submission, will reset chat on submit:', {
-          previousHash: previousFormDataHashRef.current,
-          newHash: newHash,
-        });
+      if (
+        previousFormDataHashRef.current !== null &&
+        previousFormDataHashRef.current !== newHash
+      ) {
+        console.log(
+          "[Matching] Form data changed before submission, will reset chat on submit:",
+          {
+            previousHash: previousFormDataHashRef.current,
+            newHash: newHash,
+          },
+        );
         // Don't reset immediately, just mark that it should reset on next submit
         setShouldResetChat(true);
       }
       // Update the hash reference
-      if (previousFormDataHashRef.current === null || previousFormDataHashRef.current !== newHash) {
+      if (
+        previousFormDataHashRef.current === null ||
+        previousFormDataHashRef.current !== newHash
+      ) {
         previousFormDataHashRef.current = newHash;
         setCurrentFormDataHash(newHash);
       }
     }
-  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
-  
+  }, [
+    female.fullName,
+    female.dob,
+    female.tob,
+    female.place,
+    male.fullName,
+    male.dob,
+    male.tob,
+    male.place,
+  ]);
+
   // Monitor form data changes and reset chat if needed
   useEffect(() => {
     // Only check if we have some form data filled
     if (female.fullName || male.fullName || female.dob || male.dob) {
       checkAndResetChatOnFormChange();
     }
-  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
+  }, [
+    female.fullName,
+    female.dob,
+    female.tob,
+    female.place,
+    male.fullName,
+    male.dob,
+    male.tob,
+    male.place,
+  ]);
 
   /**
    * Scrolls to the chat section smoothly.
@@ -1392,16 +1498,17 @@ export default function MatchingPage() {
     const femaleName = female.fullName || "Female";
     const maleName = male.fullName || "Male";
     doc.text(
-      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${female.place
+      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
+        female.place
       }`,
       margin,
-      yPos
+      yPos,
     );
     yPos += 7;
     doc.text(
       `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
       margin,
-      yPos
+      yPos,
     );
     yPos += 15;
 
@@ -1519,7 +1626,7 @@ export default function MatchingPage() {
       "Generated on " + new Date().toLocaleDateString(),
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
-      { align: "center" }
+      { align: "center" },
     );
 
     // Download
@@ -1677,17 +1784,69 @@ export default function MatchingPage() {
       </div>
     </section>
   );
+
+  const getCompatibilityVerdict = (score = 0, outOf = 36) => {
+    const pct = (Number(score) / Number(outOf)) * 100;
+
+    if (pct >= 85) {
+      return {
+        label: "Excellent Compatibility",
+        tone: "success",
+        description:
+          "Strong emotional, mental, and spiritual alignment. This match flows naturally.",
+      };
+    }
+
+    if (pct >= 70) {
+      return {
+        label: "Very Good Match",
+        tone: "info",
+        description:
+          "Harmonious with minor adjustments needed in communication and expectations.",
+      };
+    }
+
+    if (pct >= 55) {
+      return {
+        label: "Acceptable Match",
+        tone: "neutral",
+        description:
+          "Moderate compatibility. Success depends on mutual effort and understanding.",
+      };
+    }
+
+    if (pct >= 40) {
+      return {
+        label: "Challenging Match",
+        tone: "warn",
+        description:
+          "Differences may cause friction. Conscious compromise is essential.",
+      };
+    }
+
+    return {
+      label: "Highly Challenging",
+      tone: "warn",
+      description:
+        "Significant emotional and temperament gaps. Requires strong commitment and guidance.",
+    };
+  };
+
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
-    return <PageLoading type="matching" message="Analyzing compatibility between charts..." />;
+    return (
+      <PageLoading
+        type="matching"
+        message="Analyzing compatibility between charts..."
+      />
+    );
   }
 
   return (
     <>
-
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
       {/* ---------------------------------------------------------- */}
@@ -1705,40 +1864,69 @@ export default function MatchingPage() {
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
-        {error && <div className="error" style={{ maxWidth: "1600px", margin: "2rem auto", padding: "0 2rem" }}>{error}</div>}
-        {/* Header Section */}
-        <header className="header" style={{ textAlign: "center", marginTop: "0.01rem", marginBottom: "1rem" }}>
-          <div className="headerIcon" style={{ 
-            width: "64px", 
-            height: "64px", 
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            borderRadius: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 0.75rem",
-            boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)"
-          }}>
-            <IoHeartCircle style={{ color: "white", width: "36px", height: "36px" }} />
+        {error && (
+          <div
+            className="error"
+            style={{
+              maxWidth: "1600px",
+              margin: "2rem auto",
+              padding: "0 2rem",
+            }}
+          >
+            {error}
           </div>
-          <h1 className="title" style={{
-            fontFamily: "'Georgia', 'Times New Roman', serif",
-            fontSize: "3rem",
-            fontWeight: 400,
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            margin: 0
-          }}>
+        )}
+        {/* Header Section */}
+        <header
+          className="header"
+          style={{
+            textAlign: "center",
+            marginTop: "0.01rem",
+            marginBottom: "1rem",
+          }}
+        >
+          <div
+            className="headerIcon"
+            style={{
+              width: "64px",
+              height: "64px",
+              background: "linear-gradient(135deg, #d4af37, #b8972e)",
+              borderRadius: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 0.75rem",
+              boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)",
+            }}
+          >
+            <IoHeartCircle
+              style={{ color: "white", width: "36px", height: "36px" }}
+            />
+          </div>
+          <h1
+            className="title"
+            style={{
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontSize: "3rem",
+              fontWeight: 400,
+              background: "linear-gradient(135deg, #d4af37, #b8972e)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              margin: 0,
+            }}
+          >
             Match Making
           </h1>
-          <p className="subtitle" style={{
-            color: "#555",
-            marginTop: "0.5rem",
-            marginBottom: "0",
-            fontSize: "1rem"
-          }}>
+          <p
+            className="subtitle"
+            style={{
+              color: "#555",
+              marginTop: "0.5rem",
+              marginBottom: "0",
+              fontSize: "1rem",
+            }}
+          >
             Enter birth details for both to get Ashtakoot score
           </p>
         </header>
@@ -1751,305 +1939,359 @@ export default function MatchingPage() {
                 <Moon className="w-6 h-6" style={{ color: "#ca8a04" }} />
                 <div>
                   <h3 className="form-title">{t.matching.birthDetails}</h3>
-                  <p className="form-subtitle">
-                    {t.matching.enterBothDetails}
-                  </p>
+                  <p className="form-subtitle">{t.matching.enterBothDetails}</p>
                 </div>
               </div>
-              
+
               {/* Grid */}
-              <div 
-                className="form-sections-container"
-              >
-            {/* ---------- Female ---------- */}
-            <div
-              className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
-              style={{
-                background: "#fdf2f8",
-                borderColor: "#fbcfe8",
-                width: "100%",
-                boxSizing: "border-box",
-                minWidth: 0,
-              }}
-            >
-              <div className="results-header mb-3">
-                <Moon style={{ color: "#ec4899" }} />
-                <h3 className="results-title">{t.matching.femaleDetails}</h3>
-              </div>
-              <div className="form-grid-2col">
-                {/* Row 1: Full Name + Date */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.femaleName}</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Priya"
-                    value={female.fullName}
-                    onChange={onChangePerson(
-                      setFemale,
-                      setFCoords,
-                      setFSuggest,
-                      fTimer,
-                      "fullName"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">Enter full name as per records</p>
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={fDateInputRef}
-                      type="date"
-                      value={female.dob}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "dob"
-                      )}
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fDateInputRef.current?.showPicker?.() || fDateInputRef.current?.click()}
-                      className="input-icon-btn calendar-icon-btn"
-                    >
-                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
+              <div className="form-sections-container">
+                {/* ---------- Female ---------- */}
+                <div
+                  className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
+                  style={{
+                    background: "#fdf2f8",
+                    borderColor: "#fbcfe8",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
+                  }}
+                >
+                  <div className="results-header mb-3">
+                    <Moon style={{ color: "#ec4899" }} />
+                    <h3 className="results-title">
+                      {t.matching.femaleDetails}
+                    </h3>
                   </div>
-                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                </div>
-                {/* Row 2: Time + Place */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={fTimeInputRef}
-                      type="time"
-                      step="60"
-                      value={female.tob}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "tob"
-                      )}
-                      className="form-field-input form-input-field"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fTimeInputRef.current?.showPicker?.() || fTimeInputRef.current?.click()}
-                      className="clock-icon-btn"
-                    >
-                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">24-hour format</p>
-                </div>
-                <div className="form-field relative">
-                  <label className="form-field-label">Place</label>
-                  <div className="input-with-icon">
-                    <input
-                      placeholder="e.g., Mumbai, India"
-                      value={female.place}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "place"
-                      )}
-                      autoComplete="off"
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={useMyLocationFemale}
-                      disabled={fLocating}
-                      className="location-icon-btn"
-                    >
-                      {fLocating ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#ec4899" }} />
-                      ) : (
-                        <MapPin className="w-5 h-5" style={{ color: "#ec4899" }} />
-                      )}
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
-                  {fSuggest.length > 0 && (
-                    <div className="suggestions">
-                      {fSuggest.map((s, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setFemale((p) => ({ ...p, place: s.label }));
-                            setFCoords(s);
-                            setFSuggest([]);
-                          }}
-                          className="suggestion-item"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-pink-500" />
-                          <span className="truncate">{s.label}</span>
-                        </button>
-                      ))}
+                  <div className="form-grid-2col">
+                    {/* Row 1: Full Name + Date */}
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.femaleName}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Priya"
+                        value={female.fullName}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "fullName",
+                        )}
+                        required
+                        className="form-field-input form-input-field"
+                      />
+                      <p className="form-field-helper">
+                        Enter full name as per records
+                      </p>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* ---------- Male ---------- */}
-            <div
-              className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
-              style={{
-                background: "#eff6ff",
-                borderColor: "#bfdbfe",
-                width: "100%",
-                boxSizing: "border-box",
-                minWidth: 0,
-              }}
-            >
-              <div className="results-header mb-3">
-                <Sun style={{ color: "#3b82f6" }} />
-                <h3 className="results-title">{t.matching.maleDetails}</h3>
-              </div>
-              <div className="form-grid-2col">
-                {/* Row 1: Full Name + Date */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.maleName}</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Rohan"
-                    value={male.fullName}
-                    onChange={onChangePerson(
-                      setMale,
-                      setMCoords,
-                      setMSuggest,
-                      mTimer,
-                      "fullName"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">Enter full name as per records</p>
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={mDateInputRef}
-                      type="date"
-                      value={male.dob}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "dob"
-                      )}
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => mDateInputRef.current?.showPicker?.() || mDateInputRef.current?.click()}
-                      className="input-icon-btn calendar-icon-btn"
-                    >
-                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                </div>
-                {/* Row 2: Time + Place */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={mTimeInputRef}
-                      type="time"
-                      step="60"
-                      value={male.tob}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "tob"
-                      )}
-                      className="form-field-input form-input-field"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => mTimeInputRef.current?.showPicker?.() || mTimeInputRef.current?.click()}
-                      className="clock-icon-btn"
-                    >
-                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">24-hour format</p>
-                </div>
-                <div className="form-field relative">
-                  <label className="form-field-label">Place</label>
-                  <div className="input-with-icon">
-                    <input
-                      placeholder="e.g., Mumbai, India"
-                      value={male.place}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "place"
-                      )}
-                      autoComplete="off"
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={useMyLocationMale}
-                      disabled={mLocating}
-                      className="location-icon-btn"
-                    >
-                      {mLocating ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#3b82f6" }} />
-                      ) : (
-                        <MapPin className="w-5 h-5" style={{ color: "#3b82f6" }} />
-                      )}
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
-                  {mSuggest.length > 0 && (
-                    <div className="suggestions">
-                      {mSuggest.map((s, i) => (
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.dateOfBirth}
+                      </label>
+                      <div className="input-with-icon">
+                        <input
+                          ref={fDateInputRef}
+                          type="date"
+                          value={female.dob}
+                          onChange={onChangePerson(
+                            setFemale,
+                            setFCoords,
+                            setFSuggest,
+                            fTimer,
+                            "dob",
+                          )}
+                          required
+                          className="form-field-input form-input-field"
+                        />
                         <button
-                          key={i}
                           type="button"
-                          onClick={() => {
-                            setMale((p) => ({ ...p, place: s.label }));
-                            setMCoords(s);
-                            setMSuggest([]);
-                          }}
-                          className="suggestion-item"
+                          onClick={() =>
+                            fDateInputRef.current?.showPicker?.() ||
+                            fDateInputRef.current?.click()
+                          }
+                          className="input-icon-btn calendar-icon-btn"
                         >
-                          <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="truncate">{s.label}</span>
+                          <Calendar
+                            className="w-5 h-5"
+                            style={{ color: "#000000" }}
+                          />
                         </button>
-                      ))}
+                      </div>
+                      <p className="form-field-helper">Format: DD-MM-YYYY</p>
                     </div>
-                  )}
+                    {/* Row 2: Time + Place */}
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.timeOfBirth}
+                      </label>
+                      <div className="input-with-icon">
+                        <input
+                          ref={fTimeInputRef}
+                          type="time"
+                          step="60"
+                          value={female.tob}
+                          onChange={onChangePerson(
+                            setFemale,
+                            setFCoords,
+                            setFSuggest,
+                            fTimer,
+                            "tob",
+                          )}
+                          className="form-field-input form-input-field"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            fTimeInputRef.current?.showPicker?.() ||
+                            fTimeInputRef.current?.click()
+                          }
+                          className="clock-icon-btn"
+                        >
+                          <Clock
+                            className="w-5 h-5"
+                            style={{ color: "#000000" }}
+                          />
+                        </button>
+                      </div>
+                      <p className="form-field-helper">24-hour format</p>
+                    </div>
+                    <div className="form-field relative">
+                      <label className="form-field-label">Place</label>
+                      <div className="input-with-icon">
+                        <input
+                          placeholder="e.g., Mumbai, India"
+                          value={female.place}
+                          onChange={onChangePerson(
+                            setFemale,
+                            setFCoords,
+                            setFSuggest,
+                            fTimer,
+                            "place",
+                          )}
+                          autoComplete="off"
+                          required
+                          className="form-field-input form-input-field"
+                        />
+                        <button
+                          type="button"
+                          onClick={useMyLocationFemale}
+                          disabled={fLocating}
+                          className="location-icon-btn"
+                        >
+                          {fLocating ? (
+                            <LoaderCircle
+                              className="w-5 h-5 animate-spin"
+                              style={{ color: "#ec4899" }}
+                            />
+                          ) : (
+                            <MapPin
+                              className="w-5 h-5"
+                              style={{ color: "#ec4899" }}
+                            />
+                          )}
+                        </button>
+                      </div>
+                      <p className="form-field-helper">
+                        Choose the nearest city for accurate calculation
+                      </p>
+                      {fSuggest.length > 0 && (
+                        <div className="suggestions">
+                          {fSuggest.map((s, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setFemale((p) => ({ ...p, place: s.label }));
+                                setFCoords(s);
+                                setFSuggest([]);
+                              }}
+                              className="suggestion-item"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-pink-500" />
+                              <span className="truncate">{s.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* ---------- Male ---------- */}
+                <div
+                  className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
+                  style={{
+                    background: "#eff6ff",
+                    borderColor: "#bfdbfe",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
+                  }}
+                >
+                  <div className="results-header mb-3">
+                    <Sun style={{ color: "#3b82f6" }} />
+                    <h3 className="results-title">{t.matching.maleDetails}</h3>
+                  </div>
+                  <div className="form-grid-2col">
+                    {/* Row 1: Full Name + Date */}
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.maleName}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Rohan"
+                        value={male.fullName}
+                        onChange={onChangePerson(
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
+                          "fullName",
+                        )}
+                        required
+                        className="form-field-input form-input-field"
+                      />
+                      <p className="form-field-helper">
+                        Enter full name as per records
+                      </p>
+                    </div>
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.dateOfBirth}
+                      </label>
+                      <div className="input-with-icon">
+                        <input
+                          ref={mDateInputRef}
+                          type="date"
+                          value={male.dob}
+                          onChange={onChangePerson(
+                            setMale,
+                            setMCoords,
+                            setMSuggest,
+                            mTimer,
+                            "dob",
+                          )}
+                          required
+                          className="form-field-input form-input-field"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            mDateInputRef.current?.showPicker?.() ||
+                            mDateInputRef.current?.click()
+                          }
+                          className="input-icon-btn calendar-icon-btn"
+                        >
+                          <Calendar
+                            className="w-5 h-5"
+                            style={{ color: "#000000" }}
+                          />
+                        </button>
+                      </div>
+                      <p className="form-field-helper">Format: DD-MM-YYYY</p>
+                    </div>
+                    {/* Row 2: Time + Place */}
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        {t.matching.timeOfBirth}
+                      </label>
+                      <div className="input-with-icon">
+                        <input
+                          ref={mTimeInputRef}
+                          type="time"
+                          step="60"
+                          value={male.tob}
+                          onChange={onChangePerson(
+                            setMale,
+                            setMCoords,
+                            setMSuggest,
+                            mTimer,
+                            "tob",
+                          )}
+                          className="form-field-input form-input-field"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            mTimeInputRef.current?.showPicker?.() ||
+                            mTimeInputRef.current?.click()
+                          }
+                          className="clock-icon-btn"
+                        >
+                          <Clock
+                            className="w-5 h-5"
+                            style={{ color: "#000000" }}
+                          />
+                        </button>
+                      </div>
+                      <p className="form-field-helper">24-hour format</p>
+                    </div>
+                    <div className="form-field relative">
+                      <label className="form-field-label">Place</label>
+                      <div className="input-with-icon">
+                        <input
+                          placeholder="e.g., Mumbai, India"
+                          value={male.place}
+                          onChange={onChangePerson(
+                            setMale,
+                            setMCoords,
+                            setMSuggest,
+                            mTimer,
+                            "place",
+                          )}
+                          autoComplete="off"
+                          required
+                          className="form-field-input form-input-field"
+                        />
+                        <button
+                          type="button"
+                          onClick={useMyLocationMale}
+                          disabled={mLocating}
+                          className="location-icon-btn"
+                        >
+                          {mLocating ? (
+                            <LoaderCircle
+                              className="w-5 h-5 animate-spin"
+                              style={{ color: "#3b82f6" }}
+                            />
+                          ) : (
+                            <MapPin
+                              className="w-5 h-5"
+                              style={{ color: "#3b82f6" }}
+                            />
+                          )}
+                        </button>
+                      </div>
+                      <p className="form-field-helper">
+                        Choose the nearest city for accurate calculation
+                      </p>
+                      {mSuggest.length > 0 && (
+                        <div className="suggestions">
+                          {mSuggest.map((s, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setMale((p) => ({ ...p, place: s.label }));
+                                setMCoords(s);
+                                setMSuggest([]);
+                              }}
+                              className="suggestion-item"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                              <span className="truncate">{s.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
               {/* Action Buttons */}
               <div className="action-buttons">
                 <button
@@ -2077,155 +2319,200 @@ export default function MatchingPage() {
             </form>
           </div>
 
-        <div className="matching-history-sidebar">
-          <div className="history-header">
-            <h3 className="history-title">
-              <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
-              Saved Profiles
-            </h3>
+          <div className="matching-history-sidebar">
+            <div className="history-header">
+              <h3 className="history-title">
+                <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
+                Saved Profiles
+              </h3>
 
-            {history.length > 0 && (
-              <button
-                onClick={clearHistory}
-                className="btn-ghost"
-                style={{ padding: "0.5rem", fontSize: "0.875rem" }}
-              >
-                <RotateCcw className="w-4 h-4" /> Clear
-              </button>
-            )}
-          </div>
-
-          {/* Search input */}
-          {history.length > 0 && (
-            <input
-              type="text"
-              placeholder="Search by name, place, or date..."
-              value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
-              className="history-search"
-            />
-          )}
-
-          {/* 🔥 NEW SCROLL CONTAINER */}
-          <div className="history-scroll-area">
-            {history.length === 0 ? (
-              <div className="empty-state">No matching history yet.</div>
-            ) : filteredHistory.length === 0 ? (
-              <div className="empty-state">No matches found for your search.</div>
-            ) : (
-              <div className="history-cards">
-                {filteredHistory.map((item) => {
-                  const isExpanded = expandedAddresses[`${item.id}-female`] || expandedAddresses[`${item.id}-male`];
-                  return (
-                    <div key={item.id} className={`history-card ${isExpanded ? 'expanded' : ''}`} onClick={() => loadHistoryIntoForm(item)}>
-                      <div className="history-card-top">
-                        <div className="history-card-names">
-                          <span className="pill pill-female"> {item.femaleName || "Female"} </span>
-                          <span className="dot-separator">↔</span>
-                          <span className="pill pill-male"> {item.maleName || "Male"} </span>
-                        </div>
-                      </div>
-                      <div className="history-card-body">
-                        <div className="person-block">
-                          <div className="person-meta">
-                            <Calendar className="meta-icon" />
-                            <span> {item.femaleDob || "-"} · {item.femaleTob || "-"} </span>
-                          </div>
-                          <div className="person-meta">
-                            <MapPin className="meta-icon" />
-                            <div style={{ flex: 1 }}>
-                              <span className={`address-text ${expandedAddresses[`${item.id}-female`] ? 'expanded' : ''}`}>
-                                {item.femalePlace || "-"}
-                              </span>
-                              {item.femalePlace && item.femalePlace.length > 50 && (
-                                <button
-                                  className="show-more-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedAddresses(prev => ({
-                                      ...prev,
-                                      [`${item.id}-female`]: !prev[`${item.id}-female`]
-                                    }));
-                                  }}
-                                >
-                                  {expandedAddresses[`${item.id}-female`] ? 'Show less' : 'Show more'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="person-divider" />
-
-                        <div className="person-block">
-                          <div className="person-meta">
-                            <Calendar className="meta-icon" />
-                            <span> {item.maleDob || "-"} · {item.maleTob || "-"} </span>
-                          </div>
-                          <div className="person-meta">
-                            <MapPin className="meta-icon" />
-                            <div style={{ flex: 1 }}>
-                              <span
-                                className={`address-text ${expandedAddresses[`${item.id}-male`] ? 'expanded' : ''}`}
-                              >
-                                {item.malePlace || "-"}
-                              </span>
-                              {item.malePlace && item.malePlace.length > 50 && (
-                                <button
-                                  className="show-more-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedAddresses(prev => ({
-                                      ...prev,
-                                      [`${item.id}-male`]: !prev[`${item.id}-male`]
-                                    }));
-                                  }}
-                                >
-                                  {expandedAddresses[`${item.id}-male`] ? 'Show less' : 'Show more'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {item.lastGenerated && (
-                        <div className="history-last-generated">
-                          Last generated: {(() => {
-                            const date = new Date(item.lastGenerated);
-                            const now = new Date();
-                            const diffMs = now - date;
-                            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                            if (diffDays === 0) return "Today";
-                            if (diffDays === 1) return "1 day ago";
-                            if (diffDays < 7) return `${diffDays} days ago`;
-                            return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-                          })()}
-                        </div>
-                      )}
-                      <div className="history-card-footer">
-                        <div className="history-actions">
-                          <button className="use-btn" onClick={(e) => { e.stopPropagation(); loadHistoryIntoForm(item); }}>
-                            Load
-                          </button>
-                          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}>
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
+              {history.length > 0 && (
+                <button
+                  onClick={clearHistory}
+                  className="btn-ghost"
+                  style={{ padding: "0.5rem", fontSize: "0.875rem" }}
+                >
+                  <RotateCcw className="w-4 h-4" /> Clear
+                </button>
               )}
             </div>
+
+            {/* Search input */}
+            {history.length > 0 && (
+              <input
+                type="text"
+                placeholder="Search by name, place, or date..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="history-search"
+              />
             )}
+
+            {/* 🔥 NEW SCROLL CONTAINER */}
+            <div className="history-scroll-area">
+              {history.length === 0 ? (
+                <div className="empty-state">No matching history yet.</div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="empty-state">
+                  No matches found for your search.
+                </div>
+              ) : (
+                <div className="history-cards">
+                  {filteredHistory.map((item) => {
+                    const isExpanded =
+                      expandedAddresses[`${item.id}-female`] ||
+                      expandedAddresses[`${item.id}-male`];
+                    return (
+                      <div
+                        key={item.id}
+                        className={`history-card ${isExpanded ? "expanded" : ""}`}
+                        onClick={() => loadHistoryIntoForm(item)}
+                      >
+                        <div className="history-card-top">
+                          <div className="history-card-names">
+                            <span className="pill pill-female">
+                              {" "}
+                              {item.femaleName || "Female"}{" "}
+                            </span>
+                            <span className="dot-separator">↔</span>
+                            <span className="pill pill-male">
+                              {" "}
+                              {item.maleName || "Male"}{" "}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="history-card-body">
+                          <div className="person-block">
+                            <div className="person-meta">
+                              <Calendar className="meta-icon" />
+                              <span>
+                                {" "}
+                                {item.femaleDob || "-"} ·{" "}
+                                {item.femaleTob || "-"}{" "}
+                              </span>
+                            </div>
+                            <div className="person-meta">
+                              <MapPin className="meta-icon" />
+                              <div style={{ flex: 1 }}>
+                                <span
+                                  className={`address-text ${expandedAddresses[`${item.id}-female`] ? "expanded" : ""}`}
+                                >
+                                  {item.femalePlace || "-"}
+                                </span>
+                                {item.femalePlace &&
+                                  item.femalePlace.length > 50 && (
+                                    <button
+                                      className="show-more-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedAddresses((prev) => ({
+                                          ...prev,
+                                          [`${item.id}-female`]:
+                                            !prev[`${item.id}-female`],
+                                        }));
+                                      }}
+                                    >
+                                      {expandedAddresses[`${item.id}-female`]
+                                        ? "Show less"
+                                        : "Show more"}
+                                    </button>
+                                  )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="person-divider" />
+
+                          <div className="person-block">
+                            <div className="person-meta">
+                              <Calendar className="meta-icon" />
+                              <span>
+                                {" "}
+                                {item.maleDob || "-"} ·{" "}
+                                {item.maleTob || "-"}{" "}
+                              </span>
+                            </div>
+                            <div className="person-meta">
+                              <MapPin className="meta-icon" />
+                              <div style={{ flex: 1 }}>
+                                <span
+                                  className={`address-text ${expandedAddresses[`${item.id}-male`] ? "expanded" : ""}`}
+                                >
+                                  {item.malePlace || "-"}
+                                </span>
+                                {item.malePlace &&
+                                  item.malePlace.length > 50 && (
+                                    <button
+                                      className="show-more-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedAddresses((prev) => ({
+                                          ...prev,
+                                          [`${item.id}-male`]:
+                                            !prev[`${item.id}-male`],
+                                        }));
+                                      }}
+                                    >
+                                      {expandedAddresses[`${item.id}-male`]
+                                        ? "Show less"
+                                        : "Show more"}
+                                    </button>
+                                  )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {item.lastGenerated && (
+                          <div className="history-last-generated">
+                            Last generated:{" "}
+                            {(() => {
+                              const date = new Date(item.lastGenerated);
+                              const now = new Date();
+                              const diffMs = now - date;
+                              const diffDays = Math.floor(
+                                diffMs / (1000 * 60 * 60 * 24),
+                              );
+                              if (diffDays === 0) return "Today";
+                              if (diffDays === 1) return "1 day ago";
+                              if (diffDays < 7) return `${diffDays} days ago`;
+                              return date.toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              });
+                            })()}
+                          </div>
+                        )}
+                        <div className="history-card-footer">
+                          <div className="history-actions">
+                            <button
+                              className="use-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                loadHistoryIntoForm(item);
+                              }}
+                            >
+                              Load
+                            </button>
+                            <button
+                              className="delete-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteHistoryItem(item.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      
-        </div>
-
-
-
 
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
@@ -2324,7 +2611,6 @@ export default function MatchingPage() {
               </div>
             </div>
 
-
             {/* Verdict Card */}
             <div className="card mt-6">
               <div className="results-header">
@@ -2332,17 +2618,35 @@ export default function MatchingPage() {
                 <h3 className="results-title">Ashtakoot Compatibility</h3>
               </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-4xl font-bold text-gold">
-                  {Number(result?.total_score ?? 0)}
-                  <span className="text-gray-500 text-xl">
-                    /{Number(result?.out_of ?? 36)}
-                  </span>
-                </div>
-                <div className="liveBadge">
-                  <div className="pulseDot" /> Score Summary
-                </div>
-              </div>
+              {(() => {
+                const verdict = getCompatibilityVerdict(
+                  result?.total_score,
+                  result?.out_of,
+                );
+
+                return (
+                  <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="text-4xl font-bold text-gold">
+                        {Number(result?.total_score ?? 0)}
+                        <span className="text-gray-500 text-xl">
+                          /{Number(result?.out_of ?? 36)}
+                        </span>
+                      </div>
+
+                      <Badge tone={verdict.tone}>{verdict.label}</Badge>
+
+                      <div className="liveBadge">
+                        <div className="pulseDot" /> Score Summary
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 max-w-xl">
+                      {verdict.description}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Koot Table */}
               <div className="table-scroll-container mt-4">
@@ -2413,9 +2717,34 @@ export default function MatchingPage() {
                     <div className="card">
                       <div className="results-header">
                         <Moon style={{ color: "#a78bfa" }} />
-                        <h3 className="results-title">{t.matching.femaleDetails} - Shadbala</h3>
+                        <h3 className="results-title">
+                          {t.matching.femaleDetails} - Shadbala
+                        </h3>
                       </div>
+                      <div className="card summary-card female">
+                        <h4>How strong is her chart overall?</h4>
 
+                        <div className="summary-score">
+                          <span className="score-pill good">Strong</span>
+                          <span className="score-text">
+                            Emotional stability and relationship support are
+                            favorable
+                          </span>
+                        </div>
+
+                        <ul className="summary-points">
+                          <li>✔ Moon and Venus are supportive</li>
+                          <li>⚠ Mars shows emotional friction</li>
+                          <li>🔒 Exact remedies & timing locked</li>
+                        </ul>
+
+                        <button
+                          className="unlock-btn"
+                          onClick={onTalkToAstrologer}
+                        >
+                          Understand what this means →
+                        </button>
+                      </div>
                       {/* Shadbala / Ishta-Kashta */}
                       <div>
                         <table className="planet-table shadbala-table">
@@ -2430,7 +2759,9 @@ export default function MatchingPage() {
                           <tbody>
                             {(fDetails?.shadbalaRows || []).map((p, i) => (
                               <tr key={i}>
-                                <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
+                                <td style={{ fontWeight: 500 }}>
+                                  {p.name || "—"}
+                                </td>
                                 <td>
                                   {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
                                 </td>
@@ -2481,7 +2812,9 @@ export default function MatchingPage() {
                     <div className="card">
                       <div className="results-header">
                         <Moon style={{ color: "#a78bfa" }} />
-                        <h3 className="results-title">{t.matching.femaleDetails} - Planet Placements</h3>
+                        <h3 className="results-title">
+                          {t.matching.femaleDetails} - Planet Placements
+                        </h3>
                       </div>
 
                       {/* Planet Placements */}
@@ -2498,8 +2831,9 @@ export default function MatchingPage() {
                           </thead>
                           <tbody>
                             {(fDetails?.placements || []).map((p, i) => {
-                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                                })`;
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                                p.pada ?? "—"
+                              })`;
 
                               return (
                                 <tr key={i}>
@@ -2520,7 +2854,9 @@ export default function MatchingPage() {
                                   <td>
                                     <div className="deg-cell">
                                       {typeof p.fullDegree === "number" && (
-                                        <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                        <div>
+                                          Full: {p.fullDegree.toFixed(2)}°
+                                        </div>
                                       )}
                                       {typeof p.normDegree === "number" && (
                                         <div className="deg-norm">
@@ -2549,7 +2885,9 @@ export default function MatchingPage() {
                     <div className="card">
                       <div className="results-header">
                         <Sun style={{ color: "#d4af37" }} />
-                        <h3 className="results-title">{t.matching.maleDetails} - Shadbala</h3>
+                        <h3 className="results-title">
+                          {t.matching.maleDetails} - Shadbala
+                        </h3>
                       </div>
 
                       {/* Shadbala / Ishta-Kashta */}
@@ -2566,7 +2904,9 @@ export default function MatchingPage() {
                           <tbody>
                             {(mDetails?.shadbalaRows || []).map((p, i) => (
                               <tr key={i}>
-                                <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
+                                <td style={{ fontWeight: 500 }}>
+                                  {p.name || "—"}
+                                </td>
                                 <td>
                                   {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
                                 </td>
@@ -2617,7 +2957,9 @@ export default function MatchingPage() {
                     <div className="card">
                       <div className="results-header">
                         <Sun style={{ color: "#d4af37" }} />
-                        <h3 className="results-title">{t.matching.maleDetails} - Planet Placements</h3>
+                        <h3 className="results-title">
+                          {t.matching.maleDetails} - Planet Placements
+                        </h3>
                       </div>
 
                       {/* Planet Placements */}
@@ -2634,8 +2976,9 @@ export default function MatchingPage() {
                           </thead>
                           <tbody>
                             {(mDetails?.placements || []).map((p, i) => {
-                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                                })`;
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                                p.pada ?? "—"
+                              })`;
 
                               return (
                                 <tr key={i}>
@@ -2656,7 +2999,9 @@ export default function MatchingPage() {
                                   <td>
                                     <div className="deg-cell">
                                       {typeof p.fullDegree === "number" && (
-                                        <div>Full: {p.fullDegree.toFixed(2)}°</div>
+                                        <div>
+                                          Full: {p.fullDegree.toFixed(2)}°
+                                        </div>
                                       )}
                                       {typeof p.normDegree === "number" && (
                                         <div className="deg-norm">
@@ -2705,101 +3050,121 @@ export default function MatchingPage() {
           </div>
         )}
 
-
-                {/* Explanation Card - Below form and history */}
-        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem", margin: "0 auto" }}>
-          <div 
+        {/* Explanation Card - Below form and history */}
+        <div
+          style={{
+            marginTop: "-3rem",
+            width: "100%",
+            padding: "0 1rem",
+            margin: "0 auto",
+          }}
+        >
+          <div
             className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
             style={{
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
+              background:
+                "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
               borderColor: "rgba(212, 175, 55, 0.3)",
               maxWidth: "100%",
             }}
           >
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "1.5rem",
-            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-            marginBottom: "1.5rem",
-          }}>
-            <h2 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: 0,
-            }}>
-              Understanding Compatibility Matching
-            </h2>
-          </div>
-          <div style={{ padding: 0 }}>
-            <p style={{
-              fontSize: "0.875rem",
-              color: "#374151",
-              fontStyle: "normal",
-              marginBottom: 0,
-              fontFamily: "'Inter', sans-serif",
-              lineHeight: 1.6,
-            }}>
-              The <strong>Ashtakoot System</strong> (8-Point Matching) evaluates compatibility across eight key dimensions: <strong>Varna</strong> (spiritual compatibility), <strong>Vashya</strong> (mutual attraction), <strong>Tara</strong> (birth star compatibility), <strong>Yoni</strong> (nature compatibility), <strong>Graha Maitri</strong> (planetary friendship), <strong>Gana</strong> (temperament), <strong>Bhakoot</strong> (emotional compatibility), and <strong>Nadi</strong> (health compatibility). Each dimension contributes points to the total compatibility score, with higher scores indicating better alignment between partners.
-            </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: "1.5rem",
+                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                Understanding Compatibility Matching
+              </h2>
+            </div>
+            <div style={{ padding: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#374151",
+                  fontStyle: "normal",
+                  marginBottom: 0,
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: 1.6,
+                }}
+              >
+                The <strong>Ashtakoot System</strong> (8-Point Matching)
+                evaluates compatibility across eight key dimensions:{" "}
+                <strong>Varna</strong> (spiritual compatibility),{" "}
+                <strong>Vashya</strong> (mutual attraction),{" "}
+                <strong>Tara</strong> (birth star compatibility),{" "}
+                <strong>Yoni</strong> (nature compatibility),{" "}
+                <strong>Graha Maitri</strong> (planetary friendship),{" "}
+                <strong>Gana</strong> (temperament), <strong>Bhakoot</strong>{" "}
+                (emotional compatibility), and <strong>Nadi</strong> (health
+                compatibility). Each dimension contributes points to the total
+                compatibility score, with higher scores indicating better
+                alignment between partners.
+              </p>
+            </div>
           </div>
         </div>
-        </div>
-     
 
+        <a
+          href="/talk-to-astrologer"
+          className="global-floater global-floater--astrologer"
+          aria-label="Talk to Astrologer"
+        >
+          <PhoneCallIcon className="global-floater-icon" />
+          <span className="global-floater-text">Talk to Astrologer</span>
+        </a>
 
-
-      <a
-  href="/talk-to-astrologer"
-  className="global-floater global-floater--astrologer"
-  aria-label="Talk to Astrologer"
->
-<PhoneCallIcon className="global-floater-icon"/>
-  <span className="global-floater-text">Talk to Astrologer</span>
-</a>
-
-      {/* Astrologer Assistant Floating Card */}
-      <AstrologerAssistant
-        pageTitle="Matching"
-        initialData={(() => {
-          // Use chatData if available, otherwise build from current state
-          const data = chatData || {
-            female: {
-              input: {
-                name: female.fullName,
-                dob: female.dob,
-                tob: female.tob,
-                place: female.place,
-                coords: fCoords,
+        {/* Astrologer Assistant Floating Card */}
+        <AstrologerAssistant
+          pageTitle="Matching"
+          initialData={(() => {
+            // Use chatData if available, otherwise build from current state
+            const data = chatData || {
+              female: {
+                input: {
+                  name: female.fullName,
+                  dob: female.dob,
+                  tob: female.tob,
+                  place: female.place,
+                  coords: fCoords,
+                },
+                details: fDetails,
               },
-              details: fDetails,
-            },
-            male: {
-              input: {
-                name: male.fullName,
-                dob: male.dob,
-                tob: male.tob,
-                place: male.place,
-                coords: mCoords,
+              male: {
+                input: {
+                  name: male.fullName,
+                  dob: male.dob,
+                  tob: male.tob,
+                  place: male.place,
+                  coords: mCoords,
+                },
+                details: mDetails,
               },
-              details: mDetails,
-            },
-            match: result || null,
-          };
-          return data;
-        })()}
-        chatType="matchmaking"
-        shouldReset={shouldResetChat}
-        formDataHash={currentFormDataHash}
-        chatSessionId={chatSessionId}
-        show={true}
-        hasData={!!result}
-      />
-
-    </div>
+              match: result || null,
+            };
+            return data;
+          })()}
+          chatType="matchmaking"
+          shouldReset={shouldResetChat}
+          formDataHash={currentFormDataHash}
+          chatSessionId={chatSessionId}
+          show={true}
+          hasData={!!result}
+        />
+      </div>
     </>
   );
 }

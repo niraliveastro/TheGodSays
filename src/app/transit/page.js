@@ -327,8 +327,8 @@ export default function TransitPage() {
       </div>
 
       <div className="transit-content">
-        <header className="transit-header">
-          <h1 className="title">Planetary Transit</h1>
+        <header className="header">
+          <h1 className="title mx-auto">Planetary Transit</h1>
           <p className="subtitle">
             Current planetary movements and their cosmic influences
           </p>
@@ -599,6 +599,84 @@ export default function TransitPage() {
           </main>
         )}
       </div>
+
+{/* Explanation Card */}
+<div
+  style={{
+    marginTop: "2rem",
+    width: "100%",
+    maxWidth: "90rem",
+    marginLeft: "auto",
+    marginRight: "auto",
+  }}
+>
+  <div
+    className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+    style={{
+      background: "#ffffff",
+      borderColor: "#eaeaea",
+      maxWidth: "100%",
+      boxShadow:
+        "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingBottom: "1.5rem",
+        borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+        marginBottom: "1.5rem",
+      }}
+    >
+      <h2
+        style={{
+          fontFamily: "'Georgia', 'Times New Roman', serif",
+          fontSize: "1.5rem",
+          fontWeight: 700,
+          color: "#1f2937",
+          margin: 0,
+        }}
+      >
+        Understanding Planetary Transits
+      </h2>
+    </div>
+
+    <div style={{ padding: 0 }}>
+      <p
+        style={{
+          fontSize: "0.875rem",
+          color: "#374151",
+          fontStyle: "normal",
+          marginBottom: 0,
+          fontFamily: "'Inter', sans-serif",
+          lineHeight: 1.6,
+        }}
+      >
+        This page tracks <strong>real-time planetary movements</strong> and
+        upcoming transitions as planets shift from one zodiac sign to another.
+        Each transit reflects a change in cosmic tone, influencing collective
+        themes such as mindset, action, growth, discipline, and emotional flow.
+        <br />
+        <br />
+        <strong>Current Transits</strong> show where each planet is positioned
+        right now and how long it will remain there.
+        <strong> Next Immediate Transits</strong> highlight the closest upcoming
+        sign changes with live countdowns.
+        <strong> Upcoming Transits</strong> allow you to explore future planetary
+        movements over the next six months or five years.
+        <br />
+        <br />
+        These insights are calculated using precise astronomical timing and
+        traditional astrological frameworks, helping you understand
+        <strong> when energies shift</strong> rather than predicting fixed
+        outcomes. Think of this as a cosmic weather report, revealing cycles,
+        momentum, and transitions unfolding in the sky.
+      </p>
+    </div>
+  </div>
+</div>
     </div>
   );
 }
