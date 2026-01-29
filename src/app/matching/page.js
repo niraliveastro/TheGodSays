@@ -1,4 +1,6 @@
 "use client";
+
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
@@ -1220,7 +1222,9 @@ export default function MatchingPage() {
   };
 
 
-  const onTalkToAstrologer = () => {
+const router = useRouter();
+
+const onTalkToAstrologer = () => {
   router.push("/talk-to-astrologer");
 };
 
@@ -1876,642 +1880,525 @@ export default function MatchingPage() {
             {error}
           </div>
         )}
-        {/* Header Section */}
-        <header
-          className="header"
-          style={{
-            textAlign: "center",
-            marginTop: "0.01rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <div
-            className="headerIcon"
-            style={{
-              width: "64px",
-              height: "64px",
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              borderRadius: "16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 0.75rem",
-              boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)",
-            }}
-          >
-            <IoHeartCircle
-              style={{ color: "white", width: "36px", height: "36px" }}
-            />
-          </div>
-          <h1
-            className="title"
-            style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontSize: "3rem",
-              fontWeight: 400,
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              margin: 0,
-            }}
-          >
-            Match Making
-          </h1>
-          <p
-            className="subtitle"
-            style={{
-              color: "#555",
-              marginTop: "0.5rem",
-              marginBottom: "0",
-              fontSize: "1rem",
-            }}
-          >
-            Enter birth details for both to get Ashtakoot score
-          </p>
-        </header>
-        <div className="matching-page-container">
-          {/* Left Column - Birth Details */}
-          <div className="birth-details-section">
-            <form onSubmit={onSubmit}>
-              {/* Header */}
-              <div className="form-header">
-                <Moon className="w-6 h-6" style={{ color: "#ca8a04" }} />
-                <div>
-                  <h3 className="form-title">{t.matching.birthDetails}</h3>
-                  <p className="form-subtitle">{t.matching.enterBothDetails}</p>
-                </div>
-              </div>
+        
 
-              {/* Grid */}
-              <div className="form-sections-container">
-                {/* ---------- Female ---------- */}
-                <div
-                  className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
-                  style={{
-                    background: "#fdf2f8",
-                    borderColor: "#fbcfe8",
-                    width: "100%",
-                    boxSizing: "border-box",
-                    minWidth: 0,
-                  }}
-                >
-                  <div className="results-header mb-3">
-                    <Moon style={{ color: "#ec4899" }} />
-                    <h3 className="results-title">
-                      {t.matching.femaleDetails}
-                    </h3>
+        <div className="matching-page">
+          <form onSubmit={onSubmit} className="match-form">
+
+            {/* Header */}
+            <header className="header left-align">
+              <h1 className="title">Pro Kundali Match</h1>
+            </header>
+
+            {/* =====================
+      CARDS
+  ===================== */}
+            <section className="birth-cards">
+              {/* ========= FEMALE ========= */}
+              <div className="birth-card female">
+                <div className="birth-card-header">
+                  <Moon className="icon-female" />
+                  <h3 >{t.matching.femaleDetails}</h3>
+                </div>
+
+                <div className="birth-grid">
+                  {/* Female Name */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-name">
+                      {t.matching.femaleName}
+                    </label>
+
+                    <input
+                      id="female-name"
+                      type="text"
+                      className="form-field-input"
+                      placeholder="e.g., Priya"
+                      value={female.fullName}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "fullName",
+                      )}
+                      required
+                    />
                   </div>
-                  <div className="form-grid-2col">
-                    {/* Row 1: Full Name + Date */}
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.femaleName}
-                      </label>
+
+                  {/* Date of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-dob">
+                      {t.matching.dateOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
                       <input
-                        type="text"
-                        placeholder="e.g., Priya"
-                        value={female.fullName}
+                        id="female-dob"
+                        ref={fDateInputRef}
+                        type="date"
+                        className="form-field-input"
+                        value={female.dob}
                         onChange={onChangePerson(
                           setFemale,
                           setFCoords,
                           setFSuggest,
                           fTimer,
-                          "fullName",
+                          "dob",
                         )}
                         required
-                        className="form-field-input form-input-field"
                       />
-                      <p className="form-field-helper">
-                        Enter full name as per records
-                      </p>
+
+                      <button
+                        type="button"
+                        className="calendar-icon-btn"
+                        onClick={() =>
+                          fDateInputRef.current?.showPicker?.() ||
+                          fDateInputRef.current?.click()
+                        }
+                      >
+                        <Calendar />
+                      </button>
                     </div>
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.dateOfBirth}
-                      </label>
-                      <div className="input-with-icon">
-                        <input
-                          ref={fDateInputRef}
-                          type="date"
-                          value={female.dob}
-                          onChange={onChangePerson(
-                            setFemale,
-                            setFCoords,
-                            setFSuggest,
-                            fTimer,
-                            "dob",
-                          )}
-                          required
-                          className="form-field-input form-input-field"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            fDateInputRef.current?.showPicker?.() ||
-                            fDateInputRef.current?.click()
-                          }
-                          className="input-icon-btn calendar-icon-btn"
-                        >
-                          <Calendar
-                            className="w-5 h-5"
-                            style={{ color: "#000000" }}
-                          />
-                        </button>
+                  </div>
+
+                  {/* Time of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-tob">
+                      {t.matching.timeOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-tob"
+                        ref={fTimeInputRef}
+                        type="time"
+                        step="60"
+                        className="form-field-input"
+                        value={female.tob}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "tob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="clock-icon-btn"
+                        onClick={() =>
+                          fTimeInputRef.current?.showPicker?.() ||
+                          fTimeInputRef.current?.click()
+                        }
+                      >
+                        <Clock />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Place */}
+                  <div className="form-field full">
+                    <label className="form-field-label" htmlFor="female-place">
+                      Place
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-place"
+                        type="text"
+                        className="form-field-input"
+                        placeholder="e.g., Mumbai, India"
+                        value={female.place}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "place",
+                        )}
+                        autoComplete="off"
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="location-icon-btn"
+                        title="Use current location"
+                        onClick={useMyLocationFemale}
+                      >
+                        <MapPin />
+                      </button>
+                    </div>
+
+                    {fSuggest.length > 0 && (
+                      <div className="suggestions">
+                        {fSuggest.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setFemale((p) => ({ ...p, place: s.label }));
+                              setFCoords(s);
+                              setFSuggest([]);
+                            }}
+                          >
+                            <MapPin size={14} />
+                            <span>{s.label}</span>
+                          </button>
+                        ))}
                       </div>
-                      <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                    </div>
-                    {/* Row 2: Time + Place */}
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.timeOfBirth}
-                      </label>
-                      <div className="input-with-icon">
-                        <input
-                          ref={fTimeInputRef}
-                          type="time"
-                          step="60"
-                          value={female.tob}
-                          onChange={onChangePerson(
-                            setFemale,
-                            setFCoords,
-                            setFSuggest,
-                            fTimer,
-                            "tob",
-                          )}
-                          className="form-field-input form-input-field"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            fTimeInputRef.current?.showPicker?.() ||
-                            fTimeInputRef.current?.click()
-                          }
-                          className="clock-icon-btn"
-                        >
-                          <Clock
-                            className="w-5 h-5"
-                            style={{ color: "#000000" }}
-                          />
-                        </button>
-                      </div>
-                      <p className="form-field-helper">24-hour format</p>
-                    </div>
-                    <div className="form-field relative">
-                      <label className="form-field-label">Place</label>
-                      <div className="input-with-icon">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={female.place}
-                          onChange={onChangePerson(
-                            setFemale,
-                            setFCoords,
-                            setFSuggest,
-                            fTimer,
-                            "place",
-                          )}
-                          autoComplete="off"
-                          required
-                          className="form-field-input form-input-field"
-                        />
-                        <button
-                          type="button"
-                          onClick={useMyLocationFemale}
-                          disabled={fLocating}
-                          className="location-icon-btn"
-                        >
-                          {fLocating ? (
-                            <LoaderCircle
-                              className="w-5 h-5 animate-spin"
-                              style={{ color: "#ec4899" }}
-                            />
-                          ) : (
-                            <MapPin
-                              className="w-5 h-5"
-                              style={{ color: "#ec4899" }}
-                            />
-                          )}
-                        </button>
-                      </div>
-                      <p className="form-field-helper">
-                        Choose the nearest city for accurate calculation
-                      </p>
-                      {fSuggest.length > 0 && (
-                        <div className="suggestions">
-                          {fSuggest.map((s, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => {
-                                setFemale((p) => ({ ...p, place: s.label }));
-                                setFCoords(s);
-                                setFSuggest([]);
-                              }}
-                              className="suggestion-item"
-                            >
-                              <MapPin className="w-3.5 h-3.5 text-pink-500" />
-                              <span className="truncate">{s.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-                {/* ---------- Male ---------- */}
-                <div
-                  className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
-                  style={{
-                    background: "#eff6ff",
-                    borderColor: "#bfdbfe",
-                    width: "100%",
-                    boxSizing: "border-box",
-                    minWidth: 0,
-                  }}
-                >
-                  <div className="results-header mb-3">
-                    <Sun style={{ color: "#3b82f6" }} />
-                    <h3 className="results-title">{t.matching.maleDetails}</h3>
+              </div>
+
+              {/* ========= MALE ========= */}
+              <div className="birth-card male">
+                <div className="birth-card-header">
+                  <Sun className="icon-male" />
+                  <h3>{t.matching.maleDetails}</h3>
+                </div>
+
+                <div className="birth-grid">
+                  {/* Female Name */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-name">
+                      {t.matching.femaleName}
+                    </label>
+
+                    <input
+                      id="female-name"
+                      type="text"
+                      className="form-field-input"
+                      placeholder="e.g., Priya"
+                      value={female.fullName}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "fullName",
+                      )}
+                      required
+                    />
                   </div>
-                  <div className="form-grid-2col">
-                    {/* Row 1: Full Name + Date */}
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.maleName}
-                      </label>
+
+                  {/* Date of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-dob">
+                      {t.matching.dateOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
                       <input
+                        id="female-dob"
+                        ref={fDateInputRef}
+                        type="date"
+                        className="form-field-input"
+                        value={female.dob}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "dob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="calendar-icon-btn"
+                        onClick={() =>
+                          fDateInputRef.current?.showPicker?.() ||
+                          fDateInputRef.current?.click()
+                        }
+                      >
+                        <Calendar />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Time of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-tob">
+                      {t.matching.timeOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-tob"
+                        ref={fTimeInputRef}
+                        type="time"
+                        step="60"
+                        className="form-field-input"
+                        value={female.tob}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "tob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="clock-icon-btn"
+                        onClick={() =>
+                          fTimeInputRef.current?.showPicker?.() ||
+                          fTimeInputRef.current?.click()
+                        }
+                      >
+                        <Clock />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Place */}
+                  <div className="form-field full">
+                    <label className="form-field-label" htmlFor="female-place">
+                      Place
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-place"
                         type="text"
-                        placeholder="e.g., Rohan"
-                        value={male.fullName}
+                        className="form-field-input"
+                        placeholder="e.g., Mumbai, India"
+                        value={female.place}
                         onChange={onChangePerson(
                           setMale,
                           setMCoords,
                           setMSuggest,
-                          mTimer,
-                          "fullName",
+                          fTimer,
+                          "place",
                         )}
+                        autoComplete="off"
                         required
-                        className="form-field-input form-input-field"
                       />
-                      <p className="form-field-helper">
-                        Enter full name as per records
-                      </p>
+
+                      <button
+                        type="button"
+                        className="location-icon-btn"
+                        title="Use current location"
+                        onClick={useMyLocationMale}
+                      >
+                        <MapPin />
+                      </button>
                     </div>
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.dateOfBirth}
-                      </label>
-                      <div className="input-with-icon">
-                        <input
-                          ref={mDateInputRef}
-                          type="date"
-                          value={male.dob}
-                          onChange={onChangePerson(
-                            setMale,
-                            setMCoords,
-                            setMSuggest,
-                            mTimer,
-                            "dob",
-                          )}
-                          required
-                          className="form-field-input form-input-field"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            mDateInputRef.current?.showPicker?.() ||
-                            mDateInputRef.current?.click()
-                          }
-                          className="input-icon-btn calendar-icon-btn"
-                        >
-                          <Calendar
-                            className="w-5 h-5"
-                            style={{ color: "#000000" }}
-                          />
-                        </button>
+
+                    {fSuggest.length > 0 && (
+                      <div className="suggestions">
+                        {fSuggest.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setMale((p) => ({ ...p, place: s.label }));
+                              setMCoords(s);
+                              setMSuggest([]);
+                            }}
+                          >
+                            <MapPin size={14} />
+                            <span>{s.label}</span>
+                          </button>
+                        ))}
                       </div>
-                      <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                    </div>
-                    {/* Row 2: Time + Place */}
-                    <div className="form-field">
-                      <label className="form-field-label">
-                        {t.matching.timeOfBirth}
-                      </label>
-                      <div className="input-with-icon">
-                        <input
-                          ref={mTimeInputRef}
-                          type="time"
-                          step="60"
-                          value={male.tob}
-                          onChange={onChangePerson(
-                            setMale,
-                            setMCoords,
-                            setMSuggest,
-                            mTimer,
-                            "tob",
-                          )}
-                          className="form-field-input form-input-field"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            mTimeInputRef.current?.showPicker?.() ||
-                            mTimeInputRef.current?.click()
-                          }
-                          className="clock-icon-btn"
-                        >
-                          <Clock
-                            className="w-5 h-5"
-                            style={{ color: "#000000" }}
-                          />
-                        </button>
-                      </div>
-                      <p className="form-field-helper">24-hour format</p>
-                    </div>
-                    <div className="form-field relative">
-                      <label className="form-field-label">Place</label>
-                      <div className="input-with-icon">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={male.place}
-                          onChange={onChangePerson(
-                            setMale,
-                            setMCoords,
-                            setMSuggest,
-                            mTimer,
-                            "place",
-                          )}
-                          autoComplete="off"
-                          required
-                          className="form-field-input form-input-field"
-                        />
-                        <button
-                          type="button"
-                          onClick={useMyLocationMale}
-                          disabled={mLocating}
-                          className="location-icon-btn"
-                        >
-                          {mLocating ? (
-                            <LoaderCircle
-                              className="w-5 h-5 animate-spin"
-                              style={{ color: "#3b82f6" }}
-                            />
-                          ) : (
-                            <MapPin
-                              className="w-5 h-5"
-                              style={{ color: "#3b82f6" }}
-                            />
-                          )}
-                        </button>
-                      </div>
-                      <p className="form-field-helper">
-                        Choose the nearest city for accurate calculation
-                      </p>
-                      {mSuggest.length > 0 && (
-                        <div className="suggestions">
-                          {mSuggest.map((s, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => {
-                                setMale((p) => ({ ...p, place: s.label }));
-                                setMCoords(s);
-                                setMSuggest([]);
-                              }}
-                              className="suggestion-item"
-                            >
-                              <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                              <span className="truncate">{s.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
-              {/* Action Buttons */}
-              <div className="action-buttons">
-                <button
-                  type="submit"
-                  disabled={submitting || fFilled < 3 || mFilled < 3}
-                  className="btn-primary"
-                >
-                  {submitting ? (
-                    <>
-                      <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
-                      Calculating…
-                    </>
-                  ) : (
-                    <>Check Compatibility</>
-                  )}
-                </button>
-                <button
-                  type="reset"
-                  onClick={resetAllFields}
-                  className="btn-ghost"
-                >
-                  <RotateCcw className="w-4 h-4" /> Reset
-                </button>
-              </div>
-            </form>
-          </div>
+            </section>
 
-          <div className="matching-history-sidebar">
-            <div className="history-header">
-              <h3 className="history-title">
-                <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
-                Saved Profiles
-              </h3>
+            {/* =====================
+      ACTIONS
+  ===================== */}
+            <footer className="form-actions">
+              <button
+                type="submit"
+                className="primary-btn"
+                disabled={submitting || fFilled < 3 || mFilled < 3}
+              >
+                {submitting ? "Calculating…" : "Check Compatibility"}
+              </button>
 
-              {history.length > 0 && (
-                <button
-                  onClick={clearHistory}
-                  className="btn-ghost"
-                  style={{ padding: "0.5rem", fontSize: "0.875rem" }}
-                >
-                  <RotateCcw className="w-4 h-4" /> Clear
-                </button>
-              )}
-            </div>
+              <button
+                type="reset"
+                className="ghost-btn"
+                onClick={resetAllFields}
+              >
+                Reset
+              </button>
+            </footer>
+          </form>
 
-            {/* Search input */}
-            {history.length > 0 && (
-              <input
-                type="text"
-                placeholder="Search by name, place, or date..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                className="history-search"
-              />
-            )}
+{/* ===================== */}
+{/* HISTORY BELOW FORM */}
+{/* ===================== */}
+<section className="history-section">
 
-            {/* 🔥 NEW SCROLL CONTAINER */}
-            <div className="history-scroll-area">
-              {history.length === 0 ? (
-                <div className="empty-state">No matching history yet.</div>
-              ) : filteredHistory.length === 0 ? (
-                <div className="empty-state">
-                  No matches found for your search.
-                </div>
-              ) : (
-                <div className="history-cards">
-                  {filteredHistory.map((item) => {
-                    const isExpanded =
-                      expandedAddresses[`${item.id}-female`] ||
-                      expandedAddresses[`${item.id}-male`];
-                    return (
-                      <div
-                        key={item.id}
-                        className={`history-card ${isExpanded ? "expanded" : ""}`}
-                        onClick={() => loadHistoryIntoForm(item)}
-                      >
-                        <div className="history-card-top">
-                          <div className="history-card-names">
-                            <span className="pill pill-female">
-                              {" "}
-                              {item.femaleName || "Female"}{" "}
-                            </span>
-                            <span className="dot-separator">↔</span>
-                            <span className="pill pill-male">
-                              {" "}
-                              {item.maleName || "Male"}{" "}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="history-card-body">
-                          <div className="person-block">
-                            <div className="person-meta">
-                              <Calendar className="meta-icon" />
-                              <span>
-                                {" "}
-                                {item.femaleDob || "-"} ·{" "}
-                                {item.femaleTob || "-"}{" "}
-                              </span>
-                            </div>
-                            <div className="person-meta">
-                              <MapPin className="meta-icon" />
-                              <div style={{ flex: 1 }}>
-                                <span
-                                  className={`address-text ${expandedAddresses[`${item.id}-female`] ? "expanded" : ""}`}
-                                >
-                                  {item.femalePlace || "-"}
-                                </span>
-                                {item.femalePlace &&
-                                  item.femalePlace.length > 50 && (
-                                    <button
-                                      className="show-more-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setExpandedAddresses((prev) => ({
-                                          ...prev,
-                                          [`${item.id}-female`]:
-                                            !prev[`${item.id}-female`],
-                                        }));
-                                      }}
-                                    >
-                                      {expandedAddresses[`${item.id}-female`]
-                                        ? "Show less"
-                                        : "Show more"}
-                                    </button>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
+  {/* ---------- Header ---------- */}
+  <div className="history-header mt-6">
+    <h3 className="history-title flex" style={{ fontSize:"2.25rem", color: "var(--color-gold)", fontWeight: "500", textAlign:"center", }}>
+      <Sparkles className="w-5 h-5" style={{ color: "var(--color-gold)" }} />
+      Saved Profiles
+    </h3>
 
-                          <div className="person-divider" />
+    {history.length > 0 && (
+      <button
+        onClick={clearHistory}
+        className="btn-ghost"
+      >
+        <RotateCcw className="w-4 h-4" />
+        Clear
+      </button>
+    )}
+  </div>
 
-                          <div className="person-block">
-                            <div className="person-meta">
-                              <Calendar className="meta-icon" />
-                              <span>
-                                {" "}
-                                {item.maleDob || "-"} ·{" "}
-                                {item.maleTob || "-"}{" "}
-                              </span>
-                            </div>
-                            <div className="person-meta">
-                              <MapPin className="meta-icon" />
-                              <div style={{ flex: 1 }}>
-                                <span
-                                  className={`address-text ${expandedAddresses[`${item.id}-male`] ? "expanded" : ""}`}
-                                >
-                                  {item.malePlace || "-"}
-                                </span>
-                                {item.malePlace &&
-                                  item.malePlace.length > 50 && (
-                                    <button
-                                      className="show-more-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setExpandedAddresses((prev) => ({
-                                          ...prev,
-                                          [`${item.id}-male`]:
-                                            !prev[`${item.id}-male`],
-                                        }));
-                                      }}
-                                    >
-                                      {expandedAddresses[`${item.id}-male`]
-                                        ? "Show less"
-                                        : "Show more"}
-                                    </button>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {item.lastGenerated && (
-                          <div className="history-last-generated">
-                            Last generated:{" "}
-                            {(() => {
-                              const date = new Date(item.lastGenerated);
-                              const now = new Date();
-                              const diffMs = now - date;
-                              const diffDays = Math.floor(
-                                diffMs / (1000 * 60 * 60 * 24),
-                              );
-                              if (diffDays === 0) return "Today";
-                              if (diffDays === 1) return "1 day ago";
-                              if (diffDays < 7) return `${diffDays} days ago`;
-                              return date.toLocaleDateString("en-GB", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              });
-                            })()}
-                          </div>
-                        )}
-                        <div className="history-card-footer">
-                          <div className="history-actions">
-                            <button
-                              className="use-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                loadHistoryIntoForm(item);
-                              }}
-                            >
-                              Load
-                            </button>
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteHistoryItem(item.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+  {/* ---------- Search ---------- */}
+  {history.length > 0 && (
+    <input
+      type="text"
+      placeholder="Search by name, place, or date..."
+      value={historySearch}
+      onChange={(e) => setHistorySearch(e.target.value)}
+      className="history-search"
+    />
+  )}
+
+  {/* ---------- Horizontal Scroll ---------- */}
+  <div className="history-scroll-area horizontal">
+    {history.length === 0 ? (
+      <div className="empty-state">No matching history yet.</div>
+    ) : filteredHistory.length === 0 ? (
+      <div className="empty-state">No matches found.</div>
+    ) : (
+      <div className="history-cards horizontal">
+        {filteredHistory.map((item) => {
+          const isExpanded =
+            expandedAddresses[`${item.id}-female`] ||
+            expandedAddresses[`${item.id}-male`];
+
+          return (
+<div
+  key={item.id}
+  className="history-card history-card-row"
+  onClick={() => loadHistoryIntoForm(item)}
+  style={{
+    alignItems: "center",        // prevent vertical stretching
+    maxHeight: "unset",
+  }}
+>
+  {/* LEFT: FEMALE + MALE */}
+  <div className="history-row-left" style={{ gap: "0.75rem" }}>
+    {/* FEMALE */}
+    <div className="history-row-person">
+      <span className="pill pill-female">
+        {item.femaleName || "Female"}
+      </span>
+
+      <div className="history-row-details">
+        <div className="person-meta">
+          <Calendar className="meta-icon" />
+          <span>{item.femaleDob || "-"} · {item.femaleTob || "-"}</span>
+        </div>
+
+        <div className="person-meta">
+          <MapPin className="meta-icon" />
+          <span className="address-text">
+            {item.femalePlace || "-"}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* MALE */}
+    <div className="history-row-person">
+      <span className="pill pill-male">
+        {item.maleName || "Male"}
+      </span>
+
+      <div className="history-row-details">
+        <div className="person-meta">
+          <Calendar className="meta-icon" />
+          <span>{item.maleDob || "-"} · {item.maleTob || "-"}</span>
+        </div>
+
+        <div className="person-meta">
+          <MapPin className="meta-icon" />
+          <span className="address-text">
+            {item.malePlace || "-"}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* CENTER: COMPATIBILITY */}
+  <div
+    className="history-row-compatibility"
+    style={{
+      alignSelf: "stretch",
+      justifyContent: "center",
+      minWidth: "140px",
+    }}
+  >
+    <span className="compatibility-label">Compatibility</span>
+    <span className="compatibility-value">
+      {item.compatibility || "—"}
+    </span>
+  </div>
+
+  {/* RIGHT: ACTIONS */}
+  <div
+    className="history-row-actions"
+    style={{
+      justifyContent: "center",
+      alignItems: "stretch",
+      gap: "0.5rem",
+    }}
+  >
+    <button
+      className="use-btn"
+      style={{
+        flex: "unset",
+        height: "40px",          // 🔑 stops vertical stretch
+        padding: "0 1rem",
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        loadHistoryIntoForm(item);
+      }}
+    >
+      Load
+    </button>
+
+    <button
+      className="delete-btn"
+      style={{
+        flex: "unset",
+        height: "40px",
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        deleteHistoryItem(item.id);
+      }}
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  </div>
+</div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</section>
         </div>
 
         {/* ---------------------------------------------------------- */}
@@ -2533,10 +2420,6 @@ export default function MatchingPage() {
               <div className="orb orb3" />
             </div>
 
-            {/* Header */}
-            <header className="header left-align">
-              <h1 className="title">Pro Kundali Match</h1>
-            </header>
 
             {/* Birth Info Snapshot */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -2888,6 +2771,31 @@ export default function MatchingPage() {
                         <h3 className="results-title">
                           {t.matching.maleDetails} - Shadbala
                         </h3>
+                      </div>
+
+                                            <div className="card summary-card female " style={{ marginBottom: "1.5rem", fontWeight: "500" }}>
+                        <h4>How strong is his chart overall?</h4>
+
+                        <div className="summary-score">
+                          <span className="score-pill good">Strong</span>
+                          <span className="score-text">
+                            Emotional stability and relationship support are
+                            favorable
+                          </span>
+                        </div>
+
+                        <ul className="summary-points">
+                          <li>✔ Moon and Venus are supportive</li>
+                          <li>⚠ Mars shows emotional friction</li>
+                          <li>🔒 Exact remedies & timing locked</li>
+                        </ul>
+
+                        <button
+                          className="unlock-btn"
+                          onClick={onTalkToAstrologer}
+                        >
+                          Understand what this means →
+                        </button>
                       </div>
 
                       {/* Shadbala / Ishta-Kashta */}
