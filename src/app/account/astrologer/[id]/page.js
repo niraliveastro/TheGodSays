@@ -903,7 +903,6 @@ export default function AstrologerProfile() {
                                       fontSize: "0.90rem",
                                       color: "var(--color-gray-600)",
                                       fontWeight: 500,
-                                      textTransform: "uppercase",
                                       letterSpacing: "0.05em",
                                      
                                     }}
@@ -1207,7 +1206,7 @@ export default function AstrologerProfile() {
                     </div>
 
                     {/* Gallery Section */}
-                    <div className="card">
+                    <div className="card mt-6">
                       <div
                         style={{
                           display: "flex",
@@ -1375,7 +1374,7 @@ export default function AstrologerProfile() {
                                       <h3
                                         style={{
                                           fontSize: "1rem",
-                                          fontWeight: 600,
+                                          fontWeight: 500,
                                           marginBottom: "0.25rem",
                                           color: "var(--color-gray-900)",
                                         }}
