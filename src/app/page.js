@@ -2895,17 +2895,6 @@ export default function Home() {
             </div>
           </section>
 
-          {/* FOOTER */}
-          <footer className="home-footer">
-            <p>
-              {t.footer.madeBy} ✨ by{" "}
-              <span className="footer-brand">{t.footer.team}</span> -{" "}
-              <span className="text-gold font-semibold">
-                {t.footer.company}
-              </span>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">🌟 {t.footer.tagline}</p>
-          </footer>
         </main>
       </div>
 

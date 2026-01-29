@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Heart } from "lucide-react";
 import "./Footer.css";
 
@@ -13,8 +14,17 @@ export default function Footer() {
         {/* Main Footer */}
         <div className="footer-main">
           {/* Company Info */}
-          <div className="footer-section">
-            <h3 className="footer-title">NiraLive Astro</h3>
+          <div className="footer-section footer-brand">
+            <div className="footer-logo-title">
+              <Image
+                src="/favicon.png"
+                alt="NiraLive Astro Logo"
+                width={32}
+                height={32}
+                className="footer-logo"
+              />
+              <h3 className="footer-title">NiraLive Astro</h3>
+            </div>
             <p className="footer-description">
               Your trusted platform for Vedic astrology, kundali, numerology, and live consultations with expert astrologers.
               Discover your destiny with ancient wisdom and modern technology.
@@ -39,7 +49,6 @@ export default function Footer() {
           <div className="footer-section">
             <h4 className="footer-heading">Quick Links</h4>
             <ul className="footer-links">
-              <li><Link href="/kundali">Kundali</Link></li>
               <li><Link href="/panchang">Panchang</Link></li>
               <li><Link href="/matching">Kundali Matching</Link></li>
               <li><Link href="/numerology">Numerology</Link></li>
@@ -52,7 +61,6 @@ export default function Footer() {
           <div className="footer-section">
             <h4 className="footer-heading">Our Services</h4>
             <ul className="footer-links">
-              <li><Link href="/predictions">AI Predictions</Link></li>
               <li><Link href="/new-predictions">Personalized Readings</Link></li>
               <li><Link href="/ai-predictions">AI Astrology</Link></li>
               <li><Link href="/blog">Astrology Articles</Link></li>
