@@ -17,7 +17,7 @@ import {
   RotateCcw,
   Trash2,
   PhoneCallIcon,
-  Phone
+  Phone,
 } from "lucide-react";
 import "./prediction.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
@@ -30,6 +30,79 @@ import {
 } from "@/lib/analytics";
 import { PageLoading } from "@/components/LoadingStates";
 import HighConvertingInsights from "./high-converting-page";
+
+// -----------------------------
+// Chart Challenge Analyzer
+// -----------------------------
+function analyzeChartChallenges({
+  shadbalaRows,
+  placements,
+  mahaRows,
+  currentDashaChain,
+  insights,
+}) {
+  let score = 0;
+  const reasons = [];
+
+  const weakPlanets = shadbalaRows.filter(
+    (p) => typeof p.percent === "number" && p.percent < 45,
+  );
+
+  if (weakPlanets.length >= 2) {
+    score += 2;
+    reasons.push(
+      `Weak planetary strength (${weakPlanets.map((p) => p.name).join(", ")})`,
+    );
+  }
+
+  const malefics = ["Saturn", "Mars", "Rahu", "Ketu"];
+  const strongMalefics = shadbalaRows.filter(
+    (p) =>
+      malefics.includes(p.name) &&
+      typeof p.percent === "number" &&
+      p.percent > 65,
+  );
+
+  if (strongMalefics.length >= 2) {
+    score += 2;
+    reasons.push("Strong malefic influence detected");
+  }
+
+  const retroCount = placements.filter((p) => p.retro).length;
+  if (retroCount >= 2) {
+    score += 1;
+    reasons.push("Multiple retrograde planets causing delays");
+  }
+
+  if (currentDashaChain && /Saturn|Rahu|Ketu/.test(currentDashaChain)) {
+    score += 2;
+    reasons.push(`Challenging Dasha period (${currentDashaChain})`);
+  }
+
+  if (insights?.scores) {
+    const stressedAreas = Object.entries(insights.scores).filter(
+      ([_, v]) => v < 60,
+    );
+
+    if (stressedAreas.length >= 2) {
+      score += 2;
+      reasons.push(
+        `Stress seen in ${stressedAreas.map(([k]) => k).join(", ")}`,
+      );
+    }
+  }
+
+  let severity = "LOW";
+  if (score >= 6) severity = "HIGH";
+  else if (score >= 4) severity = "MEDIUM";
+
+  return {
+    hasChallenges: score >= 4,
+    severity,
+    reasons,
+  };
+}
+
 export default function PredictionsPage() {
   const { t } = useTranslation();
   // Track page view on mount
@@ -683,6 +756,7 @@ export default function PredictionsPage() {
       const mahaRaw = results?.["vimsottari/maha-dasas"];
       const planetsRaw = results?.["planets/extended"];
       const westernChartSvgRaw = results?.["western/natal-wheel-chart"];
+
       // Enhanced parsing for western chart - handle various response formats
       let westernChartSvg = null;
       if (westernChartSvgRaw) {
@@ -1162,6 +1236,9 @@ export default function PredictionsPage() {
 
     return null;
   }, [result]);
+
+
+
   function buildPayloadForApi() {
     const inp = result?.input;
     const coords = result?.coords;
@@ -1478,6 +1555,25 @@ export default function PredictionsPage() {
     };
   }, [result, selectedCoords]);
 
+          const challengeAnalysis = useMemo(() => {
+        if (!result) return null;
+
+        return analyzeChartChallenges({
+          shadbalaRows,
+          placements,
+          mahaRows,
+          currentDashaChain,
+          insights,
+        });
+      }, [
+        result,
+        shadbalaRows,
+        placements,
+        mahaRows,
+        currentDashaChain,
+        insights,
+      ]);
+
   const chatData = result
     ? {
         birth: {
@@ -1503,6 +1599,236 @@ export default function PredictionsPage() {
         currentDashaChain,
       }
     : null;
+
+
+  function computeStrongObservations({
+  placements,
+  shadbalaRows,
+  mahaRows,
+  currentDashaChain,
+  scores,
+}) {
+  const observations = [];
+  const potential = [];
+
+  // --- Strong Observations (confidence-driven) ---
+
+  // 1. Strong planets (Shadbala > 70)
+  const strongPlanets = shadbalaRows.filter(
+    (p) => typeof p.percent === "number" && p.percent >= 70
+  );
+
+  strongPlanets.slice(0, 2).forEach((p) => {
+    observations.push(
+      `${p.name} is strongly placed, giving consistent results in its domains`
+    );
+  });
+
+  // 2. Retrograde influence
+  const retro = placements.filter((p) => p.retro);
+  if (retro.length > 0) {
+    observations.push(
+      `Retrograde ${retro[0].name} indicates internalized growth and delayed clarity`
+    );
+  }
+
+  // 3. Current Dasha pressure
+  if (/Saturn|Rahu|Ketu/.test(currentDashaChain || "")) {
+    observations.push(
+      `Current dasha phase emphasizes karmic lessons and long-term restructuring`
+    );
+  }
+
+  // 4. High life score
+  const highScoreArea = Object.entries(scores || {}).find(
+    ([_, v]) => v >= 75
+  );
+  if (highScoreArea) {
+    observations.push(
+      `${highScoreArea[0]} matters are a natural strength in this phase of life`
+    );
+  }
+
+  // 5. House clustering
+  const houseCounts = placements.reduce((acc, p) => {
+    acc[p.house] = (acc[p.house] || 0) + 1;
+    return acc;
+  }, {});
+  const crowdedHouse = Object.entries(houseCounts).find(
+    ([_, c]) => c >= 3
+  );
+  if (crowdedHouse) {
+    observations.push(
+      `Multiple planets in house ${crowdedHouse[0]} show strong focus in that life area`
+    );
+  }
+
+  // --- Potential in Chart (unlockable) ---
+
+  Object.entries(scores || {}).forEach(([area, v]) => {
+    if (v >= 55 && v < 70) {
+      potential.push(
+        `${area} improves significantly with correct timing and guidance`
+      );
+    }
+  });
+
+  const upcomingMaha = mahaRows.find(
+    (m) => new Date(m.start) > new Date()
+  );
+  if (upcomingMaha) {
+    potential.push(
+      `${upcomingMaha.lord} Maha Dasha brings new opportunities if prepared early`
+    );
+  }
+
+  return {
+    strongObservations: observations.slice(0, 5),
+    potential: potential.slice(0, 4),
+  };
+}
+
+const observationData = useMemo(() => {
+  if (!result) return null;
+
+  return computeStrongObservations({
+    placements,
+    shadbalaRows,
+    mahaRows,
+    currentDashaChain,
+    scores: insights?.scores,
+  });
+}, [
+  result,
+  placements,
+  shadbalaRows,
+  mahaRows,
+  currentDashaChain,
+  insights,
+]);
+
+function calculateDashaIQ({
+  currentDashaChain,
+  shadbalaRows,
+  placements,
+  scores,
+}) {
+  if (!currentDashaChain) {
+    return { iq: 50, reasoning: ["Dasha data unavailable"] };
+  }
+
+  const mahaLord = currentDashaChain.split(">")[0].trim();
+
+  let iq = 50; // neutral baseline
+  const reasoning = [];
+
+  /* ---------------------------
+     1. Shadbala strength
+  ---------------------------- */
+  const planetStrength = shadbalaRows.find(
+    (p) => p.name?.toLowerCase() === mahaLord.toLowerCase()
+  );
+
+  if (planetStrength?.percent != null) {
+    if (planetStrength.percent >= 70) {
+      iq += 15;
+      reasoning.push(`${mahaLord} is strong in Shadbala`);
+    } else if (planetStrength.percent >= 55) {
+      iq += 8;
+      reasoning.push(`${mahaLord} has moderate strength`);
+    } else {
+      iq -= 12;
+      reasoning.push(`${mahaLord} is weak, causing delays`);
+    }
+  }
+
+  /* ---------------------------
+     2. Malefic / Benefic nature
+  ---------------------------- */
+  const malefics = ["Saturn", "Rahu", "Ketu", "Mars"];
+  const benefics = ["Jupiter", "Venus", "Mercury", "Moon"];
+
+  if (malefics.includes(mahaLord)) {
+    iq -= 6;
+    reasoning.push(`${mahaLord} Dasha demands patience and discipline`);
+  }
+
+  if (benefics.includes(mahaLord)) {
+    iq += 6;
+    reasoning.push(`${mahaLord} Dasha supports growth and ease`);
+  }
+
+  /* ---------------------------
+     3. Retrograde penalty
+  ---------------------------- */
+  const placement = placements.find(
+    (p) => p.name?.toLowerCase() === mahaLord.toLowerCase()
+  );
+
+  if (placement?.retro) {
+    iq -= 6;
+    reasoning.push(`${mahaLord} retrograde causes internalized results`);
+  }
+
+  /* ---------------------------
+     4. Life-area stress impact
+  ---------------------------- */
+  const stressedAreas = Object.values(scores || {}).filter((v) => v < 60).length;
+
+  if (stressedAreas >= 3) {
+    iq -= 10;
+    reasoning.push("Multiple life areas under stress");
+  } else if (stressedAreas === 2) {
+    iq -= 5;
+    reasoning.push("Some life areas require caution");
+  }
+
+  /* ---------------------------
+     5. Clamp result
+  ---------------------------- */
+  iq = Math.max(25, Math.min(95, Math.round(iq)));
+
+  return {
+    iq,
+    mahaLord,
+    reasoning,
+  };
+}
+
+const dashaIQ = useMemo(() => {
+  if (!result || !currentDashaChain) return null;
+
+  return calculateDashaIQ({
+    currentDashaChain,
+    shadbalaRows,
+    placements,
+    scores: insights?.scores,
+  });
+}, [
+  result,
+  currentDashaChain,
+  shadbalaRows,
+  placements,
+  insights,
+]);
+
+const activeMahaLord = useMemo(() => {
+  if (!mahaRows || mahaRows.length === 0) return null;
+
+  const today = new Date();
+
+  const active = mahaRows.find((row) => {
+    const start = new Date(row.start);
+    const end = new Date(row.end);
+    return today >= start && today <= end;
+  });
+
+  return active?.lord || null;
+}, [mahaRows]);
+
+
+
+
 
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
@@ -2225,12 +2551,66 @@ export default function PredictionsPage() {
               )}
             </div>
 
-            {/* Planet Placements */}
+            {challengeAnalysis?.hasChallenges && (
+              <div
+                className="card mt-6 border-l-4"
+                style={{
+                  borderLeftColor:
+                    challengeAnalysis.severity === "HIGH"
+                      ? "#dc2626"
+                      : "#d97706",
+                  background: "#fffaf0",
+                }}
+              >
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  Astrological Attention Recommended
+                </h4>
+
+                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+                  {challengeAnalysis.reasons.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+
+                <p className="text-sm text-gray-600 mt-3">
+                  These patterns suggest phases where expert guidance can help
+                  you navigate decisions more confidently.
+                </p>
+
+                <button
+                  onClick={() => setInlineChatOpen(true)}
+                  className="mt-4 px-5 py-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 font-semibold text-gray-900"
+                >
+                  Talk to an Astrologer
+                </button>
+              </div>
+            )}
+
+
+            {result && insights && (
+              <section className="converting-card mt-10">
+<HighConvertingInsights
+  insights={insights}
+  observations={observationData}
+  dashaIQ={dashaIQ}
+  shadbalaRows={shadbalaRows}
+  mahaRows={mahaRows}
+  antarRows={antarRows}
+  openAntarFor={openAntarFor}
+  antarLoadingFor={antarLoadingFor}
+  openAntarInlineFor={openAntarInlineFor}
+  activeMahaLord={activeMahaLord} 
+  onTalkToAstrologer={handleTalkToAstrologer}
+/>
+              </section>
+            )}
+
+                        {/* Planet Placements */}
             {placements.length > 0 ? (
               <div
                 ref={setPlacementsRef}
                 id="planet-placements"
-                className="card mb-6"
+                className="card mt-6 mb-6"
                 style={{ scrollMarginTop: "96px" }} // keeps it nicely below your fixed header when scrolled
               >
                 <div className="results-header">
@@ -2392,231 +2772,6 @@ export default function PredictionsPage() {
                   timezone.
                 </div>
               </div>
-            )}
-            {/* Vimshottari Maha Dasha */}
-            <div className="card my-6">
-              <div className="results-header">
-                <Moon style={{ color: "#ca8a04" }} />
-                <h3 className="results-title">Vimshottari Maha Dasha</h3>
-              </div>
-
-              {mahaRows.length > 0 ? (
-                <>
-                  {/* ==== Vertical Timeline Style Maha Dasha ==== */}
-                  <div className="vertical-timeline-container">
-                    <div className="vertical-timeline-track">
-                      {mahaRows.map((row, i) => {
-                        const start = new Date(row.start).toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        );
-
-                        const end = new Date(row.end).toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        );
-
-                        return (
-                          <div
-                            key={row.key}
-                            className="vertical-timeline-segment"
-                          >
-                            <div className="vertical-segment-content">
-                              {/* Left side: Planet name, dates, vertical line */}
-                              <div className="vertical-segment-left">
-                                <div className="vertical-planet-header">
-                                  <span className="vertical-planet-name">
-                                    {row.lord}
-                                  </span>
-                                  <button
-                                    className="analysis-btn"
-                                    onClick={() => openAntarInlineFor(row.lord)}
-                                  >
-                                    Analysis
-                                  </button>
-                                </div>
-
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    width: "100%",
-                                  }}
-                                >
-                                  <div className="vertical-timeline-line-wrapper">
-                                    <div className="vertical-timeline-dot top-dot"></div>
-                                    <div className="vertical-timeline-line"></div>
-                                    <div className="vertical-timeline-dot bottom-dot"></div>
-                                  </div>
-
-                                  <div className="vertical-dates">
-                                    <div className="vertical-date-item">
-                                      <span className="vertical-date-label">
-                                        START:
-                                      </span>
-                                      <span className="vertical-date-value">
-                                        {start}
-                                      </span>
-                                    </div>
-                                    <div className="vertical-date-item">
-                                      <span className="vertical-date-label">
-                                        END:
-                                      </span>
-                                      <span className="vertical-date-value">
-                                        {end}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Right side: Transposed Antar Dasha Table (Desktop) / Traditional Table (Mobile) */}
-                              {openAntarFor === row.lord && (
-                                <div className="vertical-antar-box">
-                                  {antarLoadingFor === row.lord ? (
-                                    <div className="antar-loading">
-                                      Loading...
-                                    </div>
-                                  ) : antarRows[0]?.error ? (
-                                    <div className="antar-error">
-                                      {antarRows[0].error}
-                                    </div>
-                                  ) : antarRows.length > 0 ? (
-                                    <>
-                                      {/* Desktop: Transposed Table */}
-                                      <div className="transposed-antar-table">
-                                        <div className="transposed-row">
-                                          <div className="transposed-label">
-                                            Antar Lord:
-                                          </div>
-                                          <div className="transposed-values">
-                                            {antarRows.map((ad, idx) => (
-                                              <span
-                                                key={idx}
-                                                className="transposed-value"
-                                              >
-                                                {ad.lord}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-                                        <div className="transposed-row">
-                                          <div className="transposed-label">
-                                            Start:
-                                          </div>
-                                          <div className="transposed-values">
-                                            {antarRows.map((ad, idx) => (
-                                              <span
-                                                key={idx}
-                                                className="transposed-value"
-                                              >
-                                                {new Date(
-                                                  ad.start,
-                                                ).toLocaleDateString("en-GB", {
-                                                  year: "numeric",
-                                                  month: "short",
-                                                  day: "numeric",
-                                                })}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-                                        <div className="transposed-row">
-                                          <div className="transposed-label">
-                                            End:
-                                          </div>
-                                          <div className="transposed-values">
-                                            {antarRows.map((ad, idx) => (
-                                              <span
-                                                key={idx}
-                                                className="transposed-value"
-                                              >
-                                                {new Date(
-                                                  ad.end,
-                                                ).toLocaleDateString("en-GB", {
-                                                  year: "numeric",
-                                                  month: "short",
-                                                  day: "numeric",
-                                                })}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Mobile: Traditional Table */}
-                                      <table className="antar-table mobile-antar-table">
-                                        <thead>
-                                          <tr>
-                                            <th>Antar Lord</th>
-                                            <th>Start</th>
-                                            <th>End</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {antarRows.map((ad, i) => (
-                                            <tr key={i}>
-                                              <td>{ad.lord}</td>
-                                              <td>
-                                                {new Date(
-                                                  ad.start,
-                                                ).toLocaleDateString("en-GB", {
-                                                  year: "numeric",
-                                                  month: "short",
-                                                  day: "numeric",
-                                                })}
-                                              </td>
-                                              <td>
-                                                {new Date(
-                                                  ad.end,
-                                                ).toLocaleDateString("en-GB", {
-                                                  year: "numeric",
-                                                  month: "short",
-                                                  day: "numeric",
-                                                })}
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </>
-                                  ) : null}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="empty-state">
-                  No Maha Dasha data. Submit the form above.
-                </div>
-              )}
-            </div>
-
-            {result && insights && (
-              <section
-                className="converting-card mt-10"
-                
-              >
-                <HighConvertingInsights
-                  insights={insights}
-                  onTalkToAstrologer={handleTalkToAstrologer}
-                  onAddFamily={handleAddFamily}
-                />
-              </section>
             )}
           </div>
         )}
@@ -2860,7 +3015,6 @@ export default function PredictionsPage() {
           </div>
         </div>
       </div>
-
 
       <a
         href="/talk-to-astrologer"

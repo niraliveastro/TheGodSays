@@ -7,6 +7,12 @@ h1, h2, h3, h4 {
   margin-bottom: 0.75rem;
 }
 
+/* .title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-gold);
+} */
+
 /* ========================================== */
 /* FORM STYLES */
 /* ========================================== */
@@ -552,8 +558,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .results-title {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 2.25rem;
+  font-weight: 500;
   color: #1f2937;
 }
 
@@ -973,5 +979,268 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     height: 1px;
     width: 100%;
     background: linear-gradient(90deg, transparent, #e5d7ad, transparent);
+  }
+}
+
+/* ===============================
+   MATCHING PAGE BASE
+================================ */
+
+.matching-page {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* ===============================
+   FORM HEADER
+================================ */
+
+.match-form-header {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.match-form-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-gold);
+}
+
+.match-form-header p {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* ===============================
+   BIRTH CARDS
+================================ */
+
+.birth-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .birth-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.birth-card {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.birth-card.female {
+  border-top: 4px solid #ec4899;
+}
+
+.birth-card.male {
+  border-top: 4px solid #3b82f6;
+}
+
+.birth-card-header {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--color-gold);
+}
+
+/* ===============================
+   GRID INSIDE CARD
+================================ */
+
+.birth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .birth-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.field input {
+  height: 48px;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+}
+
+/* ===============================
+   ACTIONS
+================================ */
+
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg,#fcd34d,#f59e0b);
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* ==========================================
+   HISTORY ROW MODE (reuse sidebar styles)
+========================================== */
+
+.history-scroll-area.horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.75rem;
+}
+
+.history-cards.horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+/* Cards behave like tiles */
+.history-cards.horizontal .history-card {
+  /* min-width: 320px;
+  max-width: 340px; */
+  flex-shrink: 0;
+}
+
+/* Prevent vertical stretching */
+.history-cards.horizontal .history-card-body {
+  flex-direction: column;
+}
+
+/* Cleaner scrollbar */
+.history-scroll-area.horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.history-scroll-area.horizontal::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.35);
+  border-radius: 999px;
+}
+/* ==========================================
+   HISTORY CARD – ROW LAYOUT
+========================================== */
+
+.history-card-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 1rem;
+  align-items: stretch;
+  max-height: unset;
+}
+
+/* LEFT: FEMALE + MALE STACK */
+.history-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* PERSON BLOCK */
+.history-row-person {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* DETAILS */
+.history-row-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* CENTER: COMPATIBILITY */
+.history-row-compatibility {
+  border-left: 1px solid rgba(212, 175, 55, 0.3);
+  border-right: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.compatibility-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ca8a04;
+  font-weight: 700;
+}
+
+.compatibility-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #8b6b15;
+}
+
+/* RIGHT: ACTIONS */
+.history-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .history-card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .history-row-compatibility {
+    border: none;
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .history-row-actions {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }

@@ -1356,3 +1356,719 @@ background: #fffdf6;
   place-items: center;
   font-weight: 600;
 }
+
+/* Potential Panel */
+.potential-panel {
+  background: linear-gradient(180deg, #fff7ed, #ffffff);
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 1px solid #fde68a;
+}
+
+/* Title accent */
+.potential-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+/* Stack */
+.potential-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Card */
+.potential-card-advanced {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #fef3c7;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.potential-card-advanced:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Index */
+.potential-index {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #ffedd5;
+}
+
+/* Content */
+.potential-text {
+  font-size: 0.9rem;
+  color: #1f2937;
+  line-height: 1.35;
+}
+
+.potential-hint {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #92400e;
+}
+
+/* Icon */
+.potential-icon-wrap {
+  color: #f59e0b;
+  opacity: 0.9;
+}
+
+/* Strong Observations Panel */
+.observations-panel {
+  background: linear-gradient(180deg, #f0fdf4, #ffffff);
+  border-radius: 18px;
+  padding: 1.4rem;
+  border: 1px solid #bbf7d0;
+}
+
+/* Title accent */
+.observations-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+/* Stack */
+.observations-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+/* Card */
+.observation-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #dcfce7;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.observation-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* Index */
+.observation-index {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #065f46;
+  background: #dcfce7;
+}
+
+/* Content */
+.observation-text {
+  font-size: 0.95rem;
+  color: #064e3b;
+  line-height: 1.4;
+}
+
+.observation-badge {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* Icon */
+.observation-icon-wrap {
+  color: #22c55e;
+}
+
+/* === Dasha IQ Panel === */
+.dasha-iq-panel {
+  background: #fff;
+  border-radius: 24px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  position: relative;
+}
+
+.dasha-iq-accent {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d4af37, #facc15);
+  margin-bottom: 1.25rem;
+}
+
+.dasha-iq-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dasha-iq-planet {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fef3c7;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dasha-iq-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dasha-iq-subtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.dasha-iq-score {
+  margin-left: auto;
+  text-align: center;
+}
+
+.iq-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ca8a04;
+  display: block;
+}
+
+.iq-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Grid */
+.dasha-iq-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.dasha-iq-card {
+  background: #f9fafb;
+  border-radius: 18px;
+  padding: 1.25rem;
+}
+
+.dasha-iq-card.highlight {
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+  border: 1px solid #fde68a;
+}
+
+.dasha-iq-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.dasha-iq-card p {
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+/* Points */
+.dasha-iq-points {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #374151;
+  list-style: none;
+  padding: 0;
+}
+
+.dasha-iq-points li {
+  margin-bottom: 0.35rem;
+}
+
+/* Meter */
+.dasha-iq-meter {
+  margin: 0.75rem 0;
+}
+
+.meter-track {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #facc15, #ca8a04);
+  border-radius: 999px;
+}
+
+.meter-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.dasha-iq-note {
+  font-size: 0.8rem;
+  color: #374151;
+  margin-top: 0.5rem;
+}
+
+/* CTA */
+.dasha-iq-cta {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #facc15, #ca8a04);
+  color: #1f2937;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dasha-iq-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Planet Snapshot ===== */
+
+.planet-snapshot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.75rem;
+}
+
+@media (max-width: 768px) {
+  .planet-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.planet-panel {
+  position: relative;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  border: 1px solid #f1e7c6;
+}
+
+.planet-panel-accent {
+  height: 4px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.planet-panel-accent.green {
+  background: #21c17a;
+}
+
+.planet-panel-accent.red {
+  background: #ef4444;
+}
+
+.planet-panel-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.planet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.planet-dot.green {
+  background: #21c17a;
+}
+
+.planet-dot.red {
+  background: #ef4444;
+}
+
+.planet-card-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.planet-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: #fffdf7;
+  border: 1px solid #f3e8c7;
+}
+
+.planet-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #22c55e;
+  color: #ffffff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planet-icon.warning {
+  background: #ef4444;
+}
+
+.planet-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.planet-info strong {
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.planet-info span {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.planet-tag {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.planet-tag.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.planet-tag.negative {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.planet-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding: 0.5rem 0;
+}
+/* === Planet Blocks === */
+.planet-block {
+  margin-top: 2rem;
+}
+
+.planet-block-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+/* === Card Grid === */
+.planet-card-grid-transit {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+/* === Card === */
+.planet-transit-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 1.4rem;
+  border: 1px solid #f1e7c6;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.planet-transit-card.active {
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
+  transform: translateY(-2px);
+}
+
+.planet-transit-card.danger {
+  border-color: #fecaca;
+}
+
+/* Accent */
+.planet-card-accent {
+  height: 4px;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+.planet-card-accent.green { background: #22c55e; }
+.planet-card-accent.red { background: #ef4444; }
+
+/* Header */
+.planet-card-header {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.planet-card-header h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.planet-card-header p {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Icon */
+.planet-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+.planet-icon.green { background: #22c55e; }
+.planet-icon.red { background: #ef4444; }
+
+/* Meta */
+.planet-card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+}
+
+.planet-card-meta span {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.planet-card-meta strong {
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+/* Active pill */
+.active-pill {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+
+/* CTA */
+.planet-fix-btn {
+  margin-top: 1rem;
+  padding: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== Planet Tiles (Transit-style) ===== */
+
+.planet-card-grid-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.planet-tile {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.4rem;
+  border: 1px solid #f1e7c6;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 300px;
+  position: relative;
+}
+
+.planet-tile.active {
+  box-shadow: 0 0 0 2px #22c55e33;
+}
+
+/* Accent bar */
+.planet-accent {
+  height: 4px;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.planet-accent.positive {
+  background: #22c55e;
+}
+
+.planet-accent.negative {
+  background: #ef4444;
+}
+
+/* Header */
+.planet-header {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.planet-icon-tile {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.planet-icon-tile.positive {
+  background: #22c55e;
+}
+
+.planet-icon-tile.negative {
+  background: #ef4444;
+}
+
+.planet-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.planet-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Meta */
+.planet-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+   margin-top: 1.75rem;
+  line-height: 1.6;
+}
+
+.planet-remaining {
+  color: #6b7280;
+}
+
+/* CTA */
+.planet-fix-btn {
+  margin-top: 1.2rem;
+  border-radius: 999px;
+  padding: 0.55rem;
+  border: none;
+  background: linear-gradient(135deg, #facc15, #ca8a04);
+  font-weight: 600;
+  cursor: pointer;
+}
+.planet-meta > div {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.planet-empty-tile {
+  min-height: 260px;
+  padding: 2.5rem;
+  border-radius: 22px;
+  background: #fffdf7;
+  border: 1px dashed #e7dcb5;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.planet-empty-icon {
+  font-size: 32px;
+  margin-bottom: 0.75rem;
+}
+
+.planet-empty-icon.positive {
+  color: #22c55e;
+}
+
+.planet-empty-icon.negative {
+  color: #ef4444;
+}
+
+.planet-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.planet-empty-text {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.planet-empty-cta {
+  align-self: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #facc15, #ca8a04);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}

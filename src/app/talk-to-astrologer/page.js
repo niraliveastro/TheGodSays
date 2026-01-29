@@ -105,7 +105,7 @@ export default function TalkToAstrologer() {
             // If balance changed, invalidate cache
             if (previousBalance !== null && previousBalance !== newBalance) {
               console.log(
-                `💰 Balance changed: ₹${previousBalance} → ₹${newBalance}`
+                `💰 Balance changed: ₹${previousBalance} → ₹${newBalance}`,
               );
               invalidateCache(userId);
             }
@@ -131,10 +131,9 @@ export default function TalkToAstrologer() {
     };
   }, []); // Run once on mount
 
-
   const fastNavigate = (router, path) => {
-  router.push(path);
-};
+    router.push(path);
+  };
 
   /* --------------------------------------------------------------- */
   /*  Modal open state for body scroll lock                         */
@@ -156,6 +155,23 @@ export default function TalkToAstrologer() {
       document.body.style.overflow = "";
     };
   }, [isAnyModalOpen]);
+
+  const checkHasSlots = async (astrologerId) => {
+  try {
+    const res = await fetch(
+      `/api/appointments/availability?astrologerId=${astrologerId}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    return Array.isArray(data?.availability) && data.availability.length > 0;
+  } catch (e) {
+    console.error("Slot check failed:", astrologerId, e);
+    return false;
+  }
+};
 
   /* --------------------------------------------------------------- */
   /*  Fetch astrologers + pricing + reviews (PARALLEL LOADING)     */
@@ -191,15 +207,15 @@ export default function TalkToAstrologer() {
           areasOfExpertise: Array.isArray(d.areasOfExpertise)
             ? d.areasOfExpertise
             : Array.isArray(d.specialties)
-            ? d.specialties
-            : [],
+              ? d.specialties
+              : [],
           specialties: Array.isArray(d.specialties)
             ? d.specialties
             : d.specialties
-            ? [d.specialties]
-            : d.specialization
-            ? [d.specialization]
-            : [],
+              ? [d.specialties]
+              : d.specialization
+                ? [d.specialization]
+                : [],
         };
       });
 
@@ -210,7 +226,7 @@ export default function TalkToAstrologer() {
           const pricingData = await pricingResponse.json();
           if (pricingData.success) {
             pricingData.pricing.forEach(
-              (p) => (pricingMap[p.astrologerId] = p)
+              (p) => (pricingMap[p.astrologerId] = p),
             );
           }
         } catch (e) {
@@ -230,6 +246,13 @@ export default function TalkToAstrologer() {
           a.perMinuteCharge = 50;
         }
       });
+
+      const withSlots = await Promise.all(
+  list.map(async (a) => ({
+    ...a,
+    hasSlots: await checkHasSlots(a.id),
+  }))
+);
 
       // Step 2: Fetch all reviews in parallel (batch requests)
       // Group reviews requests to avoid too many simultaneous requests
@@ -259,19 +282,25 @@ export default function TalkToAstrologer() {
               console.error(`Reviews error for ${a.id}:`, e);
               return a;
             }
-          })
+          }),
         );
         updated.push(...batchResults);
 
         // Update UI incrementally for better perceived performance
-        if (i === 0) {
-          setAstrologers(updated);
-          setFetchingAstrologers(false); // Show initial results immediately
-        }
+if (i === 0) {
+  setAstrologers(withSlots);
+  setFetchingAstrologers(false);
+}
       }
 
       // Final update with all reviews
-      setAstrologers(updated);
+      setAstrologers(
+  updated.map((a) => ({
+    ...a,
+    hasSlots:
+      withSlots.find((w) => w.id === a.id)?.hasSlots ?? false,
+  }))
+);
     } catch (e) {
       console.error("Astrologers fetch error:", e);
       setFetchingAstrologers(false);
@@ -279,11 +308,11 @@ export default function TalkToAstrologer() {
   };
 
   const getSpecializations = (a) => {
-if (Array.isArray(a.specialties)) return a.specialties;
-if (Array.isArray(a.specialization)) return a.specialization;
-if (typeof a.specialization === "string") return [a.specialization];
-return [];
-};
+    if (Array.isArray(a.specialties)) return a.specialties;
+    if (Array.isArray(a.specialization)) return a.specialization;
+    if (typeof a.specialization === "string") return [a.specialization];
+    return [];
+  };
 
   useEffect(() => {
     // Track page view
@@ -301,7 +330,7 @@ return [];
   // Auto-start call if coming from profile page
   useEffect(() => {
     const profileCallAstrologerId = localStorage.getItem(
-      "tgs:profileCallAstrologerId"
+      "tgs:profileCallAstrologerId",
     );
     const profileCallType = localStorage.getItem("tgs:profileCallType");
 
@@ -323,35 +352,33 @@ return [];
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
   /* --------------------------------------------------------------- */
-const filteredAstrologers = astrologers.filter((a) => {
-  const search = searchTerm.toLowerCase();
+  const filteredAstrologers = astrologers.filter((a) => {
+    const search = searchTerm.toLowerCase();
 
-  const specializations = getSpecializations(a).map(s =>
-    s.toLowerCase()
-  );
+    const specializations = getSpecializations(a).map((s) => s.toLowerCase());
 
-  const matchesSearch =
-    a.name?.toLowerCase().includes(search) ||
-    specializations.some(s => s.includes(search));
+    const matchesSearch =
+      a.name?.toLowerCase().includes(search) ||
+      specializations.some((s) => s.includes(search));
 
-  const matchesFilter =
-    !filterSpecialization ||
-    specializations.includes(filterSpecialization.toLowerCase());
+    const matchesFilter =
+      !filterSpecialization ||
+      specializations.includes(filterSpecialization.toLowerCase());
 
-  return matchesSearch && matchesFilter;
-});
+    return matchesSearch && matchesFilter;
+  });
 
   const totalPages = Math.ceil(filteredAstrologers.length / ITEMS_PER_PAGE);
 
   const paginatedAstrologers = filteredAstrologers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    currentPage * ITEMS_PER_PAGE,
   );
 
   useEffect(() => {
-console.log("Astrologers loaded:", astrologers.length);
-console.log("Filtered astrologers:", filteredAstrologers.length);
-}, [astrologers, filteredAstrologers]);
+    console.log("Astrologers loaded:", astrologers.length);
+    console.log("Filtered astrologers:", filteredAstrologers.length);
+  }, [astrologers, filteredAstrologers]);
 
   /* --------------------------------------------------------------- */
   /*  Voice / Video call handlers                                    */
@@ -398,7 +425,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             available: validation.currentBalance,
           });
           setBalanceMessage(
-            `Insufficient balance. Need ₹${validation.minimumRequired}, you have ₹${validation.currentBalance}.`
+            `Insufficient balance. Need ₹${validation.minimumRequired}, you have ₹${validation.currentBalance}.`,
           );
           setIsBalanceModalOpen(true);
           setLoading(false);
@@ -411,7 +438,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
 
       /* ---- Availability ---- */
       const statusRes = await fetch(
-        `/api/astrologer/status?astrologerId=${astrologerId}`
+        `/api/astrologer/status?astrologerId=${astrologerId}`,
       );
       const { success, status } = await statusRes.json();
 
@@ -471,7 +498,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
       /* ---- Billing will start automatically when both participants join and audio track is published ---- */
       /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
       console.log(
-        "Call created. Billing will start automatically when call connects."
+        "Call created. Billing will start automatically when call connects.",
       );
 
       /* ---- REAL-TIME listener for INSTANT status updates ---- */
@@ -496,7 +523,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
           if (c?.status === "active" && c?.roomName) {
             console.log(
               "✅ Call accepted by astrologer! Joining room:",
-              c.roomName
+              c.roomName,
             );
 
             // Clean up listener and timeout
@@ -548,12 +575,12 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
               router.push(
                 type === "video"
                   ? `/talk-to-astrologer/room/${roomName}`
-                  : `/talk-to-astrologer/voice/${roomName}`
+                  : `/talk-to-astrologer/voice/${roomName}`,
               );
             } else {
               trackActionAbandon(
                 "astrologer_booking",
-                "session_creation_failed"
+                "session_creation_failed",
               );
               trackEvent("call_failed", {
                 reason: "session_creation_failed",
@@ -614,7 +641,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
         },
         (error) => {
           console.error("❌ Error in call status listener:", error);
-        }
+        },
       );
 
       // Timeout after 60 seconds
@@ -804,7 +831,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             {
               cache: "no-store",
               headers: { "Cache-Control": "no-cache" },
-            }
+            },
           ), // Fetch ALL calls (up to 1000)
           fetch(`/api/user/stats?userId=${userId}&_t=${timestamp}`, {
             cache: "no-store",
@@ -840,7 +867,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
         console.error(
           "❌ Call history API error:",
           allCallsResponse.status,
-          allCallsResponse.statusText
+          allCallsResponse.statusText,
         );
         setCallHistory([]);
       }
@@ -864,7 +891,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
         console.error(
           "❌ Stats API error:",
           statsResponse.status,
-          statsResponse.statusText
+          statsResponse.statusText,
         );
       }
 
@@ -898,7 +925,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
         console.error(
           "❌ Balance API error:",
           balanceResponse.status,
-          balanceResponse.statusText
+          balanceResponse.statusText,
         );
         try {
           const errorText = await balanceResponse.text();
@@ -1154,13 +1181,24 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
               <div className="orb orb3" />
             </div>
             {/* Header */}
-            <header className="header" style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "0.1rem" }}>
+            <header
+              className="header"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginTop: "0.1rem",
+              }}
+            >
               <h1 className="title">{t.talkToAstrologer.title}</h1>
               <p className="subtitle">{t.talkToAstrologer.subtitle}</p>
             </header>
 
             {/* Search + Filter */}
-            <div className="card search-filter-card" style={{ marginTop: "1.5rem", padding: "1rem" }}>
+            <div
+              className="card search-filter-card"
+              style={{ marginTop: "1.5rem", padding: "1rem" }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -1286,10 +1324,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             </div>
 
             {/* Astrologers Card Container */}
-            <div
-
-              style={{ marginTop: "1.5rem", padding: "1.5rem" }}
-            >
+            <div style={{ marginTop: "1.5rem", padding: "1.5rem" }}>
               {/* Call History + My Appointments Buttons */}
               <div
                 className="action-buttons-container"
@@ -1492,315 +1527,328 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
                       }}
                     >
                       {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
-                                            <div
-                                              style={{
-                                                display: "flex",
-                                                alignItems: "flex-start",
-                                                justifyContent: "space-between",
-                                                gap: "1rem",
-                                                marginBottom: "1rem",
-                                                position: "relative",
-                                                zIndex: 20,
-                                              }}
-                                            >
-                                              {/* Left Side: Avatar + Name + Spec + Experience */}
-                                              <div
-                                                style={{
-                                                  display: "flex",
-                                                  gap: "0.75rem",
-                                                  flex: 1,
-                                                  minWidth: 0,
-                                                }}
-                                              >
-                                                {/* Avatar + Status Indicator Dot */}
-                                                <div style={{ position: "relative", flexShrink: 0 }}>
-                                                  <div
-                                                    style={{
-                                                      width: "4rem",
-                                                      height: "4rem",
-                                                      background:
-                                                        "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                                                      borderRadius: "50%",
-                                                      display: "flex",
-                                                      alignItems: "center",
-                                                      justifyContent: "center",
-                                                      color: "white",
-                                                      fontWeight: 700,
-                                                      fontSize: "1.125rem",
-                                                      textTransform: "uppercase",
-                                                    }}
-                                                  >
-                                                    {a.name
-                                                      .split(" ")
-                                                      .map((n) => n[0])
-                                                      .join("")}
-                                                  </div>
-                                                  {/* Status Indicator Dot - properly aligned at avatar */}
-                                                  {(a.online || a.isOnline) && (
-                                                    <div
-                                                      style={{
-                                                        position: "absolute",
-                                                        bottom: "2px",
-                                                        right: "2px",
-                                                        width: "0.875rem",
-                                                        height: "0.875rem",
-                                                        borderRadius: "50%",
-                                                        border: "2.5px solid white",
-                                                        background: "#10b981",
-                                                        zIndex: 10,
-                                                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
-                                                      }}
-                                                    />
-                                                  )}
-                                                </div>
-                      
-                                                {/* Name, Spec, Experience */}
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                  <h3
-                                                    style={{
-                                                      fontSize: "1.125rem",
-                                                      fontWeight: 400,
-                                                      color: "#1f2937",
-                                                      margin: 0,
-                                                      marginBottom: "0.25rem",
-                                                      fontFamily: "var(--font-heading)",
-                                                      lineHeight: 1.3,
-                                                    }}
-                                                    title={a.name}
-                                                  >
-                                                    {a.name.split(' ').map(word => 
-                                                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                                                    ).join(' ')}
-                                                  </h3>
-                                                  <p
-                                                    style={{
-                                                      fontSize: "0.8125rem",
-                                                      fontWeight: 500,
-                                                      color: "var(--color-indigo)",
-                                                      margin: "0 0 0.125rem 0",
-                                                      fontFamily: "var(--font-body)",
-                                                    }}
-                                                    title={a.specialization ?? "Astrology"}
-                                                  >
-                                                    {a.specialization ?? "Astrology"}
-                                                  </p>
-                                                  <p
-                                                    style={{
-                                                      fontSize: "0.75rem",
-                                                      color: "#6b7280",
-                                                      margin: "0",
-                                                      fontWeight: 400,
-                                                    }}
-                                                  >
-                                                    {a.experience ?? "Experienced in astrology"}
-                                                  </p>
-                                                </div>
-                                              </div>
-                      
-                                              {/* Right Side: Rating + Review Button + Price */}
-                                              <div
-                                                style={{
-                                                  display: "flex",
-                                                  flexDirection: "column",
-                                                  alignItems: "flex-end",
-                                                  gap: "0.5rem",
-                                                  flexShrink: 0,
-                                                }}
-                                              >
-                                                {/* Rating */}
-                                                <div
-                                                  style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: "0.25rem",
-                                                    fontSize: "0.875rem",
-                                                    fontWeight: 600,
-                                                    color: "#1f2937",
-                                                  }}
-                                                >
-                                                  <Star
-                                                    style={{
-                                                      width: "0.875rem",
-                                                      height: "0.875rem",
-                                                      fill: "#f59e0b",
-                                                      color: "#f59e0b",
-                                                    }}
-                                                  />
-                                                  <span>{a.rating ?? 4.5}</span>
-                                                  <span
-                                                    style={{
-                                                      color: "#6b7280",
-                                                      fontWeight: 400,
-                                                      marginLeft: "0.125rem",
-                                                    }}
-                                                  >
-                                                    ({a.reviews ?? 2})
-                                                  </span>
-                                                </div>
-                      
-                                                {/* Review Button */}
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    handleOpenReview(a);
-                                                  }}
-                                                  style={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "0.25rem 0.625rem",
-                                                    height: "auto",
-                                                    border: "1px solid #d1d5db",
-                                                    borderRadius: "0.375rem",
-                                                    background: "white",
-                                                    color: "#374151",
-                                                    cursor: "pointer",
-                                                    fontWeight: 500,
-                                                  }}
-                                                >
-                                                  Review
-                                                </button>
-                      
-                                                {/* Price - moved to where ONLINE was */}
-                                                {a.perMinuteCharge && (
-                                                  <div
-                                                    style={{
-                                                      fontSize: "0.9375rem",
-                                                      fontWeight: 700,
-                                                      color: "#059669",
-                                                    }}
-                                                  >
-                                                    ₹{a.perMinuteCharge}/min
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
-                      
-                                            {/* Middle Section: Bio */}
-                                            <p
-                                              style={{
-                                                fontSize: "0.875rem",
-                                                fontFamily: "var(--font-body)",
-                                                color: "#4b5563",
-                                                marginBottom: "0.75rem",
-                                                lineHeight: 1.5,
-                                                position: "relative",
-                                                zIndex: 20,
-                                              }}
-                                            >
-                                              {a.bio ??
-                                                `Experienced astrologer providing guidance and insights.`}
-                                            </p>
-                      
-                                            {/* Languages */}
-                                            {a.languages?.length > 0 && (
-                                              <div
-                                                style={{
-                                                  marginBottom: "0.75rem",
-                                                  position: "relative",
-                                                  zIndex: 20,
-                                                }}
-                                              >
-                                                <p
-                                                  style={{
-                                                    fontSize: "0.75rem",
-                                                    fontWeight: 600,
-                                                    color: "#4b5563",
-                                                    marginBottom: "0.5rem",
-                                                  }}
-                                                >
-                                                  Speaks:
-                                                </p>
-                                                <div
-                                                  style={{
-                                                    display: "flex",
-                                                    flexWrap: "wrap",
-                                                    gap: "0.375rem",
-                                                  }}
-                                                >
-                                                  {a.languages.map((l, i) => (
-                                                    <span
-                                                      key={l + i}
-                                                      style={{
-                                                        padding: "0.25rem 0.625rem",
-                                                        background: "#E0E7FF",
-                                                        color: "#4F46E5",
-                                                        fontSize: "0.75rem",
-                                                        fontWeight: 500,
-                                                        borderRadius: "9999px",
-                                                      }}
-                                                    >
-                                                      {l}
-                                                    </span>
-                                                  ))}
-                                                </div>
-                                              </div>
-                                            )}
-                      
-                                            {/* Bottom Section: Connect Button */}
-                                            <div
-                                              style={{
-                                                display: "flex",
-                                                marginTop: "auto",
-                                                position: "relative",
-                                                zIndex: 30,
-                                              }}
-                                            >
-                                              <button
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  fastNavigate(
-                                                    router,
-                                                    `/account/astrologer/${a.id}`
-                                                  );
-                                                }}
-                                                style={{
-                                                  width: "100%",
-                                                  height: "2.75rem",
-                                                  padding: "0 1.25rem",
-                                                  fontSize: "0.9375rem",
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  justifyContent: "center",
-                                                  gap: "0.5rem",
-                                                  fontWeight: 600,
-                                                  background: "white",
-                                                  border: "1px solid rgba(212, 175, 55, 0.4)",
-                                                  borderRadius: "0.5rem",
-                                                  color: "#D4AF37",
-                                                  cursor: "pointer",
-                                                  transition: "all 0.2s ease",
-                                                }}
-                                                type="button"
-                                                aria-label={`Connect with ${a.name}`}
-                                                onMouseEnter={(e) => {
-                                                  e.currentTarget.style.borderColor =
-                                                    "rgba(212, 175, 55, 0.6)";
-                                                  e.currentTarget.style.boxShadow =
-                                                    "0 2px 8px rgba(212, 175, 55, 0.15)";
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                  e.currentTarget.style.borderColor =
-                                                    "rgba(212, 175, 55, 0.4)";
-                                                  e.currentTarget.style.boxShadow = "none";
-                                                }}
-                                              >
-                                                <svg
-                                                  width="16"
-                                                  height="16"
-                                                  viewBox="0 0 24 24"
-                                                  fill="none"
-                                                  stroke="currentColor"
-                                                  strokeWidth="2"
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                >
-                                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                                  <circle cx="12" cy="7" r="4" />
-                                                </svg>
-                                                Connect with {a.name.split(" ")[0].toLowerCase()}
-                                              </button>
-                                            </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: "1rem",
+                          marginBottom: "1rem",
+                          position: "relative",
+                          zIndex: 20,
+                        }}
+                      >
+                        {/* Left Side: Avatar + Name + Spec + Experience */}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "0.75rem",
+                            flex: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          {/* Avatar + Status Indicator Dot */}
+                          <div style={{ position: "relative", flexShrink: 0 }}>
+                            <div
+                              style={{
+                                width: "4rem",
+                                height: "4rem",
+                                background:
+                                  "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontWeight: 700,
+                                fontSize: "1.125rem",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {a.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </div>
+                            {/* Status Indicator Dot - properly aligned at avatar */}
+                            {(a.online || a.isOnline) && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  bottom: "2px",
+                                  right: "2px",
+                                  width: "0.875rem",
+                                  height: "0.875rem",
+                                  borderRadius: "50%",
+                                  border: "2.5px solid white",
+                                  background: "#10b981",
+                                  zIndex: 10,
+                                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Name, Spec, Experience */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3
+                              style={{
+                                fontSize: "1.125rem",
+                                fontWeight: 400,
+                                color: "#1f2937",
+                                margin: 0,
+                                marginBottom: "0.25rem",
+                                fontFamily: "var(--font-heading)",
+                                lineHeight: 1.3,
+                              }}
+                              title={a.name}
+                            >
+                              {a.name
+                                .split(" ")
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() +
+                                    word.slice(1).toLowerCase(),
+                                )
+                                .join(" ")}
+                            </h3>
+                            <p
+                              style={{
+                                fontSize: "0.8125rem",
+                                fontWeight: 500,
+                                color: "var(--color-indigo)",
+                                margin: "0 0 0.125rem 0",
+                                fontFamily: "var(--font-body)",
+                              }}
+                              title={a.specialization ?? "Astrology"}
+                            >
+                              {a.specialization ?? "Astrology"}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "#6b7280",
+                                margin: "0",
+                                fontWeight: 400,
+                              }}
+                            >
+                              {a.experience ?? "Experienced in astrology"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Rating + Review Button + Price */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "0.5rem",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {/* Rating */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              color: "#1f2937",
+                            }}
+                          >
+                            <Star
+                              style={{
+                                width: "0.875rem",
+                                height: "0.875rem",
+                                fill: "#f59e0b",
+                                color: "#f59e0b",
+                              }}
+                            />
+                            <span>{a.rating ?? 4.5}</span>
+                            <span
+                              style={{
+                                color: "#6b7280",
+                                fontWeight: 400,
+                                marginLeft: "0.125rem",
+                              }}
+                            >
+                              ({a.reviews ?? 2})
+                            </span>
+                          </div>
+
+                          {/* Review Button */}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenReview(a);
+                            }}
+                            style={{
+                              fontSize: "0.75rem",
+                              padding: "0.25rem 0.625rem",
+                              height: "auto",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "0.375rem",
+                              background: "white",
+                              color: "#374151",
+                              cursor: "pointer",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Review
+                          </button>
+
+                          {/* Price - moved to where ONLINE was */}
+                          {a.perMinuteCharge && (
+                            <div
+                              style={{
+                                fontSize: "0.9375rem",
+                                fontWeight: 700,
+                                color: "#059669",
+                              }}
+                            >
+                              ₹{a.perMinuteCharge}/min
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Middle Section: Bio */}
+                      <p
+                        style={{
+                          fontSize: "0.875rem",
+                          fontFamily: "var(--font-body)",
+                          color: "#4b5563",
+                          marginBottom: "0.75rem",
+                          lineHeight: 1.5,
+                          position: "relative",
+                          zIndex: 20,
+                        }}
+                      >
+                        {a.bio ??
+                          `Experienced astrologer providing guidance and insights.`}
+                      </p>
+
+                      {/* Languages */}
+                      {a.languages?.length > 0 && (
+                        <div
+                          style={{
+                            marginBottom: "0.75rem",
+                            position: "relative",
+                            zIndex: 20,
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              color: "#4b5563",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            Speaks:
+                          </p>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "0.375rem",
+                            }}
+                          >
+                            {a.languages.map((l, i) => (
+                              <span
+                                key={l + i}
+                                style={{
+                                  padding: "0.25rem 0.625rem",
+                                  background: "#E0E7FF",
+                                  color: "#4F46E5",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  borderRadius: "9999px",
+                                }}
+                              >
+                                {l}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="mt-auto flex gap-2 relative z-30">
+                        {/* Schedule Button */}
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!a.hasSlots) return;
+                            router.push(`/appointments/book/${a.id}`);
+                          }}
+                          disabled={!a.hasSlots || !!connectingCallType}
+                          className={`
+      flex-1 h-11 px-4
+      flex items-center justify-center gap-2
+      rounded-md font-semibold text-sm
+      transition-all duration-200
+      ${
+        a.hasSlots
+          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg"
+          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+      }
+    `}
+                          title={
+                            a.hasSlots
+                              ? "Schedule Appointment"
+                              : "No slots available"
+                          }
+                        >
+                          <CalendarCheck className="w-4 h-4" />
+                          {a.hasSlots ? "Schedule" : "No Slots"}
+                        </Button>
+
+                        {/* Voice Call Button */}
+                        <Button
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleVoiceCall(a.id);
+  }}
+  disabled={!a.isOnline || loading || !!connectingCallType}
+  variant="outline"
+  className="
+    btn
+  "
+  title={a.isOnline ? "Voice Call" : "Offline"}
+>
+  {loading && connectingCallType === "voice" ? (
+    <Loader2 className="w-4 h-4 animate-spin" />
+  ) : (
+    <Phone className="w-4 h-4" />
+  )}
+</Button>
+
+                        {/* Video Call Button */}
+<Button
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleVideoCall(a.id);
+  }}
+  disabled={!a.isOnline || loading || !!connectingCallType}
+  variant="outline"
+  className="
+    btn
+  "
+>
+  {loading && connectingCallType === "video" ? (
+    <Loader2 className="w-4 h-4 text-gray-800 animate-spin" />
+  ) : (
+    <Video className="w-4 h-4 text-gray-800 stroke-[2]" />
+  )}
+</Button>
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -2278,7 +2326,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
                                   (() => {
                                     const minutes = Math.floor(call.duration);
                                     const seconds = Math.round(
-                                      (call.duration - minutes) * 60
+                                      (call.duration - minutes) * 60,
                                     );
                                     return ` • ${minutes}:${seconds
                                       .toString()
@@ -2355,12 +2403,12 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             padding: 0.75rem !important;
             margin-top: 1rem !important;
           }
-          
+
           .search-filter-container {
             flex-direction: column !important;
             gap: 0.75rem !important;
           }
-          
+
           .filter-dropdown-wrapper {
             min-width: 100% !important;
             max-width: 100% !important;
@@ -2372,11 +2420,11 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
           .search-filter-card {
             padding: 0.625rem !important;
           }
-          
+
           .search-filter-container {
             gap: 0.5rem !important;
           }
-          
+
           .search-filter-container input,
           .search-filter-container select {
             font-size: 0.9375rem !important;
@@ -2392,7 +2440,7 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             margin-bottom: 1rem !important;
             flex-wrap: nowrap !important;
           }
-          
+
           .action-buttons-container button {
             flex: 1 !important;
             min-width: 0 !important;
@@ -2400,18 +2448,18 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             padding: 0.5rem 0.75rem !important;
             white-space: nowrap !important;
           }
-          
+
           .action-buttons-container button svg {
             width: 0.875rem !important;
             height: 0.875rem !important;
           }
         }
-        
+
         @media (max-width: 480px) {
           .action-buttons-container {
             gap: 0.375rem !important;
           }
-          
+
           .action-buttons-container button {
             font-size: 0.75rem !important;
             padding: 0.5rem 0.5rem !important;
@@ -2431,7 +2479,6 @@ console.log("Filtered astrologers:", filteredAstrologers.length);
             gap: 1.5rem !important;
           }
         }
-
 
         @keyframes pulse {
           0%,

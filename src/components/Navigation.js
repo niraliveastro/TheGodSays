@@ -146,6 +146,12 @@ const Navigation = () => {
       },
       { href: "/panchang", label: t.panchang.title, icon: BookOpen },
       {
+        href: "https://vastu-ai.niraliveastro.com",
+        label: "Vastu AI",
+        icon: Home, 
+        external: true,
+      },
+      {
         href: null,
         label: t.nav.tools,
         icon: Settings,
@@ -155,12 +161,7 @@ const Navigation = () => {
           { href: "/transit", label: t.transit.title, icon: Zap },
         ],
       },
-      {
-        href: "https://vastu-ai.niraliveastro.com",
-        label: "Vastu AI",
-        icon: Home, 
-        external: true,
-      },
+      
       { href: "/blog", label: t.nav.blog, icon: Rss },
     ];
 

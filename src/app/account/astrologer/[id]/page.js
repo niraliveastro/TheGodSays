@@ -850,7 +850,7 @@ export default function AstrologerProfile() {
                             />
                             <span
                               style={{
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 color: "#059669",
                                 fontFamily: "'Courier New', monospace",
                               }}
@@ -902,8 +902,7 @@ export default function AstrologerProfile() {
                                     style={{
                                       fontSize: "0.90rem",
                                       color: "var(--color-gray-600)",
-                                      fontWeight: 800,
-                                      textTransform: "uppercase",
+                                      fontWeight: 500,
                                       letterSpacing: "0.05em",
                                      
                                     }}
@@ -914,9 +913,8 @@ export default function AstrologerProfile() {
                                 <div
                                   style={{
                                     fontSize: "1rem",
-                                    fontWeight: 700,
+                                    fontWeight: 500,
                                     color: "var(--color-gray-900)",
-                                    fontFamily: "'Courier New', monospace",
                                   }}
                                 >
                                   {item.value}
@@ -1149,7 +1147,6 @@ export default function AstrologerProfile() {
                                     style={{
                                       fontSize: "0.875rem",
                                       color: "var(--color-gray-500)",
-                                      fontFamily: "Courier New, monospace",
                                     }}
                                   >
                                     {review.createdAt
@@ -1209,7 +1206,7 @@ export default function AstrologerProfile() {
                     </div>
 
                     {/* Gallery Section */}
-                    <div className="card">
+                    <div className="card mt-6">
                       <div
                         style={{
                           display: "flex",
@@ -1223,7 +1220,6 @@ export default function AstrologerProfile() {
                             fontSize: "1.5rem",
                             fontWeight: 500,
                             color: "var(--color-gray-900)",
-                            fontFamily: "'Cormorant Garamond', 'Georgia', serif",
                           }}
                         >
                           Gallery
@@ -1378,9 +1374,8 @@ export default function AstrologerProfile() {
                                       <h3
                                         style={{
                                           fontSize: "1rem",
-                                          fontWeight: 600,
+                                          fontWeight: 500,
                                           marginBottom: "0.25rem",
-                                          fontFamily: "'Cormorant Garamond', 'Georgia', serif",
                                           color: "var(--color-gray-900)",
                                         }}
                                       >
@@ -1866,7 +1861,7 @@ export default function AstrologerProfile() {
             50% { opacity: 0.5; }
           }
           
-          body, h1, h2, h3, h4, h5, h6, p, span, div {
+        .app h1, .app h2, .app h3, .app h4, .app h5, .app h6, .app p, .app span, .app div {
             font-family: 'Georgia', 'Times New Roman', serif;
           }
         `}</style>
