@@ -223,24 +223,10 @@ export default function Home() {
     setCurrentDate(formattedDate);
   }, []);
 
-  // Get user location on component mount
+  // Default location: Ujjain, Madhya Pradesh, India (no permission request on landing page)
+  const DEFAULT_LOCATION = { latitude: 23.1765, longitude: 75.7885 }; // Ujjain, MP, India
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ latitude, longitude });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          // Fallback to Delhi, India
-          setUserLocation({ latitude: 28.6139, longitude: 77.209 });
-        }
-      );
-    } else {
-      // Fallback to Delhi, India
-      setUserLocation({ latitude: 28.6139, longitude: 77.209 });
-    }
+    setUserLocation(DEFAULT_LOCATION);
   }, []);
 
   // Fetch real Panchang data when date or location changes
