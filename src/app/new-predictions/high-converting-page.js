@@ -240,7 +240,7 @@ export default function HighConvertingInsights({
         {Object.entries(scores).map(([k, v]) => (
           <div
             key={k}
-            className="rounded-2xl bg-gradient-to-br from-white via-amber-50 to-white p-6 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.25)] relative overflow-hidden"
+            className="card rounded-2xl p-6 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.25)] relative overflow-hidden"
           >
             {/* Soft Glow */}
             <div className="absolute inset-0 pointer-events-none">
@@ -419,7 +419,7 @@ export default function HighConvertingInsights({
                   </strong>
                 </p>
 
-                <button className="dasha-iq-cta" onClick={onTalkToAstrologer}>
+                <button className="btn btn-gold" onClick={onTalkToAstrologer}>
                   Decode my Dasha →
                 </button>
               </div>
@@ -459,7 +459,6 @@ export default function HighConvertingInsights({
         ))}
       </div>
 
-      <h2 className="section-title mt-10">Planetary Strength Snapshot</h2>
 
       {/* 🌟 High Potential Planets */}
       <h2 className="section-title mt-10">High Potential Planets</h2>

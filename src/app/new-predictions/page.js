@@ -1801,6 +1801,8 @@ export default function PredictionsPage() {
     return active?.lord || null;
   }, [mahaRows]);
 
+
+
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
     return (
@@ -2857,6 +2859,7 @@ export default function PredictionsPage() {
                         <th>Antar Dasha Lord</th>
                         <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Events</th>
                       </tr>
                     </thead>
                     <tbody>
