@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Geom:wght@500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -1957,12 +1957,9 @@ select {
 
 .logo-text {
   font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 500;
+  color: #C89F3A;
+  font-family: 'Geom', sans-serif;
 }
 
 .auth-title {

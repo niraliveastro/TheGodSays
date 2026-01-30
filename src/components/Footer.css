@@ -1,37 +1,44 @@
+/* Footer: 80% viewport-width content frame (design rule) */
 .footer {
   background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
   color: #1f2937;
-  padding: 3rem 1rem 1rem;
-  margin-top: 4rem;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem) clamp(1rem, 2vw, 1.5rem);
+  margin-top: clamp(2rem, 5vw, 4rem);
   border-top: 2px solid rgba(212, 175, 55, 0.2);
   font-family: 'Georgia', 'Times New Roman', serif;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .footer * {
   text-transform: none !important;
+  box-sizing: border-box;
 }
 
 .footer-content {
+  width: 80%;
+  min-width: min(320px, 95vw);
   max-width: 1280px;
   margin: 0 auto;
+  padding: 0 2%;
 }
 
 .footer-main {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1.2fr;
-  gap: 3rem;
-  margin-bottom: 3rem;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  margin-bottom: clamp(1.5rem, 3vw, 3rem);
 }
 
 .footer-section {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
   text-align: left;
 }
 
 .footer-brand {
-  max-width: 350px;
+  max-width: min(350px, 100%);
 }
 
 .footer-logo-title {
@@ -48,20 +55,21 @@
 }
 
 .footer-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #d4af37;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 500;
+  color: #C89F3A;
   margin: 0;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Geom', sans-serif;
   letter-spacing: -0.01em;
 }
 
 .footer-description {
-  color: #6b7280;
+  color: #000000;
   line-height: 1.7;
-  font-size: 0.95rem;
+  font-size: clamp(0.875rem, 1.5vw, 0.95rem);
+  font-weight: 400;
   text-align: left;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Inter', sans-serif !important;
   text-transform: none;
 }
 
@@ -76,8 +84,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: clamp(36px, 4vw, 40px);
+  height: clamp(36px, 4vw, 40px);
   background: rgba(212, 175, 55, 0.1);
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 50%;
@@ -98,11 +106,11 @@
 }
 
 .footer-heading {
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
   font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 1rem;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #000000;
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+  font-family: 'Inter', sans-serif !important;
 }
 
 .footer-links {
@@ -116,12 +124,13 @@
 }
 
 .footer-links li a {
-  color: #6b7280;
+  color: #000000;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.4vw, 0.95rem);
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   transition: all 0.2s ease;
   display: inline-block;
-  font-family: 'Georgia', 'Times New Roman', serif;
   text-transform: none;
 }
 
@@ -140,10 +149,11 @@
 .contact-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  color: #6b7280;
-  font-size: 0.95rem;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  gap: clamp(0.5rem, 1.2vw, 0.75rem);
+  color: #000000;
+  font-size: clamp(0.85rem, 1.4vw, 0.95rem);
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   text-transform: none;
 }
 
@@ -157,10 +167,11 @@
 
 .contact-item a,
 .contact-item span {
-  color: #6b7280;
+  color: #000000;
   text-decoration: none;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   transition: color 0.2s ease;
-  font-family: 'Georgia', 'Times New Roman', serif;
   text-transform: none;
 }
 
@@ -169,25 +180,45 @@
 }
 
 .footer-bottom {
-  padding-top: 2rem;
+  padding-top: clamp(1rem, 3vw, 2rem);
   border-top: 1px solid rgba(212, 175, 55, 0.15);
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
 .footer-bottom-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  text-align: center;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 2rem);
+  row-gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+/* Single line at 100% zoom: prevent text wrap when there is space */
+.footer-bottom-content .footer-copyright {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.footer-social-bottom {
+  flex: 0 0 auto;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+.footer-bottom-content .footer-legal {
+  flex: 0 1 auto;
+  white-space: nowrap;
 }
 
 .footer-copyright {
-  color: #6b7280;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  color: #000000;
+  font-size: clamp(0.8rem, 1.4vw, 0.9rem);
+  margin: 0;
   font-family: 'Georgia', 'Times New Roman', serif;
   text-transform: none;
 }
@@ -212,15 +243,15 @@
 .footer-legal {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .footer-legal a {
-  color: #6b7280;
+  color: #000000;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.4vw, 0.9rem);
   transition: color 0.2s ease;
   font-family: 'Georgia', 'Times New Roman', serif;
   text-transform: none;
@@ -232,54 +263,64 @@
 }
 
 .footer-legal .separator {
-  color: #9ca3af;
+  color: #000000;
 }
 
 .footer-disclaimer {
   background: rgba(212, 175, 55, 0.05);
   border: 1px solid rgba(212, 175, 55, 0.15);
   border-radius: 8px;
-  padding: 1.5rem;
-  margin-top: 2rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  margin-top: clamp(1rem, 3vw, 2rem);
 }
 
 .footer-disclaimer p {
-  color: #6b7280;
-  font-size: 0.85rem;
+  color: #000000;
+  font-size: clamp(0.75rem, 1.3vw, 0.85rem);
   line-height: 1.6;
   margin: 0;
-  text-align: center;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
   text-transform: none;
 }
 
 .footer-disclaimer strong {
-  color: #d4af37;
+  color: #000000;
   font-weight: 600;
 }
 
-/* Responsive Design */
+/* Responsive: 80% view frame; narrow viewports use more width */
 @media (max-width: 1024px) {
+  .footer-content {
+    width: 88%;
+  }
+
   .footer-main {
     grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
   }
 
   .footer-brand {
     max-width: none;
     grid-column: span 2;
   }
+
+  /* Allow text to wrap on smaller viewports / higher zoom so layout adjusts */
+  .footer-bottom-content .footer-copyright,
+  .footer-bottom-content .footer-legal {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 768px) {
-  .footer {
-    padding: 2rem 1rem 1rem;
-    margin-top: 3rem;
+  .footer-content {
+    width: 92%;
+    padding: 0 3%;
   }
 
   .footer-main {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: clamp(1.25rem, 4vw, 2rem);
   }
 
   .footer-brand {
@@ -311,48 +352,66 @@
   }
 
   .footer-bottom-content {
-    gap: 1.5rem;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1rem);
+  }
+
+  .footer-bottom-content .footer-copyright {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .footer-bottom-content .footer-legal {
+    white-space: normal;
+    justify-content: center;
   }
 
   .footer-legal {
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: clamp(0.5rem, 2vw, 1rem);
+    justify-content: center;
+    width: 100%;
   }
 
   .footer-legal .separator {
-    display: none;
+    display: inline;
   }
 }
 
 @media (max-width: 480px) {
-  .footer {
-    padding: 1.5rem 0.75rem 0.75rem;
+  .footer-content {
+    width: 95%;
+    padding: 0 4%;
   }
 
   .footer-title {
-    font-size: 1.35rem;
+    font-size: clamp(1.2rem, 5vw, 1.35rem);
   }
 
   .footer-heading {
-    font-size: 1.05rem;
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+    font-family: 'Inter', sans-serif !important;
   }
 
   .footer-description,
   .footer-links li a,
   .contact-item {
-    font-size: 0.9rem;
+    font-size: clamp(0.8rem, 3.5vw, 0.9rem);
   }
 
   .footer-disclaimer {
-    padding: 1rem;
+    padding: clamp(0.75rem, 3vw, 1rem);
   }
 
   .footer-disclaimer p {
-    font-size: 0.8rem;
+    font-size: clamp(0.7rem, 3vw, 0.8rem);
   }
 
   .footer-logo {
-    width: 28px;
-    height: 28px;
+    width: clamp(24px, 6vw, 28px);
+    height: clamp(24px, 6vw, 28px);
   }
 }

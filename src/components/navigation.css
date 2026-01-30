@@ -324,20 +324,14 @@ body {
 
 .nav-logo-text {
   font-size: 1.5rem;
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 700;
+  color: #C89F3A;
+  font-family: 'Geom', sans-serif;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .nav-logo-wrapper:hover .nav-logo-text {
-  background: linear-gradient(135deg, #b8972e, #d4af37);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #C89F3A;
 }
 
 /* Hide logo text on mobile for cleaner view */
