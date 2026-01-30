@@ -59,8 +59,15 @@
   font-weight: 500;
   color: #C89F3A;
   margin: 0;
-  font-family: 'Geom', sans-serif;
+  font-family: 'Geom', sans-serif !important;
   letter-spacing: -0.01em;
+}
+
+/* Override home page h3 Georgia: force Geom for footer brand title (landing + all pages) */
+.footer .footer-brand .footer-title,
+.footer .footer-logo-title .footer-title,
+.footer h3.footer-title {
+  font-family: 'Geom', sans-serif !important;
 }
 
 .footer-description {
