@@ -10,22 +10,18 @@ import {
   Phone,
   AlertCircle,
   CheckCircle2,
-   Moon
+  Moon,
 } from "lucide-react";
-
 
 import LockedDeepPredictions from "./components/LockedDeepPredictions";
 import "./high-converting.css";
 import VimshottariMahaDasha from "../../components/VismottriMahadasha";
 
-
-
-
 export default function HighConvertingInsights({
   insights,
   observations,
   dashaIQ,
-  shadbalaRows, 
+  shadbalaRows,
   mahaRows,
   antarRows,
   openAntarFor,
@@ -33,7 +29,7 @@ export default function HighConvertingInsights({
   openAntarInlineFor,
   activeMahaLord,
   onTalkToAstrologer,
-})  {
+}) {
   const router = useRouter();
 
   const handleCTA = () => {
@@ -59,179 +55,167 @@ export default function HighConvertingInsights({
     timeline = { future: [] },
   } = insights || {};
 
-  const {
-  strongObservations = [],
-  potential = [],
-} = observations || {};
-
-
-
+  const { strongObservations = [], potential = [] } = observations || {};
 
   // --- Planet classification ---
-const potentialPlanets = (shadbalaRows || [])
-  .filter(p => typeof p.percent === "number" && p.percent >= 65)
-  .slice(0, 4);
+  const potentialPlanets = (shadbalaRows || [])
+    .filter((p) => typeof p.percent === "number" && p.percent >= 65)
+    .slice(0, 4);
 
-const problematicPlanets = (shadbalaRows || [])
-  .filter(p => typeof p.percent === "number" && p.percent < 50)
-  .slice(0, 4);
+  const problematicPlanets = (shadbalaRows || [])
+    .filter((p) => typeof p.percent === "number" && p.percent < 50)
+    .slice(0, 4);
 
-// helper → find Maha Dasha duration for planet
-const getMahaDuration = (planet) => {
-  const row = mahaRows?.find(
-    m => m.lord?.toLowerCase() === planet.toLowerCase()
-  );
-  if (!row) return null;
+  // helper → find Maha Dasha duration for planet
+  const getMahaDuration = (planet) => {
+    const row = mahaRows?.find(
+      (m) => m.lord?.toLowerCase() === planet.toLowerCase(),
+    );
+    if (!row) return null;
 
-  return {
-    start: new Date(row.start).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
-    end: new Date(row.end).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
+    return {
+      start: new Date(row.start).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      end: new Date(row.end).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+    };
   };
-};
 
-// check if planet is current Maha Dasha
-const isActivePlanet = (planetName) =>
-  activeMahaLord?.toLowerCase() === planetName.toLowerCase();
+  // check if planet is current Maha Dasha
+  const isActivePlanet = (planetName) =>
+    activeMahaLord?.toLowerCase() === planetName.toLowerCase();
 
-// calculate remaining duration from Maha Dasha
-const getRemainingDuration = (planetName) => {
-  const row = mahaRows?.find(
-    m => m.lord?.toLowerCase() === planetName.toLowerCase()
-  );
-  if (!row) return "—";
+  // calculate remaining duration from Maha Dasha
+  const getRemainingDuration = (planetName) => {
+    const row = mahaRows?.find(
+      (m) => m.lord?.toLowerCase() === planetName.toLowerCase(),
+    );
+    if (!row) return "—";
 
-  const now = new Date();
-  const end = new Date(row.end);
+    const now = new Date();
+    const end = new Date(row.end);
 
-  if (now > end) return "Completed";
+    if (now > end) return "Completed";
 
-  const diffMs = end - now;
-  const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
-  const years = Math.floor(months / 12);
-  const remMonths = months % 12;
+    const diffMs = end - now;
+    const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
+    const years = Math.floor(months / 12);
+    const remMonths = months % 12;
 
-  if (years > 0) return `${years}y ${remMonths}m`;
-  return `${remMonths}m`;
-};
+    if (years > 0) return `${years}y ${remMonths}m`;
+    return `${remMonths}m`;
+  };
 
-// symbols & colors used across
-const PLANET_SYMBOLS = {
-  Sun: "☉",
-  Moon: "☽",
-  Mercury: "☿",
-  Venus: "♀",
-  Mars: "♂",
-  Jupiter: "♃",
-  Saturn: "♄",
-  Rahu: "☊",
-};
-const PLANET_COLORS = {
-  Sun: "#fbbf24",
-  Moon: "#a78bfa",
-  Mercury: "#10b981",
-  Venus: "#ec4899",
-  Mars: "#ef4444",
-  Jupiter: "#3b82f6",
-  Saturn: "#6366f1",
-  Rahu: "#8b5cf6",
-};
+  // symbols & colors used across
+  const PLANET_SYMBOLS = {
+    Sun: "☉",
+    Moon: "☽",
+    Mercury: "☿",
+    Venus: "♀",
+    Mars: "♂",
+    Jupiter: "♃",
+    Saturn: "♄",
+    Rahu: "☊",
+  };
+  const PLANET_COLORS = {
+    Sun: "#fbbf24",
+    Moon: "#a78bfa",
+    Mercury: "#10b981",
+    Venus: "#ec4899",
+    Mars: "#ef4444",
+    Jupiter: "#3b82f6",
+    Saturn: "#6366f1",
+    Rahu: "#8b5cf6",
+  };
 
-function PlanetTile({ planet, type }) {
-  const active = isActivePlanet(planet.name);
-  const remaining = getRemainingDuration(planet.name);
+  function PlanetTile({ planet, type }) {
+    const active = isActivePlanet(planet.name);
+    const remaining = getRemainingDuration(planet.name);
 
-  const symbol = PLANET_SYMBOLS[planet.name] || "◯";
-  const color = PLANET_COLORS[planet.name] || "#22c55e";
+    const symbol = PLANET_SYMBOLS[planet.name] || "◯";
+    const color = PLANET_COLORS[planet.name] || "#22c55e";
 
-  return (
-    <div className={`planet-tile ${active ? "active" : ""}`}>
-      <div className={`planet-accent ${type}`} />
+    return (
+      <div className={`planet-tile ${active ? "active" : ""}`}>
+        <div className={`planet-accent ${type}`} />
 
-      {/* ACTIVE BADGE */}
-      {active && <span className="active-pill">Active</span>}
+        {/* ACTIVE BADGE */}
+        {active && <span className="active-pill">Active</span>}
 
-      <div className="planet-header">
-        <div
-          className={`planet-icon-tile ${type}`}
-          style={{ background: color }}
-        >
-          <span className="planet-symbol">{symbol}</span>
+        <div className="planet-header">
+          <div
+            className={`planet-icon-tile ${type}`}
+            style={{ background: color }}
+          >
+            <span className="planet-symbol">{symbol}</span>
+          </div>
+
+          <div>
+            <h3 className="planet-name">{planet.name}</h3>
+            <p className="planet-sub">
+              {type === "positive" ? "Strong placement" : "Needs correction"}
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3 className="planet-name">{planet.name}</h3>
-          <p className="planet-sub">
-            {type === "positive" ? "Strong placement" : "Needs correction"}
-          </p>
+        <div className="planet-meta">
+          <div>
+            <span>Strength</span>
+            <strong>{planet.percent.toFixed(1)}%</strong>
+          </div>
+
+          <div>
+            <span>Remaining</span>
+            <strong>{remaining}</strong>
+          </div>
         </div>
+
+        {type === "negative" && (
+          <button className="planet-fix-btn" onClick={onTalkToAstrologer}>
+            Fix this planet →
+          </button>
+        )}
       </div>
+    );
+  }
+  function PlanetEmptyState({ type, onTalkToAstrologer }) {
+    const isPositive = type === "positive";
 
-      <div className="planet-meta">
-        <div>
-          <span>Strength</span>
-          <strong>{planet.percent.toFixed(1)}%</strong>
+    return (
+      <div className="planet-empty-tile">
+        <div className={`planet-empty-icon ${type}`}>
+          {isPositive ? "✦" : "⚠︎"}
         </div>
 
-        <div>
-          <span>Remaining</span>
-          <strong>{remaining}</strong>
-        </div>
-      </div>
+        <h4 className="planet-empty-title">
+          {isPositive
+            ? "No Dominant Strengths Detected"
+            : "No Major Weaknesses Detected"}
+        </h4>
 
-      {type === "negative" && (
-        <button
-          className="planet-fix-btn"
-          onClick={onTalkToAstrologer}
-        >
-          Fix this planet →
+        <p className="planet-empty-text">
+          {isPositive
+            ? "Your chart shows balanced energies. The strongest planets emerge only during specific dashas and transits."
+            : "Surface strengths look stable, but subtle planetary tensions may still affect decisions and timing."}
+        </p>
+
+        <button className="planet-empty-cta" onClick={onTalkToAstrologer}>
+          Ask an astrologer →
         </button>
-      )}
-    </div>
-  );
-}
-function PlanetEmptyState({ type, onTalkToAstrologer }) {
-  const isPositive = type === "positive";
-
-  return (
-    <div className="planet-empty-tile">
-      <div className={`planet-empty-icon ${type}`}>
-        {isPositive ? "✦" : "⚠︎"}
       </div>
-
-      <h4 className="planet-empty-title">
-        {isPositive
-          ? "No Dominant Strengths Detected"
-          : "No Major Weaknesses Detected"}
-      </h4>
-
-      <p className="planet-empty-text">
-        {isPositive
-          ? "Your chart shows balanced energies. The strongest planets emerge only during specific dashas and transits."
-          : "Surface strengths look stable, but subtle planetary tensions may still affect decisions and timing."}
-      </p>
-
-      <button
-        className="planet-empty-cta"
-        onClick={onTalkToAstrologer}
-      >
-        Ask an astrologer →
-      </button>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div>
       {/* Next 30 Days */}
-      <h2 className="header title">Your Next 30 Days</h2>
+      <h2 className="section-title">Your Next 30 Days</h2>
       <div className="snapshot-grid">
         <Snapshot label="Career" icon={Briefcase} data={next30Days.career} />
         <Snapshot label="Money" icon={DollarSign} data={next30Days.money} />
@@ -243,178 +227,216 @@ function PlanetEmptyState({ type, onTalkToAstrologer }) {
       </div>
 
       {/* Life Scores */}
-      <h2 className="section-title mt-8">Life Area Scores</h2>
-      <div className="scores-grid">
+      <h2 className="section-title mt-8">
+        Life Area Insights
+      </h2>
+
+      <p className="mt-2 text-gray-600 max-w-2xl mx-auto flex justify-center align-center text-center">
+        These scores reflect current planetary influences across key areas of
+        your life. 
+      </p>
+
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(scores).map(([k, v]) => (
-          <div key={k} className="score-card">
-            <div className="score-header">
-              <span>{k}</span>
-              <strong>{v}/100</strong>
+          <div
+            key={k}
+            className="rounded-2xl bg-gradient-to-br from-white via-amber-50 to-white p-6 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.25)] relative overflow-hidden"
+          >
+            {/* Soft Glow */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-200/40 rounded-full blur-2xl" />
             </div>
-            <div className="score-progress">
-              <div className="score-bar" style={{ width: `${v}%` }} />
+
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">{k}</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {v}/100
+                </span>
+              </div>
+
+              {/* Progress */}
+              <div className="h-2 w-full rounded-full bg-amber-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${v}%`, backgroundColor: "var(--color-gold)" }}
+                />
+              </div>
+
+              {/* Interpretation */}
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                {v >= 70
+                  ? "This area is currently well-supported."
+                  : v >= 40
+                    ? "Some fluctuations are influencing this area."
+                    : "This area may need focused attention."}
+              </p>
+
+              {/* CTA */}
+              <button
+                onClick={handleUnlockClick}
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800 transition"
+              >
+                Get guidance
+                <span className="text-base">→</span>
+              </button>
             </div>
-            <button className="boost-btn" onClick={handleUnlockClick}>
-              Improve →
-            </button>
           </div>
         ))}
       </div>
 
-<h2 className="section-title mt-8">Chart Highlights</h2>
+      <h2 className="section-title mt-8">Chart Highlights</h2>
 
-<div
-  className="grid"
-  style={{
-    display: "grid",
-    gridTemplateColumns: "3fr 2fr", // 60% / 40%
-    gap: "1.5rem",
-  }}
->
-{/* LEFT – Strong Observations (60%) */}
-<div className="observations-panel">
-  <h3 className="sub-title flex items-center gap-2">
-    <span className="observations-dot" />
-    Strong Observations
-  </h3>
+      <div
+          className="
+    grid
+    grid-cols-1
+    gap-6
+    md:grid-cols-1
+    lg:grid-cols-[3fr_2fr]
+  "
+      >
+        {/* LEFT – Strong Observations (60%) */}
+        <div className="observations-panel">
+          <h4 className="font-medium sub-title flex items-center gap-2">
+            <span className="observations-dot" />
+            Strong Observations
+          </h4>
 
-  <div className="observations-stack">
-    {strongObservations.map((h, i) => (
-      <div key={i} className="observation-card">
-        <div className="observation-left">
-          <span className="observation-index">{i + 1}</span>
-        </div>
+          <div className="observations-stack">
+            {strongObservations.map((h, i) => (
+              <div key={i} className="observation-card">
+                <div className="observation-left">
+                  <span className="observation-index">{i + 1}</span>
+                </div>
 
-        <div className="observation-content">
-          <p className="observation-text">{h}</p>
-          <span className="observation-badge">
-            Verified planetary pattern
-          </span>
-        </div>
+                <div className="observation-content">
+                  <p className="observation-text">{h}</p>
+                  <span className="observation-badge">
+                    Verified planetary pattern
+                  </span>
+                </div>
 
-        <div className="observation-icon-wrap">
-          <CheckCircle2 size={18} />
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
-
-{/* RIGHT – Potential in Chart (40%) */}
-<div className="potential-panel">
-  <h3 className="sub-title flex items-center gap-2">
-    <span className="potential-dot" />
-    Potential in Your Chart
-  </h3>
-
-  <div className="potential-stack">
-    {potential.map((p, i) => (
-      <div key={i} className="potential-card-advanced">
-        <div className="potential-left">
-          <span className="potential-index">{i + 1}</span>
-        </div>
-
-        <div className="potential-content">
-          <p className="potential-text">{p}</p>
-          <span className="potential-hint">
-            Can activate with correct timing & guidance
-          </span>
-        </div>
-
-        <div className="potential-icon-wrap">
-          <AlertCircle size={18} />
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
-</div>
-
-    {dashaIQ && (
-  <>
-    <h2 className="section-title mt-10">Dasha IQ</h2>
-
-    <div className="dasha-iq-panel">
-      <div className="dasha-iq-accent" />
-
-      <div className="dasha-iq-header">
-        <div className="dasha-iq-planet">
-          <Moon size={20} />
-        </div>
-
-        <div>
-          <h3 className="dasha-iq-title">
-            {dashaIQ.mahaLord} Maha Dasha
-          </h3>
-          <p className="dasha-iq-subtitle">
-            Decision intelligence for this period
-          </p>
-        </div>
-
-        <div className="dasha-iq-score">
-          <span className="iq-value">{dashaIQ.iq}</span>
-          <span className="iq-label">IQ</span>
-        </div>
-      </div>
-
-      <div className="dasha-iq-grid">
-        {/* LEFT */}
-        <div className="dasha-iq-card">
-          <h4>Why this score</h4>
-          <ul className="dasha-iq-points">
-            {dashaIQ.reasoning.map((r, i) => (
-              <li key={i}>• {r}</li>
+                <div className="observation-icon-wrap">
+                  <CheckCircle2 size={18} />
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
 
-        {/* RIGHT */}
-        <div className="dasha-iq-card highlight">
-          <h4>Decision Readiness</h4>
+        {/* RIGHT – Potential in Chart (40%) */}
+        <div className="potential-panel">
+          <h4 className="font-medium sub-title flex items-center gap-2">
+            <span className="potential-dot" />
+            Potential in Your Chart
+          </h4>
 
-          <div className="dasha-iq-meter">
-            <div className="meter-track">
-              <div
-                className="meter-fill"
-                style={{ width: `${dashaIQ.iq}%` }}
-              />
-            </div>
-            <span className="meter-label">
-              {dashaIQ.iq}% Supportive
-            </span>
+          <div className="potential-stack">
+            {potential.map((p, i) => (
+              <div key={i} className="potential-card-advanced">
+                <div className="potential-left">
+                  <span className="potential-index">{i + 1}</span>
+                </div>
+
+                <div className="potential-content">
+                  <p className="potential-text">{p}</p>
+                  <span className="potential-hint">
+                    Can activate with correct timing & guidance
+                  </span>
+                </div>
+
+                <div className="potential-icon-wrap">
+                  <AlertCircle size={18} />
+                </div>
+              </div>
+            ))}
           </div>
-
-          <p className="dasha-iq-note">
-            Best used for <strong>
-              {dashaIQ.iq >= 70
-                ? "career moves, commitments, investments"
-                : dashaIQ.iq >= 55
-                ? "planning, preparation, cautious decisions"
-                : "reflection and correction"}
-            </strong>
-          </p>
-
-          <button
-            className="dasha-iq-cta"
-            onClick={onTalkToAstrologer}
-          >
-            Decode my Dasha →
-          </button>
         </div>
       </div>
-    </div>
-  </>
-)}
 
-{/* 🔥 ADD THIS RIGHT AFTER */}
-<VimshottariMahaDasha
-  mahaRows={mahaRows}
-  antarRows={antarRows}
-  openAntarFor={openAntarFor}
-  antarLoadingFor={antarLoadingFor}
-  openAntarInlineFor={openAntarInlineFor}
-   activeMahaLord={activeMahaLord} 
-/>
+      {dashaIQ && (
+        <>
+          <h2 className="section-title mt-10">Dasha IQ</h2>
+
+          <div className="dasha-iq-panel">
+            <div className="dasha-iq-accent" />
+
+            <div className="dasha-iq-header">
+              <div className="dasha-iq-planet">
+                <Moon size={20} />
+              </div>
+
+              <div>
+                <h3 className="dasha-iq-title">
+                  {dashaIQ.mahaLord} Maha Dasha
+                </h3>
+                <p className="dasha-iq-subtitle">
+                  Decision intelligence for this period
+                </p>
+              </div>
+
+              <div className="dasha-iq-score">
+                <span className="iq-value">{dashaIQ.iq}</span>
+                <span className="iq-label">IQ</span>
+              </div>
+            </div>
+
+            <div className="dasha-iq-grid">
+              {/* LEFT */}
+              <div className="dasha-iq-card">
+                <h4>Why this score</h4>
+                <ul className="dasha-iq-points">
+                  {dashaIQ.reasoning.map((r, i) => (
+                    <li key={i}>• {r}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* RIGHT */}
+              <div className="dasha-iq-card highlight">
+                <h4>Decision Readiness</h4>
+
+                <div className="dasha-iq-meter">
+                  <div className="meter-track">
+                    <div
+                      className="meter-fill"
+                      style={{ width: `${dashaIQ.iq}%` }}
+                    />
+                  </div>
+                  <span className="meter-label">{dashaIQ.iq}% Supportive</span>
+                </div>
+
+                <p className="dasha-iq-note">
+                  Best used for{" "}
+                  <strong>
+                    {dashaIQ.iq >= 70
+                      ? "career moves, commitments, investments"
+                      : dashaIQ.iq >= 55
+                        ? "planning, preparation, cautious decisions"
+                        : "reflection and correction"}
+                  </strong>
+                </p>
+
+                <button className="dasha-iq-cta" onClick={onTalkToAstrologer}>
+                  Decode my Dasha →
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 🔥 ADD THIS RIGHT AFTER */}
+      <VimshottariMahaDasha
+        mahaRows={mahaRows}
+        antarRows={antarRows}
+        openAntarFor={openAntarFor}
+        antarLoadingFor={antarLoadingFor}
+        openAntarInlineFor={openAntarInlineFor}
+        activeMahaLord={activeMahaLord}
+      />
 
       {/* Blocks */}
       <h2 className="section-title mt-8">What’s Blocking You</h2>
@@ -437,47 +459,44 @@ function PlanetEmptyState({ type, onTalkToAstrologer }) {
         ))}
       </div>
 
-<h2 className="section-title mt-10">Planetary Strength Snapshot</h2>
+      <h2 className="section-title mt-10">Planetary Strength Snapshot</h2>
 
-{/* 🌟 High Potential Planets */}
-<h2 className="section-title mt-10">High Potential Planets</h2>
+      {/* 🌟 High Potential Planets */}
+      <h2 className="section-title mt-10">High Potential Planets</h2>
 
-<div className="planet-card-grid-tiles">
-  {potentialPlanets.length > 0 ? (
-    potentialPlanets.map((p, i) => (
-      <PlanetTile key={i} planet={p} type="positive" />
-    ))
-  ) : (
-    <PlanetEmptyState
-      type="positive"
-      onTalkToAstrologer={onTalkToAstrologer}
-    />
-  )}
-</div>
+      <div className="planet-card-grid-tiles">
+        {potentialPlanets.length > 0 ? (
+          potentialPlanets.map((p, i) => (
+            <PlanetTile key={i} planet={p} type="positive" />
+          ))
+        ) : (
+          <PlanetEmptyState
+            type="positive"
+            onTalkToAstrologer={onTalkToAstrologer}
+          />
+        )}
+      </div>
 
-{/* ⚠️ Challenging Planets */}
-<h2 className="section-title mt-12">Challenging Planets</h2>
+      {/* ⚠️ Challenging Planets */}
+      <h2 className="section-title mt-12">Challenging Planets</h2>
 
-<div className="planet-card-grid-tiles">
-  {problematicPlanets.length > 0 ? (
-    problematicPlanets.map((p, i) => (
-      <PlanetTile key={i} planet={p} type="negative" />
-    ))
-  ) : (
-    <PlanetEmptyState
-      type="negative"
-      onTalkToAstrologer={onTalkToAstrologer}
-    />
-  )}
-</div>
-
-
-
+      <div className="planet-card-grid-tiles">
+        {problematicPlanets.length > 0 ? (
+          problematicPlanets.map((p, i) => (
+            <PlanetTile key={i} planet={p} type="negative" />
+          ))
+        ) : (
+          <PlanetEmptyState
+            type="negative"
+            onTalkToAstrologer={onTalkToAstrologer}
+          />
+        )}
+      </div>
 
       <LockedDeepPredictions
-       title="Advanced Career & Marriage Timings"
-  subtitle="Exact windows, delays, causes & corrective paths"
-  ctaText="Talk to an astrologer"
+        title="Advanced Career & Marriage Timings"
+        subtitle="Exact windows, delays, causes & corrective paths"
+        ctaText="Talk to an astrologer"
         onUnlock={handleUnlockClick}
       />
 
@@ -567,5 +586,3 @@ function Snapshot({ label, icon: Icon, data }) {
     </div>
   );
 }
-
-
