@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Heart } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 import "./Footer.css";
 
 export default function Footer() {
@@ -29,20 +29,6 @@ export default function Footer() {
               Your trusted platform for Vedic astrology, kundali, numerology, and live consultations with expert astrologers.
               Discover your destiny with ancient wisdom and modern technology.
             </p>
-            <div className="footer-social">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram />
-              </a>
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <Youtube />
-              </a>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -92,8 +78,22 @@ export default function Footer() {
         <div className="footer-bottom">
           <div className="footer-bottom-content">
             <p className="footer-copyright">
-              © {currentYear} NiraLive Astro. All rights reserved. Made with <Heart className="heart-icon" /> for astrology enthusiasts.
+              NiraLive Astro © {currentYear} - Made with Love in India
             </p>
+            <div className="footer-social footer-social-bottom">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <Facebook />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                <Twitter />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <Instagram />
+              </a>
+              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                <Youtube />
+              </a>
+            </div>
             <div className="footer-legal">
               <Link href="/privacy-policy">Privacy Policy</Link>
               <span className="separator">•</span>
