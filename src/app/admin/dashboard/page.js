@@ -28,6 +28,7 @@ import {
   TicketPercent,
   Plus,
   X,
+  Map,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -146,6 +147,8 @@ export default function AdminDashboard() {
     active: true,
     description: '',
   })
+  const [sitemapPages, setSitemapPages] = useState([])
+  const [sitemapLoading, setSitemapLoading] = useState(false)
 
   // Check passcode on mount
   useEffect(() => {
@@ -279,6 +282,20 @@ export default function AdminDashboard() {
       fetchBlogsOnly()
     }
   }, [activeTab, isPasscodeVerified, fetchBlogsOnly])
+
+  // Fetch sitemap pages (discovery + blog); call on tab open or when "Recrawl site" is clicked
+  const fetchSitemapPages = useCallback(() => {
+    setSitemapLoading(true)
+    fetch('/api/admin/sitemap', { cache: 'no-store' })
+      .then((res) => res.ok ? res.json() : { pages: [] })
+      .then((data) => setSitemapPages(data.pages || []))
+      .catch(() => setSitemapPages([]))
+      .finally(() => setSitemapLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'sitemap' && isPasscodeVerified) fetchSitemapPages()
+  }, [activeTab, isPasscodeVerified, fetchSitemapPages])
 
   // Fix pending calls that timed out
   const fixPendingCalls = useCallback(async () => {
@@ -1099,6 +1116,7 @@ export default function AdminDashboard() {
               disabled={refreshing}
             >
               <RefreshCw size={18} className={refreshing ? 'rotating-icon' : ''} />
+              <span className="admin-refresh-btn-text">Refresh</span>
             </button>
           </div>
           
@@ -1227,6 +1245,13 @@ export default function AdminDashboard() {
             <TicketPercent size={18} />
             Coupons
           </button>
+          <button
+            className={`admin-tab ${activeTab === 'sitemap' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sitemap')}
+          >
+            <Map size={18} />
+            SiteMap
+          </button>
         </div>
 
         {/* Call Logs Tab */}
@@ -1263,39 +1288,41 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="admin-filter-select"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="rejected">Rejected</option>
-              </select>
+              <div className="admin-filter-buttons">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="admin-filter-select"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
+                </select>
 
-              <select
-                value={callTypeFilter}
-                onChange={(e) => setCallTypeFilter(e.target.value)}
-                className="admin-filter-select"
-              >
-                <option value="all">All Types</option>
-                <option value="video">Video</option>
-                <option value="voice">Voice</option>
-              </select>
+                <select
+                  value={callTypeFilter}
+                  onChange={(e) => setCallTypeFilter(e.target.value)}
+                  className="admin-filter-select"
+                >
+                  <option value="all">All Types</option>
+                  <option value="video">Video</option>
+                  <option value="voice">Voice</option>
+                </select>
 
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="admin-filter-select"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">Last 7 Days</option>
-                <option value="month">Last 30 Days</option>
-              </select>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="admin-filter-select"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                </select>
+              </div>
             </div>
 
             {/* Call Logs Table */}
@@ -2079,6 +2106,102 @@ export default function AdminDashboard() {
                 </table>
               )}
             </div>
+          </div>
+        )}
+
+        {/* SiteMap Tab - auto-lists all sitemap pages (discovered from src/app + blog); new pages auto-appear */}
+        {activeTab === 'sitemap' && (
+          <div className="admin-pricing-section">
+            <div className="admin-pricing-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <h2>Site Map</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {!sitemapLoading && sitemapPages.length > 0 && (
+                  <span style={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                    Total: {sitemapPages.length} page{sitemapPages.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={fetchSitemapPages}
+                  disabled={sitemapLoading}
+                  className="admin-btn admin-btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                  title="Re-scan src/app and blogs to refresh the list"
+                >
+                  <RefreshCw size={16} className={sitemapLoading ? 'rotating-icon' : ''} />
+                  Recrawl site
+                </button>
+                <a
+                  href="/sitemap.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-btn admin-btn-primary"
+                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Map size={18} />
+                  Open Sitemap (XML)
+                </a>
+              </div>
+            </div>
+            <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.875rem' }}>
+              All pages listed below are included in the sitemap. New pages under <code style={{ background: 'rgba(212,175,55,0.1)', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>src/app</code> are auto-discovered; new blog posts appear automatically. Use <code style={{ background: 'rgba(212,175,55,0.1)', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>src/lib/sitemap-config.js</code> only to override priority/change frequency.
+            </p>
+            {sitemapLoading ? (
+              <div className="admin-loading-spinner-container">
+                <div className="admin-loading-spinner" />
+                <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading sitemap pages…</p>
+              </div>
+            ) : sitemapPages.length === 0 ? (
+              <div className="admin-empty-state" style={{ padding: '2rem' }}>
+                <Map size={48} />
+                <p>No sitemap pages found or failed to load.</p>
+              </div>
+            ) : (
+              <div className="admin-table-wrapper" style={{ overflowX: 'auto' }}>
+                <table className="admin-pricing-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>URL / Path</th>
+                      <th>Type</th>
+                      <th>Priority</th>
+                      <th>Change freq.</th>
+                      <th>Last modified</th>
+                      <th>Open</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sitemapPages.map((page, idx) => (
+                      <tr key={page.url || idx}>
+                        <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={page.url}>
+                          {page.path || page.url}
+                        </td>
+                        <td>
+                          <span className={`admin-badge ${page.type === 'blog' ? 'status-published' : ''}`}>
+                            {page.type === 'blog' ? 'Blog' : 'Static'}
+                          </span>
+                        </td>
+                        <td>{page.priority}</td>
+                        <td>{page.changeFrequency}</td>
+                        <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: '#6b7280' }}>
+                          {page.lastModified ? new Date(page.lastModified).toLocaleDateString() : '–'}
+                        </td>
+                        <td>
+                          <a
+                            href={page.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="admin-action-btn"
+                            title="Open in new tab"
+                          >
+                            <Eye size={14} />
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
