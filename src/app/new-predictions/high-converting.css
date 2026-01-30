@@ -94,7 +94,7 @@ section {
   display: flex;
   font-size: 2rem;
   font-weight: 500;
-  color: var(--color-gold);
+  color: var(--color-gray-800);
   margin-bottom: 0.75rem;
   justify-content: center;
   letter-spacing: -0.02em;
@@ -1541,11 +1541,12 @@ background: #fffdf6;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* margin-bottom: 10px; */
 }
 
 .dasha-iq-title {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 500;
   color: #111827;
 }
 
@@ -1591,8 +1592,8 @@ background: #fffdf6;
 }
 
 .dasha-iq-card h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 500;
   margin-bottom: 0.5rem;
 }
 

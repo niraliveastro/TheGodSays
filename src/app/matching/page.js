@@ -1221,12 +1221,11 @@ export default function MatchingPage() {
     }
   };
 
+  const router = useRouter();
 
-const router = useRouter();
-
-const onTalkToAstrologer = () => {
-  router.push("/talk-to-astrologer");
-};
+  const onTalkToAstrologer = () => {
+    router.push("/talk-to-astrologer");
+  };
 
   /**
    * Prepares the data to be passed to the Chat component.
@@ -1880,25 +1879,55 @@ const onTalkToAstrologer = () => {
             {error}
           </div>
         )}
-        
 
         <div className="matching-page">
           <form onSubmit={onSubmit} className="match-form">
-
-            {/* Header */}
-            <header className="header left-align">
-              <h1 className="title">Pro Kundali Match</h1>
-            </header>
+      {/* Header */}
+      <header
+        className="header"
+        style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+      >
+        <IoHeartCircle
+          className="headerIcon"
+          style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
+        />
+        <h1 className="title" style={{ fontSize: "2.5rem", fontWeight: 700 }}>
+          {t.matching.title}
+        </h1>
+        <p
+          className="subtitle"
+          style={{ fontSize: "1rem", color: "#6b7280", marginTop: "0.5rem" }}
+        >
+          {t.matching.subtitle}
+        </p>
+        {/* Trust line */}
+        <div className="trust-line">
+          <span className="trust-line-item">
+            <span>🔒</span>
+            <span>Private</span>
+          </span>
+          <span className="trust-line-separator">•</span>
+          <span className="trust-line-item">
+            <span>📍</span>
+            <span>Accurate location</span>
+          </span>
+          <span className="trust-line-separator">•</span>
+          <span className="trust-line-item">
+            <span>💾</span>
+            <span>Saved profiles</span>
+          </span>
+        </div>
+      </header>
 
             {/* =====================
       CARDS
   ===================== */}
             <section className="birth-cards">
               {/* ========= FEMALE ========= */}
-              <div className="birth-card female">
+              <div className="birth-card female card">
                 <div className="birth-card-header">
                   <Moon className="icon-female" />
-                  <h3 >{t.matching.femaleDetails}</h3>
+                  <h3 className="font-medium">{t.matching.femaleDetails}</h3>
                 </div>
 
                 <div className="birth-grid">
@@ -1923,6 +1952,7 @@ const onTalkToAstrologer = () => {
                       )}
                       required
                     />
+                <p className="form-field-helper">Only letters and spaces</p>
                   </div>
 
                   {/* Date of Birth */}
@@ -1959,6 +1989,8 @@ const onTalkToAstrologer = () => {
                         <Calendar />
                       </button>
                     </div>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
+
                   </div>
 
                   {/* Time of Birth */}
@@ -1996,6 +2028,8 @@ const onTalkToAstrologer = () => {
                         <Clock />
                       </button>
                     </div>
+                <p className="form-field-helper">24-hour format</p>
+
                   </div>
 
                   {/* Place */}
@@ -2050,15 +2084,19 @@ const onTalkToAstrologer = () => {
                         ))}
                       </div>
                     )}
+
+                    <p className="form-field-helper place-helper">
+                      Choose the nearest city for accurate calculation
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* ========= MALE ========= */}
-              <div className="birth-card male">
+              <div className="card birth-card male">
                 <div className="birth-card-header">
                   <Sun className="icon-male" />
-                  <h3>{t.matching.maleDetails}</h3>
+                  <h3 className="font-medium">{t.matching.maleDetails}</h3>
                 </div>
 
                 <div className="birth-grid">
@@ -2069,40 +2107,42 @@ const onTalkToAstrologer = () => {
                     </label>
 
                     <input
-                      id="female-name"
+                      id="male-name"
                       type="text"
                       className="form-field-input"
-                      placeholder="e.g., Priya"
-                      value={female.fullName}
+                      placeholder="e.g., Rohan"
+                      value={male.fullName}
                       onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
+                        setMale,
+                        setMCoords,
+                        setMSuggest,
+                        mTimer,
                         "fullName",
                       )}
                       required
                     />
+                <p className="form-field-helper">Only letters and spaces</p>
+
                   </div>
 
                   {/* Date of Birth */}
                   <div className="form-field">
-                    <label className="form-field-label" htmlFor="female-dob">
+                    <label className="form-field-label" htmlFor="male-dob">
                       {t.matching.dateOfBirth}
                     </label>
 
                     <div className="input-with-icon">
                       <input
-                        id="female-dob"
-                        ref={fDateInputRef}
+                        id="male-dob"
+                        ref={mDateInputRef}
                         type="date"
                         className="form-field-input"
-                        value={female.dob}
+                        value={male.dob}
                         onChange={onChangePerson(
-                          setFemale,
-                          setFCoords,
-                          setFSuggest,
-                          fTimer,
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
                           "dob",
                         )}
                         required
@@ -2112,34 +2152,36 @@ const onTalkToAstrologer = () => {
                         type="button"
                         className="calendar-icon-btn"
                         onClick={() =>
-                          fDateInputRef.current?.showPicker?.() ||
-                          fDateInputRef.current?.click()
+                          mDateInputRef.current?.showPicker?.() ||
+                          mDateInputRef.current?.click()
                         }
                       >
                         <Calendar />
                       </button>
                     </div>
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
+
                   </div>
 
                   {/* Time of Birth */}
                   <div className="form-field">
-                    <label className="form-field-label" htmlFor="female-tob">
+                    <label className="form-field-label" htmlFor="male-tob">
                       {t.matching.timeOfBirth}
                     </label>
 
                     <div className="input-with-icon">
                       <input
-                        id="female-tob"
-                        ref={fTimeInputRef}
+                        id="male-tob"
+                        ref={mTimeInputRef}
                         type="time"
                         step="60"
                         className="form-field-input"
-                        value={female.tob}
+                        value={male.tob}
                         onChange={onChangePerson(
-                          setFemale,
-                          setFCoords,
-                          setFSuggest,
-                          fTimer,
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
                           "tob",
                         )}
                         required
@@ -2149,33 +2191,35 @@ const onTalkToAstrologer = () => {
                         type="button"
                         className="clock-icon-btn"
                         onClick={() =>
-                          fTimeInputRef.current?.showPicker?.() ||
-                          fTimeInputRef.current?.click()
+                          mTimeInputRef.current?.showPicker?.() ||
+                          mTimeInputRef.current?.click()
                         }
                       >
                         <Clock />
                       </button>
                     </div>
+                <p className="form-field-helper">24-hour format</p>
+
                   </div>
 
                   {/* Place */}
                   <div className="form-field full">
-                    <label className="form-field-label" htmlFor="female-place">
+                    <label className="form-field-label" htmlFor="male-place">
                       Place
                     </label>
 
                     <div className="input-with-icon">
                       <input
-                        id="female-place"
+                        id="male-place"
                         type="text"
                         className="form-field-input"
                         placeholder="e.g., Mumbai, India"
-                        value={female.place}
+                        value={male.place}
                         onChange={onChangePerson(
                           setMale,
                           setMCoords,
                           setMSuggest,
-                          fTimer,
+                          mTimer,
                           "place",
                         )}
                         autoComplete="off"
@@ -2192,7 +2236,7 @@ const onTalkToAstrologer = () => {
                       </button>
                     </div>
 
-                    {fSuggest.length > 0 && (
+                    {mSuggest.length > 0 && (
                       <div className="suggestions">
                         {fSuggest.map((s, i) => (
                           <button
@@ -2210,6 +2254,9 @@ const onTalkToAstrologer = () => {
                         ))}
                       </div>
                     )}
+                    <p className="form-field-helper place-helper">
+                      Choose the nearest city for accurate calculation
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2237,168 +2284,184 @@ const onTalkToAstrologer = () => {
             </footer>
           </form>
 
-{/* ===================== */}
-{/* HISTORY BELOW FORM */}
-{/* ===================== */}
-<section className="history-section">
+          {/* ===================== */}
+          {/* HISTORY BELOW FORM */}
+          {/* ===================== */}
+          <section className="history-section">
+            {/* ---------- Header ---------- */}
+            <div className="history-header mt-6">
+              <h3
+                className="history-title flex text-gray-800"
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "500",
+                  textAlign: "center",
+                }}
+              >
+                <Sparkles
+                  className="w-5 h-5 text-gray-800"
+                 
+                />
+                Saved Profiles
+              </h3>
 
-  {/* ---------- Header ---------- */}
-  <div className="history-header mt-6">
-    <h3 className="history-title flex" style={{ fontSize:"2.25rem", color: "var(--color-gold)", fontWeight: "500", textAlign:"center", }}>
-      <Sparkles className="w-5 h-5" style={{ color: "var(--color-gold)" }} />
-      Saved Profiles
-    </h3>
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="btn-ghost">
+                  <RotateCcw className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+            </div>
 
-    {history.length > 0 && (
-      <button
-        onClick={clearHistory}
-        className="btn-ghost"
-      >
-        <RotateCcw className="w-4 h-4" />
-        Clear
-      </button>
-    )}
-  </div>
+            {/* ---------- Search ---------- */}
+            {history.length > 0 && (
+              <input
+                type="text"
+                placeholder="Search by name, place, or date..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="history-search"
+              />
+            )}
 
-  {/* ---------- Search ---------- */}
-  {history.length > 0 && (
-    <input
-      type="text"
-      placeholder="Search by name, place, or date..."
-      value={historySearch}
-      onChange={(e) => setHistorySearch(e.target.value)}
-      className="history-search"
-    />
-  )}
+            {/* ---------- Horizontal Scroll ---------- */}
+            <div className="history-scroll-area horizontal">
+              {history.length === 0 ? (
+                <div className="empty-state">No matching history yet.</div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="empty-state">No matches found.</div>
+              ) : (
+                <div className="history-cards horizontal">
+                  {filteredHistory.map((item) => {
+                    const isExpanded =
+                      expandedAddresses[`${item.id}-female`] ||
+                      expandedAddresses[`${item.id}-male`];
 
-  {/* ---------- Horizontal Scroll ---------- */}
-  <div className="history-scroll-area horizontal">
-    {history.length === 0 ? (
-      <div className="empty-state">No matching history yet.</div>
-    ) : filteredHistory.length === 0 ? (
-      <div className="empty-state">No matches found.</div>
-    ) : (
-      <div className="history-cards horizontal">
-        {filteredHistory.map((item) => {
-          const isExpanded =
-            expandedAddresses[`${item.id}-female`] ||
-            expandedAddresses[`${item.id}-male`];
+                    return (
+                      <div
+                        key={item.id}
+                        className="history-card history-card-row"
+                        onClick={() => loadHistoryIntoForm(item)}
+                        style={{
+                          alignItems: "center", // prevent vertical stretching
+                          maxHeight: "unset",
+                        }}
+                      >
+                        {/* LEFT: FEMALE + MALE */}
+                        <div
+                          className="history-row-left"
+                          style={{ gap: "0.75rem" }}
+                        >
+                          {/* FEMALE */}
+                          <div className="history-row-person">
+                            <span className="pill pill-female">
+                              {item.femaleName || "Female"}
+                            </span>
 
-          return (
-<div
-  key={item.id}
-  className="history-card history-card-row"
-  onClick={() => loadHistoryIntoForm(item)}
-  style={{
-    alignItems: "center",        // prevent vertical stretching
-    maxHeight: "unset",
-  }}
->
-  {/* LEFT: FEMALE + MALE */}
-  <div className="history-row-left" style={{ gap: "0.75rem" }}>
-    {/* FEMALE */}
-    <div className="history-row-person">
-      <span className="pill pill-female">
-        {item.femaleName || "Female"}
-      </span>
+                            <div className="history-row-details">
+                              <div className="person-meta">
+                                <Calendar className="meta-icon" />
+                                <span>
+                                  {item.femaleDob || "-"} ·{" "}
+                                  {item.femaleTob || "-"}
+                                </span>
+                              </div>
 
-      <div className="history-row-details">
-        <div className="person-meta">
-          <Calendar className="meta-icon" />
-          <span>{item.femaleDob || "-"} · {item.femaleTob || "-"}</span>
-        </div>
+                              <div className="person-meta">
+                                <MapPin className="meta-icon" />
+                                <span className="address-text">
+                                  {item.femalePlace || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
 
-        <div className="person-meta">
-          <MapPin className="meta-icon" />
-          <span className="address-text">
-            {item.femalePlace || "-"}
-          </span>
-        </div>
-      </div>
-    </div>
+                          {/* MALE */}
+                          <div className="history-row-person">
+                            <span className="pill pill-male">
+                              {item.maleName || "Male"}
+                            </span>
 
-    {/* MALE */}
-    <div className="history-row-person">
-      <span className="pill pill-male">
-        {item.maleName || "Male"}
-      </span>
+                            <div className="history-row-details">
+                              <div className="person-meta">
+                                <Calendar className="meta-icon" />
+                                <span>
+                                  {item.maleDob || "-"} · {item.maleTob || "-"}
+                                </span>
+                              </div>
 
-      <div className="history-row-details">
-        <div className="person-meta">
-          <Calendar className="meta-icon" />
-          <span>{item.maleDob || "-"} · {item.maleTob || "-"}</span>
-        </div>
+                              <div className="person-meta">
+                                <MapPin className="meta-icon" />
+                                <span className="address-text">
+                                  {item.malePlace || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-        <div className="person-meta">
-          <MapPin className="meta-icon" />
-          <span className="address-text">
-            {item.malePlace || "-"}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
+                        {/* CENTER: COMPATIBILITY */}
+                        <div
+                          className="history-row-compatibility"
+                          style={{
+                            alignSelf: "stretch",
+                            justifyContent: "center",
+                            minWidth: "140px",
+                          }}
+                        >
+                          <span className="compatibility-label">
+                            Compatibility
+                          </span>
+                          <span className="compatibility-value">
+                            {item.compatibility || "—"}
+                          </span>
+                        </div>
 
-  {/* CENTER: COMPATIBILITY */}
-  <div
-    className="history-row-compatibility"
-    style={{
-      alignSelf: "stretch",
-      justifyContent: "center",
-      minWidth: "140px",
-    }}
-  >
-    <span className="compatibility-label">Compatibility</span>
-    <span className="compatibility-value">
-      {item.compatibility || "—"}
-    </span>
-  </div>
+                        {/* RIGHT: ACTIONS */}
+                        <div
+                          className="history-row-actions"
+                          style={{
+                            justifyContent: "center",
+                            alignItems: "stretch",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <button
+                            className="use-btn"
+                            style={{
+                              flex: "unset",
+                              height: "40px", // 🔑 stops vertical stretch
+                              padding: "0 1rem",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              loadHistoryIntoForm(item);
+                            }}
+                          >
+                            Load
+                          </button>
 
-  {/* RIGHT: ACTIONS */}
-  <div
-    className="history-row-actions"
-    style={{
-      justifyContent: "center",
-      alignItems: "stretch",
-      gap: "0.5rem",
-    }}
-  >
-    <button
-      className="use-btn"
-      style={{
-        flex: "unset",
-        height: "40px",          // 🔑 stops vertical stretch
-        padding: "0 1rem",
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        loadHistoryIntoForm(item);
-      }}
-    >
-      Load
-    </button>
-
-    <button
-      className="delete-btn"
-      style={{
-        flex: "unset",
-        height: "40px",
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        deleteHistoryItem(item.id);
-      }}
-    >
-      <Trash2 className="w-4 h-4" />
-    </button>
-  </div>
-</div>
-          );
-        })}
-      </div>
-    )}
-  </div>
-</section>
+                          <button
+                            className="delete-btn"
+                            style={{
+                              flex: "unset",
+                              height: "40px",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistoryItem(item.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* ---------------------------------------------------------- */}
@@ -2419,7 +2482,6 @@ const onTalkToAstrologer = () => {
               <div className="orb orb2" />
               <div className="orb orb3" />
             </div>
-
 
             {/* Birth Info Snapshot */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -2604,8 +2666,10 @@ const onTalkToAstrologer = () => {
                           {t.matching.femaleDetails} - Shadbala
                         </h3>
                       </div>
-                      <div className="card summary-card female">
-                        <h4>How strong is her chart overall?</h4>
+                      <div className="card summary-card female mb-4">
+                        <h4 className="summary-title">
+                          How strong is her chart overall?
+                        </h4>
 
                         <div className="summary-score">
                           <span className="score-pill good">Strong</span>
@@ -2618,16 +2682,19 @@ const onTalkToAstrologer = () => {
                         <ul className="summary-points">
                           <li>✔ Moon and Venus are supportive</li>
                           <li>⚠ Mars shows emotional friction</li>
-                          <li>🔒 Exact remedies & timing locked</li>
+                          <li className="locked">
+                            🔒 Exact remedies & timing locked
+                          </li>
                         </ul>
 
                         <button
-                          className="unlock-btn"
+                          className="unlock-btn btn-primary"
                           onClick={onTalkToAstrologer}
                         >
                           Understand what this means →
                         </button>
                       </div>
+
                       {/* Shadbala / Ishta-Kashta */}
                       <div>
                         <table className="planet-table shadbala-table">
@@ -2773,8 +2840,10 @@ const onTalkToAstrologer = () => {
                         </h3>
                       </div>
 
-                                            <div className="card summary-card female " style={{ marginBottom: "1.5rem", fontWeight: "500" }}>
-                        <h4>How strong is his chart overall?</h4>
+                      <div className="card summary-card male mb-4">
+                        <h4 className="summary-title">
+                          How strong is his chart overall?
+                        </h4>
 
                         <div className="summary-score">
                           <span className="score-pill good">Strong</span>
@@ -2787,11 +2856,13 @@ const onTalkToAstrologer = () => {
                         <ul className="summary-points">
                           <li>✔ Moon and Venus are supportive</li>
                           <li>⚠ Mars shows emotional friction</li>
-                          <li>🔒 Exact remedies & timing locked</li>
+                          <li className="locked">
+                            🔒 Exact remedies & timing locked
+                          </li>
                         </ul>
 
                         <button
-                          className="unlock-btn"
+                          className="unlock-btn btn-primary"
                           onClick={onTalkToAstrologer}
                         >
                           Understand what this means →
@@ -2799,7 +2870,7 @@ const onTalkToAstrologer = () => {
                       </div>
 
                       {/* Shadbala / Ishta-Kashta */}
-                      <div>
+                      <div classname="">
                         <table className="planet-table shadbala-table">
                           <thead>
                             <tr>

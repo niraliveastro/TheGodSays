@@ -1237,8 +1237,6 @@ export default function PredictionsPage() {
     return null;
   }, [result]);
 
-
-
   function buildPayloadForApi() {
     const inp = result?.input;
     const coords = result?.coords;
@@ -1555,24 +1553,17 @@ export default function PredictionsPage() {
     };
   }, [result, selectedCoords]);
 
-          const challengeAnalysis = useMemo(() => {
-        if (!result) return null;
+  const challengeAnalysis = useMemo(() => {
+    if (!result) return null;
 
-        return analyzeChartChallenges({
-          shadbalaRows,
-          placements,
-          mahaRows,
-          currentDashaChain,
-          insights,
-        });
-      }, [
-        result,
-        shadbalaRows,
-        placements,
-        mahaRows,
-        currentDashaChain,
-        insights,
-      ]);
+    return analyzeChartChallenges({
+      shadbalaRows,
+      placements,
+      mahaRows,
+      currentDashaChain,
+      insights,
+    });
+  }, [result, shadbalaRows, placements, mahaRows, currentDashaChain, insights]);
 
   const chatData = result
     ? {
@@ -1600,233 +1591,215 @@ export default function PredictionsPage() {
       }
     : null;
 
-
   function computeStrongObservations({
-  placements,
-  shadbalaRows,
-  mahaRows,
-  currentDashaChain,
-  scores,
-}) {
-  const observations = [];
-  const potential = [];
-
-  // --- Strong Observations (confidence-driven) ---
-
-  // 1. Strong planets (Shadbala > 70)
-  const strongPlanets = shadbalaRows.filter(
-    (p) => typeof p.percent === "number" && p.percent >= 70
-  );
-
-  strongPlanets.slice(0, 2).forEach((p) => {
-    observations.push(
-      `${p.name} is strongly placed, giving consistent results in its domains`
-    );
-  });
-
-  // 2. Retrograde influence
-  const retro = placements.filter((p) => p.retro);
-  if (retro.length > 0) {
-    observations.push(
-      `Retrograde ${retro[0].name} indicates internalized growth and delayed clarity`
-    );
-  }
-
-  // 3. Current Dasha pressure
-  if (/Saturn|Rahu|Ketu/.test(currentDashaChain || "")) {
-    observations.push(
-      `Current dasha phase emphasizes karmic lessons and long-term restructuring`
-    );
-  }
-
-  // 4. High life score
-  const highScoreArea = Object.entries(scores || {}).find(
-    ([_, v]) => v >= 75
-  );
-  if (highScoreArea) {
-    observations.push(
-      `${highScoreArea[0]} matters are a natural strength in this phase of life`
-    );
-  }
-
-  // 5. House clustering
-  const houseCounts = placements.reduce((acc, p) => {
-    acc[p.house] = (acc[p.house] || 0) + 1;
-    return acc;
-  }, {});
-  const crowdedHouse = Object.entries(houseCounts).find(
-    ([_, c]) => c >= 3
-  );
-  if (crowdedHouse) {
-    observations.push(
-      `Multiple planets in house ${crowdedHouse[0]} show strong focus in that life area`
-    );
-  }
-
-  // --- Potential in Chart (unlockable) ---
-
-  Object.entries(scores || {}).forEach(([area, v]) => {
-    if (v >= 55 && v < 70) {
-      potential.push(
-        `${area} improves significantly with correct timing and guidance`
-      );
-    }
-  });
-
-  const upcomingMaha = mahaRows.find(
-    (m) => new Date(m.start) > new Date()
-  );
-  if (upcomingMaha) {
-    potential.push(
-      `${upcomingMaha.lord} Maha Dasha brings new opportunities if prepared early`
-    );
-  }
-
-  return {
-    strongObservations: observations.slice(0, 5),
-    potential: potential.slice(0, 4),
-  };
-}
-
-const observationData = useMemo(() => {
-  if (!result) return null;
-
-  return computeStrongObservations({
     placements,
     shadbalaRows,
     mahaRows,
     currentDashaChain,
-    scores: insights?.scores,
-  });
-}, [
-  result,
-  placements,
-  shadbalaRows,
-  mahaRows,
-  currentDashaChain,
-  insights,
-]);
+    scores,
+  }) {
+    const observations = [];
+    const potential = [];
 
-function calculateDashaIQ({
-  currentDashaChain,
-  shadbalaRows,
-  placements,
-  scores,
-}) {
-  if (!currentDashaChain) {
-    return { iq: 50, reasoning: ["Dasha data unavailable"] };
-  }
+    // --- Strong Observations (confidence-driven) ---
 
-  const mahaLord = currentDashaChain.split(">")[0].trim();
+    // 1. Strong planets (Shadbala > 70)
+    const strongPlanets = shadbalaRows.filter(
+      (p) => typeof p.percent === "number" && p.percent >= 70,
+    );
 
-  let iq = 50; // neutral baseline
-  const reasoning = [];
+    strongPlanets.slice(0, 2).forEach((p) => {
+      observations.push(
+        `${p.name} is strongly placed, giving consistent results in its domains`,
+      );
+    });
 
-  /* ---------------------------
-     1. Shadbala strength
-  ---------------------------- */
-  const planetStrength = shadbalaRows.find(
-    (p) => p.name?.toLowerCase() === mahaLord.toLowerCase()
-  );
-
-  if (planetStrength?.percent != null) {
-    if (planetStrength.percent >= 70) {
-      iq += 15;
-      reasoning.push(`${mahaLord} is strong in Shadbala`);
-    } else if (planetStrength.percent >= 55) {
-      iq += 8;
-      reasoning.push(`${mahaLord} has moderate strength`);
-    } else {
-      iq -= 12;
-      reasoning.push(`${mahaLord} is weak, causing delays`);
+    // 2. Retrograde influence
+    const retro = placements.filter((p) => p.retro);
+    if (retro.length > 0) {
+      observations.push(
+        `Retrograde ${retro[0].name} indicates internalized growth and delayed clarity`,
+      );
     }
+
+    // 3. Current Dasha pressure
+    if (/Saturn|Rahu|Ketu/.test(currentDashaChain || "")) {
+      observations.push(
+        `Current dasha phase emphasizes karmic lessons and long-term restructuring`,
+      );
+    }
+
+    // 4. High life score
+    const highScoreArea = Object.entries(scores || {}).find(
+      ([_, v]) => v >= 75,
+    );
+    if (highScoreArea) {
+      observations.push(
+        `${highScoreArea[0]} matters are a natural strength in this phase of life`,
+      );
+    }
+
+    // 5. House clustering
+    const houseCounts = placements.reduce((acc, p) => {
+      acc[p.house] = (acc[p.house] || 0) + 1;
+      return acc;
+    }, {});
+    const crowdedHouse = Object.entries(houseCounts).find(([_, c]) => c >= 3);
+    if (crowdedHouse) {
+      observations.push(
+        `Multiple planets in house ${crowdedHouse[0]} show strong focus in that life area`,
+      );
+    }
+
+    // --- Potential in Chart (unlockable) ---
+
+    Object.entries(scores || {}).forEach(([area, v]) => {
+      if (v >= 55 && v < 70) {
+        potential.push(
+          `${area} improves significantly with correct timing and guidance`,
+        );
+      }
+    });
+
+    const upcomingMaha = mahaRows.find((m) => new Date(m.start) > new Date());
+    if (upcomingMaha) {
+      potential.push(
+        `${upcomingMaha.lord} Maha Dasha brings new opportunities if prepared early`,
+      );
+    }
+
+    return {
+      strongObservations: observations.slice(0, 5),
+      potential: potential.slice(0, 4),
+    };
   }
 
-  /* ---------------------------
-     2. Malefic / Benefic nature
-  ---------------------------- */
-  const malefics = ["Saturn", "Rahu", "Ketu", "Mars"];
-  const benefics = ["Jupiter", "Venus", "Mercury", "Moon"];
+  const observationData = useMemo(() => {
+    if (!result) return null;
 
-  if (malefics.includes(mahaLord)) {
-    iq -= 6;
-    reasoning.push(`${mahaLord} Dasha demands patience and discipline`);
-  }
+    return computeStrongObservations({
+      placements,
+      shadbalaRows,
+      mahaRows,
+      currentDashaChain,
+      scores: insights?.scores,
+    });
+  }, [result, placements, shadbalaRows, mahaRows, currentDashaChain, insights]);
 
-  if (benefics.includes(mahaLord)) {
-    iq += 6;
-    reasoning.push(`${mahaLord} Dasha supports growth and ease`);
-  }
-
-  /* ---------------------------
-     3. Retrograde penalty
-  ---------------------------- */
-  const placement = placements.find(
-    (p) => p.name?.toLowerCase() === mahaLord.toLowerCase()
-  );
-
-  if (placement?.retro) {
-    iq -= 6;
-    reasoning.push(`${mahaLord} retrograde causes internalized results`);
-  }
-
-  /* ---------------------------
-     4. Life-area stress impact
-  ---------------------------- */
-  const stressedAreas = Object.values(scores || {}).filter((v) => v < 60).length;
-
-  if (stressedAreas >= 3) {
-    iq -= 10;
-    reasoning.push("Multiple life areas under stress");
-  } else if (stressedAreas === 2) {
-    iq -= 5;
-    reasoning.push("Some life areas require caution");
-  }
-
-  /* ---------------------------
-     5. Clamp result
-  ---------------------------- */
-  iq = Math.max(25, Math.min(95, Math.round(iq)));
-
-  return {
-    iq,
-    mahaLord,
-    reasoning,
-  };
-}
-
-const dashaIQ = useMemo(() => {
-  if (!result || !currentDashaChain) return null;
-
-  return calculateDashaIQ({
+  function calculateDashaIQ({
     currentDashaChain,
     shadbalaRows,
     placements,
-    scores: insights?.scores,
-  });
-}, [
-  result,
-  currentDashaChain,
-  shadbalaRows,
-  placements,
-  insights,
-]);
+    scores,
+  }) {
+    if (!currentDashaChain) {
+      return { iq: 50, reasoning: ["Dasha data unavailable"] };
+    }
 
-const activeMahaLord = useMemo(() => {
-  if (!mahaRows || mahaRows.length === 0) return null;
+    const mahaLord = currentDashaChain.split(">")[0].trim();
 
-  const today = new Date();
+    let iq = 50; // neutral baseline
+    const reasoning = [];
 
-  const active = mahaRows.find((row) => {
-    const start = new Date(row.start);
-    const end = new Date(row.end);
-    return today >= start && today <= end;
-  });
+    /* ---------------------------
+     1. Shadbala strength
+  ---------------------------- */
+    const planetStrength = shadbalaRows.find(
+      (p) => p.name?.toLowerCase() === mahaLord.toLowerCase(),
+    );
 
-  return active?.lord || null;
-}, [mahaRows]);
+    if (planetStrength?.percent != null) {
+      if (planetStrength.percent >= 70) {
+        iq += 15;
+        reasoning.push(`${mahaLord} is strong in Shadbala`);
+      } else if (planetStrength.percent >= 55) {
+        iq += 8;
+        reasoning.push(`${mahaLord} has moderate strength`);
+      } else {
+        iq -= 12;
+        reasoning.push(`${mahaLord} is weak, causing delays`);
+      }
+    }
 
+    /* ---------------------------
+     2. Malefic / Benefic nature
+  ---------------------------- */
+    const malefics = ["Saturn", "Rahu", "Ketu", "Mars"];
+    const benefics = ["Jupiter", "Venus", "Mercury", "Moon"];
 
+    if (malefics.includes(mahaLord)) {
+      iq -= 6;
+      reasoning.push(`${mahaLord} Dasha demands patience and discipline`);
+    }
+
+    if (benefics.includes(mahaLord)) {
+      iq += 6;
+      reasoning.push(`${mahaLord} Dasha supports growth and ease`);
+    }
+
+    /* ---------------------------
+     3. Retrograde penalty
+  ---------------------------- */
+    const placement = placements.find(
+      (p) => p.name?.toLowerCase() === mahaLord.toLowerCase(),
+    );
+
+    if (placement?.retro) {
+      iq -= 6;
+      reasoning.push(`${mahaLord} retrograde causes internalized results`);
+    }
+
+    /* ---------------------------
+     4. Life-area stress impact
+  ---------------------------- */
+    const stressedAreas = Object.values(scores || {}).filter(
+      (v) => v < 60,
+    ).length;
+
+    if (stressedAreas >= 3) {
+      iq -= 10;
+      reasoning.push("Multiple life areas under stress");
+    } else if (stressedAreas === 2) {
+      iq -= 5;
+      reasoning.push("Some life areas require caution");
+    }
+
+    /* ---------------------------
+     5. Clamp result
+  ---------------------------- */
+    iq = Math.max(25, Math.min(95, Math.round(iq)));
+
+    return {
+      iq,
+      mahaLord,
+      reasoning,
+    };
+  }
+
+  const dashaIQ = useMemo(() => {
+    if (!result || !currentDashaChain) return null;
+
+    return calculateDashaIQ({
+      currentDashaChain,
+      shadbalaRows,
+      placements,
+      scores: insights?.scores,
+    });
+  }, [result, currentDashaChain, shadbalaRows, placements, insights]);
+
+  const activeMahaLord = useMemo(() => {
+    if (!mahaRows || mahaRows.length === 0) return null;
+
+    const today = new Date();
+
+    const active = mahaRows.find((row) => {
+      const start = new Date(row.start);
+      const end = new Date(row.end);
+      return today >= start && today <= end;
+    });
+
+    return active?.lord || null;
+  }, [mahaRows]);
 
 
 
@@ -2552,60 +2525,98 @@ const activeMahaLord = useMemo(() => {
             </div>
 
             {challengeAnalysis?.hasChallenges && (
-              <div
-                className="card mt-6 border-l-4"
-                style={{
-                  borderLeftColor:
-                    challengeAnalysis.severity === "HIGH"
-                      ? "#dc2626"
-                      : "#d97706",
-                  background: "#fffaf0",
-                }}
-              >
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Astrological Attention Recommended
-                </h4>
+              <div className="mt-8 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
 
-                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                  {challengeAnalysis.reasons.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
+                {/* Decorative Glow */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute -top-24 -left-24 w-64 h-64 bg-amber-200/40 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100/60 rounded-full blur-2xl" />
+                </div>
 
-                <p className="text-sm text-gray-600 mt-3">
-                  These patterns suggest phases where expert guidance can help
-                  you navigate decisions more confidently.
-                </p>
+                {/* Content Grid */}
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                  
+                  {/* LEFT: Text Content */}
+                  <div className="max-w-2xl">
+                                    <div
+                      className="results-header"
+                      // style={{ marginBottom: "1rem" }}
+                    >
+                      <img
+                        src="/infinity-symbol.svg"
+                        alt="Infinity"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          transform: "rotate(-45deg)",
+                          transformOrigin: "center center",
+                        }}
+                      />
+                      <h3 className="results-title">Astrologer</h3>
+                    </div>
+                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
+                      Feeling uncertain about what lies ahead?
+                    </h3>
 
-                <button
-                  onClick={() => setInlineChatOpen(true)}
-                  className="mt-4 px-5 py-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 font-semibold text-gray-900"
-                >
-                  Talk to an Astrologer
-                </button>
+                    <p className="text-sm text-gray-70 max-w-xl">
+                      Your chart indicates phases where clarity and direction
+                      matter most. A seasoned astrologer can help translate
+                      these patterns into confident, grounded decisions.
+                    </p>
+
+                    <ul className="mt-4 space-y-2 text-sm text-gray-700">
+                      {challengeAnalysis.reasons.map((r, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          <span>{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChatSessionId((prev) => prev + 1);
+                        setInlineChatOpen(true);
+                      }}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden mt-6"
+                    >
+                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      Talk to Astrologer
+                    </button>
+                  </div>
+
+                  {/* RIGHT: Sage Illustration */}
+                  <div className="relative hidden lg:flex justify-end">
+                    <img
+                      src="/images/Untitled-removebg-preview.png"
+                      alt="Astrologer sage illustration"
+                      className="w-[360px] xl:w-[400px] opacity-90 drop-shadow-[0_15px_25px_rgba(251,191,36,0.35)]"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
-
             {result && insights && (
               <section className="converting-card mt-10">
-<HighConvertingInsights
-  insights={insights}
-  observations={observationData}
-  dashaIQ={dashaIQ}
-  shadbalaRows={shadbalaRows}
-  mahaRows={mahaRows}
-  antarRows={antarRows}
-  openAntarFor={openAntarFor}
-  antarLoadingFor={antarLoadingFor}
-  openAntarInlineFor={openAntarInlineFor}
-  activeMahaLord={activeMahaLord} 
-  onTalkToAstrologer={handleTalkToAstrologer}
-/>
+                <HighConvertingInsights
+                  insights={insights}
+                  observations={observationData}
+                  dashaIQ={dashaIQ}
+                  shadbalaRows={shadbalaRows}
+                  mahaRows={mahaRows}
+                  antarRows={antarRows}
+                  openAntarFor={openAntarFor}
+                  antarLoadingFor={antarLoadingFor}
+                  openAntarInlineFor={openAntarInlineFor}
+                  activeMahaLord={activeMahaLord}
+                  onTalkToAstrologer={handleTalkToAstrologer}
+                />
               </section>
             )}
 
-                        {/* Planet Placements */}
+            {/* Planet Placements */}
             {placements.length > 0 ? (
               <div
                 ref={setPlacementsRef}
@@ -2848,6 +2859,7 @@ const activeMahaLord = useMemo(() => {
                         <th>Antar Dasha Lord</th>
                         <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Events</th>
                       </tr>
                     </thead>
                     <tbody>
