@@ -16,6 +16,7 @@ import {
 import LockedDeepPredictions from "./components/LockedDeepPredictions";
 import "./high-converting.css";
 import VimshottariMahaDasha from "../../components/VismottriMahadasha";
+import LifeAreaInsights from "@/components/LifeScore";
 
 export default function HighConvertingInsights({
   insights,
@@ -205,7 +206,7 @@ export default function HighConvertingInsights({
             : "Surface strengths look stable, but subtle planetary tensions may still affect decisions and timing."}
         </p>
 
-        <button className="planet-empty-cta" onClick={onTalkToAstrologer}>
+        <button className="planet-empty-cta" onClick={handleCTA}>
           Ask an astrologer →
         </button>
       </div>
@@ -226,70 +227,12 @@ export default function HighConvertingInsights({
         />
       </div>
 
-      {/* Life Scores */}
-      <h2 className="section-title mt-8">
-        Life Area Insights
-      </h2>
-
-      <p className="mt-2 text-gray-600 max-w-2xl mx-auto flex justify-center align-center text-center">
-        These scores reflect current planetary influences across key areas of
-        your life. 
-      </p>
-
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.entries(scores).map(([k, v]) => (
-          <div
-            key={k}
-            className="card rounded-2xl p-6 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.25)] relative overflow-hidden"
-          >
-            {/* Soft Glow */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-200/40 rounded-full blur-2xl" />
-            </div>
-
-            <div className="relative z-10">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">{k}</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {v}/100
-                </span>
-              </div>
-
-              {/* Progress */}
-              <div className="h-2 w-full rounded-full bg-amber-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${v}%`, backgroundColor: "var(--color-gold)" }}
-                />
-              </div>
-
-              {/* Interpretation */}
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                {v >= 70
-                  ? "This area is currently well-supported."
-                  : v >= 40
-                    ? "Some fluctuations are influencing this area."
-                    : "This area may need focused attention."}
-              </p>
-
-              {/* CTA */}
-              <button
-                onClick={handleUnlockClick}
-                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800 transition"
-              >
-                Get guidance
-                <span className="text-base">→</span>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <LifeAreaInsights scores={scores} handleUnlockClick={handleUnlockClick} />
 
       <h2 className="section-title mt-8">Chart Highlights</h2>
 
       <div
-          className="
+        className="
     grid
     grid-cols-1
     gap-6
@@ -458,7 +401,6 @@ export default function HighConvertingInsights({
           </div>
         ))}
       </div>
-
 
       {/* 🌟 High Potential Planets */}
       <h2 className="section-title mt-10">High Potential Planets</h2>

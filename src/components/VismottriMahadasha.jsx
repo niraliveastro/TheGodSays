@@ -62,7 +62,7 @@ function computeAntarEvents({ antar, today = new Date() }) {
     <div className="card my-6">
       <div className="results-header">
         <Moon style={{ color: "#ca8a04" }} />
-        <h3 className="results-title">Vimshottari Maha Dasha</h3>
+        <h3 className="results-title font-medium ">Vimshottari Maha Dasha</h3>
       </div>
 
       {/* ===== Horizontal Maha Dasha Rail ===== */}
