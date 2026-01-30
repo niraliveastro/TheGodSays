@@ -167,14 +167,14 @@ body {
   box-sizing: border-box !important;
 }
 
-/* Align bottom nav items to start exactly below "NiraLive" text - HARD CSS */
+/* Align bottom nav items to start exactly under "N" of NiraLive Astro - HARD CSS */
 .nav-bottom-row-wrapper .nav-desktop {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   width: 100% !important;
-  padding-left: 2rem !important; /* Match top nav-container padding (2rem = 32px) */
-  margin-left: 56px !important; /* Match logo icon width (44px) + gap (0.75rem = 12px) to align with text start */
+  padding-left: 0 !important;
+  margin-left: 56px !important; /* Align Matching under left edge of "N" */
   box-sizing: border-box !important;
 }
 
@@ -189,7 +189,7 @@ body {
   }
   
   .nav-bottom-row-wrapper .nav-desktop {
-    margin-left: 56px; /* Keep alignment even on mobile if space allows */
+    margin-left: 56px; /* Align with "N" of NiraLive Astro */
   }
   
   /* If screen is too narrow, reduce offset proportionally */
@@ -575,10 +575,10 @@ body {
     margin-left: 0 !important; /* Remove duplicate margin, already set in .nav-bottom-row-wrapper .nav-desktop */
   }
   
-  /* Ensure bottom nav wrapper desktop maintains padding and margin - HARD CSS */
+  /* Ensure bottom nav starts exactly under "N" of NiraLive Astro */
   .nav-bottom-row-wrapper .nav-desktop,
   .nav-bottom-row .nav-desktop {
-    padding-left: 2rem !important;
+    padding-left: 0 !important;
     margin-left: 56px !important;
   }
   
@@ -589,7 +589,7 @@ body {
     }
     
     .nav-bottom-row-wrapper .nav-desktop {
-      padding-left: 2rem !important;
+      padding-left: 0 !important;
       margin-left: 56px !important;
     }
   }
@@ -600,7 +600,7 @@ body {
     }
     
     .nav-bottom-row-wrapper .nav-desktop {
-      padding-left: 2rem !important;
+      padding-left: 0 !important;
       margin-left: 56px !important;
     }
   }
