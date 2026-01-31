@@ -261,6 +261,100 @@ export default function CosmicEventTracker() {
     )}`;
   };
 
+      /* ---------- ACCORDION SECTION ---------- */
+    const Section = ({ title, content, children }) => {
+      const [open, setOpen] = useState(false);
+  
+      return (
+        <div
+          style={{
+            marginBottom: "1.25rem",
+            border: "1px solid rgba(212, 175, 55, 0.25)",
+            borderRadius: "1rem",
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+            overflow: "hidden",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {/* HEADER */}
+          <button
+            onClick={() => setOpen(!open)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "1rem 1.25rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "'Georgia','Times New Roman',serif",
+                fontSize: "20px",
+                fontWeight: 500,
+                color: "#1f2937",
+                margin: 0,
+              }}
+            >
+              {title}
+            </h2>
+  
+            <span
+              style={{
+                fontSize: "1.25rem",
+                color: "#b45309",
+                transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                transition: "transform 0.25s ease",
+              }}
+            >
+              +
+            </span>
+          </button>
+  
+          {/* CONTENT */}
+          {open && (
+            <div
+              style={{
+                padding: "0 1.25rem 1.25rem",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.7,
+                  marginBottom: "0.75rem",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {children}
+              </p>
+  
+              <ul
+                style={{
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.8,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {content.map((item, i) => (
+                  <li key={i}>✔ {item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    };  
+
   // Initial loading state
   if (loading && neoData.length === 0) {
     return <PageLoading type="cosmic" message="Scanning the cosmos for celestial visitors..." />;
@@ -637,6 +731,94 @@ export default function CosmicEventTracker() {
           </div>
         </div>
       )}
+
+<div className="card shadow-xl border mt-16">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+      }}
+    >
+      Planetary Transits in Astrology – Understand Their Impact on Your Life
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      Planetary transits influence major life events. Our analysis focuses on
+      <strong> your kundli</strong>, not generic predictions.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Check Current Planetary Transits</button>
+    </div>
+  </div>
+
+  <Section
+    title="What Are Planetary Transits"
+    content={[
+      "Saturn (Shani) transit",
+      "Jupiter (Guru) transit",
+      "Rahu–Ketu transit",
+      "Retrogrades & conjunctions",
+    ]}
+  >
+    Transits occur when planets move through zodiac signs and houses, activating
+    specific life areas.
+  </Section>
+
+  <Section
+    title="How Transits Affect You Personally"
+    content={[
+      "Your kundli placements",
+      "Running dasha & sub-dasha",
+      "Planetary strength",
+    ]}
+  >
+    The same transit affects people differently. Personal chart factors decide
+    real impact.
+  </Section>
+
+  <Section
+    title="AI-Based Transit Analysis"
+    content={[
+      "Accurate planetary tracking",
+      "Kundli-based impact mapping",
+      "Sensitive & favorable periods",
+      "Preparedness guidance",
+    ]}
+  >
+    Our AI matches live planetary movements with your chart for clarity and
+    timing.
+  </Section>
+
+  <Section
+    title="Use Transits for Better Timing"
+    content={[
+      "Plan important decisions",
+      "Avoid stress-heavy periods",
+      "Use favorable phases wisely",
+    ]}
+  >
+    Transit awareness helps you move with time instead of against it.
+  </Section>
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Astrology offers guidance, not guaranteed outcomes.
+  </p>
+</div>
+
+
     </div>
   );
 }

@@ -707,6 +707,100 @@ export default function CalendarPage() {
     setViewDate(d);
   };
 
+        /* ---------- ACCORDION SECTION ---------- */
+      const Section = ({ title, content, children }) => {
+        const [open, setOpen] = useState(false);
+    
+        return (
+          <div
+            style={{
+              marginBottom: "1.25rem",
+              border: "1px solid rgba(212, 175, 55, 0.25)",
+              borderRadius: "1rem",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+              overflow: "hidden",
+              transition: "all 0.3s ease",
+            }}
+          >
+            {/* HEADER */}
+            <button
+              onClick={() => setOpen(!open)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Georgia','Times New Roman',serif",
+                  fontSize: "20px",
+                  fontWeight: 500,
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                {title}
+              </h2>
+    
+              <span
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#b45309",
+                  transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              >
+                +
+              </span>
+            </button>
+    
+            {/* CONTENT */}
+            {open && (
+              <div
+                style={{
+                  padding: "0 1.25rem 1.25rem",
+                  animation: "fadeIn 0.3s ease",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.7,
+                    marginBottom: "0.75rem",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {children}
+                </p>
+    
+                <ul
+                  style={{
+                    paddingLeft: "1.25rem",
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.8,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {content.map((item, i) => (
+                    <li key={i}>✔ {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      };  
+
   return (
     <>
       <style jsx>{`
@@ -782,7 +876,7 @@ export default function CalendarPage() {
 
       <div className="pageContainer">
         <div className="innerWrapper">
-          <div className="calendarWrapper">
+          <div className="calendarWrapper mb-16">
             <div className="navContainer">
               <button
                 className="navButton"
@@ -811,7 +905,101 @@ export default function CalendarPage() {
               tithiMap={tithiMap}
             />
           </div>
+
+                  <div className="card shadow-xl border ">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      Panchang Calendar – Daily Hindu Panchang with Astrology Insights
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      The Panchang guides daily activities, rituals, and decisions using lunar
+      and solar movements.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>View Today’s Panchang</button>
+    </div>
+  </div>
+
+  <Section
+    title="What Is Panchang"
+    content={[
+      "Tithi",
+      "Vara (day)",
+      "Nakshatra",
+      "Yoga",
+      "Karana",
+    ]}
+  >
+    Panchang is a Hindu calendar system based on planetary and lunar movements
+    used to determine auspicious timings.
+  </Section>
+
+  <Section
+    title="What Our Panchang Calendar Offers"
+    content={[
+      "Daily Panchang details",
+      "Festivals & important dates",
+      "Muhurat guidance",
+      "Planetary positions",
+      "Simple explanations",
+    ]}
+  >
+    Designed for practical daily use without complexity.
+  </Section>
+
+  <Section
+    title="Panchang + Astrology for Better Decisions"
+    content={[
+      "Panchang aligned with planetary movement",
+      "Kundli relevance checking",
+      "Timing-focused guidance",
+    ]}
+  >
+    Panchang becomes more powerful when combined with astrology.
+  </Section>
+
+  <Section
+    title="Who Should Use This Panchang"
+    content={[
+      "Individuals planning important activities",
+      "Families observing rituals",
+      "Astrology learners",
+      "NRIs seeking Indian Panchang",
+    ]}
+  >
+    Suitable for both daily reference and long-term planning.
+  </Section>
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Panchang provides traditional guidance and should not replace professional
+    advice.
+  </p>
+</div>
         </div>
+
+
+
       </div>
     </>
   );

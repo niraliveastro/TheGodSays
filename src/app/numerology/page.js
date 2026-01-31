@@ -34,7 +34,7 @@ import "./numerology.css";
  */
 export default function NumerologyPage() {
   const { t } = useTranslation();
-  
+
   // Form input states
   const [fullName, setFullName] = useState(""); // User's full birth name for letter-based calculations
   const [birthDate, setBirthDate] = useState(""); // Birth date (YYYY-MM-DD) for Life Path and Mulank
@@ -296,7 +296,7 @@ export default function NumerologyPage() {
     return reduceNumber(
       reduceLifePathComponent(month) +
         reduceLifePathComponent(day) +
-        reduceLifePathComponent(year)
+        reduceLifePathComponent(year),
     );
   };
 
@@ -440,14 +440,14 @@ export default function NumerologyPage() {
     let currentHistory = getHistory();
     const key = `${result.name.toUpperCase()}-${result.dob}`;
     currentHistory = currentHistory.filter(
-      (item) => `${item.name.toUpperCase()}-${item.dob}` !== key
+      (item) => `${item.name.toUpperCase()}-${item.dob}` !== key,
     );
     currentHistory.unshift(result);
     if (currentHistory.length > 10)
       currentHistory = currentHistory.slice(0, 10);
     localStorage.setItem(
       NUMEROLOGY_HISTORY_KEY,
-      JSON.stringify(currentHistory)
+      JSON.stringify(currentHistory),
     );
     setHistory(currentHistory);
   };
@@ -518,8 +518,105 @@ export default function NumerologyPage() {
     );
   };
 
+      /* ---------- ACCORDION SECTION ---------- */
+    const Section = ({ title, content, children }) => {
+      const [open, setOpen] = useState(false);
+  
+      return (
+        <div
+          style={{
+            marginBottom: "1.25rem",
+            border: "1px solid rgba(212, 175, 55, 0.25)",
+            borderRadius: "1rem",
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+            overflow: "hidden",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {/* HEADER */}
+          <button
+            onClick={() => setOpen(!open)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "1rem 1.25rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "'Georgia','Times New Roman',serif",
+                fontSize: "20px",
+                fontWeight: 500,
+                color: "#1f2937",
+                margin: 0,
+              }}
+            >
+              {title}
+            </h2>
+  
+            <span
+              style={{
+                fontSize: "1.25rem",
+                color: "#b45309",
+                transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                transition: "transform 0.25s ease",
+              }}
+            >
+              +
+            </span>
+          </button>
+  
+          {/* CONTENT */}
+          {open && (
+            <div
+              style={{
+                padding: "0 1.25rem 1.25rem",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.7,
+                  marginBottom: "0.75rem",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {children}
+              </p>
+  
+              <ul
+                style={{
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.8,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {content.map((item, i) => (
+                  <li key={i}>✔ {item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    };  
+
   return (
-    <div className="numerology-container" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+    <div
+      className="numerology-container"
+      style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+    >
       <div className="app">
         {/* Orbs */}
         <div
@@ -536,11 +633,12 @@ export default function NumerologyPage() {
         </div>
 
         {/* Header */}
-        <header className="header" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+        <header
+          className="header"
+          style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+        >
           <h1 className="title">{t.numerology.title}</h1>
-          <p className="subtitle">
-            {t.numerology.subtitle}
-          </p>
+          <p className="subtitle">{t.numerology.subtitle}</p>
         </header>
 
         {/* Two Column Layout */}
@@ -555,7 +653,9 @@ export default function NumerologyPage() {
                     <Calculator className="w-7 h-7 text-white" />
                   </div>
                   <div className="form-header-text">
-                    <h3 className="form-header-title">{t.profile.personalInfo}</h3>
+                    <h3 className="form-header-title">
+                      {t.profile.personalInfo}
+                    </h3>
                     <p className="form-header-subtitle">
                       {t.numerology.description}
                     </p>
@@ -570,7 +670,9 @@ export default function NumerologyPage() {
                       style={{ color: "#d4af37" }}
                     />
                     {t.numerology.fullName}
-                    <span className="required-badge">*{t.validation.required}</span>
+                    <span className="required-badge">
+                      *{t.validation.required}
+                    </span>
                   </label>
                   <input
                     id="fullName"
@@ -590,7 +692,9 @@ export default function NumerologyPage() {
                       style={{ color: "#d4af37" }}
                     />
                     {t.numerology.birthDate}
-                    <span className="required-badge">*{t.validation.required}</span>
+                    <span className="required-badge">
+                      *{t.validation.required}
+                    </span>
                   </label>
                   <input
                     id="birthDate"
@@ -1215,6 +1319,102 @@ export default function NumerologyPage() {
             9-Wealth, 10-Luck, 11-Health, 12-Speed.
           </p>
         </footer>
+
+<div className="card shadow-xl border mt-16">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"center",
+        gap:"0.5rem",
+      }}
+    >
+      AI-Powered Numerology Prediction – Discover Your Numbers & Life Path
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      Numerology reveals how numbers influence your personality, decisions, and
+      life cycles. We combine <strong>AI-powered analysis</strong> with
+      traditional numerology principles to deliver personalized insights.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Check Your Numerology Now</button>
+    </div>
+  </div>
+
+  <Section
+    title="What Is Numerology & How It Works"
+    content={[
+      "Life Path, Destiny & Soul Urge calculation",
+      "Name and date of birth based analysis",
+      "Pattern recognition across life cycles",
+    ]}
+  >
+    Numerology studies the influence of numbers derived from your birth details
+    and name. These numbers reveal strengths, challenges, and recurring life
+    themes.
+  </Section>
+
+  <Section
+    title="What Makes Our Numerology Different"
+    content={[
+      "AI-based calculation accuracy",
+      "Career, relationship & decision guidance",
+      "Favorable and challenging periods",
+      "Practical energy balancing suggestions",
+      "Option to consult astrologers",
+    ]}
+  >
+    Most numerology tools stop at meanings. Nirali Live Astro focuses on timing,
+    tendencies, and preparedness.
+  </Section>
+
+  <Section
+    title="What You’ll Learn from Numerology"
+    content={[
+      "Natural strengths and weaknesses",
+      "Career and business tendencies",
+      "Relationship compatibility patterns",
+      "Decision-making style",
+      "Repeating life themes",
+    ]}
+  >
+    Your numerology report acts as a mirror to understand how numbers shape your
+    life path.
+  </Section>
+
+  <Section
+    title="Numerology + Astrology = Better Accuracy"
+    content={[
+      "Numerology insights",
+      "Kundli predictions",
+      "Planetary transits",
+    ]}
+  >
+    Numbers and planets work together. Combining numerology with astrology gives
+    a broader and more reliable understanding of life patterns.
+  </Section>
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Numerology offers guidance and should not replace professional advice.
+  </p>
+</div>
+
       </div>
     </div>
   );

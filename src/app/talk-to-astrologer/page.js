@@ -1103,6 +1103,104 @@ if (i === 0) {
     });
   };
 
+  const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+        /* ---------- ACCORDION SECTION ---------- */
+      const Section = ({ title, content, children }) => {
+        const [open, setOpen] = useState(false);
+    
+        return (
+          <div
+            style={{
+              marginBottom: "1.25rem",
+              border: "1px solid rgba(212, 175, 55, 0.25)",
+              borderRadius: "1rem",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+              overflow: "hidden",
+              transition: "all 0.3s ease",
+            }}
+          >
+            {/* HEADER */}
+            <button
+              onClick={() => setOpen(!open)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Georgia','Times New Roman',serif",
+                  fontSize: "20px",
+                  fontWeight: 500,
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                {title}
+              </h2>
+    
+              <span
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#b45309",
+                  transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              >
+                +
+              </span>
+            </button>
+    
+            {/* CONTENT */}
+            {open && (
+              <div
+                style={{
+                  padding: "0 1.25rem 1.25rem",
+                  animation: "fadeIn 0.3s ease",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.7,
+                    marginBottom: "0.75rem",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {children}
+                </p>
+    
+                <ul
+                  style={{
+                    paddingLeft: "1.25rem",
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.8,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {content.map((item, i) => (
+                    <li key={i}>✔ {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      };  
+
   /* --------------------------------------------------------------- */
   /*  Render                                                         */
   /* --------------------------------------------------------------- */
@@ -1945,67 +2043,221 @@ if (i === 0) {
               )}
             </div>
 
-            {/* Explanation Card - At the end */}
-            <div
-              className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
-              style={{
-                marginTop: "2rem",
-                background:
-                  "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-                borderColor: "rgba(212, 175, 55, 0.3)",
-                maxWidth: "100%",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingBottom: "1.5rem",
-                  borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <h2
-                  style={{
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    fontSize: "1.5rem",
-                    fontWeight: 700,
-                    color: "#1f2937",
-                    margin: 0,
-                  }}
-                >
-                  Understanding Live Astrologer Consultations
-                </h2>
-              </div>
-              <div style={{ padding: 0 }}>
-                <p
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#374151",
-                    fontStyle: "normal",
-                    marginBottom: 0,
-                    fontFamily: "'Inter', sans-serif",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Connect with experienced <strong>Vedic Astrologers</strong>{" "}
-                  through live video or voice calls for personalized guidance.
-                  Our certified astrologers provide authentic interpretations of
-                  your birth chart, analyze planetary influences, and offer
-                  insights into various aspects of life including{" "}
-                  <strong>Career Guidance</strong> based on planetary positions
-                  and dasha periods, <strong>Relationship Compatibility</strong>{" "}
-                  using traditional matching systems,{" "}
-                  <strong>Remedial Solutions</strong> including gemstone
-                  recommendations and spiritual practices, and{" "}
-                  <strong>Timing Predictions</strong> for important life events.
-                  Each consultation is tailored to your unique astrological
-                  profile, ensuring accurate and meaningful guidance rooted in
-                  ancient Vedic wisdom.
-                </p>
-              </div>
-            </div>
+           {/* TALK TO ASTROLOGER – ACCORDION CARD */}
+<div
+  style={{
+    marginTop: "2rem",
+    width: "100%",
+    maxWidth: "90rem",
+    marginLeft: "auto",
+    marginRight: "auto",
+  }}
+>
+  <div
+    className="card shadow-xl border"
+    style={{
+      background: "#ffffff",
+      borderColor: "#eaeaea",
+      maxWidth: "100%",
+      boxShadow:
+        "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+    }}
+  >
+    {/* HERO */}
+    <div
+      style={{
+        borderBottom: "2px solid rgba(212,175,55,0.25)",
+        paddingBottom: "1.75rem",
+        marginBottom: "1.75rem",
+        textAlign: "center",
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: "'Georgia','Times New Roman',serif",
+          fontSize: "32px",
+          fontWeight: 500,
+          color: "#111827",
+          marginBottom: "0.75rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "0.5rem",
+        }}
+      >
+        Talk to Expert Astrologers Online
+      </h1>
+
+      <p className="text-sm mt-1 text-slate-600 max-w-3xl mx-auto">
+        Connect with verified astrologers for live voice or video consultations.
+        Get personalized guidance based on your birth chart, planetary periods,
+        and current life situation.
+      </p>
+
+      <div className="flex justify-center mt-4 gap-3">
+        <button className="btn-primary" onclick={scrollToTop}>
+          Start Consultation
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => router.push("/new-predictions")}
+        >
+          Get AI predictions
+        </button>
+      </div>
+    </div>
+
+    {/* ACCORDIONS */}
+    <div style={{ padding: 0 }}>
+      <Section
+  title="What Does a Live Astrologer Consultation Involve?"
+  content={[
+    "One-to-one private consultation",
+    "Based on your birth details and questions",
+    "Voice or video interaction",
+    "Real-time personalized guidance",
+  ]}
+>
+  A live astrologer consultation is a private, one-to-one session where you
+  directly interact with an experienced astrologer through voice or video
+  call. Unlike automated predictions, the astrologer listens to your concerns,
+  studies your birth chart, and provides guidance tailored specifically to your
+  situation.
+
+  This format allows deeper discussion, follow-up questions, and practical
+  clarity that cannot be achieved through generic reports.
+</Section>
+
+<Section
+  title="How Our Astrologers Analyze Your Questions"
+  content={[
+    "Birth chart (kundli) analysis",
+    "Planetary positions and house placement",
+    "Running dasha and transit influence",
+    "Question-specific interpretation",
+  ]}
+>
+  During a consultation, astrologers analyze your kundli using traditional
+  Vedic astrology principles. Planetary positions, house lords, dashas, and
+  current transits are examined to understand the root cause of your concern.
+
+  Whether the question relates to career, marriage, finances, or timing, the
+  analysis is focused on practical outcomes rather than abstract predictions.
+</Section>
+
+<Section
+  title="Topics You Can Discuss With an Astrologer"
+  content={[
+    "Career growth and job changes",
+    "Marriage and relationship guidance",
+    "Business and financial decisions",
+    "Health and stress-related concerns",
+    "Important life timings and choices",
+  ]}
+>
+  Live astrologer consultations are suitable for most life situations where
+  clarity and timing matter. Users commonly seek guidance for relationships,
+  career decisions, marriage compatibility, financial planning, and major life
+  transitions.
+
+  You are free to ask follow-up questions and explore multiple areas during the
+  session.
+</Section>
+
+<Section
+  title="Voice Call vs Video Call – What’s the Difference?"
+  content={[
+    "Voice call for focused discussion",
+    "Video call for face-to-face interaction",
+    "Same astrological analysis in both",
+    "User choice based on comfort",
+  ]}
+>
+  Both voice and video consultations provide the same level of astrological
+  analysis. Voice calls are preferred by users who want quick, distraction-free
+  guidance, while video calls offer a more personal, face-to-face experience.
+
+  You can choose the consultation mode that feels most comfortable to you.
+</Section>
+
+<Section
+  title="Are the Astrologers Verified and Experienced?"
+  content={[
+    "Background verification",
+    "Experience-based onboarding",
+    "Specialization-wise selection",
+    "User reviews and ratings",
+  ]}
+>
+  All astrologers available on Nirali Live Astro go through a verification
+  process before being listed. This includes experience checks, area of
+  specialization review, and quality assessment.
+
+  User ratings and reviews further help maintain transparency and trust.
+</Section>
+
+<Section
+  title="How Pricing and Billing Works for Calls"
+  content={[
+    "Per-minute transparent pricing",
+    "Billing starts only after call connects",
+    "Wallet-based payment system",
+    "No hidden charges",
+  ]}
+>
+  Astrologer consultations are billed on a per-minute basis. Billing starts
+  only when the call is successfully connected and ends automatically when the
+  call finishes.
+
+  You can view pricing in advance and manage your wallet balance easily.
+</Section>
+
+<Section
+  title="Is My Consultation Private and Secure?"
+  content={[
+    "One-to-one private sessions",
+    "Secure call infrastructure",
+    "No data shared without consent",
+    "Confidential conversation",
+  ]}
+>
+  Your consultation is completely private. Calls are conducted securely, and
+  your personal details, birth information, and conversations are not shared
+  with anyone.
+
+  Privacy and confidentiality are treated as a core priority.
+</Section>
+
+
+<Section
+  title="When Should You Consult an Astrologer?"
+  content={[
+    "Before major life decisions",
+    "During confusing or stressful phases",
+    "For clarity on timing and direction",
+    "To prepare for upcoming changes",
+  ]}
+>
+  Astrologer consultations are most helpful when you need clarity, direction,
+  or timing guidance. Rather than reacting to events, astrology helps you
+  prepare and make informed choices.
+
+  Many users consult astrologers proactively to understand upcoming phases and
+  avoid unnecessary stress.
+</Section>
+
+<div className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl"
+ 
+>
+  Astrology does not dictate fixed outcomes. A live consultation provides
+  guidance based on planetary patterns and probabilities so you can make better
+  decisions.
+</div>
+
+    </div>
+  </div>
+</div>
+
           </div>
 
           {/* Balance modal */}

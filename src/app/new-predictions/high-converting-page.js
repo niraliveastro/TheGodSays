@@ -135,6 +135,8 @@ export default function HighConvertingInsights({
     Rahu: "#8b5cf6",
   };
 
+
+
   function PlanetTile({ planet, type }) {
     const active = isActivePlanet(planet.name);
     const remaining = getRemainingDuration(planet.name);
@@ -188,29 +190,63 @@ export default function HighConvertingInsights({
   function PlanetEmptyState({ type, onTalkToAstrologer }) {
     const isPositive = type === "positive";
 
-    return (
-      <div className="planet-empty-tile">
-        <div className={`planet-empty-icon ${type}`}>
-          {isPositive ? "✦" : "⚠︎"}
-        </div>
+return (
+  <div className="planet-empty-tile flex flex-col items-center text-center gap-4">
+    {/* ORBIT GRAPHIC */}
+    <svg
+      width="180"
+      height="90"
+      viewBox="0 0 180 90"
+      className="opacity-80"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* dashed orbit */}
+      <ellipse
+        cx="90"
+        cy="45"
+        rx="78"
+        ry="28"
+        fill="none"
+        stroke="#E6D4A8"
+        strokeWidth="1.2"
+        strokeDasharray="3 6"
+      />
 
-        <h4 className="planet-empty-title">
-          {isPositive
-            ? "No Dominant Strengths Detected"
-            : "No Major Weaknesses Detected"}
-        </h4>
+      {/* central planet */}
+      <circle cx="90" cy="45" r="6" fill="#D6B46A" />
 
-        <p className="planet-empty-text">
-          {isPositive
-            ? "Your chart shows balanced energies. The strongest planets emerge only during specific dashas and transits."
-            : "Surface strengths look stable, but subtle planetary tensions may still affect decisions and timing."}
-        </p>
+      {/* secondary planet */}
+      <circle cx="120" cy="19" r="4" fill="#EAD7A3" />
+    </svg>
 
-        <button className="planet-empty-cta" onClick={handleCTA}>
-          Ask an astrologer →
-        </button>
-      </div>
-    );
+    {/* ICON */}
+    <div
+      className={`planet-empty-icon ${type} text-lg tracking-wide`}
+    >
+      {isPositive ? "✦" : " "}
+    </div>
+
+    <h4 className="planet-empty-title text-lg font-medium">
+      {isPositive
+        ? "No Dominant Strengths Detected"
+        : "No Major Weaknesses Detected"}
+    </h4>
+
+    <p className="planet-empty-text max-w-md text-sm opacity-80">
+      {isPositive
+        ? "Your chart shows balanced energies. The strongest planets emerge only during specific dashas and transits."
+        : "Surface strengths look stable, but subtle planetary tensions may still affect decisions and timing."}
+    </p>
+
+    <button
+      className=" mt-2 text-slate-700 hover:text-amber-500 transition"
+      onClick={onTalkToAstrologer}
+    >
+      Ask an astrologer for deeper insights →
+    </button>
+  </div>
+);
+
   }
 
   return (
