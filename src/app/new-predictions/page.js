@@ -2507,44 +2507,7 @@ export default function PredictionsPage() {
                 </div>
               </div>
             </div>
-            {/* Western Natal Wheel Chart */}
-            {result?.westernChartSvg &&
-            result.westernChartSvg.trim().startsWith("<svg") ? (
-              <div
-                className="chart-container rounded-xl overflow-hidden shadow-lg"
-                style={{
-                  background: "#111827",
-                  maxWidth: "640px",
-                  margin: "0 auto",
-                }}
-              >
-                <div
-                  dangerouslySetInnerHTML={{ __html: result.westernChartSvg }}
-                  className="w-full"
-                  style={{ aspectRatio: "1 / 1" }}
-                />
-              </div>
-            ) : result && !result.westernChartSvg ? (
-              <div
-                className="card my-8 p-6 border rounded-lg"
-                style={{
-                  background: "#fef9c3",
-                  borderColor: "#fde047",
-                }}
-              >
-                <p
-                  className="text-sm font-medium"
-                  style={{
-                    color: "#854d0e",
-                  }}
-                >
-                  Western chart not available.
-                </p>
-                <p className="text-xs text-yellow-600 mt-1">
-                  Check: API key, internet, or try different birth details.
-                </p>
-              </div>
-            ) : null}
+
 
             {/* Expert Astrologer CTA / Chat Window */}
             <div

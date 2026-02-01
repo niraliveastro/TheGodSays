@@ -2,10 +2,9 @@
 .footer {
   background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
   color: #1f2937;
-  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem) clamp(1rem, 2vw, 1.5rem);
   margin-top: clamp(2rem, 5vw, 4rem);
   border-top: 2px solid rgba(212, 175, 55, 0.2);
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Geom', sans-serif;
   width: 100%;
   box-sizing: border-box;
 }
@@ -16,11 +15,11 @@
 }
 
 .footer-content {
-  width: 80%;
+  width: 100%;
   min-width: min(320px, 95vw);
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 2%;
+  padding: 0;
 }
 
 .footer-main {
@@ -76,7 +75,7 @@
   font-size: clamp(0.875rem, 1.5vw, 0.95rem);
   font-weight: 400;
   text-align: left;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Geom', sans-serif !important;
   text-transform: none;
 }
 
@@ -114,10 +113,10 @@
 
 .footer-heading {
   font-size: clamp(1rem, 1.8vw, 1.15rem);
-  font-weight: 600;
+  font-weight: 300;
   color: #000000;
   margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Geom', sans-serif !important;
 }
 
 .footer-links {
@@ -134,8 +133,8 @@
   color: #000000;
   text-decoration: none;
   font-size: clamp(0.85rem, 1.4vw, 0.95rem);
-  font-weight: 400;
-  font-family: 'Inter', sans-serif !important;
+  font-weight: 300;
+  font-family: 'Geom', sans-serif !important;
   transition: all 0.2s ease;
   display: inline-block;
   text-transform: none;
@@ -159,8 +158,8 @@
   gap: clamp(0.5rem, 1.2vw, 0.75rem);
   color: #000000;
   font-size: clamp(0.85rem, 1.4vw, 0.95rem);
-  font-weight: 400;
-  font-family: 'Inter', sans-serif !important;
+  font-weight: 300;
+  font-family: 'Geom', sans-serif !important;
   text-transform: none;
 }
 
@@ -176,8 +175,8 @@
 .contact-item span {
   color: #000000;
   text-decoration: none;
-  font-weight: 400;
-  font-family: 'Inter', sans-serif !important;
+  font-weight: 300;
+  font-family: 'Geom', sans-serif !important;
   transition: color 0.2s ease;
   text-transform: none;
 }
@@ -226,7 +225,8 @@
   color: #000000;
   font-size: clamp(0.8rem, 1.4vw, 0.9rem);
   margin: 0;
-  font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: 'Geom', sans-serif !important;
+
   text-transform: none;
 }
 
@@ -260,7 +260,7 @@
   text-decoration: none;
   font-size: clamp(0.8rem, 1.4vw, 0.9rem);
   transition: color 0.2s ease;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Geom', sans-serif !important;
   text-transform: none;
 }
 
@@ -287,7 +287,7 @@
   line-height: 1.6;
   margin: 0;
   text-align: left;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Geom', sans-serif !important;
   text-transform: none;
 }
 
@@ -400,7 +400,8 @@
 
   .footer-heading {
     font-size: clamp(0.95rem, 4vw, 1.05rem);
-    font-family: 'Inter', sans-serif !important;
+     font-family: 'Geom', sans-serif !important;
+
   }
 
   .footer-description,

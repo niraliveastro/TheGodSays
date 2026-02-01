@@ -220,6 +220,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  font-family: 'Geom', sans-serif;
 }
 
 /* Hide center text on desktop */

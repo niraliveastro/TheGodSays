@@ -2877,7 +2877,7 @@ export default function MatchingPage() {
 
                       {/* FOOTER */}
                       <div className="analysis-footer">
-                        <button className="outline-btn">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
                           Understand what this means →
                         </button>
                       </div>
@@ -3034,7 +3034,7 @@ export default function MatchingPage() {
                       </table>
 
                       <div className="analysis-footer">
-                        <button className="outline-btn">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
                           Understand what this means →
                         </button>
                       </div>
@@ -3127,7 +3127,7 @@ export default function MatchingPage() {
       harmony, and the right steps forward for this relationship.
     </p>
 
-    <button className="guidance-btn">
+    <button className="guidance-btn" onClick={onTalkToAstrologer}>
       <PhoneIcon size={18} />
       Talk to an astrologer
     </button>
