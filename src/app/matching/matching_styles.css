@@ -38,7 +38,7 @@ h1, h2, h3, h4 {
 }
 
 .form-field-label {
-  color: var(--color-gold);
+  color: var(--color-gray-700);
 }
 
 @media (min-width: 768px) {
@@ -142,7 +142,7 @@ input:focus {
   margin-top: 1rem;
 }
 
-.btn {
+/* .btn {
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
@@ -150,7 +150,7 @@ input:focus {
   white-space: nowrap;
   min-width: 100px;
   text-align: center;
-}
+} */
 
 .btn-gold {
   background: var(--color-gold) !important;
@@ -344,7 +344,6 @@ input:focus {
 .form-field-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #ca8a04;
   margin-bottom: 0.25rem;
   display: block;
 }
@@ -569,7 +568,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin-top: 2rem;
 }
 
-.btn-primary {
+/* .btn-primary {
   background: linear-gradient(135deg, #fcd34d, #fbbf24, #f59e0b);
   color: #1f2937;
   border: none;
@@ -579,11 +578,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.55);
   height: 52px;
-}
+} */
 
-.btn-primary:hover:not(:disabled) {
+/* .btn-primary:hover:not(:disabled) {
   box-shadow: 0 0 30px rgba(250, 204, 21, 0.8);
-}
+} */
 
 .btn-primary:disabled {
   opacity: 0.6;
@@ -1109,14 +1108,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 
-.primary-btn {
+/* .primary-btn {
   background: linear-gradient(135deg,#fcd34d,#f59e0b);
   border: none;
   border-radius: 0.75rem;
   padding: 0.75rem 1.5rem;
   font-weight: 600;
   cursor: pointer;
-}
+} */
 
 .ghost-btn {
   background: transparent;

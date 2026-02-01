@@ -1227,6 +1227,7 @@ select {
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
   padding: 1rem 1.25rem;
   transition: all 0.3s ease;
+    border-radius: var(--radius-md);
 }
 
 .btn-primary:hover {
@@ -1236,9 +1237,11 @@ select {
 }
 
 .btn-secondary {
-  background: var(--color-white);
-  color: var(--color-indigo);
-  border: 2px solid var(--color-indigo);
+  background: var(--color-cream);
+  color: var(--color-gray-700);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {

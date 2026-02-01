@@ -2052,8 +2052,6 @@ background: #fffdf6;
 }
 
 .planet-empty-title {
-  font-size: 1rem;
-  font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
@@ -2072,4 +2070,14 @@ background: #fffdf6;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+  height: 40px;
+}
+
+svg ellipse {
+  animation: drift 18s linear infinite;
+}
+
+@keyframes drift {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 90; }
 }

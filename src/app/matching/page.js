@@ -1835,6 +1835,104 @@ export default function MatchingPage() {
     };
   };
 
+  const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+  /* ---------- ACCORDION SECTION ---------- */
+  const Section = ({ title, content, children }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div
+        style={{
+          marginBottom: "1.25rem",
+          border: "1px solid rgba(212, 175, 55, 0.25)",
+          borderRadius: "1rem",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+          overflow: "hidden",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {/* HEADER */}
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            width: "100%",
+            textAlign: "left",
+            padding: "1rem 1.25rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "'Georgia','Times New Roman',serif",
+              fontSize: "20px",
+              fontWeight: 500,
+              color: "#1f2937",
+              margin: 0,
+            }}
+          >
+            {title}
+          </h2>
+
+          <span
+            style={{
+              fontSize: "1.25rem",
+              color: "#b45309",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform 0.25s ease",
+            }}
+          >
+            +
+          </span>
+        </button>
+
+        {/* CONTENT */}
+        {open && (
+          <div
+            style={{
+              padding: "0 1.25rem 1.25rem",
+              animation: "fadeIn 0.3s ease",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.7,
+                marginBottom: "0.75rem",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {children}
+            </p>
+
+            <ul
+              style={{
+                paddingLeft: "1.25rem",
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.8,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {content.map((item, i) => (
+                <li key={i}>✔ {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
@@ -1882,42 +1980,54 @@ export default function MatchingPage() {
 
         <div className="matching-page">
           <form onSubmit={onSubmit} className="match-form">
-      {/* Header */}
-      <header
-        className="header"
-        style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
-      >
-        <IoHeartCircle
-          className="headerIcon"
-          style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
-        />
-        <h1 className="title" style={{ fontSize: "2.5rem", fontWeight: 700 }}>
-          {t.matching.title}
-        </h1>
-        <p
-          className="subtitle"
-          style={{ fontSize: "1rem", color: "#6b7280", marginTop: "0.5rem" }}
-        >
-          {t.matching.subtitle}
-        </p>
-        {/* Trust line */}
-        <div className="trust-line">
-          <span className="trust-line-item">
-            <span>🔒</span>
-            <span>Private</span>
-          </span>
-          <span className="trust-line-separator">•</span>
-          <span className="trust-line-item">
-            <span>📍</span>
-            <span>Accurate location</span>
-          </span>
-          <span className="trust-line-separator">•</span>
-          <span className="trust-line-item">
-            <span>💾</span>
-            <span>Saved profiles</span>
-          </span>
-        </div>
-      </header>
+            {/* Header */}
+            <header
+              className="header"
+              style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+            >
+              <IoHeartCircle
+                className="headerIcon"
+                style={{
+                  color: "#ffff",
+                  padding: "0.4rem",
+                  width: 36,
+                  height: 36,
+                }}
+              />
+              <h1
+                className="title"
+                style={{ fontSize: "2.5rem", fontWeight: 700 }}
+              >
+                {t.matching.title}
+              </h1>
+              <p
+                className="subtitle"
+                style={{
+                  fontSize: "1rem",
+                  color: "#6b7280",
+                  marginTop: "0.5rem",
+                }}
+              >
+                {t.matching.subtitle}
+              </p>
+              {/* Trust line */}
+              <div className="trust-line">
+                <span className="trust-line-item">
+                  <span>🔒</span>
+                  <span>Private</span>
+                </span>
+                <span className="trust-line-separator">•</span>
+                <span className="trust-line-item">
+                  <span>📍</span>
+                  <span>Accurate location</span>
+                </span>
+                <span className="trust-line-separator">•</span>
+                <span className="trust-line-item">
+                  <span>💾</span>
+                  <span>Saved profiles</span>
+                </span>
+              </div>
+            </header>
 
             {/* =====================
       CARDS
@@ -1952,7 +2062,7 @@ export default function MatchingPage() {
                       )}
                       required
                     />
-                <p className="form-field-helper">Only letters and spaces</p>
+                    <p className="form-field-helper">Only letters and spaces</p>
                   </div>
 
                   {/* Date of Birth */}
@@ -1989,8 +2099,7 @@ export default function MatchingPage() {
                         <Calendar />
                       </button>
                     </div>
-                <p className="form-field-helper">Format: DD-MM-YYYY</p>
-
+                    <p className="form-field-helper">Format: DD-MM-YYYY</p>
                   </div>
 
                   {/* Time of Birth */}
@@ -2028,8 +2137,7 @@ export default function MatchingPage() {
                         <Clock />
                       </button>
                     </div>
-                <p className="form-field-helper">24-hour format</p>
-
+                    <p className="form-field-helper">24-hour format</p>
                   </div>
 
                   {/* Place */}
@@ -2121,8 +2229,7 @@ export default function MatchingPage() {
                       )}
                       required
                     />
-                <p className="form-field-helper">Only letters and spaces</p>
-
+                    <p className="form-field-helper">Only letters and spaces</p>
                   </div>
 
                   {/* Date of Birth */}
@@ -2159,8 +2266,7 @@ export default function MatchingPage() {
                         <Calendar />
                       </button>
                     </div>
-                <p className="form-field-helper">Format: DD-MM-YYYY</p>
-
+                    <p className="form-field-helper">Format: DD-MM-YYYY</p>
                   </div>
 
                   {/* Time of Birth */}
@@ -2198,8 +2304,7 @@ export default function MatchingPage() {
                         <Clock />
                       </button>
                     </div>
-                <p className="form-field-helper">24-hour format</p>
-
+                    <p className="form-field-helper">24-hour format</p>
                   </div>
 
                   {/* Place */}
@@ -2268,7 +2373,7 @@ export default function MatchingPage() {
             <footer className="form-actions">
               <button
                 type="submit"
-                className="primary-btn"
+                className="btn-primary"
                 disabled={submitting || fFilled < 3 || mFilled < 3}
               >
                 {submitting ? "Calculating…" : "Check Compatibility"}
@@ -2298,10 +2403,7 @@ export default function MatchingPage() {
                   textAlign: "center",
                 }}
               >
-                <Sparkles
-                  className="w-5 h-5 text-gray-800"
-                 
-                />
+                <Sparkles className="w-5 h-5 text-gray-800" />
                 Saved Profiles
               </h3>
 
@@ -3011,14 +3113,14 @@ export default function MatchingPage() {
               </button>
               <div className="flex gap-3">
                 <button
-                  className="btn btn-primary"
+                  className="btn-primary"
                   onClick={handleDownloadPDF}
                   disabled={!result}
                 >
                   Download PDF
                 </button>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-secondary"
                   onClick={handleShare}
                   disabled={!result}
                 >
@@ -3029,70 +3131,228 @@ export default function MatchingPage() {
           </div>
         )}
 
-        {/* Explanation Card - Below form and history */}
+        {/* MATCHING EXPLANATION – ACCORDION CARD */}
         <div
           style={{
-            marginTop: "-3rem",
+            marginTop: "2rem",
             width: "100%",
-            padding: "0 1rem",
-            margin: "0 auto",
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
           <div
-            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+            className="card shadow-xl border"
             style={{
-              background:
-                "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-              borderColor: "rgba(212, 175, 55, 0.3)",
+              background: "#ffffff",
+              borderColor: "#eaeaea",
               maxWidth: "100%",
+              boxShadow:
+                "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
             }}
           >
+            {/* HERO */}
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "1.5rem",
-                borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-                marginBottom: "1.5rem",
+                borderBottom: "2px solid rgba(212,175,55,0.25)",
+                paddingBottom: "1.75rem",
+                marginBottom: "1.75rem",
+                textAlign: "center",
               }}
             >
-              <h2
+              <h1
                 style={{
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  fontSize: "1.5rem",
-                  fontWeight: 700,
-                  color: "#1f2937",
-                  margin: 0,
+                  fontFamily: "'Georgia','Times New Roman',serif",
+                  fontSize: "32px",
+                  fontWeight: 500,
+                  color: "#111827",
+                  marginBottom: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
                 }}
               >
-                Understanding Compatibility Matching
-              </h2>
-            </div>
-            <div style={{ padding: 0 }}>
-              <p
-                style={{
-                  fontSize: "0.875rem",
-                  color: "#374151",
-                  fontStyle: "normal",
-                  marginBottom: 0,
-                  fontFamily: "'Inter', sans-serif",
-                  lineHeight: 1.6,
-                }}
-              >
-                The <strong>Ashtakoot System</strong> (8-Point Matching)
-                evaluates compatibility across eight key dimensions:{" "}
-                <strong>Varna</strong> (spiritual compatibility),{" "}
-                <strong>Vashya</strong> (mutual attraction),{" "}
-                <strong>Tara</strong> (birth star compatibility),{" "}
-                <strong>Yoni</strong> (nature compatibility),{" "}
-                <strong>Graha Maitri</strong> (planetary friendship),{" "}
-                <strong>Gana</strong> (temperament), <strong>Bhakoot</strong>{" "}
-                (emotional compatibility), and <strong>Nadi</strong> (health
-                compatibility). Each dimension contributes points to the total
-                compatibility score, with higher scores indicating better
-                alignment between partners.
+                AI-Powered Kundli Matching Explained
+              </h1>
+
+              <p className="text-sm mt-1 text-slate-600 max-w-3xl mx-auto">
+                Understand how Ashtakoot scores, planetary strengths, dashas,
+                and doshas are analyzed to evaluate marriage compatibility —
+                beyond basic guna milan.
               </p>
+
+              <div className="flex justify-center mt-4 gap-3">
+                <button className="btn-primary" onClick={scrollToTop}>Check Compatibility</button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={onTalkToAstrologer}
+                  style={{ borderRadius: "12px" }}
+                >
+                  Talk to an Astrologer
+                </button>
+              </div>
+            </div>
+
+            {/* ACCORDIONS GO HERE */}
+            <div style={{ padding: 0 }}>
+              <Section
+                title="What Is Kundli Matching & Why It Matters for Marriage"
+                content={[
+                  "Evaluates long-term marriage compatibility",
+                  "Identifies emotional, mental, and physical harmony",
+                  "Highlights potential conflict areas early",
+                  "Helps in informed marriage decisions",
+                ]}
+              >
+                Kundli matching is a Vedic astrology method used to assess
+                marriage compatibility between two individuals. It compares
+                planetary positions, Moon signs, and Nakshatras of both partners
+                to understand how their energies interact over time. Rather than
+                predicting fixed outcomes, kundli matching highlights strengths,
+                challenges, and adjustment areas so couples can make informed,
+                realistic, and prepared decisions about marriage.
+              </Section>
+
+              <Section
+                title="What Ashtakoot (Guna Milan) Actually Measures"
+                content={[
+                  "Mental compatibility and communication",
+                  "Physical and sexual harmony",
+                  "Health and genetic indicators",
+                  "Temperament and emotional balance",
+                ]}
+              >
+                Ashtakoot matching evaluates compatibility using eight factors
+                derived from Moon signs and Nakshatras. Each koot represents a
+                specific area of married life, such as emotional bonding,
+                attraction, health, and temperament. While the total score
+                provides an overview, understanding individual koot results is
+                far more important than focusing only on the final number.
+              </Section>
+
+              <Section
+                title="Why Guna Milan Alone Is Not Enough"
+                content={[
+                  "Does not analyze planetary strength",
+                  "Ignores dasha timing",
+                  "Misses dosha cancellations",
+                  "Cannot predict future phases",
+                ]}
+              >
+                Guna milan is a basic compatibility filter, not a complete
+                marriage analysis. Many successful marriages have low guna
+                scores, while high scores can still face difficulties if
+                planetary conditions are unfavorable. That’s why serious
+                marriage analysis must include planetary aspects, dashas, and
+                dosha evaluation alongside Ashtakoot scoring.
+              </Section>
+
+              <Section
+                title="Planetary Compatibility Between Partners"
+                content={[
+                  "Venus and Mars harmony",
+                  "Moon sign emotional alignment",
+                  "Jupiter and Saturn influence on stability",
+                  "Mutual planetary aspects",
+                ]}
+              >
+                Planetary compatibility examines how key planets like Venus,
+                Mars, Moon, Jupiter, and Saturn interact between both charts.
+                These interactions directly influence attraction, emotional
+                bonding, patience, and long-term stability. Favorable planetary
+                aspects can compensate for low guna scores, while challenging
+                interactions may require conscious effort and remedies.
+              </Section>
+
+              <Section
+                title="Manglik Dosha & Other Important Doshas"
+                content={[
+                  "Manglik (Mangal) dosha evaluation",
+                  "Nadi and Bhakoot dosha analysis",
+                  "Dosha cancellation rules",
+                  "Practical impact on married life",
+                ]}
+              >
+                Doshas indicate areas where planetary energies may cause
+                imbalance. Manglik dosha relates to Mars placement and its
+                impact on harmony and conflict. Nadi and Bhakoot doshas relate
+                to health, emotional bonding, and longevity. Not all doshas are
+                harmful. Proper analysis checks cancellations, planetary
+                strength, and overall chart balance before drawing conclusions.
+              </Section>
+
+              <Section
+                title="Dasha & Timing Compatibility After Marriage"
+                content={[
+                  "Marriage phase stability",
+                  "Career and financial growth periods",
+                  "Stress and adjustment phases",
+                  "Long-term life progression",
+                ]}
+              >
+                Dashas determine *when* certain planetary influences become
+                active. Even a compatible match can feel challenging if both
+                partners enter difficult dashas simultaneously. Dasha analysis
+                helps identify supportive periods for marriage, relocation,
+                career growth, and family planning — making timing as important
+                as matching.
+              </Section>
+
+              <Section
+                title="AI-Based Kundli Matching vs Manual Analysis"
+                content={[
+                  "Accurate astronomical calculations",
+                  "Consistent pattern analysis",
+                  "Cross-checking multiple compatibility layers",
+                  "Astrologer validation where required",
+                ]}
+              >
+                AI enhances kundli matching by analyzing large combinations
+                quickly and consistently. It calculates planetary positions,
+                dashas, and compatibility layers with precision. However,
+                interpretation still follows classical Vedic rules, and
+                astrologers provide human judgment, context, and remedies where
+                needed.
+              </Section>
+
+              <Section
+                title="What Your Compatibility Score Really Means"
+                content={[
+                  "Overall harmony indicator",
+                  "Not a guarantee or rejection",
+                  "Requires contextual interpretation",
+                  "Helps set realistic expectations",
+                ]}
+              >
+                A compatibility score summarizes multiple factors into a single
+                number, but it should never be viewed in isolation. The real
+                value lies in understanding *why* the score is high or low and
+                which areas need attention. Marriage success depends on
+                awareness, communication, and preparedness — not just numbers.
+              </Section>
+
+              <Section
+                title="Can Remedies Improve Marriage Compatibility?"
+                content={[
+                  "Planetary strengthening remedies",
+                  "Behavioral and lifestyle guidance",
+                  "Timing-based precautions",
+                  "Spiritual and practical balance",
+                ]}
+              >
+                Remedies aim to balance planetary influences, not override
+                destiny. They may include lifestyle adjustments, rituals,
+                gemstones, or timing guidance. Remedies work best when combined
+                with understanding, effort, and realistic expectations from both
+                partners.
+              </Section>
+            </div>
+            <div className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+             Kundli matching does not decide your future. It provides clarity, awareness,
+  and preparedness so you can make thoughtful decisions.
+
+  Astrology supports conscious choices — it does not replace responsibility,
+  communication, or mutual respect in marriage.
             </div>
           </div>
         </div>

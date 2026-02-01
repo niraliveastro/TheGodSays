@@ -707,6 +707,100 @@ export default function CalendarPage() {
     setViewDate(d);
   };
 
+        /* ---------- ACCORDION SECTION ---------- */
+      const Section = ({ title, content, children }) => {
+        const [open, setOpen] = useState(false);
+    
+        return (
+          <div
+            style={{
+              marginBottom: "1.25rem",
+              border: "1px solid rgba(212, 175, 55, 0.25)",
+              borderRadius: "1rem",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+              overflow: "hidden",
+              transition: "all 0.3s ease",
+            }}
+          >
+            {/* HEADER */}
+            <button
+              onClick={() => setOpen(!open)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Georgia','Times New Roman',serif",
+                  fontSize: "20px",
+                  fontWeight: 500,
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                {title}
+              </h2>
+    
+              <span
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#b45309",
+                  transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              >
+                +
+              </span>
+            </button>
+    
+            {/* CONTENT */}
+            {open && (
+              <div
+                style={{
+                  padding: "0 1.25rem 1.25rem",
+                  animation: "fadeIn 0.3s ease",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.7,
+                    marginBottom: "0.75rem",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {children}
+                </p>
+    
+                <ul
+                  style={{
+                    paddingLeft: "1.25rem",
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.8,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {content.map((item, i) => (
+                    <li key={i}>✔ {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      };  
+
   return (
     <>
       <style jsx>{`
@@ -782,7 +876,7 @@ export default function CalendarPage() {
 
       <div className="pageContainer">
         <div className="innerWrapper">
-          <div className="calendarWrapper">
+          <div className="calendarWrapper mb-16">
             <div className="navContainer">
               <button
                 className="navButton"
@@ -811,7 +905,119 @@ export default function CalendarPage() {
               tithiMap={tithiMap}
             />
           </div>
+
+                  <div className="card shadow-xl border ">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      Panchang Calendar – Daily Hindu Panchang with Astrology Insights
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      The Panchang guides daily activities, rituals, and decisions using lunar
+      and solar movements.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>View Today’s Panchang</button>
+    </div>
+  </div>
+<Section
+  title="What Is Panchang"
+  content={[
+    "Tithi (lunar day)",
+    "Vara (weekday)",
+    "Nakshatra (lunar constellation)",
+    "Yoga",
+    "Karana",
+  ]}
+>
+  Panchang is a traditional Hindu calendar system based on the combined movement
+  of the Moon, Sun, and planets. It is used to understand the quality of time on
+  a given day and to decide when certain activities are more supportive or less
+  favorable.
+
+  Each of the five elements of Panchang reflects a different aspect of time.
+  Together, they help explain the natural rhythm of the day, guiding rituals,
+  decisions, and important actions with awareness rather than blind belief.
+</Section>
+
+<Section
+  title="What Our Panchang Calendar Offers"
+  content={[
+    "Complete daily Panchang information",
+    "Festivals, vrat, and important observances",
+    "Muhurat and timing guidance",
+    "Planetary positions for the day",
+    "Clear and simple explanations",
+  ]}
+>
+  Our Panchang calendar is designed for everyday use. Instead of overwhelming
+  users with technical terminology, it presents essential information in a
+  structured and easy-to-understand format.
+
+  Whether you are checking today’s tithi, planning a ritual, or simply staying
+  aware of planetary movements, the focus remains on clarity and usefulness.
+</Section>
+
+<Section
+  title="Panchang + Astrology for Better Decisions"
+  content={[
+    "Panchang aligned with daily planetary movements",
+    "Checking relevance with your kundli",
+    "Guidance focused on timing and preparedness",
+  ]}
+>
+  Panchang shows the nature of time, while astrology shows how that time interacts
+  with you personally. When used together, they provide deeper insight into when
+  certain actions may feel smoother or more challenging.
+
+  By aligning Panchang details with your birth chart, you gain better awareness
+  of whether a particular day or period supports your intentions.
+</Section>
+
+<Section
+  title="Who Should Use This Panchang"
+  content={[
+    "Individuals planning important daily activities",
+    "Families observing rituals and festivals",
+    "Students learning astrology or Panchang basics",
+    "NRIs seeking reliable Indian Panchang access",
+  ]}
+>
+  This Panchang is suitable for both regular reference and long-term planning.
+  It supports traditional practices while remaining accessible to modern users,
+  regardless of location or level of astrological knowledge.
+</Section>
+
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Panchang provides traditional guidance and should not replace professional
+    advice.
+  </p>
+</div>
         </div>
+
+
+
       </div>
     </>
   );

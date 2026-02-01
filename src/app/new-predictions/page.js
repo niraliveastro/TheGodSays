@@ -28,6 +28,7 @@ import {
   trackActionAbandon,
   trackPageView,
 } from "@/lib/analytics";
+import { useRouter } from "next/navigation";
 import { PageLoading } from "@/components/LoadingStates";
 import HighConvertingInsights from "./high-converting-page";
 
@@ -162,6 +163,7 @@ export default function PredictionsPage() {
   // Form data hash for chat conversation management
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
+  const router = useRouter();
 
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
@@ -228,9 +230,6 @@ export default function PredictionsPage() {
     router.push("/talk-to-astrologer");
   };
 
-  const handleAddFamily = () => {
-    router.push("/profile/family");
-  };
 
   const getHistory = () => {
     try {
@@ -1801,7 +1800,99 @@ export default function PredictionsPage() {
     return active?.lord || null;
   }, [mahaRows]);
 
+  /* ---------- ACCORDION SECTION ---------- */
+  const Section = ({ title, content, children }) => {
+    const [open, setOpen] = useState(false);
 
+    return (
+      <div
+        style={{
+          marginBottom: "1.25rem",
+          border: "1px solid rgba(212, 175, 55, 0.25)",
+          borderRadius: "1rem",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+          overflow: "hidden",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {/* HEADER */}
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            width: "100%",
+            textAlign: "left",
+            padding: "1rem 1.25rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "'Georgia','Times New Roman',serif",
+              fontSize: "20px",
+              fontWeight: 500,
+              color: "#1f2937",
+              margin: 0,
+            }}
+          >
+            {title}
+          </h2>
+
+          <span
+            style={{
+              fontSize: "1.25rem",
+              color: "#b45309",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform 0.25s ease",
+            }}
+          >
+            +
+          </span>
+        </button>
+
+        {/* CONTENT */}
+        {open && (
+          <div
+            style={{
+              padding: "0 1.25rem 1.25rem",
+              animation: "fadeIn 0.3s ease",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.7,
+                marginBottom: "0.75rem",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {children}
+            </p>
+
+            <ul
+              style={{
+                paddingLeft: "1.25rem",
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.8,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {content.map((item, i) => (
+                <li key={i}>✔ {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
@@ -2092,12 +2183,8 @@ export default function PredictionsPage() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="btn btn-primary btn-gold w-full h-[52px]"
-                      style={{
-                        background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-                      }}
+                      className="btn-primary w-full h-[52px]"
+                     
                     >
                       {submitting ? (
                         <>
@@ -2526,7 +2613,6 @@ export default function PredictionsPage() {
 
             {challengeAnalysis?.hasChallenges && (
               <div className="mt-8 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
-
                 {/* Decorative Glow */}
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute -top-24 -left-24 w-64 h-64 bg-amber-200/40 rounded-full blur-3xl" />
@@ -2535,10 +2621,9 @@ export default function PredictionsPage() {
 
                 {/* Content Grid */}
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                  
                   {/* LEFT: Text Content */}
                   <div className="max-w-2xl">
-                                    <div
+                    <div
                       className="results-header"
                       // style={{ marginBottom: "1rem" }}
                     >
@@ -2958,7 +3043,7 @@ export default function PredictionsPage() {
         </Modal>
       </div>
 
-      {/* Explanation Card - Below form and history */}
+      {/* PREDICTION EXPLANATION – ACCORDION CARD */}
       <div
         style={{
           marginTop: "2rem",
@@ -2969,7 +3054,7 @@ export default function PredictionsPage() {
         }}
       >
         <div
-          className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+          className="card shadow-xl border"
           style={{
             background: "#ffffff",
             borderColor: "#eaeaea",
@@ -2978,52 +3063,157 @@ export default function PredictionsPage() {
               "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: "1.5rem",
-              borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-              marginBottom: "1.5rem",
-            }}
+ {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"center",
+        gap:"0.5rem",
+      }}
+    >
+      AI-Powered Vedic Astrology Predictions Explained
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      Understand how we generate your personalized astrological insights
+      using traditional Vedic principles enhanced by AI analysis.
+    </p>
+
+    <div className="flex justify-center mt-4 gap-4">
+      <button className="btn-primary" onClick={handleTalkToAstrologer}>
+        Talk to an Astrologer
+      </button>
+      <button className="btn btn-secondary " onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}> 
+        Get Your Predictions
+      </button>     
+    </div>
+  </div>
+
+          {/* ACCORDIONS GO HERE */}
+          <div style={{ padding: 0 }}></div>
+          {/* EXPLANATION ACCORDIONS */}
+          <Section
+            title="How Your Birth Chart Is Calculated"
+            content={[
+              "Exact planetary longitudes at birth",
+              "House placements using Vedic systems",
+              "Ayanamsha and observational corrections",
+              "Timezone and location-based accuracy",
+            ]}
           >
-            <h2
-              style={{
-                fontFamily: "'Georgia', 'Times New Roman', serif",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "#1f2937",
-                margin: 0,
-              }}
-            >
-              Understanding Your Predictions
-            </h2>
-          </div>
-          <div style={{ padding: 0 }}>
-            <p
-              style={{
-                fontSize: "0.875rem",
-                color: "#374151",
-                fontStyle: "normal",
-                marginBottom: 0,
-                fontFamily: "'Inter', sans-serif",
-                lineHeight: 1.6,
-              }}
-            >
-              Your birth chart is calculated using{" "}
-              <strong>Vedic Astrology</strong> principles based on your exact
-              birth details. The system generates{" "}
-              <strong>Planetary Positions</strong> showing where each planet was
-              at your time of birth, <strong>Shadbala Analysis</strong>{" "}
-              measuring planetary strength and influence,{" "}
-              <strong>Dasha Periods</strong> (Vimsottari system) indicating life
-              phases and timing, and{" "}
-              <strong>Expert Astrological Insights</strong> providing
-              personalized predictions based on your complete astrological
-              profile, guided by traditional Vedic wisdom and modern
-              computational precision.
-            </p>
+            Your birth chart is calculated using precise astronomical data based
+            on your
+            <strong> date, time, and place of birth</strong>. Even a difference
+            of a few minutes or kilometers can shift planetary house placements,
+            which is why accurate location and timezone detection is critical.
+            We use Vedic astrology calculation methods with modern astronomical
+            precision to determine the exact positions of all planets,
+            ascendant, and house cusps at the moment of your birth.
+          </Section>
+
+          <Section
+            title="What Planetary Positions Reveal"
+            content={[
+              "Where life energy is focused",
+              "How different life areas interact",
+              "Natural tendencies and behavioral patterns",
+              "Strengths, weaknesses, and karmic themes",
+            ]}
+          >
+            Planetary placements show <strong>where</strong> and{" "}
+            <strong>how</strong>
+            different energies operate in your life. The sign shows the nature
+            of the energy, the house shows the life area affected, and aspects
+            reveal how planets influence each other. Together, these placements
+            explain why certain life themes repeat, why some areas feel
+            effortless, and why others require conscious effort.
+          </Section>
+
+          <Section
+            title="Understanding Shadbala (Planetary Strength)"
+            content={[
+              "Physical and positional strength of planets",
+              "Ability to give results",
+              "Why some planets dominate outcomes",
+              "Why weak planets cause delays",
+            ]}
+          >
+            Shadbala measures how capable each planet is to deliver results. A
+            planet may be well placed but weak in strength, or strong but placed
+            in a challenging house. Strong planets produce clearer, more
+            consistent results. Weak planets often indicate delays, internal
+            struggles, or the need for remedies and conscious effort.
+          </Section>
+
+          <Section
+            title="What Dasha Periods Tell You About Timing"
+            content={[
+              "Major life phases and transitions",
+              "Why events happen at specific times",
+              "Why effort succeeds in some periods",
+              "Why patience is required in others",
+            ]}
+          >
+            Dasha systems reveal <strong>when</strong> planetary energies become
+            active. While your birth chart shows potential, dashas activate that
+            potential over time. This is why two people with similar charts
+            experience life very differently. Dashas explain why opportunities
+            open in certain years and close in others.
+          </Section>
+
+          <Section
+            title="Why Current Dasha Matters Most"
+            content={[
+              "Defines present life focus",
+              "Explains emotional and mental state",
+              "Shows immediate challenges and support",
+              "Guides short and mid-term decisions",
+            ]}
+          >
+            Your current Maha and Antar Dasha describe the dominant planetary
+            influence shaping your present experiences. Understanding this phase
+            allows you to work *with* time instead of against it. Awareness of
+            your running dasha helps reduce confusion, improve decision timing,
+            and manage expectations realistically.
+          </Section>
+
+          <Section
+            title="AI Insights vs Traditional Interpretation"
+            content={[
+              "Pattern recognition across chart layers",
+              "Cross-checking planetary data",
+              "Consistency validation",
+              "Human astrologer interpretation support",
+            ]}
+          >
+            AI helps analyze large combinations quickly and consistently,
+            identifying patterns that may be overlooked manually. However,
+            interpretation still follows traditional Vedic astrology principles.
+            AI enhances accuracy and speed, while astrologers add contextual
+            judgment, remedies, and practical guidance.
+          </Section>
+
+          <div
+            className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl"
+          >
+            Astrology highlights tendencies,
+            timings, and probabilities so you can make informed decisions. These
+            predictions help you prepare mentally and practically for upcoming
+            phases.
           </div>
         </div>
       </div>

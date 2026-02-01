@@ -73,7 +73,7 @@ export default function Home() {
 
   // Date and location state
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [userLocation, setUserLocation] = useState(null);
   const [pendingLocation, setPendingLocation] = useState(null);
@@ -304,7 +304,7 @@ export default function Home() {
           ];
           setOnlineAstrologers(fallback.filter((a) => a.online).slice(0, 9));
           setFeaturedAstrologers(
-            fallback.filter((a) => a.isFeatured).slice(0, 9)
+            fallback.filter((a) => a.isFeatured).slice(0, 9),
           );
         }
       } catch (e) {
@@ -360,7 +360,7 @@ export default function Home() {
           today.getDate(),
           parseInt(hours),
           parseInt(minutes),
-          parseInt(seconds)
+          parseInt(seconds),
         );
       }
 
@@ -389,7 +389,7 @@ export default function Home() {
         today.getDate(),
         parseInt(hours),
         parseInt(minutes),
-        0
+        0,
       );
 
       return date.toLocaleTimeString("en-US", {
@@ -480,7 +480,7 @@ export default function Home() {
       const cacheKey = `${date
         .toISOString()
         .slice(0, 10)}|${userLocation.latitude.toFixed(
-        3
+        3,
       )},${userLocation.longitude.toFixed(3)}|${tzNow}`;
 
       // 1) Check in-memory cache
@@ -546,7 +546,7 @@ export default function Home() {
           astrologyAPI.getSunMoonData(
             userLocation.latitude,
             userLocation.longitude,
-            date
+            date,
           ),
           astrologyAPI.getAuspiciousData(auspiciousPayload),
         ]);
@@ -576,7 +576,7 @@ export default function Home() {
       ].some(
         (result) =>
           result.status === "rejected" &&
-          result.reason?.message?.includes("403")
+          result.reason?.message?.includes("403"),
       );
 
       if (hasAuthError) {
@@ -633,10 +633,10 @@ export default function Home() {
       if (panchangResults.results["yoga-durations"]) {
         try {
           const yogaData = JSON.parse(
-            JSON.parse(panchangResults.results["yoga-durations"].output)
+            JSON.parse(panchangResults.results["yoga-durations"].output),
           );
           const currentYoga = Object.values(yogaData).find(
-            (yoga) => yoga.yoga_left_percentage > 0
+            (yoga) => yoga.yoga_left_percentage > 0,
           );
           if (currentYoga) {
             updatedPanchangData.yoga = currentYoga.name;
@@ -650,10 +650,10 @@ export default function Home() {
       if (panchangResults.results["karana-timings"]) {
         try {
           const karanaData = JSON.parse(
-            JSON.parse(panchangResults.results["karana-timings"].output)
+            JSON.parse(panchangResults.results["karana-timings"].output),
           );
           const currentKarana = Object.values(karanaData).find(
-            (karana) => karana.karana_left_percentage > 0
+            (karana) => karana.karana_left_percentage > 0,
           );
           if (currentKarana) {
             updatedPanchangData.karana = currentKarana.name;
@@ -679,7 +679,7 @@ export default function Home() {
           // Process Moonrise/Moonset
           if (astronomy.moonrise && astronomy.moonrise !== "-:-") {
             updatedPanchangData.moonrise = formatTimeFromHHMM(
-              astronomy.moonrise
+              astronomy.moonrise,
             );
           }
           if (astronomy.moonset && astronomy.moonset !== "-:-") {
@@ -828,13 +828,13 @@ export default function Home() {
       // Decide banner severity
       const hasAnyData = Boolean(
         updatedPanchangData.tithi !== mockPanchangData.tithi ||
-          updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
-          updatedPanchangData.yoga !== mockPanchangData.yoga ||
-          updatedPanchangData.karana !== mockPanchangData.karana ||
-          updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
-          updatedPanchangData.sunset !== mockPanchangData.sunset ||
-          updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
-          updatedPanchangData.moonset !== mockPanchangData.moonset
+        updatedPanchangData.nakshatra !== mockPanchangData.nakshatra ||
+        updatedPanchangData.yoga !== mockPanchangData.yoga ||
+        updatedPanchangData.karana !== mockPanchangData.karana ||
+        updatedPanchangData.sunrise !== mockPanchangData.sunrise ||
+        updatedPanchangData.sunset !== mockPanchangData.sunset ||
+        updatedPanchangData.moonrise !== mockPanchangData.moonrise ||
+        updatedPanchangData.moonset !== mockPanchangData.moonset,
       );
       const allFailed =
         panchangSettled.status === "rejected" &&
@@ -842,11 +842,11 @@ export default function Home() {
         auspiciousSettled.status === "rejected";
       if (allFailed) {
         setPanchangError(
-          "Failed to load real-time Panchang data. Using sample data."
+          "Failed to load real-time Panchang data. Using sample data.",
         );
       } else if (!hasAnyData) {
         setPanchangError(
-          "Real-time Panchang data could not be populated due to API limits. Using sample data."
+          "Real-time Panchang data could not be populated due to API limits. Using sample data.",
         );
       } else {
         // Show a softer note only if some endpoints failed
@@ -857,7 +857,7 @@ export default function Home() {
         ].filter((r) => r.status === "rejected").length;
         if (fails > 0) {
           setPanchangError(
-            "Some sections are limited due to API rate limits. Showing partial real-time data."
+            "Some sections are limited due to API rate limits. Showing partial real-time data.",
           );
         }
       }
@@ -888,7 +888,7 @@ export default function Home() {
           // Reverse geocode to get location name
           try {
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
             );
             const data = await response.json();
 
@@ -916,7 +916,7 @@ export default function Home() {
           alert("Unable to get your location. Please enter it manually.");
           setIsGettingLocation(false);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000 },
       );
     } catch (error) {
       console.error("Error:", error);
@@ -933,8 +933,8 @@ export default function Home() {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          query
-        )}&format=json&limit=5&addressdetails=1`
+          query,
+        )}&format=json&limit=5&addressdetails=1`,
       );
       const data = await response.json();
 
@@ -1083,7 +1083,7 @@ export default function Home() {
     try {
       const result = await astrologyAPI.getSingleCalculation(
         selectedOption.id,
-        payload
+        payload,
       );
       setAstrologyResult(result);
     } catch (error) {
@@ -1180,7 +1180,7 @@ export default function Home() {
 
       /* ---- Check astrologer status ---- */
       const statusRes = await fetch(
-        `/api/astrologer/status?astrologerId=${astrologerId}`
+        `/api/astrologer/status?astrologerId=${astrologerId}`,
       );
       const { success, status } = await statusRes.json();
 
@@ -1213,7 +1213,7 @@ export default function Home() {
       /* ---- Billing will start automatically when both participants join and audio track is published ---- */
       /* ---- This is handled by backend via LiveKit webhooks - no frontend action needed ---- */
       console.log(
-        "Call created. Billing will start automatically when call connects."
+        "Call created. Billing will start automatically when call connects.",
       );
 
       /* ---- Poll for call status ---- */
@@ -1246,7 +1246,7 @@ export default function Home() {
             router.push(
               type === "video"
                 ? `/talk-to-astrologer/room/${roomName}`
-                : `/talk-to-astrologer/voice/${roomName}`
+                : `/talk-to-astrologer/voice/${roomName}`,
             );
           } else {
             setConnectingCallType(null);
@@ -1310,8 +1310,101 @@ export default function Home() {
     { label: "Moonset", value: panchangData?.moonset || "Loading..." },
   ];
 
-  // HOME: we REMOVE the in-page Auspicious & Inauspicious timings section per your request.
-  // Instead, provide a short link/callout to full Panchang page where timings are shown.
+    /* ---------- ACCORDION SECTION ---------- */
+  const Section = ({ title, content, children }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div
+        style={{
+          marginBottom: "1.25rem",
+          border: "1px solid rgba(212, 175, 55, 0.25)",
+          borderRadius: "1rem",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+          overflow: "hidden",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {/* HEADER */}
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            width: "100%",
+            textAlign: "left",
+            padding: "1rem 1.25rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "'Georgia','Times New Roman',serif",
+              fontSize: "20px",
+              fontWeight: 500,
+              color: "#1f2937",
+              margin: 0,
+            }}
+          >
+            {title}
+          </h2>
+
+          <span
+            style={{
+              fontSize: "1.25rem",
+              color: "#b45309",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform 0.25s ease",
+            }}
+          >
+            +
+          </span>
+        </button>
+
+        {/* CONTENT */}
+        {open && (
+          <div
+            style={{
+              padding: "0 1.25rem 1.25rem",
+              animation: "fadeIn 0.3s ease",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.7,
+                marginBottom: "0.75rem",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {children}
+            </p>
+
+            <ul
+              style={{
+                paddingLeft: "1.25rem",
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.8,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {content.map((item, i) => (
+                <li key={i}>✔ {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };  
+
+
 
   // Show form if option is selected
   if (selectedOption && !astrologyResult) {
@@ -1671,7 +1764,10 @@ export default function Home() {
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
           <section className="max-w-7xl mx-auto mt-16 px-4">
             <div className="text-center mb-10">
-              <h2 className="text-4xl mb-3 justify-center" style={{ fontFamily: "var(--font-heading)", color: '#000000' }}>
+              <h2
+                className="text-4xl mb-3 justify-center"
+                style={{ fontFamily: "var(--font-heading)", color: "#000000" }}
+              >
                 {t.services.sectionTitle}
               </h2>
               <p className="text-slate-600 text-lg">
@@ -1829,7 +1925,8 @@ export default function Home() {
                   <div className="quick-start-form-header">
                     <Star className="quick-start-star-icon" />
                     <h3 className="quick-start-form-title">
-                      <span className="quick-start-gold">Quick Start:</span> Get Your Free AI Reading
+                      <span className="quick-start-gold">Quick Start:</span> Get
+                      Your Free AI Reading
                     </h3>
                   </div>
                   <p className="quick-start-form-description">
@@ -1893,11 +1990,22 @@ export default function Home() {
                     {/* Gender and Place Row */}
                     <div className="quick-start-form-row">
                       <div className="quick-start-form-field">
-                        <label className="quick-start-form-label">{t.aiForm.gender}</label>
-                        <div className="quick-start-gender-segmented" role="radiogroup" aria-label="Gender selection">
+                        <label className="quick-start-form-label">
+                          {t.aiForm.gender}
+                        </label>
+                        <div
+                          className="quick-start-gender-segmented"
+                          role="radiogroup"
+                          aria-label="Gender selection"
+                        >
                           <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, gender: "Male" }))}
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                gender: "Male",
+                              }))
+                            }
                             className={`quick-start-gender-segment ${formData.gender === "Male" ? "active" : ""}`}
                             aria-pressed={formData.gender === "Male"}
                           >
@@ -1905,7 +2013,12 @@ export default function Home() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, gender: "Female" }))}
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                gender: "Female",
+                              }))
+                            }
                             className={`quick-start-gender-segment ${formData.gender === "Female" ? "active" : ""}`}
                             aria-pressed={formData.gender === "Female"}
                           >
@@ -1913,7 +2026,12 @@ export default function Home() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, gender: "Other" }))}
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                gender: "Other",
+                              }))
+                            }
                             className={`quick-start-gender-segment ${formData.gender === "Other" ? "active" : ""}`}
                             aria-pressed={formData.gender === "Other"}
                           >
@@ -1949,7 +2067,7 @@ export default function Home() {
                             onFocus={() => {
                               hasInteractedWithLocation.current = true;
                               setShowLocationSuggestions(
-                                locationSuggestions.length > 0
+                                locationSuggestions.length > 0,
                               );
                             }}
                             required
@@ -2060,7 +2178,11 @@ export default function Home() {
                 </div>
                 <h2
                   className="text-3xl md:text-4xl"
-                  style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 400,
+                    color: "#000000",
+                  }}
                 >
                   {t.astrologers.title}
                 </h2>
@@ -2154,366 +2276,374 @@ export default function Home() {
                 <p style={{ color: "#6b7280" }}>Loading astrologers...</p>
               </div>
             ) : (
-
-            <div className="astrologers-scroll-container"
-              style={{
-                overflowY: 'auto',
-                maxHeight: '660px'
-              }}>
               <div
-                className="astrologers-grid-scrollable"
-                role="list"
-                aria-label="Top astrologers list"
+                className="astrologers-scroll-container"
+                style={{
+                  overflowY: "auto",
+                  maxHeight: "660px",
+                }}
               >
-                {(onlineAstrologers.length > 0
-                  ? onlineAstrologers
-                  : featuredAstrologers
-                )
-                  .slice(0, 9)
-                  .map((ast) => (
-                    <div
-                      key={ast.id}
-                      className="card astrologer-card"
-                      role="listitem"
-                      style={{
-                        padding: "1.5rem",
-                        transition: "all 0.3s ease",
-                        cursor: "pointer",
-                        display: "flex",
-                        flexDirection: "column",
-                        position: "relative",
-                        textDecoration: "none",
-                        color: "inherit",
-                        background: "#ffffff",
-                        border: "1px solid rgba(212, 175, 55, 0.15)",
-                        borderRadius: "12px",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow =
-                          "0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow =
-                          "0 2px 8px rgba(0, 0, 0, 0.04)";
-                      }}
-                    >
-                      {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
+                <div
+                  className="astrologers-grid-scrollable"
+                  role="list"
+                  aria-label="Top astrologers list"
+                >
+                  {(onlineAstrologers.length > 0
+                    ? onlineAstrologers
+                    : featuredAstrologers
+                  )
+                    .slice(0, 9)
+                    .map((ast) => (
                       <div
+                        key={ast.id}
+                        className="card astrologer-card"
+                        role="listitem"
                         style={{
+                          padding: "1.5rem",
+                          transition: "all 0.3s ease",
+                          cursor: "pointer",
                           display: "flex",
-                          alignItems: "flex-start",
-                          justifyContent: "space-between",
-                          gap: "1rem",
-                          marginBottom: "1rem",
+                          flexDirection: "column",
                           position: "relative",
-                          zIndex: 20,
+                          textDecoration: "none",
+                          color: "inherit",
+                          background: "#ffffff",
+                          border: "1px solid rgba(212, 175, 55, 0.15)",
+                          borderRadius: "12px",
+                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-4px)";
+                          e.currentTarget.style.boxShadow =
+                            "0 12px 24px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow =
+                            "0 2px 8px rgba(0, 0, 0, 0.04)";
                         }}
                       >
-                        {/* Left Side: Avatar + Name + Spec + Experience */}
+                        {/* Top Section: Left (Avatar + Info) and Right (Rating + Buttons) */}
                         <div
                           style={{
                             display: "flex",
-                            gap: "0.75rem",
-                            flex: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          {/* Avatar + Status Indicator Dot */}
-                          <div style={{ position: "relative", flexShrink: 0 }}>
-                            <div
-                              style={{
-                                width: "4rem",
-                                height: "4rem",
-                                background:
-                                  "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                                borderRadius: "50%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "white",
-                                fontWeight: 700,
-                                fontSize: "1.125rem",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {ast.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </div>
-                            {/* Status Indicator Dot - properly aligned at avatar */}
-                            {(ast.online || ast.isOnline) && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  bottom: "2px",
-                                  right: "2px",
-                                  width: "0.875rem",
-                                  height: "0.875rem",
-                                  borderRadius: "50%",
-                                  border: "2.5px solid white",
-                                  background: "#10b981",
-                                  zIndex: 10,
-                                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
-                                }}
-                              />
-                            )}
-                          </div>
-
-                          {/* Name, Spec, Experience */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h3
-                              style={{
-                                fontSize: "1.125rem",
-                                fontWeight: 400,
-                                color: "#1f2937",
-                                margin: 0,
-                                marginBottom: "0.25rem",
-                                fontFamily: "var(--font-heading)",
-                                lineHeight: 1.3,
-                              }}
-                              title={ast.name}
-                            >
-                              {ast.name.split(' ').map(word => 
-                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                              ).join(' ')}
-                            </h3>
-                            <p
-                              style={{
-                                fontSize: "0.8125rem",
-                                fontWeight: 500,
-                                color: "var(--color-indigo)",
-                                margin: "0 0 0.125rem 0",
-                                fontFamily: "var(--font-body)",
-                              }}
-                              title={ast.specialization ?? "Astrology"}
-                            >
-                              {ast.specialization ?? "Astrology"}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "#6b7280",
-                                margin: "0",
-                                fontWeight: 400,
-                              }}
-                            >
-                              {ast.experience ?? "Experienced in astrology"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Right Side: Rating + Review Button + Price */}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: "0.5rem",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {/* Rating */}
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                              fontSize: "0.875rem",
-                              fontWeight: 600,
-                              color: "#1f2937",
-                            }}
-                          >
-                            <Star
-                              style={{
-                                width: "0.875rem",
-                                height: "0.875rem",
-                                fill: "#f59e0b",
-                                color: "#f59e0b",
-                              }}
-                            />
-                            <span>{ast.rating ?? 4.5}</span>
-                            <span
-                              style={{
-                                color: "#6b7280",
-                                fontWeight: 400,
-                                marginLeft: "0.125rem",
-                              }}
-                            >
-                              ({ast.reviews ?? 2})
-                            </span>
-                          </div>
-
-                          {/* Review Button */}
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleOpenReview(ast);
-                            }}
-                            style={{
-                              fontSize: "0.75rem",
-                              padding: "0.25rem 0.625rem",
-                              height: "auto",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "0.375rem",
-                              background: "white",
-                              color: "#374151",
-                              cursor: "pointer",
-                              fontWeight: 500,
-                            }}
-                          >
-                            Review
-                          </button>
-
-                          {/* Price - moved to where ONLINE was */}
-                          {ast.perMinuteCharge && (
-                            <div
-                              style={{
-                                fontSize: "0.9375rem",
-                                fontWeight: 700,
-                                color: "#059669",
-                              }}
-                            >
-                              ₹{ast.perMinuteCharge}/min
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Middle Section: Bio */}
-                      <p
-                        style={{
-                          fontSize: "0.875rem",
-                          fontFamily: "var(--font-body)",
-                          color: "#4b5563",
-                          marginBottom: "0.75rem",
-                          lineHeight: 1.5,
-                          position: "relative",
-                          zIndex: 20,
-                        }}
-                      >
-                        {ast.bio ??
-                          `Experienced astrologer providing guidance and insights.`}
-                      </p>
-
-                      {/* Languages */}
-                      {ast.languages?.length > 0 && (
-                        <div
-                          style={{
-                            marginBottom: "0.75rem",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: "1rem",
+                            marginBottom: "1rem",
                             position: "relative",
                             zIndex: 20,
                           }}
                         >
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              color: "#4b5563",
-                              marginBottom: "0.5rem",
-                            }}
-                          >
-                            Speaks:
-                          </p>
+                          {/* Left Side: Avatar + Name + Spec + Experience */}
                           <div
                             style={{
                               display: "flex",
-                              flexWrap: "wrap",
-                              gap: "0.375rem",
+                              gap: "0.75rem",
+                              flex: 1,
+                              minWidth: 0,
                             }}
                           >
-                            {ast.languages.map((l, i) => (
-                              <span
-                                key={l + i}
+                            {/* Avatar + Status Indicator Dot */}
+                            <div
+                              style={{ position: "relative", flexShrink: 0 }}
+                            >
+                              <div
                                 style={{
-                                  padding: "0.25rem 0.625rem",
-                                  background: "#E0E7FF",
-                                  color: "#4F46E5",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 500,
-                                  borderRadius: "9999px",
+                                  width: "4rem",
+                                  height: "4rem",
+                                  background:
+                                    "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "white",
+                                  fontWeight: 700,
+                                  fontSize: "1.125rem",
+                                  textTransform: "uppercase",
                                 }}
                               >
-                                {l}
+                                {ast.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </div>
+                              {/* Status Indicator Dot - properly aligned at avatar */}
+                              {(ast.online || ast.isOnline) && (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    bottom: "2px",
+                                    right: "2px",
+                                    width: "0.875rem",
+                                    height: "0.875rem",
+                                    borderRadius: "50%",
+                                    border: "2.5px solid white",
+                                    background: "#10b981",
+                                    zIndex: 10,
+                                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.2)",
+                                  }}
+                                />
+                              )}
+                            </div>
+
+                            {/* Name, Spec, Experience */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h3
+                                style={{
+                                  fontSize: "1.125rem",
+                                  fontWeight: 400,
+                                  color: "#1f2937",
+                                  margin: 0,
+                                  marginBottom: "0.25rem",
+                                  fontFamily: "var(--font-heading)",
+                                  lineHeight: 1.3,
+                                }}
+                                title={ast.name}
+                              >
+                                {ast.name
+                                  .split(" ")
+                                  .map(
+                                    (word) =>
+                                      word.charAt(0).toUpperCase() +
+                                      word.slice(1).toLowerCase(),
+                                  )
+                                  .join(" ")}
+                              </h3>
+                              <p
+                                style={{
+                                  fontSize: "0.8125rem",
+                                  fontWeight: 500,
+                                  color: "var(--color-indigo)",
+                                  margin: "0 0 0.125rem 0",
+                                  fontFamily: "var(--font-body)",
+                                }}
+                                title={ast.specialization ?? "Astrology"}
+                              >
+                                {ast.specialization ?? "Astrology"}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#6b7280",
+                                  margin: "0",
+                                  fontWeight: 400,
+                                }}
+                              >
+                                {ast.experience ?? "Experienced in astrology"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right Side: Rating + Review Button + Price */}
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: "0.5rem",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {/* Rating */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                fontSize: "0.875rem",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                              }}
+                            >
+                              <Star
+                                style={{
+                                  width: "0.875rem",
+                                  height: "0.875rem",
+                                  fill: "#f59e0b",
+                                  color: "#f59e0b",
+                                }}
+                              />
+                              <span>{ast.rating ?? 4.5}</span>
+                              <span
+                                style={{
+                                  color: "#6b7280",
+                                  fontWeight: 400,
+                                  marginLeft: "0.125rem",
+                                }}
+                              >
+                                ({ast.reviews ?? 2})
                               </span>
-                            ))}
+                            </div>
+
+                            {/* Review Button */}
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenReview(ast);
+                              }}
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.25rem 0.625rem",
+                                height: "auto",
+                                border: "1px solid #d1d5db",
+                                borderRadius: "0.375rem",
+                                background: "white",
+                                color: "#374151",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                            >
+                              Review
+                            </button>
+
+                            {/* Price - moved to where ONLINE was */}
+                            {ast.perMinuteCharge && (
+                              <div
+                                style={{
+                                  fontSize: "0.9375rem",
+                                  fontWeight: 700,
+                                  color: "#059669",
+                                }}
+                              >
+                                ₹{ast.perMinuteCharge}/min
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
 
-                      {/* Bottom Section: Connect Button */}
-                      <div
-                        style={{
-                          display: "flex",
-                          marginTop: "auto",
-                          position: "relative",
-                          zIndex: 30,
-                        }}
-                      >
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            fastNavigate(
-                              router,
-                              `/account/astrologer/${ast.id}`
-                            );
-                          }}
+                        {/* Middle Section: Bio */}
+                        <p
                           style={{
-                            width: "100%",
-                            height: "2.75rem",
-                            padding: "0 1.25rem",
-                            fontSize: "0.9375rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "0.5rem",
-                            fontWeight: 600,
-                            background: "white",
-                            border: "1px solid rgba(212, 175, 55, 0.4)",
-                            borderRadius: "0.5rem",
-                            color: "#D4AF37",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                          }}
-                          type="button"
-                          aria-label={`Connect with ${ast.name}`}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor =
-                              "rgba(212, 175, 55, 0.6)";
-                            e.currentTarget.style.boxShadow =
-                              "0 2px 8px rgba(212, 175, 55, 0.15)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor =
-                              "rgba(212, 175, 55, 0.4)";
-                            e.currentTarget.style.boxShadow = "none";
+                            fontSize: "0.875rem",
+                            fontFamily: "var(--font-body)",
+                            color: "#4b5563",
+                            marginBottom: "0.75rem",
+                            lineHeight: 1.5,
+                            position: "relative",
+                            zIndex: 20,
                           }}
                         >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                          {ast.bio ??
+                            `Experienced astrologer providing guidance and insights.`}
+                        </p>
+
+                        {/* Languages */}
+                        {ast.languages?.length > 0 && (
+                          <div
+                            style={{
+                              marginBottom: "0.75rem",
+                              position: "relative",
+                              zIndex: 20,
+                            }}
                           >
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                          </svg>
-                          Connect with {ast.name.split(" ")[0].toLowerCase()}
-                        </button>
+                            <p
+                              style={{
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                color: "#4b5563",
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              Speaks:
+                            </p>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "0.375rem",
+                              }}
+                            >
+                              {ast.languages.map((l, i) => (
+                                <span
+                                  key={l + i}
+                                  style={{
+                                    padding: "0.25rem 0.625rem",
+                                    background: "#E0E7FF",
+                                    color: "#4F46E5",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 500,
+                                    borderRadius: "9999px",
+                                  }}
+                                >
+                                  {l}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bottom Section: Connect Button */}
+                        <div
+                          style={{
+                            display: "flex",
+                            marginTop: "auto",
+                            position: "relative",
+                            zIndex: 30,
+                          }}
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              fastNavigate(
+                                router,
+                                `/account/astrologer/${ast.id}`,
+                              );
+                            }}
+                            style={{
+                              width: "100%",
+                              height: "2.75rem",
+                              padding: "0 1.25rem",
+                              fontSize: "0.9375rem",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "0.5rem",
+                              fontWeight: 600,
+                              background: "white",
+                              border: "1px solid rgba(212, 175, 55, 0.4)",
+                              borderRadius: "0.5rem",
+                              color: "#D4AF37",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                            }}
+                            type="button"
+                            aria-label={`Connect with ${ast.name}`}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor =
+                                "rgba(212, 175, 55, 0.6)";
+                              e.currentTarget.style.boxShadow =
+                                "0 2px 8px rgba(212, 175, 55, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor =
+                                "rgba(212, 175, 55, 0.4)";
+                              e.currentTarget.style.boxShadow = "none";
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                              <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            Connect with {ast.name.split(" ")[0].toLowerCase()}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
-            </div>
             )}
           </section>
 
@@ -2547,7 +2677,15 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 id="loyalty-title" className="text-4xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}>
+                  <h3
+                    id="loyalty-title"
+                    className="text-4xl"
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontWeight: 400,
+                      color: "#000000",
+                    }}
+                  >
                     {t.compatibility.title}
                   </h3>
                   <p
@@ -2668,11 +2806,19 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 id="panchang-title" className="text-4xl" style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}>
+                    <h3
+                      id="panchang-title"
+                      className="text-4xl"
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontWeight: 400,
+                        color: "#000000",
+                      }}
+                    >
                       {selectedDate === new Date().toISOString().split("T")[0]
                         ? t.panchang.title
                         : `${t.panchang.titleFor} ${new Date(
-                            selectedDate
+                            selectedDate,
                           ).toLocaleDateString("en-US", {
                             weekday: "long",
                             day: "numeric",
@@ -2687,16 +2833,16 @@ export default function Home() {
                       {t.panchang.description}
                     </p>
 
-{/* Date Selector */}
-<div
-  className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm 
+                    {/* Date Selector */}
+                    <div
+                      className={`mt-4 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-sm 
   bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 border-gold/30`}
->
-  <input
-    type="date"
-    value={selectedDate}
-    onChange={(e) => setSelectedDate(e.target.value)}
-    className="
+                    >
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="
       appearance-none 
       bg-transparent 
       border-none 
@@ -2707,12 +2853,11 @@ export default function Home() {
       text-gray-700 
       hover:text-gold
     "
-    style={{
-      colorScheme: "light",
-    }}
-  />
-</div>
-
+                        style={{
+                          colorScheme: "light",
+                        }}
+                      />
+                    </div>
 
                     <p
                       className="mt-3 text-xs text-slate-500"
@@ -2762,7 +2907,7 @@ export default function Home() {
           </section>
 
           {/* ASTROLOGY OPTIONS GRID */}
-          <section className="mt-12" id="astrology-options">
+          <section className="mt-12 mb-12" id="astrology-options">
             <div
               role="region"
               aria-labelledby="advanced-vedic-tools-title"
@@ -2790,7 +2935,11 @@ export default function Home() {
                     <h2
                       id="advanced-vedic-tools-title"
                       className="text-4xl"
-                      style={{ fontFamily: "var(--font-heading)", fontWeight: 400, color: '#000000' }}
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontWeight: 400,
+                        color: "#000000",
+                      }}
                     >
                       {t.tools.title}
                     </h2>
@@ -2819,67 +2968,199 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Explanation Card - At the end before footer */}
-          <section
-            className="card mt-12 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-              borderColor: "rgba(212, 175, 55, 0.3)",
-            }}
-          >
-            <div>
+          {/* NIRALIVE ASTRO – HOME SECTIONS */}
+          
+            <div
+              className="card shadow-xl border mt-16"
+              
+            >
+              {/* HERO SECTION */}
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingBottom: "1.5rem",
-                  borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-                  marginBottom: "1.5rem",
+                  borderBottom: "2px solid rgba(212,175,55,0.25)",
+                  paddingBottom: "1.75rem",
+                  marginBottom: "1.75rem",
+                  textAlign: "center",
                 }}
               >
-                <h2
+                <h1
                   style={{
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    fontSize: "1.5rem",
-                    fontWeight: 700,
-                    color: "#1f2937",
-                    margin: 0,
+                    fontFamily: "'Georgia','Times New Roman',serif",
+                    fontSize: "32px",
+                    fontWeight: 500,
+                    color: "#111827",
+                    marginBottom: "0.75rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
                   }}
                 >
-                  Understanding Vedic Astrology
-                </h2>
-              </div>
-              <div style={{ padding: 0 }}>
+                  Talk to Expert Astrologers & Get AI-Powered Kundli Insights
+                </h1>
+
                 <p
+                  className="text-sm mt-1 text-slate-600"
+                >
+                  Accurate astrology using{" "}
+                  <strong>AI + Vedic principles</strong>. Talk to verified
+                  astrologers, get advanced kundli matching, life predictions,
+                  and remedies — all in one place.
+                </p>
+
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <button className="btn btn-primary">
+                    Talk to an Astrologer Now
+                  </button>
+                  <button className="btn btn-secondary" style={{ borderRadius: "12px" }}>
+                    Check Kundli Matching (AI-Based)
+                  </button>
+                </div>
+
+                <div
                   style={{
-                    fontSize: "0.875rem",
-                    color: "#374151",
-                    fontStyle: "normal",
-                    marginBottom: 0,
-                    fontFamily: "'Inter', sans-serif",
-                    lineHeight: 1.6,
+                    marginTop: "1.25rem",
+                    display: "flex",
+                    justifyContent: "center",
+                    flexWrap: "wrap",
+                    gap: "1rem",
+                    fontSize: "0.8rem",
+                    color: "#4b5563",
                   }}
                 >
-                  Vedic Astrology, also known as <strong>Jyotish</strong>, is an
-                  ancient Indian system of astrology that has been practiced for
-                  thousands of years. It provides insights into your life
-                  through the analysis of planetary positions at the time of
-                  your birth. Our platform offers comprehensive astrological
-                  services including <strong>Birth Chart Analysis</strong>{" "}
-                  revealing your planetary positions and their influences,{" "}
-                  <strong>Compatibility Matching</strong> using the traditional
-                  Ashtakoot system to assess relationship harmony,{" "}
-                  <strong>Dasha Predictions</strong> forecasting life phases
-                  based on planetary periods, and{" "}
-                  <strong>Expert Consultations</strong> with experienced Vedic
-                  astrologers who provide personalized guidance based on
-                  authentic traditional principles.
-                </p>
+                  <span>⭐ Trusted by thousands</span>
+                  <span>🔐 100% private & secure</span>
+                  <span>⏱ Chat • Call </span>
+                </div>
               </div>
+
+
+                    {/* WHY NIRALIVE */}
+    <Section
+  title="Why People Choose Nirali Live Astro"
+  content={[
+    "AI + astrologer verified insights",
+    "Advanced kundli matching beyond guna milan",
+    "Personalized remedies, not generic advice",
+    "Support for individuals, couples & families",
+    "India + NRI friendly consultations",
+  ]}
+>
+  Astrology works best when tradition and clarity come together. At Nirali Live
+  Astro, we combine classical Vedic principles with AI-based analysis to reduce
+  guesswork and bring structure to astrological interpretation.
+
+  Every insight is designed to be practical, grounded, and relevant to real
+  life situations, whether you are seeking guidance for yourself or your family.
+</Section>
+
+
+    {/* TALK TO ASTROLOGER */}
+    <Section
+  title="Talk to Experienced Astrologers Online"
+  content={[
+    "Marriage & relationship guidance",
+    "Career & business decisions",
+    "Love, family & emotional concerns",
+    "Finance & major life choices",
+    "Vastu & home energy corrections",
+  ]}
+>
+  Sometimes clarity comes from conversation. Our platform allows you to connect
+  directly with experienced astrologers who analyze your kundli and current
+  planetary periods before offering guidance.
+
+  You can choose chat, call, or WhatsApp based on your comfort, making
+  consultations flexible, private, and focused on your specific concerns.
+</Section>
+
+
+    {/* AI KUNDLI MATCHING */}
+    <Section
+  title="AI-Powered Kundli Matching for Marriage"
+  content={[
+    "Planetary aspects between partners",
+    "Manglik, Nadi, Bhakoot & dosha analysis",
+    "Dasha & future compatibility timelines",
+    "Emotional harmony & stability indicators",
+  ]}
+>
+  Marriage compatibility cannot be reduced to a single score. Our AI-powered
+  kundli matching evaluates deeper planetary interactions, long-term dasha
+  alignment, and emotional balance between partners.
+
+  The goal is not to label matches as good or bad, but to help you understand
+  strengths, challenges, and realistic expectations before taking important
+  decisions.
+</Section>
+
+
+    {/* AI KUNDLI PREDICTION */}
+    <Section
+  title="AI Kundli Prediction for Your Life"
+  content={[
+    "Career & growth phases",
+    "Marriage & relationship timing",
+    "Financial cycles",
+    "Health & life challenges",
+    "Upcoming good & difficult periods",
+  ]}
+>
+  Your birth chart reflects patterns, timing, and tendencies across different
+  areas of life. By analyzing planetary positions and running dashas, our AI
+  provides personalized insights rather than generic forecasts.
+
+  You can also interact with the AI using your kundli, allowing you to explore
+  specific questions and gain clarity at your own pace.
+</Section>
+
+
+    {/* FAMILY & TIMELINE */}
+    <Section
+  title="Family Kundli & Life Timeline Analysis"
+  content={[
+    "Shared good & challenging periods",
+    "Dasha interactions within family",
+    "Joint preparation for future phases",
+  ]}
+>
+  In many households, life events are interconnected. Family kundli analysis
+  helps understand how one person’s planetary period may influence others,
+  especially during important transitions.
+
+  This feature is useful for families and couples who want to plan ahead
+  together with awareness rather than reacting to sudden changes.
+</Section>
+
+
+    {/* VASTU */}
+    <Section
+  title="AI-Based Vastu Analysis for Your Home"
+  content={[
+    "Room-wise vastu analysis",
+    "Directional defect identification",
+    "Remedies without reconstruction",
+  ]}
+>
+  Vastu focuses on harmony between living spaces and natural elements. Using AI,
+  we analyze your home layout to identify imbalances related to direction,
+  placement, and energy flow.
+
+  The emphasis is on practical remedies that can be applied without major
+  structural changes, keeping solutions simple and realistic.
+</Section>
+
+              
+
+              {/* DISCLAIMER */}
+              <p
+                className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl"
+              >
+                Astrology provides guidance based on planetary patterns and
+                should not be treated as a substitute for professional medical,
+                legal, or financial advice.
+              </p>
             </div>
-          </section>
 
         </main>
       </div>
