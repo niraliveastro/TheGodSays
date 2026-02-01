@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  User,
   Mail,
   Phone,
   Wallet,
@@ -14,68 +13,147 @@ import {
   Loader2,
   CheckCircle,
   Users,
-  Plus,
-  X,
-  Sparkles,
   Video,
+  CalendarCheck,
+  X,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
-import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { PageLoading } from "@/components/LoadingStates";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+/* --------------------------------------------------------------- */
+/*  Zodiac Helpers                                                 */
+/* --------------------------------------------------------------- */
+function getWesternZodiac(month, day) {
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return { sign: "Aries", symbol: "♈" };
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return { sign: "Taurus", symbol: "♉" };
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return { sign: "Gemini", symbol: "♊" };
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return { sign: "Cancer", symbol: "♋" };
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return { sign: "Leo", symbol: "♌" };
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return { sign: "Virgo", symbol: "♍" };
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return { sign: "Libra", symbol: "♎" };
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return { sign: "Scorpio", symbol: "♏" };
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return { sign: "Sagittarius", symbol: "♐" };
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return { sign: "Capricorn", symbol: "♑" };
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return { sign: "Aquarius", symbol: "♒" };
+  return { sign: "Pisces", symbol: "♓" };
+}
+
+const RASHI_NAMES = [
+  "Mesha", "Vrishabha", "Mithuna", "Karka",
+  "Simha", "Kanya", "Tula", "Vrischika",
+  "Dhanu", "Makara", "Kumbha", "Mina"
+];
+
+function getNorthernRashi(month, day) {
+  // Indian zodiac months roughly align with Western but shifted ~one sign
+  // Using the common mapping used in Indian astrology apps
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "Mesha (Aries)";
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "Vrishabha (Taurus)";
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "Mithuna (Gemini)";
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "Karka (Cancer)";
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "Simha (Leo)";
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "Kanya (Virgo)";
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "Tula (Libra)";
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "Vrischika (Scorpio)";
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "Dhanu (Sagittarius)";
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return "Makara (Capricorn)";
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "Kumbha (Aquarius)";
+  return "Mina (Pisces)";
+}
+
+function computeZodiacs(dob) {
+  if (!dob) return null;
+  const d = new Date(dob + "T12:00:00"); // noon to avoid timezone drift
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  return {
+    western: getWesternZodiac(month, day),
+    indian: getNorthernRashi(month, day),
+  };
+}
+
+/* --------------------------------------------------------------- */
+/*  Image compression utility                                      */
+/* --------------------------------------------------------------- */
+function compressImage(file, maxWidth, maxHeight, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth; }
+        } else {
+          if (height > maxHeight) { width = (width * maxHeight) / height; height = maxHeight; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => { blob ? resolve(blob) : reject(new Error("Compression failed")); }, "image/jpeg", quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* --------------------------------------------------------------- */
+/*  Appointment status helper (mirrored from Appointments page)   */
+/* --------------------------------------------------------------- */
+function getDisplayStatus(appointment) {
+  const now = new Date();
+  const apptDateTime = new Date(`${appointment.date}T${appointment.time}`);
+  if (appointment.status === "cancelled") return "cancelled";
+  if (appointment.status === "completed") return "completed";
+  if (appointment.status === "confirmed" || appointment.status === "pending") {
+    return apptDateTime > now ? "upcoming" : "missed";
+  }
+  return "missed";
+}
+
+/* --------------------------------------------------------------- */
+/*  Main Component                                                 */
+/* --------------------------------------------------------------- */
 export default function ProfilePage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user: authUser, signOut } = useAuth();
-  /* --------------------------------------------------------------- */
-  /*  State                                                          */
-  /* --------------------------------------------------------------- */
+
+  /* ---- State ---- */
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", dob: "" });
   const [saving, setSaving] = useState(false);
   const [callHistory, setCallHistory] = useState([]);
-  // const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState([]);
-  const [familyForm, setFamilyForm] = useState({
-    name: "",
-    dob: "",
-    time: "",
-    place: "",
-    relation: "Self",
-  });
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [showPredictions, setShowPredictions] = useState(false);
-  // const [showFamilyPanel, setShowFamilyPanel] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  /* --------------------------------------------------------------- */
-  /*  Fetch user + call history + family members with React Query   */
-  /* --------------------------------------------------------------- */
+  /* ---- Derived ---- */
   const userId = useMemo(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("tgs:userId");
-    }
+    if (typeof window !== "undefined") return localStorage.getItem("tgs:userId");
     return null;
   }, []);
 
-  // Fetch profile data with React Query for caching and faster loading
-  const {
-    data: profileData,
-    isLoading: profileLoading,
-    error: profileError,
-  } = useQuery({
+ const zodiacs = useMemo(() => {
+  if (!user?.dob || user.dob === "") return null;
+  return computeZodiacs(user.dob);
+}, [user?.dob]);
+
+
+  /* ---- React Query: Profile ---- */
+  const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ["userProfile", userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -85,12 +163,12 @@ export default function ProfilePage() {
       return data.success ? data.user : null;
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
-    retry: 1, // Only retry once on failure
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    retry: 1,
   });
 
-  // Fetch call history with React Query for parallel loading and caching
+  /* ---- React Query: Call History ---- */
   const { data: callHistoryData, isLoading: historyLoading } = useQuery({
     queryKey: ["callHistory", userId],
     queryFn: async () => {
@@ -101,105 +179,51 @@ export default function ProfilePage() {
       return data.success ? (data.history || []).slice(0, 5) : [];
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
     retry: 1,
   });
 
-  // Update call history state when data is fetched
-  useEffect(() => {
-    if (callHistoryData) {
-      setCallHistory(callHistoryData);
-    }
-  }, [callHistoryData]);
-
-  // Get status color theme (same as talk-to-astrologer page)
-  const getStatusColor = (status) => {
-    const normalizedStatus = (status || "completed").toLowerCase();
-    switch (normalizedStatus) {
-      case "completed":
-        return {
-          bg: "rgba(16, 185, 129, 0.15)", // green-500 with 15% opacity
-          border: "rgba(16, 185, 129, 0.3)",
-          text: "#059669", // green-600
-        };
-      case "cancelled":
-        return {
-          bg: "rgba(245, 158, 11, 0.15)", // amber-500 with 15% opacity
-          border: "rgba(245, 158, 11, 0.3)",
-          text: "#d97706", // amber-600
-        };
-      case "rejected":
-        return {
-          bg: "rgba(239, 68, 68, 0.15)", // red-500 with 15% opacity
-          border: "rgba(239, 68, 68, 0.3)",
-          text: "#dc2626", // red-600
-        };
-      default:
-        return {
-          bg: "rgba(156, 163, 175, 0.1)", // gray-400 with 10% opacity
-          border: "rgba(156, 163, 175, 0.2)",
-          text: "#6b7280", // gray-500
-        };
-    }
-  };
-
-  // Fetch family members with React Query
-  const { data: familyData } = useQuery({
-    queryKey: ["familyMembers", userId],
+  /* ---- React Query: Upcoming Appointments ---- */
+  const { data: appointmentsData, isLoading: appointmentsLoading } = useQuery({
+    queryKey: ["upcomingAppointments", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const res = await fetch(`/api/family/members?userId=${userId}`);
+      const res = await fetch(`/api/appointments?userId=${userId}`);
       if (!res.ok) return [];
       const data = await res.json();
-      return data.success ? data.members || [] : [];
+      if (!data.success) return [];
+      // filter to only upcoming
+      return (data.appointments || []).filter(
+        (a) => getDisplayStatus(a) === "upcoming"
+      );
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    staleTime: 1000 * 60 * 3,
     retry: 1,
   });
 
-  // Update state when data is fetched
+  /* ---- Sync state from queries ---- */
   useEffect(() => {
     if (profileData) {
       setUser(profileData);
-      setEditForm({
-        name: profileData.name || "",
-        email: profileData.email || "",
-        phone: profileData.phone || "",
-      });
+      setEditForm({ name: profileData.name || "", email: profileData.email || "", phone: profileData.phone || "", dob: profileData.dob || "" });
     }
   }, [profileData]);
 
-  useEffect(() => {
-    if (familyData) {
-      setFamilyMembers(familyData);
-    }
-  }, [familyData]);
+  useEffect(() => { if (callHistoryData) setCallHistory(callHistoryData); }, [callHistoryData]);
 
-  // Handle loading and auth redirect - Optimize: show content immediately when ready
+  /* ---- Auth redirect & loading gate ---- */
   useEffect(() => {
-    if (!userId) {
-      router.push("/auth");
-      return;
-    }
-    // Show page immediately as soon as we have profile data
-    // Don't wait for call history or family members - they load in parallel
-    if (profileData || user) {
-      setLoading(false);
-    } else if (profileLoading) {
-      // Only show loading if we're still fetching profile and have no data
-      setLoading(true);
-    }
+    if (!userId) { router.push("/auth"); return; }
+    if (profileData || user) setLoading(false);
+    else if (profileLoading) setLoading(true);
   }, [userId, profileLoading, profileData, user, router]);
 
-  /* --------------------------------------------------------------- */
-  /*  Save profile changes                                           */
-  /* --------------------------------------------------------------- */
+  /* ---- Handlers ---- */
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const userId = localStorage.getItem("tgs:userId");
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -207,1324 +231,620 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (data.success) {
-        setUser((prev) => ({ ...prev, ...editForm }));
-        setIsEditModalOpen(false);
-      } else {
-        alert(data.message || "Failed to update profile");
-      }
-    } catch (e) {
-      alert("Network error");
-    } finally {
-      setSaving(false);
-    }
+  setUser((prev) => ({
+    ...prev,
+    ...(editForm.name && { name: editForm.name }),
+    ...(editForm.email && { email: editForm.email }),
+    ...(editForm.phone && { phone: editForm.phone }),
+    ...(editForm.dob && { dob: editForm.dob }), // ⭐ DO NOT overwrite with ""
+  }));
+  setIsEditModalOpen(false);
+}
+ else alert(data.message || "Failed to update profile");
+    } catch { alert("Network error"); }
+    finally { setSaving(false); }
   };
 
-  /* --------------------------------------------------------------- */
-  /*  Family member handlers                                         */
-  /* --------------------------------------------------------------- */
-  const handleAddFamilyMember = async () => {
-    if (
-      !familyForm.name ||
-      !familyForm.dob ||
-      !familyForm.time ||
-      !familyForm.place
-    ) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const userId = localStorage.getItem("tgs:userId");
-      const res = await fetch("/api/family/members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, ...familyForm }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setFamilyMembers((prev) => [...prev, data.member]);
-        setFamilyForm({
-          name: "",
-          dob: "",
-          time: "",
-          place: "",
-          relation: "Self",
-        });
-        setIsFamilyModalOpen(false);
-      } else {
-        alert(data.message || "Failed to add family member");
-      }
-    } catch (e) {
-      alert("Network error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleViewPredictions = (member) => {
-    setSelectedMember(member);
-    setShowPredictions(true);
-    setShowFamilyPanel(false);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/auth/user");
-    } catch (e) {
-      console.error("Sign out error:", e);
-    }
-  };
-
-  /**
-   * Compress and resize image for avatar upload.
-   * @param {File} file - Image file to compress
-   * @param {number} maxWidth - Maximum width
-   * @param {number} maxHeight - Maximum height
-   * @param {number} quality - JPEG quality (0-1)
-   * @returns {Promise<Blob>} Compressed image blob
-   */
-  const compressImage = (file, maxWidth, maxHeight, quality) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-
-          // Calculate new dimensions
-          if (width > height) {
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = (width * maxHeight) / height;
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error("Failed to compress image"));
-              }
-            },
-            "image/jpeg",
-            quality,
-          );
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  /**
-   * Handle avatar file upload.
-   * Validates file type/size, compresses image, converts to base64,
-   * and updates Firestore. Ensures base64 size < 800KB.
-   * @param {Event} e - File input change event
-   */
   const handleAvatarUpload = async (e) => {
     if (!userId) return;
-
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
-      return;
-    }
-
-    // Validate original file size (max 2MB before compression)
-    if (file.size > 2 * 1024 * 1024) {
-      alert(
-        "Image size should be less than 2MB (will be compressed automatically)",
-      );
-      return;
-    }
-
+    if (!file.type.startsWith("image/")) { alert("Please upload an image file"); return; }
+    if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2 MB"); return; }
     try {
       setUploadingAvatar(true);
-
-      // Step 1: Compress the image
-      const compressedFile = await compressImage(file, 300, 300, 0.7);
-
-      // Step 2: Convert to base64
+      const compressed = await compressImage(file, 300, 300, 0.7);
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
-        reader.readAsDataURL(compressedFile);
+        reader.readAsDataURL(compressed);
       });
-
-      // Step 3: Validate final size (base64 < 800KB to stay under Firestore limits)
-      if (base64.length > 800 * 1024) {
-        throw new Error("Compressed image too large for storage");
-      }
-
-      // Step 4: Update Firestore directly
-      const docRef = doc(db, "users", userId);
-      await updateDoc(docRef, { avatar: base64 });
-
-      // Step 5: Update local state
+      if (base64.length > 800 * 1024) throw new Error("Compressed image too large");
+      await updateDoc(doc(db, "users", userId), { avatar: base64 });
       setUser((prev) => ({ ...prev, avatar: base64 }));
-
-      // Reset input
       e.target.value = "";
-
-      alert("Avatar updated successfully!");
+      alert("Avatar updated!");
     } catch (err) {
-      console.error("Failed to upload avatar:", err);
-      alert(`Failed to upload: ${err.message}. Please try a smaller image.`);
-    } finally {
-      setUploadingAvatar(false);
+      alert(`Upload failed: ${err.message}`);
+    } finally { setUploadingAvatar(false); }
+  };
+
+  const handleSignOut = async () => {
+    try { await signOut(); router.push("/auth/user"); }
+    catch (e) { console.error("Sign out error:", e); }
+  };
+
+  const handleConnect = (appointment) => {
+    localStorage.setItem("tgs:profileCallAstrologerId", appointment.astrologerId);
+    localStorage.setItem("tgs:profileCallType", "video");
+    localStorage.setItem("tgs:appointmentId", appointment.id);
+    router.push("/talk-to-astrologer");
+  };
+
+  /* ---- Status colour helpers ---- */
+  const getStatusColor = (status) => {
+    switch ((status || "completed").toLowerCase()) {
+      case "completed": return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#059669" };
+      case "cancelled": return { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", text: "#d97706" };
+      case "rejected":  return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", text: "#dc2626" };
+      default:          return { bg: "rgba(156,163,175,0.1)", border: "rgba(156,163,175,0.2)", text: "#6b7280" };
     }
   };
 
-  /* --------------------------------------------------------------- */
-  /*  Render                                                         */
-  /* --------------------------------------------------------------- */
-  if (loading) {
-    return <PageLoading type="profile" message="Loading your profile..." />;
-  }
-
+  /* ---- Early returns ---- */
+  if (loading) return <PageLoading type="profile" message="Loading your profile..." />;
   if (!user) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          background: "#f9fafb",
-        }}
-      >
-        <p
-          className="text-lg"
-          style={{
-            color: "#4b5563",
-          }}
-        >
-          No user data found.
-        </p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#FFFDF5" }}>
+        <p className="text-lg" style={{ color: "#4b5563" }}>No user data found.</p>
       </div>
     );
   }
 
+  /* ---- Initials ---- */
+  const initials = (user.name || "")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+
+  /* ============================================================= */
+  /*  RENDER                                                         */
+  /* ============================================================= */
   return (
     <>
-      <div
-        className="min-h-screen py-8 relative"
-        style={{
-          background: "#f9fafb",
-        }}
-      >
-        {/* Orbs */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="orb orb1" />
-          <div className="orb orb2" />
-          <div className="orb orb3" />
-        </div>
+      <div className="min-h-screen" style={{ background: "#FFFDF5", fontFamily: "'Inter', sans-serif" }}>
+        {/* Ambient background blobs */}
+        <div style={{ position: "fixed", top: 0, right: 0, width: "33%", height: "33%", background: "rgba(217,119,6,0.04)", filter: "blur(60px)", borderRadius: "50%", pointerEvents: "none", zIndex: 0 }} />
+        <div style={{ position: "fixed", bottom: 0, left: 0, width: "25%", height: "25%", background: "rgba(180,83,9,0.04)", filter: "blur(60px)", borderRadius: "50%", pointerEvents: "none", zIndex: 0 }} />
 
-        <div className="app relative">
-          {/* Left Toolbar
-          <div
-            className={`fixed left-0 top-16 h-full shadow-2xl transition-transform duration-300 ${
-              showFamilyPanel ? "translate-x-0" : "-translate-x-full"
-            }`}
+        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "3rem 1.5rem", position: "relative", zIndex: 1 }}>
+
+          {/* ---- Header ---- */}
+          <header style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <h1 className="title"
             style={{
-              width: "320px",
-              zIndex: 30,
-              background: "white",
-            }}
-          >
-            <div className="p-6 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Users
-                    className="w-5 h-5"
-                    style={{ color: "var(--color-gold)" }}
-                  />
-                  Family Members
-                </h3>
-                <button
-                  onClick={() => setShowFamilyPanel(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <button
-                onClick={() => setIsFamilyModalOpen(true)}
-                className="w-full mb-4 px-4 py-3 text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                }}
-              >
-                <Plus className="w-4 h-4" />
-                Add Family Member
-              </button>
-
-              <div className="flex-1 overflow-y-auto space-y-3">
-                {familyMembers.length > 0 ? (
-                  familyMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 transition-all cursor-pointer"
-                      style={{
-                        borderColor: "var(--color-gray-200)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "var(--color-gold)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor =
-                          "var(--color-gray-200)";
-                      }}
-                      onClick={() => handleViewPredictions(member)}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                          style={{
-                            background:
-                              "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                          }}
-                        >
-                          {member.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            {member.name}
-                          </h4>
-                          <p className="text-xs text-gray-500">
-                            {member.relation}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <p>📅 {new Date(member.dob).toLocaleDateString()}</p>
-                        <p>🕐 {member.time}</p>
-                        <p>📍 {member.place}</p>
-                      </div>
-                      <button
-                        className="mt-3 w-full px-3 py-2 bg-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                        style={{
-                          border: "1px solid var(--color-gold)",
-                          color: "var(--color-gold-dark)",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            "rgba(212, 175, 55, 0.1)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "white";
-                        }}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        View Predictions
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500 text-sm">
-                    No family members added yet
-                  </div>
-                )}
-              </div>
-            </div>
-          </div> */}
-
-          {/* Toggle Button
-          <button
-            onClick={() => setShowFamilyPanel(!showFamilyPanel)}
-            className="fixed left-0 top-1/2 -translate-y-1/2 text-white p-3 rounded-r-xl shadow-lg hover:shadow-xl transition-all z-40"
-            style={{
-              marginLeft: showFamilyPanel ? "320px" : "0",
-              background:
-                "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-            }}
-          >
-            <Users className="w-5 h-5" />
-          </button> */}
-
-          {/* Header */}
-          {/* Header */}
-          <header
-            className="header mb-10"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-              width: "100%",
-              marginTop: "0.01rem",
-            }}
-          >
-            <h1 className="title" style={{ margin: 0 }}>
-              My Profile
+            fontSize: "2.5rem",
+            fontWeight: 500,
+            background: "linear-gradient(135deg, #d4af37, #b8972e)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}>
+              Divine Profile
             </h1>
-            <p className="subtitle" style={{ margin: "0.5rem 0 0" }}>
-              Manage your account details, wallet balance, and call history.
+            <p style={{ color: "#64748b", marginTop: "0.5rem", fontSize: "0.95rem" }}>
+              Your spiritual journey and guided history at a glance.
             </p>
           </header>
 
-          <div className="profile-grid">
-            {/* Left: Profile Card */}
-            <div
-              className="card"
-              style={{
-                padding: "2rem",
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1.5rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div style={{ position: "relative" }}>
-                  <div
-                    style={{
-                      width: "6rem",
-                      height: "6rem",
-                      backgroundImage: user.avatar
-                        ? `url(${user.avatar})`
-                        : "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      backgroundRepeat: "no-repeat",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      fontWeight: "bold",
-                      fontSize: "1.75rem",
-                    }}
-                  >
-                    {!user.avatar &&
-                      user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+          {/* ---- 12-col grid ---- */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "2rem" }}>
+
+            {/* ===== LEFT COL (4) – Profile Card ===== */}
+            <div style={{ gridColumn: "1 / 5" }}>
+              <div className="glass-card" style={{
+                borderRadius: "1.5rem", padding: "2rem", textAlign: "center",
+                position: "relative", overflow: "hidden",
+                boxShadow: "0 20px 40px rgba(180,83,9,0.08)",
+              }}>
+                {/* top gradient stripe */}
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: "4px",
+                  background: "linear-gradient(90deg, var(--color-gold), var(--color-gold-dark))",
+                }} />
+
+                {/* Avatar */}
+                <div style={{ position: "relative", display: "inline-block", marginBottom: "1.25rem", marginTop: "0.75rem" }}>
+                  <div style={{
+                    width: "7rem", height: "7rem", borderRadius: "50%",
+                    border: "4px solid rgba(217,119,6,0.2)", padding: "3px",
+                  }}>
+                    <div style={{
+                      width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden",
+                      backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                      backgroundSize: "cover", backgroundPosition: "center",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "white", fontWeight: 700, fontSize: "1.75rem",
+                    }}>
+                      {!user.avatar && initials}
+                    </div>
                   </div>
-                  <label
-                    style={{
-                      position: "absolute",
-                      bottom: "0",
-                      right: "0",
-                      width: "2rem",
-                      height: "2rem",
-                      background: "var(--color-gold)",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      border: "none",
-                      cursor: uploadingAvatar ? "not-allowed" : "pointer",
-                      opacity: uploadingAvatar ? 0.5 : 1,
-                    }}
-                  >
-                    {uploadingAvatar ? (
-                      <Loader2
-                        style={{ width: "1rem", height: "1rem" }}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <Camera style={{ width: "1rem", height: "1rem" }} />
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={handleAvatarUpload}
-                      disabled={uploadingAvatar}
-                    />
+                  {/* camera edit badge */}
+                  <label style={{
+                    position: "absolute", bottom: "2px", right: "2px",
+                    width: "2rem", height: "2rem", background: "var(--color-gold-dark)",
+                    borderRadius: "50%", border: "2px solid white",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: uploadingAvatar ? "not-allowed" : "pointer",
+                    opacity: uploadingAvatar ? 0.55 : 1,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  }}>
+                    {uploadingAvatar
+                      ? <Loader2 size={14} color="white" style={{ animation: "spin 1s linear infinite" }} />
+                      : <Camera size={14} color="white" />
+                    }
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} disabled={uploadingAvatar} />
                   </label>
                 </div>
-                <div>
-                  <h2
-                    style={{
-                      fontSize: "1.5rem",
-                      fontWeight: 500,
-                      color: "var(--color-gray-900)",
-                    }}
-                  >
-                    {user.name}
-                  </h2>
-                  <p
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--color-gray-500)",
-                    }}
-                  >
-                    Member since{" "}
-                    {new Date(
-                      user.createdAt || Date.now(),
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
 
-              <div style={{ display: "grid", gap: "1rem" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                  }}
-                >
-                  <Mail
-                    style={{
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      color: "var(--color-indigo)",
-                    }}
-                  />
-                  <span
-                    style={{ fontSize: "1rem", color: "var(--color-gray-700)" }}
-                  >
-                    {user.email}
-                  </span>
-                </div>
-                {user.phone && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                    }}
-                  >
-                    <Phone
-                      style={{
-                        width: "1.25rem",
-                        height: "1.25rem",
-                        color: "var(--color-indigo)",
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: "1rem",
-                        color: "var(--color-gray-700)",
-                      }}
-                    >
-                      {user.phone}
+                {/* Name */}
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>
+                  {user.name}
+                </h2>
+
+                {/* Zodiac badges */}
+                {zodiacs && (
+                  <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+                    <span style={{
+                      fontSize: "0.72rem", fontWeight: 600, color: "var(--color-gold)",
+                      background: "rgba(180,83,9,0.08)", padding: "0.3rem 0.75rem",
+                      borderRadius: "999px",
+                    }}>
+                      {zodiacs.western.symbol} {zodiacs.western.sign}
+                    </span>
+                    <span style={{
+                      fontSize: "0.72rem", fontWeight: 600, color: "#D97706",
+                      background: "rgba(217,119,6,0.1)", padding: "0.3rem 0.75rem",
+                      borderRadius: "999px",
+                    }}>
+                      ✦ {zodiacs.indian}
                     </span>
                   </div>
                 )}
-              </div>
 
-              <div
-                style={{
-                  marginTop: "1.5rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.75rem",
-                }}
-              >
-                <Button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="btn btn-outline"
-                  style={{ width: "100%", height: "3rem", fontSize: "1rem" }}
-                >
-                  <Edit2
-                    style={{
-                      width: "1rem",
-                      height: "1rem",
-                      marginRight: "0.5rem",
-                    }}
-                  />
-                  Edit Profile
-                </Button>
-                <Button
-                  onClick={() => router.push("/profile/family")}
-                  className="btn btn-primary"
-                  style={{
-                    width: "100%",
-                    height: "3rem",
-                    fontSize: "1rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.5rem",
+                {/* Contact details */}
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "1.25rem", marginTop: "0.5rem", textAlign: "left" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    <Mail size={18} style={{ color: "#94a3b8" }} />
+                    <span style={{ fontSize: "0.875rem", color: "#334155" }}>{user.email}</span>
+                  </div>
+                  {user.phone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                      <Phone size={18} style={{ color: "#94a3b8" }} />
+                      <span style={{ fontSize: "0.875rem", color: "#334155" }}>{user.phone}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <CalendarCheck size={18} style={{ color: "#94a3b8" }} />
+                    <span style={{ fontSize: "0.875rem", color: "#334155" }}>
+                      Member since {new Date(user.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+                  <button onClick={() => setIsEditModalOpen(true)} style={{
+                    width: "100%", padding: "0.7rem 1rem", background: "white",
+                    border: "1px solid #e2e8f0", borderRadius: "0.75rem",
+                    fontWeight: 500, fontSize: "0.875rem", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                    color: "#334155", transition: "background 0.2s",
                   }}
-                >
-                  <Users style={{ width: "1rem", height: "1rem" }} />
-                  My Family
-                </Button>
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  style={{
-                    width: "100%",
-                    height: "3rem",
-                    fontSize: "1rem",
-                    color: "#dc2626",
-                    borderColor: "#dc2626",
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                  >
+                    <Edit2 size={15} /> Edit Profile
+                  </button>
+                  <button onClick={() => router.push("/profile/family")} style={{
+                    width: "100%", padding: "0.7rem 1rem", background: "white",
+                    border: "1px solid #e2e8f0", borderRadius: "0.75rem",
+                    fontWeight: 500, fontSize: "0.875rem", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                    color: "#334155", transition: "background 0.2s",
                   }}
-                >
-                  Sign Out
-                </Button>
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                  >
+                    <Users size={15} /> My Family
+                  </button>
+                  <button onClick={handleSignOut} style={{
+                    width: "100%", padding: "0.7rem 1rem", background: "white",
+                    border: "1px solid #e2e8f0", borderRadius: "0.75rem",
+                    fontWeight: 500, fontSize: "0.875rem", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                    color: "#ef4444", transition: "background 0.2s",
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Right: Wallet + Stats */}
-            <div style={{ display: "grid", gap: "1.5rem" }}>
-              {/* Wallet */}
-              <div
-                className="card"
-                style={{
-                  padding: "1.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                    }}
-                  >
-                    <Wallet
-                      style={{
-                        width: "1.5rem",
-                        height: "1.5rem",
-                        color: "var(--color-gold)",
-                      }}
-                    />
-                    <h3
-                      style={{
-                        fontSize: "1.125rem",
-                        fontWeight: 600,
-                        color: "#1f2937",
-                      }}
-                    >
-                      Wallet Balance
-                    </h3>
+            {/* ===== RIGHT COL (8) ===== */}
+            <div style={{ gridColumn: "5 / 13", display: "flex", flexDirection: "column", gap: "1.75rem" }}>
+
+              {/* ---- Row: Wallet + Stats ---- */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+
+                {/* Wallet */}
+                <div className="glass-card" style={{
+                  borderRadius: "1.5rem", padding: "1.5rem",
+                  borderLeft: "4px solid var(--color-gold-dark)",
+                  boxShadow: "0 8px 24px rgba(180,83,9,0.07)",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                    <div>
+                      <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "#64748b", margin: 0 }}>Divine Wallet</p>
+                      <h3 style={{ fontSize: "1.875rem", fontWeight: 700, color: "var(--color-gray-700)", margin: "0.25rem 0 0" }}>
+                        ₹{user.balance?.toFixed(2) || "0.00"}
+                      </h3>
+                    </div>
+                    <div style={{ background: "rgba(217,119,6,0.1)", padding: "0.5rem", borderRadius: "0.625rem" }}>
+                      <Wallet size={22} color="var(--color-gold-dark)" />
+                    </div>
                   </div>
-                  <CheckCircle
-                    style={{
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      color: "#10b981",
-                    }}
-                  />
+                  <button onClick={() => router.push("/wallet")} style={{
+                    width: "100%", padding: "0.7rem", background: "var(--color-gold)", color: "white",
+                    fontWeight: 600, border: "none", borderRadius: "0.75rem", fontSize: "0.875rem",
+                    cursor: "pointer", boxShadow: "0 4px 12px rgba(180,83,9,0.25)",
+                    transition: "background 0.2s",
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#9a4508")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-gold)")}
+                  >
+                    Top-up Balance
+                  </button>
                 </div>
-                <p
-                  style={{
-                    fontSize: "1.875rem",
-                    fontWeight: 700,
-                    color: "#059669",
-                  }}
-                >
-                  ₹{user.balance?.toFixed(2) || "0.00"}
-                </p>
-                <Button
-                  onClick={() => router.push("/wallet")}
-                  className="btn btn-primary"
-                  style={{
-                    marginTop: "1rem",
-                    width: "100%",
-                    height: "3rem",
-                    fontSize: "1rem",
-                  }}
-                >
-                  Recharge Now
-                </Button>
+
+                {/* Stats */}
+                <div className="glass-card" style={{
+                  borderRadius: "1.5rem", padding: "1.5rem",
+                  borderLeft: "4px solid var(--color-gold)",
+                  boxShadow: "0 8px 24px rgba(180,83,9,0.07)",
+                }}>
+                  <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "#64748b", margin: "0 0 1rem" }}>Spiritual Journey Stats</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <p style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>{user.totalCalls || 0}</p>
+                      <p style={{ fontSize: "0.7rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0.2rem 0 0" }}>Consultations</p>
+                    </div>
+                    <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "0.75rem" }}>
+                      <p style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>{user.minutesUsed || 0}</p>
+                      <p style={{ fontSize: "0.7rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0.2rem 0 0" }}>Minutes</p>
+                    </div>
+                  </div>
+                  <div style={{
+                    marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.4rem",
+                    fontSize: "0.75rem", color: "#16a34a", background: "rgba(34,197,94,0.08)",
+                    padding: "0.4rem 0.65rem", borderRadius: "0.5rem",
+                  }}>
+                    <TrendingUp size={14} /> Active member
+                  </div>
+                </div>
               </div>
 
-              {/* Quick Stats */}
-              <div
-                className="card"
-                style={{
-                  padding: "1.5rem",
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: "1.125rem",
-                    fontWeight: 600,
-                    color: "#1f2937",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  Quick Stats
-                </h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "1rem",
-                  }}
-                >
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "var(--color-gray-500)",
-                      }}
-                    >
-                      Total Calls
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "1.25rem",
-                        fontWeight: 700,
-                        color: "var(--color-gray-900)",
-                      }}
-                    >
-                      {user.totalCalls || 0}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "var(--color-gray-500)",
-                      }}
-                    >
-                      Minutes Used
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "1.25rem",
-                        fontWeight: 700,
-                        color: "var(--color-gray-900)",
-                      }}
-                    >
-                      {user.minutesUsed || 0}
-                    </p>
-                  </div>
+              {/* ---- Upcoming Appointments ---- */}
+              <div className="glass-card" style={{
+                borderRadius: "1.5rem", padding: "1.5rem",
+                boxShadow: "0 8px 24px rgba(180,83,9,0.07)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                  <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>
+                    Upcoming Consultations
+                  </h2>
+                  <button onClick={() => router.push("/appointments")} style={{
+                    background: "none", border: "none", fontSize: "0.8rem", color: "var(--color-gold)",
+                    fontWeight: 500, cursor: "pointer", padding: 0,
+                  }}>
+                    View Schedule →
+                  </button>
                 </div>
+
+                {appointmentsLoading ? (
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    {[1, 2].map((i) => (
+                      <div key={i} style={{
+                        flex: 1, background: "#f1f5f9", borderRadius: "0.75rem", padding: "1rem",
+                        animation: "pulse 2s ease-in-out infinite",
+                      }}>
+                        <div style={{ width: "40px", height: "40px", borderRadius: "0.75rem", background: "#e2e8f0", marginBottom: "0.6rem" }} />
+                        <div style={{ width: "70%", height: "12px", background: "#e2e8f0", borderRadius: "4px", marginBottom: "0.4rem" }} />
+                        <div style={{ width: "50%", height: "10px", background: "#e2e8f0", borderRadius: "4px" }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : appointmentsData && appointmentsData.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    {appointmentsData.map((appt) => {
+                      const apptDate = new Date(`${appt.date}T${appt.time}`);
+                      return (
+                        <div key={appt.id} style={{
+                          background: "white", borderRadius: "1rem", padding: "1rem",
+                          border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "0.85rem",
+                          transition: "box-shadow 0.2s",
+                        }}
+                          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                        >
+                          {/* avatar placeholder */}
+                          <div style={{
+                            width: "3rem", height: "3rem", borderRadius: "0.75rem", flexShrink: 0,
+                            background: "linear-gradient(135deg, var(--color-gold), #D97706)",
+                            display: "flex", alignItems: "center", justifyContent: "center", color: "white",
+                          }}>
+                            <Video size={20} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e293b", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {appt.astrologerName || "Astrologer"}
+                            </p>
+                            <p style={{ fontSize: "0.68rem", color: "#64748b", margin: "0.15rem 0 0" }}>
+                              {appt.specialty || "Vedic Astrology"}
+                            </p>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", marginTop: "0.35rem", fontSize: "0.68rem", fontWeight: 600, color: "var(--color-gold)" }}>
+                              <Clock size={11} />
+                              {apptDate.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}, {apptDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                            </div>
+                          </div>
+                          <button onClick={() => handleConnect(appt)} style={{
+                            background: "rgba(180,83,9,0.08)", border: "none", borderRadius: "0.5rem",
+                            padding: "0.45rem", cursor: "pointer", color: "var(--color-gold)", transition: "all 0.2s",
+                            flexShrink: 0,
+                          }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-gold)"; e.currentTarget.style.color = "white"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(180,83,9,0.08)"; e.currentTarget.style.color = "var(--color-gold)"; }}
+                          >
+                            <Video size={18} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: "0.82rem", color: "#94a3b8", textAlign: "center", padding: "1rem 0", margin: 0 }}>
+                    No upcoming consultations scheduled.
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Call History */}
-          <div
-            className="card"
-            style={{
-              marginTop: "2rem",
-              padding: "1.5rem",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "1rem",
+          {/* ===== PAST GUIDANCE / Call History ===== */}
+          <section className="glass-card" style={{
+            marginTop: "2rem", borderRadius: "1.5rem", padding: "2rem",
+            boxShadow: "0 20px 40px rgba(180,83,9,0.08)", position: "relative", overflow: "hidden",
+          }}>
+            
+
+            {/* header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{ background: "var(--color-gold)", padding: "0.5rem", borderRadius: "0.625rem" }}>
+                  <Clock size={20} color="white" />
+                </div>
+                <div>
+                  <h2 className="section-title" style={{fontSize: "2rem", fontWeight: 500, color: "#1e293b", margin: 0 }}>Past Guidance</h2>
+                  <p style={{ fontSize: "0.78rem", color: "#64748b", margin: "0.15rem 0 0" }}>Your recent call and consultation records</p>
+                </div>
+              </div>
+              <button onClick={() => router.push("/call-history")} style={{
+                padding: "0.5rem 1.25rem", border: "1px solid #e2e8f0", borderRadius: "0.75rem",
+                background: "white", fontSize: "0.8rem", fontWeight: 600, color: "#334155", cursor: "pointer",
+                transition: "background 0.2s",
               }}
-            >
-              <h3
-                style={{
-                  fontSize: "1.25rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
               >
-                <Clock
-                  style={{
-                    width: "1.25rem",
-                    height: "1.25rem",
-                    color: "var(--color-indigo)",
-                  }}
-                />
-                Recent Calls
-              </h3>
-              <Button
-                onClick={() => router.push("/call-history")}
-                variant="ghost"
-                style={{ fontSize: "0.875rem", color: "var(--color-indigo)" }}
-              >
-                View All
-              </Button>
+                View All Records
+              </button>
             </div>
 
-            {historyLoading && callHistory.length === 0 ? (
-              // Skeleton loader for call history
-              <div style={{ display: "grid", gap: "0.75rem" }}>
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.75rem",
-                      background: "rgba(243, 244, 246, 0.8)",
-                      borderRadius: "0.5rem",
-                      animation:
-                        "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "2.5rem",
-                          height: "2.5rem",
-                          background: "rgba(209, 213, 219, 0.8)",
-                          borderRadius: "50%",
-                        }}
-                      />
+            {/* call list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", position: "relative", zIndex: 1 }}>
+              {historyLoading && callHistory.length === 0 ? (
+                [1, 2, 3].map((i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "1rem", background: "#f1f5f9", borderRadius: "0.875rem",
+                    animation: "pulse 2s ease-in-out infinite",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ width: "2.75rem", height: "2.75rem", borderRadius: "50%", background: "#e2e8f0" }} />
                       <div>
-                        <div
-                          style={{
-                            width: "8rem",
-                            height: "1rem",
-                            background: "rgba(209, 213, 219, 0.8)",
-                            borderRadius: "0.25rem",
-                            marginBottom: "0.5rem",
-                          }}
-                        />
-                        <div
-                          style={{
-                            width: "6rem",
-                            height: "0.75rem",
-                            background: "rgba(209, 213, 219, 0.6)",
-                            borderRadius: "0.25rem",
-                          }}
-                        />
+                        <div style={{ width: "8rem", height: "12px", background: "#e2e8f0", borderRadius: "4px", marginBottom: "0.4rem" }} />
+                        <div style={{ width: "5.5rem", height: "10px", background: "#e2e8f0", borderRadius: "4px" }} />
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          width: "4rem",
-                          height: "0.875rem",
-                          background: "rgba(209, 213, 219, 0.8)",
-                          borderRadius: "0.25rem",
-                          marginBottom: "0.5rem",
-                          marginLeft: "auto",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: "3rem",
-                          height: "0.75rem",
-                          background: "rgba(209, 213, 219, 0.6)",
-                          borderRadius: "0.25rem",
-                          marginLeft: "auto",
-                        }}
-                      />
+                      <div style={{ width: "3.5rem", height: "12px", background: "#e2e8f0", borderRadius: "4px", marginBottom: "0.4rem", marginLeft: "auto" }} />
+                      <div style={{ width: "2.5rem", height: "10px", background: "#e2e8f0", borderRadius: "4px", marginLeft: "auto" }} />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : callHistory.length > 0 ? (
-              <div style={{ display: "grid", gap: "0.75rem" }}>
-                {callHistory.map((call) => {
-                  const statusColor = getStatusColor(call.status);
+                ))
+              ) : callHistory.length > 0 ? (
+                callHistory.map((call) => {
+                  const sc = getStatusColor(call.status);
+                  const isVideo = call.type === "video";
                   return (
-                    <div
-                      key={call.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.75rem",
-                        background: statusColor.bg,
-                        borderRadius: "0.5rem",
-                        border: `1px solid ${statusColor.border}`,
-                      }}
+                    <div key={call.id} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "1rem", borderRadius: "1rem",
+                      background: `linear-gradient(90deg, ${sc.bg} 0%, transparent 60%)`,
+                      border: `1px solid ${sc.border}`,
+                      transition: "border-color 0.2s",
+                    }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(180,83,9,0.3)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = sc.border)}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.75rem",
-                          flex: 1,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "2.5rem",
-                            height: "2.5rem",
-                            background:
-                              call.type === "video"
-                                ? "linear-gradient(135deg, #7c3aed, #4f46e5)"
-                                : "linear-gradient(135deg, #10b981, #059669)",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: "0.875rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {call.type === "video" ? (
-                            <Video
-                              style={{ width: "1.25rem", height: "1.25rem" }}
-                            />
-                          ) : (
-                            <Phone
-                              style={{ width: "1.25rem", height: "1.25rem" }}
-                            />
-                          )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flex: 1 }}>
+                        {/* icon circle */}
+                        <div style={{
+                          width: "3rem", height: "3rem", borderRadius: "50%", flexShrink: 0,
+                          background: isVideo ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "linear-gradient(135deg,#10b981,#059669)",
+                          display: "flex", alignItems: "center", justifyContent: "center", color: "white",
+                          boxShadow: isVideo ? "0 4px 12px rgba(124,58,237,0.3)" : "0 4px 12px rgba(16,185,129,0.3)",
+                        }}>
+                          {isVideo ? <Video size={18} /> : <Phone size={18} />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p
-                            style={{
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                              color: "var(--color-gray-900)",
-                              margin: 0,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                            title={call.astrologerName}
-                          >
+                          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {call.astrologerName || "Unknown Astrologer"}
                           </p>
-                          <p
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "var(--color-gray-500)",
-                              margin: "0.25rem 0 0 0",
-                            }}
-                          >
-                            {new Date(call.startedAt).toLocaleString()}
-                            {call.duration > 0 && ` • ${call.duration} min`}
+                          <p style={{ fontSize: "0.72rem", color: "#64748b", margin: "0.2rem 0 0" }}>
+                            {new Date(call.startedAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                            {" • "}
+                            {new Date(call.startedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                            {call.duration > 0 && ` • ${call.duration} mins`}
                           </p>
                         </div>
                       </div>
-                      <div
-                        style={{
-                          textAlign: "right",
-                          marginLeft: "1rem",
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: 600,
-                            color: "#dc2626",
-                            margin: 0,
-                          }}
-                        >
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <p style={{ fontSize: "0.875rem", fontWeight: 700, color: "#dc2626", margin: 0 }}>
                           -₹{call.cost?.toFixed(2) || "0.00"}
                         </p>
-                        <p
-                          style={{
-                            fontSize: "0.75rem",
-                            color: statusColor.text,
-                            margin: "0.25rem 0 0 0",
-                            textTransform: "capitalize",
-                            fontWeight: 500,
-                          }}
-                        >
+                        <p style={{
+                          fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase",
+                          letterSpacing: "0.06em", color: sc.text, margin: "0.2rem 0 0",
+                        }}>
                           {call.status || "completed"}
                         </p>
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "2rem",
-                  color: "var(--color-gray-500)",
-                }}
-              >
-                <Clock
-                  style={{
-                    width: "3rem",
-                    height: "3rem",
-                    margin: "0 auto 1rem",
-                    opacity: 0.5,
-                    color: "inherit",
-                  }}
-                />
-                <p>No call history yet.</p>
-              </div>
-            )}
-          </div>
+                })
+              ) : (
+                <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                  <Clock size={40} style={{ opacity: 0.25, color: "var(--color-gold)", margin: "0 auto 0.75rem" }} />
+                  <p style={{ color: "var(--color-gold)", fontSize: "0.85rem", margin: 0 }}>No call history yet.</p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      <Modal
-        open={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Profile"
-      >
+      {/* ===== Edit Profile Modal ===== */}
+      <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profile">
         <div style={{ padding: "1.5rem" }}>
+          {[
+            { label: "Full Name", type: "text", key: "name", placeholder: "" },
+            { label: "Email", type: "email", key: "email", placeholder: "" },
+            { label: "Phone (Optional)", type: "tel", key: "phone", placeholder: "+91 98765 43210" },
+          ].map((field) => (
+            <div key={field.key} style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "#475569", marginBottom: "0.4rem" }}>
+                {field.label}
+              </label>
+              <input
+                type={field.type}
+                value={editForm[field.key]}
+                onChange={(e) => setEditForm({ ...editForm, [field.key]: e.target.value })}
+                placeholder={field.placeholder}
+                style={{
+                  width: "100%", padding: "0.7rem 1rem", border: "1px solid var(--color-gray-300)",
+                  borderRadius: "0.75rem", fontSize: "0.9rem", outline: "none",
+                  boxSizing: "border-box", transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "var(--color-gold)")}
+                onBlur={(e) => (e.target.style.borderColor = "var(--color-gray-300)")}
+              />
+            </div>
+          ))}
+
+          {/* ---- Date of Birth ---- */}
           <div style={{ marginBottom: "1rem" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--color-gray-700)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm({ ...editForm, name: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                border: "1px solid var(--color-gray-300)",
-                borderRadius: "0.75rem",
-                fontSize: "1rem",
-                outline: "none",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "var(--color-gold)")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "var(--color-gray-300)")
-              }
-            />
-          </div>
-
-          <div style={{ marginBottom: "1rem" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--color-gray-700)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              value={editForm.email}
-              onChange={(e) =>
-                setEditForm({ ...editForm, email: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                border: "1px solid var(--color-gray-300)",
-                borderRadius: "0.75rem",
-                fontSize: "1rem",
-                outline: "none",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "var(--color-gold)")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "var(--color-gray-300)")
-              }
-            />
-          </div>
-
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--color-gray-700)",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Phone (Optional)
-            </label>
-            <input
-              type="tel"
-              value={editForm.phone}
-              onChange={(e) =>
-                setEditForm({ ...editForm, phone: e.target.value })
-              }
-              placeholder="+91 98765 43210"
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                border: "1px solid var(--color-gray-300)",
-                borderRadius: "0.75rem",
-                fontSize: "1rem",
-                outline: "none",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "var(--color-gold)")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "var(--color-gray-300)")
-              }
-            />
-          </div>
-
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <Button
-              onClick={handleSaveProfile}
-              disabled={saving}
-              className="btn btn-primary"
-              style={{ flex: 1, height: "3rem", fontSize: "1rem" }}
-            >
-              {saving ? (
-                <Loader2
-                  style={{
-                    width: "1rem",
-                    height: "1rem",
-                    animation: "spin 1s linear infinite",
-                    marginRight: "0.5rem",
-                  }}
-                />
-              ) : (
-                <CheckCircle
-                  style={{
-                    width: "1rem",
-                    height: "1rem",
-                    marginRight: "0.5rem",
-                  }}
-                />
-              )}
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button
-              onClick={() => setIsEditModalOpen(false)}
-              variant="outline"
-              className="btn btn-outline"
-              style={{ flex: 1, height: "3rem", fontSize: "1rem" }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add Family Member Modal */}
-      {/* <Modal
-        open={isFamilyModalOpen}
-        onClose={() => setIsFamilyModalOpen(false)}
-        title="Add Family Member"
-      >
-        <div style={{ padding: "1.5rem" }}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={familyForm.name}
-              onChange={(e) =>
-                setFamilyForm({ ...familyForm, name: e.target.value })
-              }
-              placeholder="Enter full name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
-            />
-          </div>
-
-          <div style={{ marginBottom: "1rem" }}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Relation
-            </label>
-            <select
-              value={familyForm.relation}
-              onChange={(e) =>
-                setFamilyForm({ ...familyForm, relation: e.target.value })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
-            >
-              <option value="Self">Self</option>
-              <option value="Spouse">Spouse</option>
-              <option value="Son">Son</option>
-              <option value="Daughter">Daughter</option>
-              <option value="Father">Father</option>
-              <option value="Mother">Mother</option>
-              <option value="Brother">Brother</option>
-              <option value="Sister">Sister</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: "1rem" }}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "#475569", marginBottom: "0.4rem" }}>
               Date of Birth
             </label>
             <input
               type="date"
-              value={familyForm.dob}
-              onChange={(e) =>
-                setFamilyForm({ ...familyForm, dob: e.target.value })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
+              value={editForm.dob}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
+              style={{
+                width: "100%", padding: "0.7rem 1rem", border: "1px solid var(--color-gray-300)",
+                borderRadius: "0.75rem", fontSize: "0.9rem", outline: "none",
+                boxSizing: "border-box", transition: "border-color 0.2s",
+                colorScheme: "light",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--color-gold)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--color-gray-300)")}
             />
+
+            {/* Live zodiac preview */}
+            {editForm.dob && (() => {
+              const preview = computeZodiacs(editForm.dob);
+              return preview ? (
+                <div style={{
+                  marginTop: "0.6rem", display: "flex", alignItems: "center", gap: "0.5rem",
+                  background: "rgba(180,83,9,0.06)", borderRadius: "0.6rem",
+                  padding: "0.45rem 0.7rem",
+                }}>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Your signs:</span>
+                  <span style={{
+                    fontSize: "0.7rem", fontWeight: 600, color: "var(--color-gold)",
+                    background: "rgba(180,83,9,0.1)", padding: "0.2rem 0.55rem", borderRadius: "999px",
+                  }}>
+                    {preview.western.symbol} {preview.western.sign}
+                  </span>
+                  <span style={{
+                    fontSize: "0.7rem", fontWeight: 600, color: "#D97706",
+                    background: "rgba(217,119,6,0.1)", padding: "0.2rem 0.55rem", borderRadius: "999px",
+                  }}>
+                    ✦ {preview.indian}
+                  </span>
+                </div>
+              ) : null;
+            })()}
           </div>
 
-          <div style={{ marginBottom: "1rem" }}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Time of Birth
-            </label>
-            <input
-              type="time"
-              value={familyForm.time}
-              onChange={(e) =>
-                setFamilyForm({ ...familyForm, time: e.target.value })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
-            />
-          </div>
-
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Place of Birth
-            </label>
-            <PlaceAutocomplete
-              value={familyForm.place}
-              onChange={(value) =>
-                setFamilyForm({ ...familyForm, place: value })
-              }
-              placeholder="City, Country"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base outline-none focus:border-amber-500 transition-colors"
-            />
-          </div>
-
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <Button
-              onClick={handleAddFamilyMember}
-              disabled={saving}
-              className="btn btn-primary"
-              style={{ flex: 1, height: "3rem", fontSize: "1rem" }}
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
-              {saving ? "Adding..." : "Add Member"}
-            </Button>
-            <Button
-              onClick={() => setIsFamilyModalOpen(false)}
-              variant="outline"
-              className="btn btn-outline"
-              style={{ flex: 1, height: "3rem", fontSize: "1rem" }}
-            >
+          <div style={{ display: "flex", gap: "0.65rem", marginTop: "1.25rem" }}>
+            <button onClick={handleSaveProfile} disabled={saving} className="btn-primary flex items-center gap-2">
+              {saving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <CheckCircle size={16} />}
+              {saving ? "Saving…" : "Save Changes"}
+            </button>
+            <button onClick={() => setIsEditModalOpen(false)} 
+            className="btn btn-secondary" >
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
-      </Modal> */}
+      </Modal>
 
-      {/* AI Predictions - Full Featured Modal */}
-      {showPredictions && selectedMember && (
-        <FamilyMemberPredictions
-          member={selectedMember}
-          onClose={() => {
-            setShowPredictions(false);
-            setSelectedMember(null);
-          }}
-        />
-      )}
-
-      {/* Local Animations & Styles */}
+      {/* ===== Global styles ===== */}
       <style jsx>{`
-        .card {
-          border-radius: 1rem;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          transition: var(--transition-smooth);
+        .glass-card {
+          background: var(--card-bg, rgba(255, 255, 255, 0.6));
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid var(--color-gold);
         }
-        .card {
-          background: rgba(255, 255, 255, 0.85) !important;
-          border: 1px solid rgba(212, 175, 55, 0.2) !important;
-          box-shadow: var(--shadow-lg) !important;
-        }
-        .card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-xl) !important;
-        }
-        [data-theme="light"] .card:hover,
-        :not([data-theme]) .card:hover {
-          box-shadow: var(--shadow-xl) !important;
-        }
-
-        .profile-grid {
-          display: grid;
-          gap: 2rem;
-          grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 768px) {
-          .profile-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
         @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
+          to { transform: rotate(360deg); }
         }
-
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0) translateX(0);
-          }
-          25% {
-            transform: translateY(-30px) translateX(20px);
-          }
-          50% {
-            transform: translateY(-60px) translateX(-20px);
-          }
-          75% {
-            transform: translateY(-30px) translateX(30px);
-          }
-        }
-
         @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        /* Responsive: stack to single column on mobile */
+        @media (max-width: 860px) {
+          .responsive-grid {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
