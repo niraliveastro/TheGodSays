@@ -1357,58 +1357,83 @@ export default function NumerologyPage() {
     </div>
   </div>
 
-  <Section
-    title="What Is Numerology & How It Works"
-    content={[
-      "Life Path, Destiny & Soul Urge calculation",
-      "Name and date of birth based analysis",
-      "Pattern recognition across life cycles",
-    ]}
-  >
-    Numerology studies the influence of numbers derived from your birth details
-    and name. These numbers reveal strengths, challenges, and recurring life
-    themes.
-  </Section>
+<Section
+  title="What Is Numerology & How It Works"
+  content={[
+    "Life Path, Destiny & Soul Urge number calculation",
+    "Name and date of birth based numeric mapping",
+    "Understanding repeating numbers and cycles",
+    "Interpreting strengths, challenges, and life focus areas",
+  ]}
+>
+  Numerology is the study of how numbers influence human life through natural
+  patterns. Your date of birth and name are converted into key numbers that
+  describe your personality traits, motivations, and the way you respond to
+  situations.
 
-  <Section
-    title="What Makes Our Numerology Different"
-    content={[
-      "AI-based calculation accuracy",
-      "Career, relationship & decision guidance",
-      "Favorable and challenging periods",
-      "Practical energy balancing suggestions",
-      "Option to consult astrologers",
-    ]}
-  >
-    Most numerology tools stop at meanings. Nirali Live Astro focuses on timing,
-    tendencies, and preparedness.
-  </Section>
+  These numbers don’t define fixed outcomes. Instead, they highlight tendencies,
+  strengths you can rely on, and challenges you may repeatedly encounter. Over
+  time, numerology helps you recognize life cycles, understand why certain themes
+  repeat, and approach decisions with greater clarity.
+</Section>
 
-  <Section
-    title="What You’ll Learn from Numerology"
-    content={[
-      "Natural strengths and weaknesses",
-      "Career and business tendencies",
-      "Relationship compatibility patterns",
-      "Decision-making style",
-      "Repeating life themes",
-    ]}
-  >
-    Your numerology report acts as a mirror to understand how numbers shape your
-    life path.
-  </Section>
+<Section
+  title="What Makes Our Numerology Different"
+  content={[
+    "Accurate AI-based number calculations",
+    "Interpretation using classical numerology principles",
+    "Career, relationship, and decision-focused insights",
+    "Identification of favorable and challenging phases",
+    "Optional astrologer consultation for deeper clarity",
+  ]}
+>
+  Many numerology tools simply list number meanings. At Nirali Live Astro, the
+  focus is on interpretation and relevance.
 
-  <Section
-    title="Numerology + Astrology = Better Accuracy"
-    content={[
-      "Numerology insights",
-      "Kundli predictions",
-      "Planetary transits",
-    ]}
-  >
-    Numbers and planets work together. Combining numerology with astrology gives
-    a broader and more reliable understanding of life patterns.
-  </Section>
+  Our system connects individual numbers into a complete picture, showing how
+  they interact across different phases of life. AI helps identify patterns and
+  timing, while traditional numerology principles ensure the insights remain
+  grounded and meaningful. The result is guidance that feels practical rather
+  than generic.
+</Section>
+
+<Section
+  title="What You’ll Learn from Numerology"
+  content={[
+    "Natural strengths and areas of growth",
+    "Career and business tendencies",
+    "Relationship and compatibility patterns",
+    "Decision-making style and mindset",
+    "Recurring life themes and lessons",
+  ]}
+>
+  A numerology report acts like a personal roadmap. It explains why certain
+  choices feel natural to you, why some paths create resistance, and how your
+  mindset shapes outcomes.
+
+  By understanding your numbers, you gain awareness rather than prediction.
+  This awareness helps you make better choices, manage expectations, and align
+  your actions with your natural tendencies.
+</Section>
+
+<Section
+  title="Numerology + Astrology = Better Accuracy"
+  content={[
+    "Numerology insights",
+    "Kundli and planetary analysis",
+    "Current and upcoming planetary transits",
+  ]}
+>
+  Numbers and planets influence life from different angles. Numerology explains
+  inner tendencies and cycles, while astrology explains external timing and
+  planetary influences.
+
+  When combined, they provide a more balanced perspective. Numerology helps you
+  understand *why* something feels a certain way, while astrology helps explain
+  *when* specific events or shifts are more likely. Together, they offer deeper
+  clarity than either system alone.
+</Section>
+
 
   <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
     Numerology offers guidance and should not replace professional advice.

@@ -764,54 +764,77 @@ export default function CosmicEventTracker() {
     </div>
   </div>
 
-  <Section
-    title="What Are Planetary Transits"
-    content={[
-      "Saturn (Shani) transit",
-      "Jupiter (Guru) transit",
-      "Rahu–Ketu transit",
-      "Retrogrades & conjunctions",
-    ]}
-  >
-    Transits occur when planets move through zodiac signs and houses, activating
-    specific life areas.
-  </Section>
+<Section
+  title="What Are Planetary Transits"
+  content={[
+    "Saturn (Shani) transit and long-term life lessons",
+    "Jupiter (Guru) transit and growth opportunities",
+    "Rahu–Ketu transit and karmic shifts",
+    "Retrogrades, conjunctions, and planetary aspects",
+  ]}
+>
+  Planetary transits occur when planets move through different zodiac signs and
+  houses in the sky. As they move, they activate specific areas of life shown in
+  your birth chart, such as career, relationships, health, or finances.
 
-  <Section
-    title="How Transits Affect You Personally"
-    content={[
-      "Your kundli placements",
-      "Running dasha & sub-dasha",
-      "Planetary strength",
-    ]}
-  >
-    The same transit affects people differently. Personal chart factors decide
-    real impact.
-  </Section>
+  Some transits bring expansion and clarity, while others slow things down and
+  demand patience. Major planets like Saturn and Jupiter tend to influence life
+  over longer periods, while faster-moving planets can trigger short-term
+  changes and emotional responses.
+</Section>
 
-  <Section
-    title="AI-Based Transit Analysis"
-    content={[
-      "Accurate planetary tracking",
-      "Kundli-based impact mapping",
-      "Sensitive & favorable periods",
-      "Preparedness guidance",
-    ]}
-  >
-    Our AI matches live planetary movements with your chart for clarity and
-    timing.
-  </Section>
+<Section
+  title="How Transits Affect You Personally"
+  content={[
+    "Planetary positions in your kundli",
+    "Running dasha and sub-dasha periods",
+    "Strength, weakness, and dignity of planets",
+  ]}
+>
+  A transit does not affect everyone in the same way. Two people experiencing
+  the same planetary movement can have completely different outcomes.
 
-  <Section
-    title="Use Transits for Better Timing"
-    content={[
-      "Plan important decisions",
-      "Avoid stress-heavy periods",
-      "Use favorable phases wisely",
-    ]}
-  >
-    Transit awareness helps you move with time instead of against it.
-  </Section>
+  The actual impact depends on how the transiting planet interacts with your
+  birth chart, which house it activates, and which planetary periods you are
+  currently running. This is why personal analysis matters far more than general
+  transit predictions.
+</Section>
+
+<Section
+  title="AI-Based Transit Analysis"
+  content={[
+    "Live and accurate planetary tracking",
+    "Transit interaction with kundli placements",
+    "Identification of sensitive and supportive phases",
+    "Practical preparedness guidance",
+  ]}
+>
+  Our AI system continuously tracks planetary movements and compares them with
+  your birth chart. Instead of broad predictions, it highlights how specific
+  transits interact with your planets, houses, and running dashas.
+
+  This helps you understand not just what is happening in the sky, but how those
+  movements translate into personal experiences, challenges, and opportunities
+  in real life.
+</Section>
+
+<Section
+  title="Use Transits for Better Timing"
+  content={[
+    "Plan important decisions with awareness",
+    "Avoid unnecessary pressure during difficult phases",
+    "Make better use of supportive planetary periods",
+  ]}
+>
+  Transit awareness allows you to work with time rather than struggle against
+  it. Knowing when to push forward, pause, or reflect can reduce stress and help
+  you make more balanced decisions.
+
+  Transits do not force outcomes, but they indicate periods when effort flows
+  more easily or requires extra patience. Understanding these rhythms helps you
+  stay prepared and grounded through change.
+</Section>
+
 
   <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
     Astrology offers guidance, not guaranteed outcomes.

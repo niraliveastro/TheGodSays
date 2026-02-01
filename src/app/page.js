@@ -2968,7 +2968,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* NIRALI LIVE ASTRO – HOME SECTIONS */}
+          {/* NIRALIVE ASTRO – HOME SECTIONS */}
           
             <div
               className="card shadow-xl border mt-16"
@@ -3035,88 +3035,121 @@ export default function Home() {
               </div>
 
 
-                    {/* WHY NIRALI */}
+                    {/* WHY NIRALIVE */}
     <Section
-      title="Why People Choose NiraLive Astro"
-      content={[
-        "AI + astrologer verified insights",
-        "Advanced kundli matching beyond guna milan",
-        "Personalized remedies, not generic advice",
-        "Support for individuals, couples & families",
-        "India + NRI friendly consultations",
-      ]}
-    >
-      Unlike generic astrology apps, we blend ancient Vedic wisdom with modern
-      AI analysis to deliver deeper, more practical guidance.
-    </Section>
+  title="Why People Choose Nirali Live Astro"
+  content={[
+    "AI + astrologer verified insights",
+    "Advanced kundli matching beyond guna milan",
+    "Personalized remedies, not generic advice",
+    "Support for individuals, couples & families",
+    "India + NRI friendly consultations",
+  ]}
+>
+  Astrology works best when tradition and clarity come together. At Nirali Live
+  Astro, we combine classical Vedic principles with AI-based analysis to reduce
+  guesswork and bring structure to astrological interpretation.
+
+  Every insight is designed to be practical, grounded, and relevant to real
+  life situations, whether you are seeking guidance for yourself or your family.
+</Section>
+
 
     {/* TALK TO ASTROLOGER */}
     <Section
-      title="Talk to Experienced Astrologers Online"
-      content={[
-        "Marriage & relationship guidance",
-        "Career & business decisions",
-        "Love, family & emotional concerns",
-        "Finance & major life choices",
-        "Vastu & home energy corrections",
-      ]}
-    >
-      Choose your astrologer, select chat, call or WhatsApp, and get instant
-      guidance based on your kundli.
-    </Section>
+  title="Talk to Experienced Astrologers Online"
+  content={[
+    "Marriage & relationship guidance",
+    "Career & business decisions",
+    "Love, family & emotional concerns",
+    "Finance & major life choices",
+    "Vastu & home energy corrections",
+  ]}
+>
+  Sometimes clarity comes from conversation. Our platform allows you to connect
+  directly with experienced astrologers who analyze your kundli and current
+  planetary periods before offering guidance.
+
+  You can choose chat, call, or WhatsApp based on your comfort, making
+  consultations flexible, private, and focused on your specific concerns.
+</Section>
+
 
     {/* AI KUNDLI MATCHING */}
     <Section
-      title="AI-Powered Kundli Matching for Marriage"
-      content={[
-        "Planetary aspects between partners",
-        "Manglik, Nadi, Bhakoot & dosha analysis",
-        "Dasha & future compatibility timelines",
-        "Emotional harmony & stability indicators",
-      ]}
-    >
-      Go far beyond traditional guna milan with AI-driven compatibility scoring,
-      strengths, challenges, and practical remedies.
-    </Section>
+  title="AI-Powered Kundli Matching for Marriage"
+  content={[
+    "Planetary aspects between partners",
+    "Manglik, Nadi, Bhakoot & dosha analysis",
+    "Dasha & future compatibility timelines",
+    "Emotional harmony & stability indicators",
+  ]}
+>
+  Marriage compatibility cannot be reduced to a single score. Our AI-powered
+  kundli matching evaluates deeper planetary interactions, long-term dasha
+  alignment, and emotional balance between partners.
+
+  The goal is not to label matches as good or bad, but to help you understand
+  strengths, challenges, and realistic expectations before taking important
+  decisions.
+</Section>
+
 
     {/* AI KUNDLI PREDICTION */}
     <Section
-      title="AI Kundli Prediction for Your Life"
-      content={[
-        "Career & growth phases",
-        "Marriage & relationship timing",
-        "Financial cycles",
-        "Health & life challenges",
-        "Upcoming good & difficult periods",
-      ]}
-    >
-      Upload your birth details and chat with AI using your kundli for unlimited
-      personalized questions.
-    </Section>
+  title="AI Kundli Prediction for Your Life"
+  content={[
+    "Career & growth phases",
+    "Marriage & relationship timing",
+    "Financial cycles",
+    "Health & life challenges",
+    "Upcoming good & difficult periods",
+  ]}
+>
+  Your birth chart reflects patterns, timing, and tendencies across different
+  areas of life. By analyzing planetary positions and running dashas, our AI
+  provides personalized insights rather than generic forecasts.
+
+  You can also interact with the AI using your kundli, allowing you to explore
+  specific questions and gain clarity at your own pace.
+</Section>
+
 
     {/* FAMILY & TIMELINE */}
     <Section
-      title="Family Kundli & Life Timeline Analysis"
-      content={[
-        "Shared good & challenging periods",
-        "Dasha interactions within family",
-        "Joint preparation for future phases",
-      ]}
-    >
-      Designed for families, couples, and long-term life planning.
-    </Section>
+  title="Family Kundli & Life Timeline Analysis"
+  content={[
+    "Shared good & challenging periods",
+    "Dasha interactions within family",
+    "Joint preparation for future phases",
+  ]}
+>
+  In many households, life events are interconnected. Family kundli analysis
+  helps understand how one person’s planetary period may influence others,
+  especially during important transitions.
+
+  This feature is useful for families and couples who want to plan ahead
+  together with awareness rather than reacting to sudden changes.
+</Section>
+
 
     {/* VASTU */}
     <Section
-      title="AI-Based Vastu Analysis for Your Home"
-      content={[
-        "Room-wise vastu analysis",
-        "Directional defect identification",
-        "Remedies without reconstruction",
-      ]}
-    >
-      Identify vastu issues using AI and receive practical, actionable solutions.
-    </Section>
+  title="AI-Based Vastu Analysis for Your Home"
+  content={[
+    "Room-wise vastu analysis",
+    "Directional defect identification",
+    "Remedies without reconstruction",
+  ]}
+>
+  Vastu focuses on harmony between living spaces and natural elements. Using AI,
+  we analyze your home layout to identify imbalances related to direction,
+  placement, and energy flow.
+
+  The emphasis is on practical remedies that can be applied without major
+  structural changes, keeping solutions simple and realistic.
+</Section>
+
               
 
               {/* DISCLAIMER */}

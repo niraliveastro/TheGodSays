@@ -940,56 +940,74 @@ export default function CalendarPage() {
       <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>View Today’s Panchang</button>
     </div>
   </div>
+<Section
+  title="What Is Panchang"
+  content={[
+    "Tithi (lunar day)",
+    "Vara (weekday)",
+    "Nakshatra (lunar constellation)",
+    "Yoga",
+    "Karana",
+  ]}
+>
+  Panchang is a traditional Hindu calendar system based on the combined movement
+  of the Moon, Sun, and planets. It is used to understand the quality of time on
+  a given day and to decide when certain activities are more supportive or less
+  favorable.
 
-  <Section
-    title="What Is Panchang"
-    content={[
-      "Tithi",
-      "Vara (day)",
-      "Nakshatra",
-      "Yoga",
-      "Karana",
-    ]}
-  >
-    Panchang is a Hindu calendar system based on planetary and lunar movements
-    used to determine auspicious timings.
-  </Section>
+  Each of the five elements of Panchang reflects a different aspect of time.
+  Together, they help explain the natural rhythm of the day, guiding rituals,
+  decisions, and important actions with awareness rather than blind belief.
+</Section>
 
-  <Section
-    title="What Our Panchang Calendar Offers"
-    content={[
-      "Daily Panchang details",
-      "Festivals & important dates",
-      "Muhurat guidance",
-      "Planetary positions",
-      "Simple explanations",
-    ]}
-  >
-    Designed for practical daily use without complexity.
-  </Section>
+<Section
+  title="What Our Panchang Calendar Offers"
+  content={[
+    "Complete daily Panchang information",
+    "Festivals, vrat, and important observances",
+    "Muhurat and timing guidance",
+    "Planetary positions for the day",
+    "Clear and simple explanations",
+  ]}
+>
+  Our Panchang calendar is designed for everyday use. Instead of overwhelming
+  users with technical terminology, it presents essential information in a
+  structured and easy-to-understand format.
 
-  <Section
-    title="Panchang + Astrology for Better Decisions"
-    content={[
-      "Panchang aligned with planetary movement",
-      "Kundli relevance checking",
-      "Timing-focused guidance",
-    ]}
-  >
-    Panchang becomes more powerful when combined with astrology.
-  </Section>
+  Whether you are checking today’s tithi, planning a ritual, or simply staying
+  aware of planetary movements, the focus remains on clarity and usefulness.
+</Section>
 
-  <Section
-    title="Who Should Use This Panchang"
-    content={[
-      "Individuals planning important activities",
-      "Families observing rituals",
-      "Astrology learners",
-      "NRIs seeking Indian Panchang",
-    ]}
-  >
-    Suitable for both daily reference and long-term planning.
-  </Section>
+<Section
+  title="Panchang + Astrology for Better Decisions"
+  content={[
+    "Panchang aligned with daily planetary movements",
+    "Checking relevance with your kundli",
+    "Guidance focused on timing and preparedness",
+  ]}
+>
+  Panchang shows the nature of time, while astrology shows how that time interacts
+  with you personally. When used together, they provide deeper insight into when
+  certain actions may feel smoother or more challenging.
+
+  By aligning Panchang details with your birth chart, you gain better awareness
+  of whether a particular day or period supports your intentions.
+</Section>
+
+<Section
+  title="Who Should Use This Panchang"
+  content={[
+    "Individuals planning important daily activities",
+    "Families observing rituals and festivals",
+    "Students learning astrology or Panchang basics",
+    "NRIs seeking reliable Indian Panchang access",
+  ]}
+>
+  This Panchang is suitable for both regular reference and long-term planning.
+  It supports traditional practices while remaining accessible to modern users,
+  regardless of location or level of astrological knowledge.
+</Section>
+
 
   <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
     Panchang provides traditional guidance and should not replace professional
