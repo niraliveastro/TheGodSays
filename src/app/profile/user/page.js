@@ -330,6 +330,9 @@ export default function ProfilePage() {
             background: "linear-gradient(135deg, #d4af37, #b8972e)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
           }}>
               Divine Profile
             </h1>
