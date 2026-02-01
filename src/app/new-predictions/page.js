@@ -230,7 +230,6 @@ export default function PredictionsPage() {
     router.push("/talk-to-astrologer");
   };
 
-
   const getHistory = () => {
     try {
       const stored = localStorage.getItem(PREDICTION_HISTORY_KEY);
@@ -1832,12 +1831,15 @@ export default function PredictionsPage() {
           }}
         >
           <h2
+            className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
             style={{
               fontFamily: "'Georgia','Times New Roman',serif",
-              fontSize: "20px",
-              fontWeight: 500,
-              color: "#1f2937",
-              margin: 0,
             }}
           >
             {title}
@@ -1935,7 +1937,16 @@ export default function PredictionsPage() {
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
-        <h1 className="title" style={{ fontSize: "2.5rem", fontWeight: 700 }}>
+        <h1
+          className="title"
+          style={{
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            background: "linear-gradient(135deg, #d4af37, #b8972e)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
           {t.predictions.title}
         </h1>
         <p
@@ -2184,7 +2195,6 @@ export default function PredictionsPage() {
                       type="submit"
                       disabled={submitting}
                       className="btn-primary w-full h-[52px]"
-                     
                     >
                       {submitting ? (
                         <>
@@ -3063,45 +3073,52 @@ export default function PredictionsPage() {
               "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
           }}
         >
- {/* HERO */}
-  <div
-    style={{
-      borderBottom: "2px solid rgba(212,175,55,0.25)",
-      paddingBottom: "1.75rem",
-      marginBottom: "1.75rem",
-      textAlign: "center",
-    }}
-  >
-    <h1
-      style={{
-        fontFamily: "'Georgia','Times New Roman',serif",
-        fontSize: "32px",
-        fontWeight: 500,
-        color: "#111827",
-        marginBottom: "0.75rem",
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
-        gap:"0.5rem",
-      }}
-    >
-      AI-Powered Vedic Astrology Predictions Explained
-    </h1>
+          {/* HERO */}
+          <div
+            style={{
+              borderBottom: "2px solid rgba(212,175,55,0.25)",
+              paddingBottom: "1.75rem",
+              marginBottom: "1.75rem",
+              textAlign: "center",
+            }}
+          >
+            <h1
+              style={{
+                fontFamily: "'Georgia','Times New Roman',serif",
+                fontSize: "32px",
+                fontWeight: 500,
+                color: "#111827",
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+              }}
+            >
+              AI-Powered Vedic Astrology Predictions Explained
+            </h1>
 
-    <p className="text-sm mt-1 text-slate-600">
-      Understand how we generate your personalized astrological insights
-      using traditional Vedic principles enhanced by AI analysis.
-    </p>
+            <p className="text-sm mt-1 text-slate-600">
+              Understand how we generate your personalized astrological insights
+              using traditional Vedic principles enhanced by AI analysis.
+            </p>
 
-    <div className="flex justify-center mt-4 gap-4">
-      <button className="btn-primary" onClick={handleTalkToAstrologer}>
-        Talk to an Astrologer
-      </button>
-      <button className="btn btn-secondary " onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}> 
-        Get Your Predictions
-      </button>     
-    </div>
-  </div>
+            <div className="mt-6 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-4 w-full">
+              <button
+                className="btn-primary w-full sm:w-auto px-6 py-3"
+                onClick={handleTalkToAstrologer}
+              >
+                Talk to an Astrologer
+              </button>
+
+              <button
+                className="btn btn-secondary w-full sm:w-auto px-6 py-3"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                Get Your Predictions
+              </button>
+            </div>
+          </div>
 
           {/* ACCORDIONS GO HERE */}
           <div style={{ padding: 0 }}></div>
@@ -3207,13 +3224,10 @@ export default function PredictionsPage() {
             judgment, remedies, and practical guidance.
           </Section>
 
-          <div
-            className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl"
-          >
-            Astrology highlights tendencies,
-            timings, and probabilities so you can make informed decisions. These
-            predictions help you prepare mentally and practically for upcoming
-            phases.
+          <div className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+            Astrology highlights tendencies, timings, and probabilities so you
+            can make informed decisions. These predictions help you prepare
+            mentally and practically for upcoming phases.
           </div>
         </div>
       </div>

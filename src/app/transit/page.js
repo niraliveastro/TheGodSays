@@ -310,6 +310,106 @@ export default function TransitPage() {
     return picks.slice(0, 2);
   }, [result]);
 
+
+          /* ---------- ACCORDION SECTION ---------- */
+      const Section = ({ title, content, children }) => {
+        const [open, setOpen] = useState(false);
+    
+        return (
+          <div
+            style={{
+              marginBottom: "1.25rem",
+              border: "1px solid rgba(212, 175, 55, 0.25)",
+              borderRadius: "1rem",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+              overflow: "hidden",
+              transition: "all 0.3s ease",
+            }}
+          >
+            {/* HEADER */}
+            <button
+              onClick={() => setOpen(!open)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <h2
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
+    
+              <span
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#b45309",
+                  transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              >
+                +
+              </span>
+            </button>
+    
+            {/* CONTENT */}
+            {open && (
+              <div
+                style={{
+                  padding: "0 1.25rem 1.25rem",
+                  animation: "fadeIn 0.3s ease",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.7,
+                    marginBottom: "0.75rem",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {children}
+                </p>
+    
+                <ul
+                  style={{
+                    paddingLeft: "1.25rem",
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.8,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {content.map((item, i) => (
+                    <li key={i}>✔ {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      };  
+
+
   return (
     <div className="transit-container" style={{ paddingTop: '0.01rem', marginTop: '0.9rem' }}>
       {/* Orbs */}
@@ -643,38 +743,101 @@ export default function TransitPage() {
       </h2>
     </div>
 
-    <div style={{ padding: 0 }}>
-      <p
-        style={{
-          fontSize: "0.875rem",
-          color: "#374151",
-          fontStyle: "normal",
-          marginBottom: 0,
-          fontFamily: "'Inter', sans-serif",
-          lineHeight: 1.6,
-        }}
-      >
-        This page tracks <strong>real-time planetary movements</strong> and
-        upcoming transitions as planets shift from one zodiac sign to another.
-        Each transit reflects a change in cosmic tone, influencing collective
-        themes such as mindset, action, growth, discipline, and emotional flow.
-        <br />
-        <br />
-        <strong>Current Transits</strong> show where each planet is positioned
-        right now and how long it will remain there.
-        <strong> Next Immediate Transits</strong> highlight the closest upcoming
-        sign changes with live countdowns.
-        <strong> Upcoming Transits</strong> allow you to explore future planetary
-        movements over the next six months or five years.
-        <br />
-        <br />
-        These insights are calculated using precise astronomical timing and
-        traditional astrological frameworks, helping you understand
-        <strong> when energies shift</strong> rather than predicting fixed
-        outcomes. Think of this as a cosmic weather report, revealing cycles,
-        momentum, and transitions unfolding in the sky.
-      </p>
-    </div>
+    <Section
+  title="What Are Planetary Transits"
+  content={[
+    "Movement of planets through zodiac signs",
+    "Activation of different life themes",
+    "Gradual shifts rather than sudden events",
+    "Short-term and long-term planetary cycles",
+  ]}
+>
+  Planetary transits occur as planets move continuously through the zodiac.
+  Each planet represents a specific type of energy, such as action, discipline,
+  communication, growth, or reflection, and its movement changes how that energy
+  is expressed over time.
+
+  Transits do not create events on their own. Instead, they describe changing
+  conditions and phases, helping you understand when certain themes become more
+  active or subdued.
+</Section>
+<Section
+  title="How Transits Affect You Personally"
+  content={[
+    "Your birth chart (kundli) placements",
+    "Running dasha and sub-dasha periods",
+    "Strength and condition of the planet",
+  ]}
+>
+  While planetary movements are the same for everyone, their impact differs
+  from person to person. The actual effect of a transit depends on how the
+  moving planet interacts with your individual birth chart.
+
+  This is why a transit that feels challenging for one person may feel neutral
+  or even supportive for another. Personal context matters more than the
+  transit itself.
+</Section>
+<Section
+  title="Understanding Current Planetary Transits"
+  content={[
+    "Where each planet is positioned now",
+    "How long the planet stays in the sign",
+    "Overall duration of the current phase",
+  ]}
+>
+  The Current Planetary Transits section shows the present position of each
+  planet and the time span for which it remains there. This helps you recognize
+  the ongoing background influences shaping thoughts, emotions, and actions.
+
+  Think of these as the dominant themes operating in the present moment rather
+  than immediate triggers for change.
+</Section>
+<Section
+  title="Next Immediate Transits & Countdown"
+  content={[
+    "Closest upcoming sign changes",
+    "Live countdown until transition",
+    "Awareness of approaching shifts",
+  ]}
+>
+  Next Immediate Transits highlight the planetary sign changes that are about to
+  occur soon. The live countdown shows exactly when a planet moves into a new
+  sign, marking a subtle shift in tone.
+
+  These transitions are useful for staying mentally prepared rather than
+  reacting unexpectedly when energy patterns begin to change.
+</Section>
+<Section
+  title="Exploring Upcoming Transits Over Time"
+  content={[
+    "Six-month and five-year views",
+    "Long-term planetary cycles",
+    "Pattern recognition over time",
+  ]}
+>
+  The Upcoming Transits section allows you to explore planetary movements across
+  different time ranges. Shorter views help with near-term awareness, while
+  longer timelines reveal broader cycles influencing life direction.
+
+  This is especially useful for understanding repetition, pacing, and periods
+  of gradual buildup rather than focusing on isolated dates.
+</Section>
+<Section
+  title="Using Transit Awareness Practically"
+  content={[
+    "Better timing for important decisions",
+    "Reduced anxiety during intense phases",
+    "Improved long-term planning",
+  ]}
+>
+  Transit awareness is not about prediction but preparation. By understanding
+  when energies shift, you can plan actions more consciously and avoid forcing
+  outcomes during naturally resistant phases.
+
+  Used correctly, transits act as a timing tool that supports clarity,
+  patience, and better decision-making.
+</Section>
+
   </div>
 </div>
     </div>
