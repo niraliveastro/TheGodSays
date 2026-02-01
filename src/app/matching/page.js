@@ -19,6 +19,7 @@ import {
   LoaderCircle,
   Star,
   PhoneCallIcon,
+  PhoneIcon,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistant from "@/components/AstrologerAssistant";
@@ -1836,8 +1837,8 @@ export default function MatchingPage() {
   };
 
   const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   /* ---------- ACCORDION SECTION ---------- */
   const Section = ({ title, content, children }) => {
@@ -1871,12 +1872,15 @@ export default function MatchingPage() {
           }}
         >
           <h2
+            className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
             style={{
               fontFamily: "'Georgia','Times New Roman',serif",
-              fontSize: "20px",
-              fontWeight: 500,
-              color: "#1f2937",
-              margin: 0,
             }}
           >
             {title}
@@ -1932,6 +1936,43 @@ export default function MatchingPage() {
       </div>
     );
   };
+
+  const getChartSummary = (rows = []) => {
+    const avg = rows.reduce((a, b) => a + (b.percent || 0), 0) / rows.length;
+
+    let level = "Moderate";
+    let description = "Mixed planetary influences are present.";
+    let points = [];
+
+    if (avg >= 120) {
+      level = "Strong";
+      description =
+        "Emotional stability and relationship support are favorable.";
+    } else if (avg < 105) {
+      level = "Weak";
+      description =
+        "Emotional sensitivity and imbalance may require attention.";
+    }
+
+    rows.forEach((p) => {
+      if (p.percent >= 120) {
+        points.push({
+          type: "ok",
+          text: `${p.name} is strongly supportive`,
+        });
+      } else if (p.percent < 105) {
+        points.push({
+          type: "warn",
+          text: `${p.name} may cause emotional friction`,
+        });
+      }
+    });
+
+    return { level, description, points };
+  };
+
+  const maleSummary = getChartSummary(mDetails?.shadbalaRows);
+  const femaleSummary = getChartSummary(fDetails?.shadbalaRows);
 
   /* -------------------------------------------------------------- */
   /* Render */
@@ -2756,108 +2797,97 @@ export default function MatchingPage() {
 
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <div className="grid md:grid-cols-2 gap-8 mt-8">
                 {/* Female Details */}
                 <div className="flex flex-col gap-6">
                   {/* Female Shadbala Card */}
                   {fDetails && (
-                    <div className="card">
+                    <div className="analysis-card female">
+                      {/* HEADER */}
                       <div className="results-header">
-                        <Moon style={{ color: "#a78bfa" }} />
-                        <h3 className="results-title">
-                          {t.matching.femaleDetails} - Shadbala
-                        </h3>
+                        <Moon style={{ color: "#a855f7" }} />
+                        <h3 className="results-title">Female Details</h3>
                       </div>
-                      <div className="card summary-card female mb-4">
-                        <h4 className="summary-title">
-                          How strong is her chart overall?
-                        </h4>
 
-                        <div className="summary-score">
-                          <span className="score-pill good">Strong</span>
-                          <span className="score-text">
-                            Emotional stability and relationship support are
-                            favorable
-                          </span>
+                      {/* SUMMARY */}
+                      {/* SUMMARY */}
+                      <div className="analysis-summary">
+                        <div className="summary-text">
+                          <h4 className="summary-question">
+                            How strong is her chart overall?
+                          </h4>
+
+                          <div className="summary-score">
+                            <span
+                              className={`score-pill ${femaleSummary.level.toLowerCase()}`}
+                            >
+                              {femaleSummary.level}
+                            </span>
+                            <span className="score-text">
+                              {femaleSummary.description}
+                            </span>
+                          </div>
+
+                          <ul className="summary-points">
+                            {femaleSummary.points.slice(0, 2).map((p, i) => (
+                              <li key={i} className={p.type}>
+                                <span className="bullet" />
+                                {p.text}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
 
-                        <ul className="summary-points">
-                          <li>✔ Moon and Venus are supportive</li>
-                          <li>⚠ Mars shows emotional friction</li>
-                          <li className="locked">
-                            🔒 Exact remedies & timing locked
-                          </li>
-                        </ul>
+                        <div className="summary-avatar moon">
+                          <Moon />
+                        </div>
+                      </div>
 
-                        <button
-                          className="unlock-btn btn-primary"
-                          onClick={onTalkToAstrologer}
-                        >
+
+
+                      {/* SHADBALA */}
+                      <table className="planet-table shadbala-table">
+                        <thead>
+                          <tr>
+                            <th>Planet</th>
+                            <th>Strength</th>
+                            <th>Ishta</th>
+                            <th>Kashta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {fDetails.shadbalaRows.map((p, i) => (
+                            <tr key={i}>
+                              <td className="planet-name">{p.name}</td>
+                              <td>{p.percent?.toFixed(1)}%</td>
+                              <td>
+                                <span className="arc ishta">
+                                  {p.ishta?.toFixed(0)}%
+                                </span>
+                              </td>
+                              <td>
+                                <span className="arc kashta">
+                                  {p.kashta?.toFixed(0)}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* FOOTER */}
+                      <div className="analysis-footer">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
                           Understand what this means →
                         </button>
                       </div>
-
-                      {/* Shadbala / Ishta-Kashta */}
-                      <div>
-                        <table className="planet-table shadbala-table">
-                          <thead>
-                            <tr>
-                              <th style={{ textAlign: "center" }}>Planet</th>
-                              <th style={{ textAlign: "center" }}>Strength</th>
-                              <th style={{ textAlign: "center" }}>Ishta</th>
-                              <th style={{ textAlign: "center" }}>Kashta</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(fDetails?.shadbalaRows || []).map((p, i) => (
-                              <tr key={i}>
-                                <td style={{ fontWeight: 500 }}>
-                                  {p.name || "—"}
-                                </td>
-                                <td>
-                                  {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                                </td>
-                                <td>
-                                  {p.ishta != null ? (
-                                    <div className="progress-container">
-                                      <div className="progress-bar">
-                                        <div
-                                          className="progress-fill"
-                                          style={{ width: `${p.ishta}%` }}
-                                        />
-                                      </div>
-                                      <div className="progress-label">
-                                        {p.ishta.toFixed(1)}%
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                                <td>
-                                  {p.kashta != null ? (
-                                    <div className="progress-container">
-                                      <div className="progress-bar">
-                                        <div
-                                          className="progress-fill"
-                                          style={{ width: `${p.kashta}%` }}
-                                        />
-                                      </div>
-                                      <div className="progress-label">
-                                        {p.kashta.toFixed(1)}%
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      
                     </div>
+
+                    
                   )}
+
+                  
 
                   {/* Female Planet Placements Card */}
                   {fDetails && (
@@ -2934,101 +2964,79 @@ export default function MatchingPage() {
                 <div className="flex flex-col gap-6">
                   {/* Male Shadbala Card */}
                   {mDetails && (
-                    <div className="card">
+                    <div className="analysis-card male">
                       <div className="results-header">
-                        <Sun style={{ color: "#d4af37" }} />
-                        <h3 className="results-title">
-                          {t.matching.maleDetails} - Shadbala
-                        </h3>
+                        <Sun style={{ color: "#f59e0b" }} />
+                        <h3 className="results-title">Male Details</h3>
                       </div>
 
-                      <div className="card summary-card male mb-4">
-                        <h4 className="summary-title">
-                          How strong is his chart overall?
-                        </h4>
+                      <div className="analysis-summary">
+                        <div className="summary-text">
+                          <h4 className="summary-question">
+                            How strong is his chart overall?
+                          </h4>
 
-                        <div className="summary-score">
-                          <span className="score-pill good">Strong</span>
-                          <span className="score-text">
-                            Emotional stability and relationship support are
-                            favorable
-                          </span>
+                          <div className="summary-score">
+                            <span
+                              className={`score-pill ${maleSummary.level.toLowerCase()}`}
+                            >
+                              {maleSummary.level}
+                            </span>
+                            <span className="score-text">
+                              {maleSummary.description}
+                            </span>
+                          </div>
+
+                          <ul className="summary-points">
+                            {maleSummary.points.slice(0, 2).map((p, i) => (
+                              <li key={i} className={p.type}>
+                                <span className="bullet" />
+                                {p.text}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
 
-                        <ul className="summary-points">
-                          <li>✔ Moon and Venus are supportive</li>
-                          <li>⚠ Mars shows emotional friction</li>
-                          <li className="locked">
-                            🔒 Exact remedies & timing locked
-                          </li>
-                        </ul>
-
-                        <button
-                          className="unlock-btn btn-primary"
-                          onClick={onTalkToAstrologer}
-                        >
-                          Understand what this means →
-                        </button>
+                        <div className="summary-avatar sun">
+                          <Sun />
+                        </div>
                       </div>
 
-                      {/* Shadbala / Ishta-Kashta */}
-                      <div classname="">
-                        <table className="planet-table shadbala-table">
-                          <thead>
-                            <tr>
-                              <th style={{ textAlign: "center" }}>Planet</th>
-                              <th style={{ textAlign: "center" }}>Strength</th>
-                              <th style={{ textAlign: "center" }}>Ishta</th>
-                              <th style={{ textAlign: "center" }}>Kashta</th>
+
+
+                      <table className="planet-table shadbala-table">
+                        <thead>
+                          <tr>
+                            <th>Planet</th>
+                            <th>Strength</th>
+                            <th>Ishta</th>
+                            <th>Kashta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mDetails.shadbalaRows.map((p, i) => (
+                            <tr key={i}>
+                              <td className="planet-name">{p.name}</td>
+                              <td>{p.percent?.toFixed(1)}%</td>
+                              <td>
+                                <span className="arc ishta">
+                                  {p.ishta?.toFixed(0)}%
+                                </span>
+                              </td>
+                              <td>
+                                <span className="arc kashta">
+                                  {p.kashta?.toFixed(0)}%
+                                </span>
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {(mDetails?.shadbalaRows || []).map((p, i) => (
-                              <tr key={i}>
-                                <td style={{ fontWeight: 500 }}>
-                                  {p.name || "—"}
-                                </td>
-                                <td>
-                                  {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                                </td>
-                                <td>
-                                  {p.ishta != null ? (
-                                    <div className="progress-container">
-                                      <div className="progress-bar">
-                                        <div
-                                          className="progress-fill"
-                                          style={{ width: `${p.ishta}%` }}
-                                        />
-                                      </div>
-                                      <div className="progress-label">
-                                        {p.ishta.toFixed(1)}%
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                                <td>
-                                  {p.kashta != null ? (
-                                    <div className="progress-container">
-                                      <div className="progress-bar">
-                                        <div
-                                          className="progress-fill"
-                                          style={{ width: `${p.kashta}%` }}
-                                        />
-                                      </div>
-                                      <div className="progress-label">
-                                        {p.kashta.toFixed(1)}%
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className="analysis-footer">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                          Understand what this means →
+                        </button>
                       </div>
                     </div>
                   )}
@@ -3103,8 +3111,38 @@ export default function MatchingPage() {
                     </div>
                   )}
                 </div>
+
+{/* ✅ PREMIUM – full width guidance banner */}
+<div
+  className="guidance-banner premium-full matchmaking-banner"
+  onClick={() => router.push("/talk-to-astrologer")}
+>
+  <div className="guidance-content">
+    <h3 className="guidance-title">
+      Wondering how strong this match really is?
+    </h3>
+
+    <p className="guidance-subtitle">
+      Talk to an experienced astrologer to understand compatibility, future
+      harmony, and the right steps forward for this relationship.
+    </p>
+
+    <button className="guidance-btn" onClick={onTalkToAstrologer}>
+      <PhoneIcon size={18} />
+      Talk to an astrologer
+    </button>
+  </div>
+
+  <div className="guidance-illustration" aria-hidden>
+    {/* matchmaking illustration / knot / couple sketch via CSS */}
+  </div>
+</div>
+
+
               </div>
             )}
+
+            
 
             {/* Footer */}
             <div className="actionBar mt-8">
@@ -3182,7 +3220,9 @@ export default function MatchingPage() {
               </p>
 
               <div className="flex justify-center mt-4 gap-3">
-                <button className="btn-primary" onClick={scrollToTop}>Check Compatibility</button>
+                <button className="btn-primary" onClick={scrollToTop}>
+                  Check Compatibility
+                </button>
                 <button
                   className="btn btn-secondary"
                   onClick={onTalkToAstrologer}
@@ -3348,11 +3388,10 @@ export default function MatchingPage() {
               </Section>
             </div>
             <div className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
-             Kundli matching does not decide your future. It provides clarity, awareness,
-  and preparedness so you can make thoughtful decisions.
-
-  Astrology supports conscious choices — it does not replace responsibility,
-  communication, or mutual respect in marriage.
+              Kundli matching does not decide your future. It provides clarity,
+              awareness, and preparedness so you can make thoughtful decisions.
+              Astrology supports conscious choices — it does not replace
+              responsibility, communication, or mutual respect in marriage.
             </div>
           </div>
         </div>

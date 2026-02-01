@@ -73,7 +73,7 @@ export default function BlogFloatingCTA() {
         </h2>
 
         <div className="blog-cta-actions">
-          <Link href="/predictions" className="btn btn-primary">
+          <Link href="/predictions" className="btn-primary">
             <StarIcon size={16} /> AI Predictions
           </Link>
 

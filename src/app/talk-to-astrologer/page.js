@@ -1139,16 +1139,20 @@ if (i === 0) {
               }}
             >
               <h2
-                style={{
-                  fontFamily: "'Georgia','Times New Roman',serif",
-                  fontSize: "20px",
-                  fontWeight: 500,
-                  color: "#1f2937",
-                  margin: 0,
-                }}
-              >
-                {title}
-              </h2>
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
     
               <span
                 style={{

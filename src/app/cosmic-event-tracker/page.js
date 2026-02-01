@@ -293,16 +293,20 @@ export default function CosmicEventTracker() {
             }}
           >
             <h2
-              style={{
-                fontFamily: "'Georgia','Times New Roman',serif",
-                fontSize: "20px",
-                fontWeight: 500,
-                color: "#1f2937",
-                margin: 0,
-              }}
-            >
-              {title}
-            </h2>
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
   
             <span
               style={{
@@ -436,48 +440,110 @@ export default function CosmicEventTracker() {
         </div>
       </div>
 
-      {/* Observation Period Card – Date range and stats */}
-      <div className="card period-card">
-        <div className="period-header">
-          <Calendar className="period-icon" />
-          <h2 className="section-title">Current Observation Period</h2>
-        </div>
-        <div className="period-content">
-          <p className="period-date-range">{formatDateRange()}</p>
-          <div className="period-stats">
-            <button className="stat-chip" type="button">
-              <div className="stat-icon-wrap">
-                <Rocket size={16} />
-              </div>
-              <div className="stat-text">
-                <span className="stat-value">{displayedNEOs.length}</span>
-                <span className="stat-label">
-                  Object{displayedNEOs.length !== 1 ? "s" : ""} Detected
-                </span>
-              </div>
-            </button>
-            <button
-              className={`stat-chip ${hazardousOnly ? "chip-active" : ""}`}
-              type="button"
-              onClick={() => setHazardousOnly(!hazardousOnly)}
-              title="Toggle hazardous-only filter"
-            >
-              <div className="stat-icon-wrap warning">
-                <AlertTriangle size={16} />
-              </div>
-              <div className="stat-text">
-                <span className="stat-value">
-                  {
-                    displayedNEOs.filter((neo) => neo.isPotentiallyHazardous)
-                      .length
-                  }
-                </span>
-                <span className="stat-label">Potentially Hazardous</span>
-              </div>
-            </button>
-          </div>
-        </div>
+{/* Observation Period – Modern Grid (Theme Preserved) */}
+
+  <h2 className="section-title mt-10">
+      Current Observation Period
+    </h2>
+<div className="card period-card">
+  {/* Header */}
+
+
+  <div className="text-center">
+    
+
+    <div className="flex items-center justify-center gap-4 mt-3">
+      <div className="h-px w-10 bg-border-muted" />
+      <p className="period-date-range font-medium">
+        {formatDateRange()}
+      </p>
+      <div className="h-px w-10 bg-border-muted" />
+    </div>
+  </div>
+
+  {/* Stats Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-0 overflow-hidden rounded-xl border border-card-border">
+    
+    {/* Inventory */}
+    <div className="p-6 border-b md:border-b-0 md:border-r border-card-border">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Inventory
+        </span>
+        <Rocket size={18} className="text-accent period-icon" />
       </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {displayedNEOs.length}
+        </span>
+        <span className="w-2 h-2 rounded-full bg-accent mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Celestial Objects</p>
+      <p className="text-xs text-muted mt-1">
+        Identified in this period
+      </p>
+    </div>
+
+    {/* Alignment (Non-interactive placeholder metric) */}
+    <div className="p-6 border-b md:border-b-0 md:border-r border-card-border">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Alignment
+        </span>
+        <Calendar size={18} className="text-accent period-icon" />
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {displayedNEOs.length - 
+            displayedNEOs.filter(n => n.isPotentiallyHazardous).length}
+        </span>
+        <span className="w-2 h-2 rounded-full bg-success mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Stable Objects</p>
+      <p className="text-xs text-muted mt-1">
+        No immediate threat vectors
+      </p>
+    </div>
+
+    {/* Risk Matrix (Interactive) */}
+    <button
+      type="button"
+      onClick={() => setHazardousOnly(!hazardousOnly)}
+      className={`p-6 text-left transition-colors
+        ${hazardousOnly ? "bg-chip-active" : ""}
+      `}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Risk Matrix
+        </span>
+        <AlertTriangle size={18} className="text-warning period-icon" />
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {
+            displayedNEOs.filter(
+              neo => neo.isPotentiallyHazardous
+            ).length
+          }
+        </span>
+        <span className="w-2 h-2 rounded-full bg-warning animate-pulse mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Potentially Hazardous</p>
+      <p className="text-xs text-muted mt-1">
+        Click to filter high-risk objects
+      </p>
+    </button>
+
+  </div>
+</div>
+
 
       {/* Error Alert */}
       {error && (
@@ -600,7 +666,7 @@ export default function CosmicEventTracker() {
         <button
           onClick={loadNextWeek}
           disabled={loading}
-          className="btn btn-gold btn-lg"
+          className="btn btn-primary"
         >
           {loading ? (
             <>
@@ -715,14 +781,14 @@ export default function CosmicEventTracker() {
                   href={detailsModalNEO.nasa_jpl_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-gold btn-lg"
+                  className="btn-primary"
                 >
                   <span>View on NASA JPL</span>
                   <ExternalLink size={18} />
                 </a>
                 <button
                   onClick={closeDetailsModal}
-                  className="btn btn-secondary btn-lg"
+                  className="btn btn-secondary"
                 >
                   Close
                 </button>
