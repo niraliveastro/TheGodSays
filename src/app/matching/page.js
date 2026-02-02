@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
@@ -23,10 +23,11 @@ import {
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistant from "@/components/AstrologerAssistant";
-import Modal from "@/components/Modal";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+import PageSEO from "@/components/PageSEO";
+
+// Lazy load heavy components for better initial load
+const Modal = lazy(() => import("@/components/Modal"));
 /**
  * Tiny UI helpers – pure CSS classes for reusable components.
  * These are simple functional components that render styled divs or spans.
@@ -1476,12 +1477,20 @@ export default function MatchingPage() {
   /**
    * Generates and downloads a PDF report of the matching result.
    */
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!result) {
       setError("No result to download.");
       return;
     }
-    const doc = new jsPDF();
+    
+    try {
+      // Dynamically import PDF libraries only when needed (saves ~80KB initial bundle)
+      const [{ default: jsPDF }, autoTable] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable")
+      ]);
+      
+      const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 10;
     let yPos = 20;
@@ -1633,8 +1642,12 @@ export default function MatchingPage() {
       { align: "center" },
     );
 
-    // Download
-    doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
+      // Download
+      doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setError("Failed to generate PDF. Please try again.");
+    }
   };
   /* -------------------------------------------------------------- */
   /* Formatting helpers */
@@ -3443,6 +3456,49 @@ export default function MatchingPage() {
           hasData={!!result}
         />
       </div>
+      
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="matching"
+        faqs={[
+          {
+            question: "What Is Kundli Matching & Why It Matters for Marriage",
+            answer: "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage."
+          },
+          {
+            question: "What Ashtakoot (Guna Milan) Actually Measures",
+            answer: "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number."
+          },
+          {
+            question: "Why Guna Milan Alone Is Not Enough",
+            answer: "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring."
+          },
+          {
+            question: "Planetary Compatibility Between Partners",
+            answer: "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies."
+          },
+          {
+            question: "Manglik Dosha & Other Important Doshas",
+            answer: "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions."
+          },
+          {
+            question: "Dasha & Timing Compatibility After Marriage",
+            answer: "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching."
+          },
+          {
+            question: "AI-Based Kundli Matching vs Manual Analysis",
+            answer: "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed."
+          },
+          {
+            question: "What Your Compatibility Score Really Means",
+            answer: "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers."
+          },
+          {
+            question: "Can Remedies Improve Marriage Compatibility?",
+            answer: "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners."
+          }
+        ]}
+      />
     </>
   );
 }

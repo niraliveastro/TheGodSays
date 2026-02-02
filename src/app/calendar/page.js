@@ -10,6 +10,7 @@ import {
 import astrologyAPI from "@/lib/api";
 import { postSamvatInfo, getRealtimeSamvatInfo } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import PageSEO from "@/components/PageSEO";
 
 // --- Caching Logic (Unchanged) ---
 const monthDataCache = new Map();
@@ -1017,6 +1018,29 @@ export default function CalendarPage() {
     Panchang provides traditional guidance and should not replace professional
     advice.
   </p>
+  
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="panchang"
+        faqs={[
+          {
+            question: "What Is Panchang",
+            answer: "Panchang is a traditional Hindu calendar system based on the combined movement of the Moon, Sun, and planets. It is used to understand the quality of time on a given day and to decide when certain activities are more supportive or less favorable. Each of the five elements of Panchang reflects a different aspect of time. Together, they help explain the natural rhythm of the day, guiding rituals, decisions, and important actions with awareness rather than blind belief."
+          },
+          {
+            question: "What Our Panchang Calendar Offers",
+            answer: "Our Panchang calendar is designed for everyday use. Instead of overwhelming users with technical terminology, it presents essential information in a structured and easy-to-understand format. Whether you are checking today's tithi, planning a ritual, or simply staying aware of planetary movements, the focus remains on clarity and usefulness."
+          },
+          {
+            question: "Panchang + Astrology for Better Decisions",
+            answer: "Panchang shows the nature of time, while astrology shows how that time interacts with you personally. When used together, they provide deeper insight into when certain actions may feel smoother or more challenging. By aligning Panchang details with your birth chart, you gain better awareness of whether a particular day or period supports your intentions."
+          },
+          {
+            question: "Who Should Use This Panchang",
+            answer: "This Panchang is suitable for both regular reference and long-term planning. It supports traditional practices while remaining accessible to modern users, regardless of location or level of astrological knowledge."
+          }
+        ]}
+      />
 </div>
         </div>
 
