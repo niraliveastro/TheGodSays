@@ -1,5 +1,5 @@
 // Simple service worker for basic caching
-const CACHE_NAME = 'panchang-v2'
+const CACHE_NAME = 'panchang-v3'
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing')
@@ -31,12 +31,33 @@ self.addEventListener('fetch', (event) => {
                 url.pathname.includes('/_next/static/css/') ||
                 url.pathname.includes('matching_styles.css')
   
+  const isIcon = url.pathname.includes('icon-') || 
+                 url.pathname.includes('favicon') ||
+                 url.pathname.includes('manifest.json') ||
+                 url.pathname.includes('apple-touch-icon')
+  
   // For CSS files, use network-first strategy to ensure fresh styles
   if (isCSS) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           // Don't cache CSS files - always fetch fresh
+          return response
+        })
+        .catch(() => {
+          // Only fallback to cache if network completely fails
+          return caches.match(event.request)
+        })
+    )
+    return
+  }
+  
+  // For icon files and manifest, always fetch fresh to ensure updates
+  if (isIcon) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Don't cache icon/manifest files - always fetch fresh
           return response
         })
         .catch(() => {
