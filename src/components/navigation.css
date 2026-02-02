@@ -91,7 +91,7 @@ body {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  background: #ebcf74 !important; /* Exact button gradient */
+    background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Exact button gradient */
   z-index: 998 !important; /* Just below top nav */
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2) !important;
 }
