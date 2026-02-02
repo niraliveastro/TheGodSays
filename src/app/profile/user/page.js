@@ -351,11 +351,7 @@ export default function ProfilePage() {
               position: "relative", overflow: "hidden",
               boxShadow: "0 20px 40px rgba(0,0,0,0.05)",
             }}>
-              {/* top gradient stripe - subtle */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: "4px",
-                background: "linear-gradient(90deg, var(--color-gold-dark), #b8972e)",
-              }} />
+              
 
               {/* Avatar */}
               <div style={{ position: "relative", display: "inline-block", marginBottom: "1.25rem", marginTop: "0.75rem" }}>
@@ -365,10 +361,10 @@ export default function ProfilePage() {
                 }}>
                   <div style={{
                     width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden",
-                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, var(--color-gold-dark), #b8972e)",
+                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, var(--color-cream), var(--color-gold))",
                     backgroundSize: "cover", backgroundPosition: "center",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "white", fontWeight: 700, fontSize: "1.75rem",
+                    color: "var(--color-gold-dark)", fontWeight: 500, fontSize: "1.75rem", fontFamily: "'Georgia', serif",
                   }}>
                     {!user.avatar && initials}
                   </div>
@@ -392,7 +388,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Name */}
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>
+              <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 500, color: "#1e293b", margin: "0 0 0.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
                 {user.name}
               </h2>
 
@@ -492,7 +488,7 @@ export default function ProfilePage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                   <div>
                     <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--color-gold-dark)", margin: 0 }}>Divine Wallet</p>
-                    <h3 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#1e293b", margin: "0.25rem 0 0" }}>
+                    <h3 style={{ fontSize: "1.875rem", fontWeight: 500, color: "#1e293b", margin: "0.25rem 0 0" }}>
                       ₹{user.balance?.toFixed(2) || "0.00"}
                     </h3>
                   </div>
@@ -514,11 +510,11 @@ export default function ProfilePage() {
                 <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--color-gold-dark)", margin: "0 0 1rem" }}>Spiritual Journey Stats</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                   <div>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>{user.totalCalls || 0}</p>
+                    <p style={{ fontSize: "1.5rem", fontWeight: 500, color: "#1e293b", margin: 0 }}>{user.totalCalls || 0}</p>
                     <p style={{ fontSize: "0.7rem", color: "var(--color-gold-dark)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0.2rem 0 0" }}>Consultations</p>
                   </div>
                   <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "0.75rem" }}>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>{user.minutesUsed || 0}</p>
+                    <p style={{ fontSize: "1.5rem", fontWeight: 500, color: "#1e293b", margin: 0 }}>{user.minutesUsed || 0}</p>
                     <p style={{ fontSize: "0.7rem", color: "var(--color-gold-dark)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0.2rem 0 0" }}>Minutes</p>
                   </div>
                 </div>
@@ -533,12 +529,13 @@ export default function ProfilePage() {
             </div>
 
             {/* ---- Upcoming Appointments ---- */}
-            <div className="glass-card" style={{
+            <div className="card" style={{
               borderRadius: "1.5rem", padding: "1.5rem",
               boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+              height: "100%"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>
+                <h2 style={{ fontFamily: "'Georgia', serif", fontSize: "1.2rem", fontWeight: 500, color: "#1e293b", margin: 0 }}>
                   Upcoming Consultations
                 </h2>
                 <button onClick={() => router.push("/appointments")} style={{
@@ -610,7 +607,7 @@ export default function ProfilePage() {
                   })}
                 </div>
               ) : (
-                <p style={{ fontSize: "0.82rem", color: "#94a3b8", textAlign: "center", padding: "1rem 0", margin: 0 }}>
+                <p style={{ fontSize: "0.82rem", color: "#94a3b8", textAlign: "center", padding: "1rem 0", margin: 0 , display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
                   No upcoming consultations scheduled.
                 </p>
               )}
