@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import PageSEO from "@/components/PageSEO";
 import "./transit.css";
 import { upcomingTransits as FIVE_YEARS } from "./transitData";
 import {
@@ -840,6 +841,37 @@ export default function TransitPage() {
 
   </div>
 </div>
+
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="transit"
+        faqs={[
+          {
+            question: "What Are Planetary Transits",
+            answer: "Planetary transits occur as planets move continuously through the zodiac. Each planet represents a specific type of energy, such as action, discipline, communication, growth, or reflection, and its movement changes how that energy is expressed over time. Transits do not create events on their own. Instead, they describe changing conditions and phases, helping you understand when certain themes become more active or subdued."
+          },
+          {
+            question: "How Transits Affect You Personally",
+            answer: "While planetary movements are the same for everyone, their impact differs from person to person. The actual effect of a transit depends on how the moving planet interacts with your individual birth chart. This is why a transit that feels challenging for one person may feel neutral or even supportive for another. Personal context matters more than the transit itself."
+          },
+          {
+            question: "Understanding Current Planetary Transits",
+            answer: "The Current Planetary Transits section shows the present position of each planet and the time span for which it remains there. This helps you recognize the ongoing background influences shaping thoughts, emotions, and actions. Think of these as the dominant themes operating in the present moment rather than immediate triggers for change."
+          },
+          {
+            question: "Next Immediate Transits & Countdown",
+            answer: "Next Immediate Transits highlight the planetary sign changes that are about to occur soon. The live countdown shows exactly when a planet moves into a new sign, marking a subtle shift in tone. These transitions are useful for staying mentally prepared rather than reacting unexpectedly when energy patterns begin to change."
+          },
+          {
+            question: "Exploring Upcoming Transits Over Time",
+            answer: "The Upcoming Transits section allows you to explore planetary movements across different time ranges. Shorter views help with near-term awareness, while longer timelines reveal broader cycles influencing life direction. This is especially useful for understanding repetition, pacing, and periods of gradual buildup rather than focusing on isolated dates."
+          },
+          {
+            question: "Using Transit Awareness Practically",
+            answer: "Transit awareness is not about prediction but preparation. By understanding when energies shift, you can plan actions more consciously and avoid forcing outcomes during naturally resistant phases. Used correctly, transits act as a timing tool that supports clarity, patience, and better decision-making."
+          }
+        ]}
+      />
     </div>
   );
 }

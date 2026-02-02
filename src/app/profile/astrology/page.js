@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -19,13 +19,15 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import "../astrology.css"
+
+// Lazy load heavy components
+const Modal = lazy(() => import("@/components/Modal"));
 
 export default function AstrologerProfilePage() {
   const { t } = useTranslation();
@@ -1214,8 +1216,11 @@ export default function AstrologerProfilePage() {
       </div>
 
       {/* Edit Profile Modal */}
-      <Modal
-        open={isEditModalOpen}
+      {/* Edit Modal - Lazy loaded */}
+      {isEditModalOpen && (
+        <Suspense fallback={null}>
+          <Modal
+            open={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="Edit Profile"
       >
@@ -1443,7 +1448,9 @@ export default function AstrologerProfilePage() {
             </Button>
           </div>
         </div>
-      </Modal>
+          </Modal>
+        </Suspense>
+      )}
 
       {/* Local Styles */}
       <style jsx>{`

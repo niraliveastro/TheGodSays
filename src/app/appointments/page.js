@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -93,13 +93,16 @@ export default function Appointments() {
     return "missed"
   }
 
-  const filteredAppointments = appointments.filter((a) => {
-    const s = getDisplayStatus(a)
-    if (filter === "upcoming") return s === "upcoming"
-    if (filter === "past") return s === "completed" || s === "missed"
-    if (filter === "cancelled") return s === "cancelled"
-    return true
-  })
+  // Memoize filtered appointments to prevent unnecessary recalculations
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((a) => {
+      const s = getDisplayStatus(a)
+      if (filter === "upcoming") return s === "upcoming"
+      if (filter === "past") return s === "completed" || s === "missed"
+      if (filter === "cancelled") return s === "cancelled"
+      return true
+    })
+  }, [appointments, filter])
 
   const isAstrologer = userProfile?.collection === "astrologers"
 

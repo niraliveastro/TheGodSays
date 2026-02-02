@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -13,11 +13,13 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+
+// Lazy load heavy components
+const Modal = lazy(() => import("@/components/Modal"));
 export default function FamilyPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -380,8 +382,11 @@ export default function FamilyPage() {
       </div>
 
       {/* Add Family Member Modal */}
-      <Modal
-        open={isFamilyModalOpen}
+      {/* Family Modal - Lazy loaded */}
+      {isFamilyModalOpen && (
+        <Suspense fallback={null}>
+          <Modal
+            open={isFamilyModalOpen}
         onClose={() => setIsFamilyModalOpen(false)}
         title="Add Family Member"
       >
@@ -525,7 +530,9 @@ export default function FamilyPage() {
             </div>
           </div>
         </div>
-      </Modal>
+          </Modal>
+        </Suspense>
+      )}
 
       {/* Predictions Modal */}
       {showPredictions && selectedMember && (
