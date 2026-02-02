@@ -81,16 +81,16 @@ export default function Footer() {
               NiraLive Astro © {currentYear} - Made with Love in India
             </p>
             <div className="footer-social footer-social-bottom">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a href="https://www.facebook.com/profile.php?id=61587143052795" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <Facebook />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+              <a href="https://twitter.com/niraliveastro" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
                 <Twitter />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <a href="https://instagram.com/niraliveastro" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <Instagram />
               </a>
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+              <a href="https://youtube.com/@niraliveastro" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
                 <Youtube />
               </a>
             </div>
