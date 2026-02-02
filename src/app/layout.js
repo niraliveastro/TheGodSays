@@ -14,38 +14,37 @@ import EnvironmentBanner from "@/components/EnvironmentBanner";
 const inter = Inter({ subsets: ["latin"] });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
-const SITE_NAME = "NiraLive Astro - Vedic Astrology & Panchang";
-const SITE_DESCRIPTION = "Get your daily Panchang, personalized Kundali, numerology readings, and live consultations with expert astrologers. Your complete Vedic astrology platform.";
+const SITE_NAME = "NiraLive Astro - AI-Powered Astrology Platform";
+const SITE_DESCRIPTION = "An AI‑powered astrology & vastu platform for kundli matching, predictions, consultations, and cosmic planning. Talk to expert astrologers, get AI kundli analysis, and access advanced astrology tools.";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
+    default: "Talk to Astrologer Online | AI Kundli, Matching & Predictions",
     template: `%s | ${SITE_NAME}`,
   },
-  description: SITE_DESCRIPTION,
+  description: "AI‑powered astrology platform. Talk to expert astrologers, get kundli matching, predictions, vastu & cosmic insights. India & NRI friendly.",
   keywords: [
-    "vedic astrology",
-    "panchang",
-    "kundali",
-    "birth chart",
-    "horoscope",
-    "numerology",
-    "astrologer",
-    "online astrology",
-    "daily panchang",
-    "hindu calendar",
-    "kundali matching",
-    "astrological predictions",
-    "live astrology consultation",
+    "talk to astrologer",
     "online astrologer",
-    "jyotish",
-    "astrology calculator",
-    "hora timings",
-    "choghadiya",
-    "muhurat",
-    "dasha predictions",
-    "transit analysis"
+    "astrologer consultation",
+    "kundli matching",
+    "kundli matching for marriage",
+    "AI kundli matching",
+    "kundli prediction",
+    "AI astrology",
+    "vastu analysis online",
+    "chat with astrologer",
+    "astrologer for marriage",
+    "astrology prediction",
+    "planetary transits",
+    "cosmic events astrology",
+    "numerology prediction",
+    "hindu panchang",
+    "indian astrologer in usa",
+    "indian astrologer in uk",
+    "astrologer for nri",
+    "online astrologer for nri"
   ],
   authors: [{ name: "NiraLive Astro" }],
   creator: "NiraLive Astro",

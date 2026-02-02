@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PanchangCard from "@/components/PanchangCard";
@@ -27,10 +27,12 @@ import {
   Phone,
 } from "lucide-react";
 import "./home.css";
-import ReviewModal from "@/components/ReviewModal";
-import CallConnectingNotification from "@/components/CallConnectingNotification";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+// Lazy load heavy components for better initial load
+const ReviewModal = lazy(() => import("@/components/ReviewModal"));
+const CallConnectingNotification = lazy(() => import("@/components/CallConnectingNotification"));
 
 // Simple in-memory cache for home panchang fetches (reset on reload)
 const homePanchangCache = new Map(); // key => { data, savedAt }
@@ -3194,26 +3196,29 @@ export default function Home() {
         </div>
       )}
 
-      {/* REVIEW MODAL */}
+      {/* REVIEW MODAL - Lazy loaded */}
       {isReviewModalOpen && selectedAstrologerForReview && (
-        <ReviewModal
-          open={isReviewModalOpen}
-          onClose={() => {
-            setIsReviewModalOpen(false);
-            setSelectedAstrologerForReview(null);
-          }}
-          astrologerId={selectedAstrologerForReview.id}
-          astrologerName={selectedAstrologerForReview.name}
-          onSubmit={handleSubmitReview}
-        />
+        <Suspense fallback={null}>
+          <ReviewModal
+            open={isReviewModalOpen}
+            onClose={() => {
+              setIsReviewModalOpen(false);
+              setSelectedAstrologerForReview(null);
+            }}
+            astrologerId={selectedAstrologerForReview.id}
+            astrologerName={selectedAstrologerForReview.name}
+            onSubmit={handleSubmitReview}
+          />
+        </Suspense>
       )}
 
-      {/* CALL CONNECTING NOTIFICATION */}
+      {/* CALL CONNECTING NOTIFICATION - Lazy loaded */}
       {connectingCallType && (
-        <CallConnectingNotification
-          callType={connectingCallType}
-          status={callStatus}
-          onCancel={async () => {
+        <Suspense fallback={null}>
+          <CallConnectingNotification
+            callType={connectingCallType}
+            status={callStatus}
+            onCancel={async () => {
             const callId = localStorage.getItem("tgs:currentCallId");
             if (callId) {
               await fetch("/api/billing", {
@@ -3235,7 +3240,8 @@ export default function Home() {
             setCallStatus("connecting");
             setLoading(false);
           }}
-        />
+          />
+        </Suspense>
       )}
     </>
   );

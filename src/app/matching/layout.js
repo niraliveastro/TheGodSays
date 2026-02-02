@@ -1,29 +1,30 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
-  title: "Kundali Matching - Free Online Horoscope Matching for Marriage",
-  description: "Check compatibility with free online Kundali matching (Ashtakoot matching). Get detailed compatibility analysis for marriage based on Vedic astrology. Calculate Guna Milan score and understand your relationship compatibility.",
+  title: "Kundli Matching for Marriage | AI Matching Beyond Guna Milan",
+  description: "Advanced AI kundli matching analyzing dosha, dasha & planetary aspects. Get compatibility report & astrologer guidance.",
   keywords: [
+    "kundli matching",
+    "kundli matching for marriage",
+    "AI kundli matching",
     "kundali matching",
     "horoscope matching",
     "marriage matching",
     "gun milan",
     "ashtakoot matching",
     "compatibility",
-    "vedic astrology matching",
-    "marriage compatibility",
-    "kundli matching",
-    "astrology matching"
+    "vedic astrology matching"
   ],
   openGraph: {
-    title: "Kundali Matching - Free Online Horoscope Matching | NiraLive Astro",
-    description: "Check compatibility with free online Kundali matching. Get detailed compatibility analysis for marriage based on Vedic astrology.",
+    title: "Kundli Matching for Marriage | AI Matching Beyond Guna Milan",
+    description: "Advanced AI kundli matching analyzing dosha, dasha & planetary aspects. Get compatibility report & astrologer guidance.",
     url: `${SITE_URL}/matching`,
     type: "website",
   },
   twitter: {
-    title: "Kundali Matching - Free Online Horoscope Matching | NiraLive Astro",
-    description: "Check compatibility with free online Kundali matching. Get detailed compatibility analysis for marriage.",
+    card: "summary_large_image",
+    title: "Kundli Matching for Marriage | AI Matching Beyond Guna Milan",
+    description: "Advanced AI kundli matching analyzing dosha, dasha & planetary aspects. Get compatibility report & astrologer guidance.",
   },
   alternates: {
     canonical: `${SITE_URL}/matching`,

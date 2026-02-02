@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Calculator, User, Calendar, Save, Trash2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import PageSEO from "@/components/PageSEO";
 import "./numerology.css";
 
 /**
@@ -1444,6 +1445,28 @@ export default function NumerologyPage() {
   </p>
 </div>
 
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="numerology"
+        faqs={[
+          {
+            question: "What Is Numerology & How It Works",
+            answer: "Numerology is the study of how numbers influence human life through natural patterns. Your date of birth and name are converted into key numbers that describe your personality traits, motivations, and the way you respond to situations. These numbers don't define fixed outcomes. Instead, they highlight tendencies, strengths you can rely on, and challenges you may repeatedly encounter. Over time, numerology helps you recognize life cycles, understand why certain themes repeat, and approach decisions with greater clarity."
+          },
+          {
+            question: "What Makes Our Numerology Different",
+            answer: "Many numerology tools simply list number meanings. At Nirali Live Astro, the focus is on interpretation and relevance. Our system connects individual numbers into a complete picture, showing how they interact across different phases of life. AI helps identify patterns and timing, while traditional numerology principles ensure the insights remain grounded and meaningful. The result is guidance that feels practical rather than generic."
+          },
+          {
+            question: "What You'll Learn from Numerology",
+            answer: "A numerology report acts like a personal roadmap. It explains why certain choices feel natural to you, why some paths create resistance, and how your mindset shapes outcomes. By understanding your numbers, you gain awareness rather than prediction. This awareness helps you make better choices, manage expectations, and align your actions with your natural tendencies."
+          },
+          {
+            question: "Numerology + Astrology = Better Accuracy",
+            answer: "Numbers and planets influence life from different angles. Numerology explains inner tendencies and cycles, while astrology explains external timing and planetary influences. When combined, they provide a more balanced perspective. Numerology helps you understand why something feels a certain way, while astrology helps explain when specific events or shifts are more likely. Together, they offer deeper clarity than either system alone."
+          }
+        ]}
+      />
       </div>
     </div>
   );

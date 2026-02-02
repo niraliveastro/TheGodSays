@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,12 +19,14 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+// Lazy load heavy components
+const Modal = lazy(() => import("@/components/Modal"));
 
 /* --------------------------------------------------------------- */
 /*  Zodiac Helpers                                                 */
@@ -728,7 +730,10 @@ export default function ProfilePage() {
       </div>
 
       {/* ===== Edit Profile Modal ===== */}
-      <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profile">
+      {/* Edit Profile Modal - Lazy loaded */}
+      {isEditModalOpen && (
+        <Suspense fallback={null}>
+          <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profile">
         <div style={{ padding: "1.5rem" }}>
           {[
             { label: "Full Name", type: "text", key: "name", placeholder: "" },
@@ -812,7 +817,9 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-      </Modal>
+          </Modal>
+        </Suspense>
+      )}
 
       {/* ===== Global styles ===== */}
       <style jsx>{`

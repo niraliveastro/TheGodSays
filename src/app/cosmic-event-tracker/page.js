@@ -30,7 +30,7 @@
  * @module CosmicEventTracker
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { nasaAPI } from "@/lib/nasaAPI";
 import {
@@ -50,6 +50,7 @@ import {
   Star,
 } from "lucide-react";
 import { PageLoading } from "@/components/LoadingStates";
+import PageSEO from "@/components/PageSEO";
 import "./cosmic-event-tracker.css";
 
 /**
@@ -907,7 +908,28 @@ export default function CosmicEventTracker() {
   </p>
 </div>
 
-
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="cosmic-event-tracker"
+        faqs={[
+          {
+            question: "What Are Planetary Transits",
+            answer: "Planetary transits occur when planets move through different zodiac signs and houses in the sky. As they move, they activate specific areas of life shown in your birth chart, such as career, relationships, health, or finances. Some transits bring expansion and clarity, while others slow things down and demand patience. Major planets like Saturn and Jupiter tend to influence life over longer periods, while faster-moving planets can trigger short-term changes and emotional responses."
+          },
+          {
+            question: "How Transits Affect You Personally",
+            answer: "A transit does not affect everyone in the same way. Two people experiencing the same planetary movement can have completely different outcomes. The actual impact depends on how the transiting planet interacts with your birth chart, which house it activates, and which planetary periods you are currently running. This is why personal analysis matters far more than general transit predictions."
+          },
+          {
+            question: "AI-Based Transit Analysis",
+            answer: "Our AI system continuously tracks planetary movements and compares them with your birth chart. Instead of broad predictions, it highlights how specific transits interact with your planets, houses, and running dashas. This helps you understand not just what is happening in the sky, but how those movements translate into personal experiences, challenges, and opportunities in real life."
+          },
+          {
+            question: "Use Transits for Better Timing",
+            answer: "Transit awareness allows you to work with time rather than struggle against it. Knowing when to push forward, pause, or reflect can reduce stress and help you make more balanced decisions. Transits do not force outcomes, but they indicate periods when effort flows more easily or requires extra patience. Understanding these rhythms helps you stay prepared and grounded through change."
+          }
+        ]}
+      />
     </div>
   );
 }

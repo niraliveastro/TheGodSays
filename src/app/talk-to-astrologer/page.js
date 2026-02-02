@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   Star,
@@ -18,9 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import CallConnectingNotification from "@/components/CallConnectingNotification";
-import Modal from "@/components/Modal";
-import ReviewModal from "@/components/ReviewModal";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -31,6 +28,12 @@ import {
   trackPageView,
 } from "@/lib/analytics";
 import { PageLoading } from "@/components/LoadingStates";
+import PageSEO from "@/components/PageSEO";
+
+// Lazy load heavy components for better initial load
+const CallConnectingNotification = lazy(() => import("@/components/CallConnectingNotification"));
+const Modal = lazy(() => import("@/components/Modal"));
+const ReviewModal = lazy(() => import("@/components/ReviewModal"));
 
 export default function TalkToAstrologer() {
   const { t } = useTranslation();
@@ -80,7 +83,7 @@ export default function TalkToAstrologer() {
   };
 
   /* --------------------------------------------------------------- */
-  /*  useEffect: Periodic balance refresh (every 5 seconds)         */
+  /*  useEffect: Periodic balance refresh (optimized: every 15 seconds) */
   /* --------------------------------------------------------------- */
   useEffect(() => {
     const userId = localStorage.getItem("tgs:userId");
@@ -122,8 +125,8 @@ export default function TalkToAstrologer() {
     // Fetch immediately
     fetchBalance();
 
-    // Then poll every 5 seconds for real-time feel
-    const intervalId = setInterval(fetchBalance, 5000);
+    // Optimized: Poll every 15 seconds instead of 5 (reduces server load)
+    const intervalId = setInterval(fetchBalance, 15000);
 
     return () => {
       console.log("🔌 Stopping balance refresh");
@@ -203,7 +206,7 @@ export default function TalkToAstrologer() {
           isOnline: d.status === "online",
           bio: d.bio || `Expert in ${d.specialization}`,
           verified: d.verified || false,
-          photo: d.photo || d.profilePicture || d.photoURL || d.avatar || null,
+          photo: d.avatar || d.photo || d.profilePicture || d.photoURL || null,
           areasOfExpertise: Array.isArray(d.areasOfExpertise)
             ? d.areasOfExpertise
             : Array.isArray(d.specialties)
@@ -247,16 +250,28 @@ export default function TalkToAstrologer() {
         }
       });
 
-      const withSlots = await Promise.all(
-  list.map(async (a) => ({
-    ...a,
-    hasSlots: await checkHasSlots(a.id),
-  }))
-);
+      // Optimized: Show astrologers immediately, then check slots in parallel (non-blocking)
+      // Update UI immediately with basic data
+      setAstrologers(list);
+      setFetchingAstrologers(false);
 
-      // Step 2: Fetch all reviews in parallel (batch requests)
-      // Group reviews requests to avoid too many simultaneous requests
-      const BATCH_SIZE = 10; // Process 10 at a time to avoid overwhelming the server
+      // Check slots in parallel (non-blocking, updates as they complete)
+      Promise.all(
+        list.map(async (a) => {
+          const hasSlots = await checkHasSlots(a.id);
+          setAstrologers(prev => prev.map(ast => 
+            ast.id === a.id ? { ...ast, hasSlots } : ast
+          ));
+          return { ...a, hasSlots };
+        })
+      ).then(withSlots => {
+        // Final update with all slot data
+        setAstrologers(withSlots);
+      });
+
+      // Step 2: Fetch reviews in parallel batches (optimized for progressive loading)
+      // Update UI incrementally as reviews come in
+      const BATCH_SIZE = 15; // Increased batch size for faster loading
       const updated = [];
 
       for (let i = 0; i < list.length; i += BATCH_SIZE) {
@@ -264,7 +279,11 @@ export default function TalkToAstrologer() {
         const batchResults = await Promise.all(
           batch.map(async (a) => {
             try {
-              const res = await fetch(`/api/reviews?astrologerId=${a.id}`);
+              const res = await fetch(`/api/reviews?astrologerId=${a.id}`, {
+                // Add cache to reduce server load
+                cache: 'force-cache',
+                next: { revalidate: 300 } // Cache for 5 minutes
+              });
               const data = await res.json();
               if (res.ok && data.success && data.reviews?.length) {
                 const total = data.reviews.reduce((s, r) => s + r.rating, 0);
@@ -287,20 +306,15 @@ export default function TalkToAstrologer() {
         updated.push(...batchResults);
 
         // Update UI incrementally for better perceived performance
-if (i === 0) {
-  setAstrologers(withSlots);
-  setFetchingAstrologers(false);
-}
+        // Merge with existing astrologers to preserve slot data
+        setAstrologers(prev => {
+          const updatedMap = new Map(updated.map(a => [a.id, a]));
+          return prev.map(ast => {
+            const updatedAst = updatedMap.get(ast.id);
+            return updatedAst ? { ...ast, ...updatedAst } : ast;
+          });
+        });
       }
-
-      // Final update with all reviews
-      setAstrologers(
-  updated.map((a) => ({
-    ...a,
-    hasSlots:
-      withSlots.find((w) => w.id === a.id)?.hasSlots ?? false,
-  }))
-);
     } catch (e) {
       console.error("Astrologers fetch error:", e);
       setFetchingAstrologers(false);
@@ -318,8 +332,11 @@ if (i === 0) {
     // Track page view
     trackPageView("/talk-to-astrologer", "Talk to Astrologer");
 
+    // Initial fetch
     fetchAndUpdateAstrologers();
-    const id = setInterval(fetchAndUpdateAstrologers, 30_000);
+    
+    // Optimized: Refresh every 60 seconds instead of 30 (reduces server load)
+    const id = setInterval(fetchAndUpdateAstrologers, 60_000);
     return () => clearInterval(id);
   }, []);
 
@@ -352,27 +369,38 @@ if (i === 0) {
   /* --------------------------------------------------------------- */
   /*  Filtering                                                      */
   /* --------------------------------------------------------------- */
-  const filteredAstrologers = astrologers.filter((a) => {
-    const search = searchTerm.toLowerCase();
+  // Memoize filtered astrologers to prevent unnecessary recalculations
+  // Memoize filtered astrologers to prevent unnecessary recalculations
+  const filteredAstrologers = useMemo(() => {
+    return astrologers.filter((a) => {
+      const search = searchTerm.toLowerCase();
 
-    const specializations = getSpecializations(a).map((s) => s.toLowerCase());
+      const specializations = getSpecializations(a).map((s) => s.toLowerCase());
 
-    const matchesSearch =
-      a.name?.toLowerCase().includes(search) ||
-      specializations.some((s) => s.includes(search));
+      const matchesSearch =
+        a.name?.toLowerCase().includes(search) ||
+        specializations.some((s) => s.includes(search));
 
-    const matchesFilter =
-      !filterSpecialization ||
-      specializations.includes(filterSpecialization.toLowerCase());
+      const matchesFilter =
+        !filterSpecialization ||
+        specializations.includes(filterSpecialization.toLowerCase());
 
-    return matchesSearch && matchesFilter;
-  });
+      return matchesSearch && matchesFilter;
+    });
+  }, [astrologers, searchTerm, filterSpecialization]);
 
-  const totalPages = Math.ceil(filteredAstrologers.length / ITEMS_PER_PAGE);
+  // Memoize pagination calculations
+  const totalPages = useMemo(() => 
+    Math.ceil(filteredAstrologers.length / ITEMS_PER_PAGE),
+    [filteredAstrologers.length]
+  );
 
-  const paginatedAstrologers = filteredAstrologers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
+  const paginatedAstrologers = useMemo(() => 
+    filteredAstrologers.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE,
+    ),
+    [filteredAstrologers, currentPage]
   );
 
   useEffect(() => {
@@ -1212,7 +1240,8 @@ if (i === 0) {
   return (
     <>
       {/* Connection notification */}
-      <CallConnectingNotification
+      <Suspense fallback={null}>
+        <CallConnectingNotification
         isOpen={!!connectingCallType}
         status={callStatus}
         type={connectingCallType}
@@ -1257,7 +1286,8 @@ if (i === 0) {
           setCallStatus("connecting");
           setLoading(false);
         }}
-      />
+        />
+      </Suspense>
 
       {fetchingAstrologers ? (
         <PageLoading type="astrologer" message="Loading astrologers..." />
@@ -1655,8 +1685,12 @@ if (i === 0) {
                               style={{
                                 width: "4rem",
                                 height: "4rem",
-                                background:
-                                  "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                background: a.photo
+                                  ? `url(${a.photo})`
+                                  : "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                                backgroundRepeat: "no-repeat",
                                 borderRadius: "50%",
                                 display: "flex",
                                 alignItems: "center",
@@ -1665,12 +1699,17 @@ if (i === 0) {
                                 fontWeight: 700,
                                 fontSize: "1.125rem",
                                 textTransform: "uppercase",
+                                border: a.photo ? "2px solid rgba(212, 175, 55, 0.3)" : "none",
+                                boxShadow: a.photo ? "0 2px 8px rgba(0, 0, 0, 0.15)" : "none",
+                                overflow: "hidden",
                               }}
                             >
-                              {a.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
+                              {!a.photo && (
+                                a.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                              )}
                             </div>
                             {/* Status Indicator Dot - properly aligned at avatar */}
                             {(a.online || a.isOnline) && (
@@ -2309,31 +2348,35 @@ if (i === 0) {
             </div>
           </Modal>
 
-          {/* Review modal */}
-          {selectedAstrologer && (
-            <ReviewModal
-              open={isReviewModalOpen}
-              onClose={() => {
-                setIsReviewModalOpen(false);
-                setSelectedAstrologer(null);
-              }}
-              astrologerId={selectedAstrologer.id}
-              astrologerName={selectedAstrologer.name}
-              onSubmit={handleSubmitReview}
-              style={{ zIndex: 1000 }}
-            />
+          {/* Review modal - Lazy loaded */}
+          {selectedAstrologer && isReviewModalOpen && (
+            <Suspense fallback={null}>
+              <ReviewModal
+                open={isReviewModalOpen}
+                onClose={() => {
+                  setIsReviewModalOpen(false);
+                  setSelectedAstrologer(null);
+                }}
+                astrologerId={selectedAstrologer.id}
+                astrologerName={selectedAstrologer.name}
+                onSubmit={handleSubmitReview}
+                style={{ zIndex: 1000 }}
+              />
+            </Suspense>
           )}
 
-          {/* Call History Modal */}
-          <Modal
-            open={isCallHistoryModalOpen}
-            onClose={() => {
-              setIsCallHistoryModalOpen(false);
-              setShowAllCalls(false); // Reset to recent calls view when closing
-            }}
-            title="Call History & Spending"
-            style={{ zIndex: 1000 }}
-          >
+          {/* Call History Modal - Lazy loaded */}
+          {isCallHistoryModalOpen && (
+            <Suspense fallback={null}>
+              <Modal
+                open={isCallHistoryModalOpen}
+                onClose={() => {
+                  setIsCallHistoryModalOpen(false);
+                  setShowAllCalls(false); // Reset to recent calls view when closing
+                }}
+                title="Call History & Spending"
+                style={{ zIndex: 1000 }}
+              >
             <div style={{ padding: "1.5rem" }}>
               {/* Spending Summary */}
               <div
@@ -2647,7 +2690,9 @@ if (i === 0) {
                 )}
               </div>
             </div>
-          </Modal>
+              </Modal>
+            </Suspense>
+          )}
         </div>
       )}
 
@@ -2751,6 +2796,45 @@ if (i === 0) {
           }
         }
       `}</style>
+      
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="talk-to-astrologer"
+        faqs={[
+          {
+            question: "What Does a Live Astrologer Consultation Involve?",
+            answer: "A live astrologer consultation is a private, one-to-one session where you directly interact with an experienced astrologer through voice or video call. Unlike automated predictions, the astrologer listens to your concerns, studies your birth chart, and provides guidance tailored specifically to your situation. This format allows deeper discussion, follow-up questions, and practical clarity that cannot be achieved through generic reports."
+          },
+          {
+            question: "How Our Astrologers Analyze Your Questions",
+            answer: "During a consultation, astrologers analyze your kundli using traditional Vedic astrology principles. Planetary positions, house lords, dashas, and current transits are examined to understand the root cause of your concern. Whether the question relates to career, marriage, finances, or timing, the analysis is focused on practical outcomes rather than abstract predictions."
+          },
+          {
+            question: "Topics You Can Discuss With an Astrologer",
+            answer: "Live astrologer consultations are suitable for most life situations where clarity and timing matter. Users commonly seek guidance for relationships, career decisions, marriage compatibility, financial planning, and major life transitions. You are free to ask follow-up questions and explore multiple areas during the session."
+          },
+          {
+            question: "Voice Call vs Video Call – What's the Difference?",
+            answer: "Both voice and video consultations provide the same level of astrological analysis. Voice calls are preferred by users who want quick, distraction-free guidance, while video calls offer a more personal, face-to-face experience. You can choose the consultation mode that feels most comfortable to you."
+          },
+          {
+            question: "Are the Astrologers Verified and Experienced?",
+            answer: "All astrologers available on Nirali Live Astro go through a verification process before being listed. This includes experience checks, area of specialization review, and quality assessment. User ratings and reviews further help maintain transparency and trust."
+          },
+          {
+            question: "How Pricing and Billing Works for Calls",
+            answer: "Astrologer consultations are billed on a per-minute basis. Billing starts only when the call is successfully connected and ends automatically when the call finishes. You can view pricing in advance and manage your wallet balance easily."
+          },
+          {
+            question: "Is My Consultation Private and Secure?",
+            answer: "Your consultation is completely private. Calls are conducted securely, and your personal details, birth information, and conversations are not shared with anyone. Privacy and confidentiality are treated as a core priority."
+          },
+          {
+            question: "When Should You Consult an Astrologer?",
+            answer: "Astrologer consultations are most helpful when you need clarity, direction, or timing guidance. Rather than reacting to events, astrology helps you prepare and make informed choices. Many users consult astrologers proactively to understand upcoming phases and avoid unnecessary stress."
+          }
+        ]}
+      />
     </>
   );
 }

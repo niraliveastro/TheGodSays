@@ -13,47 +13,58 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveast
  * Discovery adds any new page.js under src/app automatically; this list ensures no page is missing from sitemap.
  */
 export const STATIC_PATHS = [
+  // Core SEO Pages (High Priority)
   { path: '', changeFrequency: 'daily', priority: 1.0 },
+  { path: 'talk-to-astrologer', changeFrequency: 'daily', priority: 0.9 },
+  { path: 'matching', changeFrequency: 'weekly', priority: 0.9 },
+  { path: 'predictions', changeFrequency: 'daily', priority: 0.9 },
+  { path: 'cosmic-event-tracker', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'numerology', changeFrequency: 'weekly', priority: 0.8 },
+  { path: 'transit', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'panchang/calender', changeFrequency: 'daily', priority: 0.8 },
+  
+  // Blog (High Priority)
+  { path: 'blog', changeFrequency: 'daily', priority: 0.9 },
+  
+  // Other Important Pages
   { path: 'ai-predictions', changeFrequency: 'daily', priority: 0.8 },
-  { path: 'appointments', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'appointments/availability', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'astrologer-dashboard', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'astrologer-dashboard/pricing', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'auth', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'auth/astrologer', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'auth/user', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'blog', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'kundali', changeFrequency: 'weekly', priority: 0.8 },
+  { path: 'panchang', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'panchang/personalized', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'panchang/kundali', changeFrequency: 'weekly', priority: 0.7 },
   { path: 'calendar', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'call-history', changeFrequency: 'weekly', priority: 0.6 },
   { path: 'choghadiya-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'cosmic-event-tracker', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'panchang/choghadiya-timings', changeFrequency: 'daily', priority: 0.7 },
   { path: 'hora-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'kundali', changeFrequency: 'weekly', priority: 0.9 },
-  { path: 'matching', changeFrequency: 'weekly', priority: 0.8 },
+  { path: 'panchang/hora-timings', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'tithi-timings', changeFrequency: 'daily', priority: 0.7 },
   { path: 'maha-dasas', changeFrequency: 'weekly', priority: 0.7 },
+  { path: 'panchang/maha-dasas', changeFrequency: 'weekly', priority: 0.7 },
+  { path: 'personalized', changeFrequency: 'daily', priority: 0.7 },
   { path: 'new-matching', changeFrequency: 'weekly', priority: 0.7 },
   { path: 'new-predictions', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'numerology', changeFrequency: 'weekly', priority: 0.8 },
-  { path: 'panchang', changeFrequency: 'daily', priority: 0.9 },
-  { path: 'panchang/calender', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/choghadiya-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/hora-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/kundali', changeFrequency: 'weekly', priority: 0.8 },
-  { path: 'panchang/maha-dasas', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'panchang/personalized', changeFrequency: 'daily', priority: 0.8 },
-  { path: 'personalized', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'predictions', changeFrequency: 'daily', priority: 0.8 },
-  { path: 'privacy-policy', changeFrequency: 'monthly', priority: 0.5 },
+  
+  // User/Account Pages
+  { path: 'appointments', changeFrequency: 'weekly', priority: 0.6 },
+  { path: 'appointments/availability', changeFrequency: 'weekly', priority: 0.6 },
+  { path: 'call-history', changeFrequency: 'weekly', priority: 0.6 },
+  { path: 'wallet', changeFrequency: 'weekly', priority: 0.6 },
   { path: 'profile/astrology', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'profile/family', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'profile/user', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'refund-policy', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'talk-to-astrologer', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'astrologer-dashboard', changeFrequency: 'weekly', priority: 0.6 },
+  { path: 'astrologer-dashboard/pricing', changeFrequency: 'weekly', priority: 0.6 },
+  
+  // Auth Pages
+  { path: 'auth', changeFrequency: 'monthly', priority: 0.5 },
+  { path: 'auth/astrologer', changeFrequency: 'monthly', priority: 0.5 },
+  { path: 'auth/user', changeFrequency: 'monthly', priority: 0.5 },
+  
+  // Legal/Policy Pages
+  { path: 'privacy-policy', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'terms-and-conditions', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'tithi-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'transit', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'refund-policy', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'unauthorized', changeFrequency: 'monthly', priority: 0.3 },
-  { path: 'wallet', changeFrequency: 'weekly', priority: 0.6 },
 ]
 
 const DEFAULT_CHANGE_FREQUENCY = 'weekly'
