@@ -157,6 +157,26 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // CSS files - prevent aggressive caching
+        source: '/:path*.css',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
+        // Next.js CSS chunks
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ]
   },
 }
