@@ -109,7 +109,7 @@ const Navigation = () => {
         label: t.nav.talkToAstrologer,
         icon: Phone,
       },
-      { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
       {
         href: null,
         label: t.nav.myAccount,
@@ -176,7 +176,7 @@ const Navigation = () => {
         label: t.nav.talkToAstrologer,
         icon: Phone,
       },
-      { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
+      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
       { href: "/blog", label: t.nav.blog, icon: Rss },
       { href: "/appointments", label: "Booking", icon: Calendar },
     ],
