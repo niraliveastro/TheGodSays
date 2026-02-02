@@ -91,7 +91,7 @@ body {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Exact button gradient */
+  background: #ebcf74 !important; /* Exact button gradient */
   z-index: 998 !important; /* Just below top nav */
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2) !important;
 }
@@ -479,7 +479,7 @@ body {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
   color: #374151;
   text-decoration: none !important;
   border-radius: 0;
@@ -503,7 +503,7 @@ body {
 .nav-language-dropdown-item.active {
   background: rgba(212, 175, 55, 0.15);
   color: #92400e;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none !important;
   border-bottom: none !important;
 }
@@ -627,7 +627,7 @@ body {
   padding: 0.625rem 1.25rem;
   border-radius: 9999px; /* Fully rounded pill shape */
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 200;
   text-decoration: none !important; /* Remove any underlines */
   transition: all 0.3s ease;
   border: 1px solid #e5e7eb; /* Light gray border */
@@ -645,7 +645,7 @@ body {
 }
 
 .nav-link:hover, .nav-button:hover {
-  background: linear-gradient(135deg, #d4af37, #b8972e); /* Golden gradient on hover */
+ /* Golden gradient on hover */
   color: #ffffff; /* White text on hover */
   border-color: #d4af37;
   border-bottom: 3px solid #a08526 !important; /* Darker golden bottom border on hover */
@@ -699,7 +699,7 @@ body {
 .nav-bottom-row .nav-link,
 .nav-bottom-row .nav-button {
   color: #000000; /* Black text on golden background */
-  font-weight: 400; /* Normal weight - removed bold */
+  font-weight: 300 !important; /* Normal weight - removed bold */
   padding: 0.5rem 1rem; /* Comfortable padding */
   font-size: 0.9375rem; /* Slightly larger text */
   white-space: nowrap;
@@ -1364,3 +1364,4 @@ a.nav-dropdown-item * {
 .chevron-icon.rotated {
   transform: rotate(180deg);
 }
+
