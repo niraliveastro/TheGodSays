@@ -7,6 +7,7 @@
   font-family: 'Geom', sans-serif;
   width: 100%;
   box-sizing: border-box;
+  padding: 1.5rem 10%;
 }
 
 .footer * {
@@ -16,10 +17,10 @@
 
 .footer-content {
   width: 100%;
-  min-width: min(320px, 95vw);
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 .footer-main {
@@ -70,12 +71,12 @@
 }
 
 .footer-description {
-  color: #000000;
+  color: #4b5563;
   line-height: 1.7;
   font-size: clamp(0.875rem, 1.5vw, 0.95rem);
   font-weight: 400;
   text-align: left;
-  font-family: 'Geom', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   text-transform: none;
 }
 
@@ -130,18 +131,18 @@
 }
 
 .footer-links li a {
-  color: #000000;
+  color: #b8972e;
   text-decoration: none;
   font-size: clamp(0.85rem, 1.4vw, 0.95rem);
-  font-weight: 300;
-  font-family: 'Geom', sans-serif !important;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   transition: all 0.2s ease;
   display: inline-block;
   text-transform: none;
 }
 
 .footer-links li a:hover {
-  color: #d4af37;
+  color: #a08526;
   padding-left: 0.5rem;
 }
 
@@ -158,15 +159,15 @@
   gap: clamp(0.5rem, 1.2vw, 0.75rem);
   color: #000000;
   font-size: clamp(0.85rem, 1.4vw, 0.95rem);
-  font-weight: 300;
-  font-family: 'Geom', sans-serif !important;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   text-transform: none;
 }
 
 .contact-icon {
   width: 18px;
   height: 18px;
-  color: #d4af37;
+  color: #b8972e;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -175,8 +176,8 @@
 .contact-item span {
   color: #000000;
   text-decoration: none;
-  font-weight: 300;
-  font-family: 'Geom', sans-serif !important;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
   transition: color 0.2s ease;
   text-transform: none;
 }
@@ -222,10 +223,11 @@
 }
 
 .footer-copyright {
-  color: #000000;
+  color: #4b5563;
   font-size: clamp(0.8rem, 1.4vw, 0.9rem);
+  font-weight: 400;
   margin: 0;
-    font-family: 'Geom', sans-serif !important;
+  font-family: 'Geom', sans-serif !important;
 
   text-transform: none;
 }
@@ -256,7 +258,8 @@
 }
 
 .footer-legal a {
-  color: #000000;
+  color: #4b5563;
+  font-weight: 400;
   text-decoration: none;
   font-size: clamp(0.8rem, 1.4vw, 0.9rem);
   transition: color 0.2s ease;
@@ -270,7 +273,7 @@
 }
 
 .footer-legal .separator {
-  color: #000000;
+  color: #4b5563;
 }
 
 .footer-disclaimer {
@@ -282,24 +285,25 @@
 }
 
 .footer-disclaimer p {
-  color: #000000;
+  color: #4b5563;
   font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+  font-weight: 400;
   line-height: 1.6;
   margin: 0;
   text-align: left;
-  font-family: 'Geom', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   text-transform: none;
 }
 
 .footer-disclaimer strong {
-  color: #000000;
+  color: #4b5563;
   font-weight: 600;
 }
 
 /* Responsive: 80% view frame; narrow viewports use more width */
 @media (max-width: 1024px) {
-  .footer-content {
-    width: 88%;
+  .footer {
+    padding: 1.5rem 5%;
   }
 
   .footer-main {
@@ -320,9 +324,8 @@
 }
 
 @media (max-width: 768px) {
-  .footer-content {
-    width: 92%;
-    padding: 0 3%;
+  .footer {
+    padding: 1rem;
   }
 
   .footer-main {
@@ -389,9 +392,8 @@
 }
 
 @media (max-width: 480px) {
-  .footer-content {
-    width: 95%;
-    padding: 0 4%;
+  .footer {
+    padding: 1rem;
   }
 
   .footer-title {
