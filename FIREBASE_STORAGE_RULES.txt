@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Production rules for NiraLiveAstro-Prod
+// Blog images are uploaded server-side via Admin SDK (bypasses rules)
+// These rules ensure public read access for blog images
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Blog images - public read access (anyone can view)
+    // Writes are handled server-side via Admin SDK, so no client write rules needed
+    match /blog/{fileName} {
+      allow read: if true; // Public read access for blog images
+      allow write: if false; // No client-side writes (use Admin SDK instead)
+    }
+    
+    // Default: deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

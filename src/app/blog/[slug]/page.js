@@ -19,22 +19,12 @@ import BlogFloatingCTA from './BlogFloatingCTA'
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
-// Use ISR (Incremental Static Regeneration) for better SEO
-// Revalidate every 60 seconds to keep content fresh while allowing static generation
+// Use ISR: revalidate every 60 seconds. Blog posts are generated on first request (not at build),
+// so build shows ~40 static pages instead of 80 (40 app routes + 40 blog posts). Sitemap still lists all blog URLs.
 export const revalidate = 60;
 
-// Generate static params for all blog posts (for SSG/ISR)
-export async function generateStaticParams() {
-  try {
-    const slugs = await getAllBlogSlugs();
-    return slugs.map((item) => ({
-      slug: item.slug,
-    }));
-  } catch (error) {
-    console.error("Error generating static params:", error);
-    return [];
-  }
-}
+// Do NOT use generateStaticParams here – it pre-renders every blog post at build (80+ static pages).
+// Blog posts are generated on-demand and cached; sitemap.xml still includes all blog URLs from getAllBlogSlugs().
 
 // Generate metadata for each blog post
 export async function generateMetadata({ params }) {

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Geom:wght@500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -1227,6 +1227,7 @@ select {
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
   padding: 1rem 1.25rem;
   transition: all 0.3s ease;
+    border-radius: var(--radius-md);
 }
 
 .btn-primary:hover {
@@ -1236,9 +1237,11 @@ select {
 }
 
 .btn-secondary {
-  background: var(--color-white);
-  color: var(--color-indigo);
-  border: 2px solid var(--color-indigo);
+  background: var(--color-cream);
+  color: var(--color-gray-700);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
@@ -1957,12 +1960,9 @@ select {
 
 .logo-text {
   font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #d4af37, #b8972e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 500;
+  color: #C89F3A;
+  font-family: 'Geom', sans-serif;
 }
 
 .auth-title {

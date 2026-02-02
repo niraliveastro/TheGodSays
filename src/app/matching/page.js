@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
@@ -16,14 +18,16 @@ import {
   X,
   LoaderCircle,
   Star,
-  PhoneCallIcon
+  PhoneCallIcon,
+  PhoneIcon,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
-import Chat from "@/components/Chat";
-import Modal from "@/components/Modal";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import AstrologerAssistant from "@/components/AstrologerAssistant";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+import PageSEO from "@/components/PageSEO";
+
+// Lazy load heavy components for better initial load
+const Modal = lazy(() => import("@/components/Modal"));
 /**
  * Tiny UI helpers – pure CSS classes for reusable components.
  * These are simple functional components that render styled divs or spans.
@@ -112,7 +116,7 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
-      // Form state for female and male individuals
+  // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
     dob: "",
@@ -155,25 +159,24 @@ export default function MatchingPage() {
   const chatRef = useRef(null); // Reference to chat section for scrolling
   const resultsRef = useRef(null); // Reference to results section for auto-scrolling
 
-
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
-  
+
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
    * This hash is used to identify if form data has changed
    */
   const generateFormDataHash = () => {
     const formData = {
-      femaleName: (female.fullName || '').trim().toUpperCase(),
-      femaleDob: (female.dob || '').trim(),
-      femaleTob: (female.tob || '').trim(),
-      femalePlace: (female.place || '').trim().toUpperCase(),
-      maleName: (male.fullName || '').trim().toUpperCase(),
-      maleDob: (male.dob || '').trim(),
-      maleTob: (male.tob || '').trim(),
-      malePlace: (male.place || '').trim().toUpperCase(),
+      femaleName: (female.fullName || "").trim().toUpperCase(),
+      femaleDob: (female.dob || "").trim(),
+      femaleTob: (female.tob || "").trim(),
+      femalePlace: (female.place || "").trim().toUpperCase(),
+      maleName: (male.fullName || "").trim().toUpperCase(),
+      maleDob: (male.dob || "").trim(),
+      maleTob: (male.tob || "").trim(),
+      malePlace: (male.place || "").trim().toUpperCase(),
     };
     // Create a consistent hash from the form data
     const hashString = JSON.stringify(formData);
@@ -181,36 +184,39 @@ export default function MatchingPage() {
     let hash = 0;
     for (let i = 0; i < hashString.length; i++) {
       const char = hashString.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash.toString();
   };
-  
+
   /**
    * Checks if form data has changed and resets chat if needed
    */
   const checkAndResetChatOnFormChange = () => {
     const newHash = generateFormDataHash();
-    
+
     // If form is empty, don't reset
     if (!female.fullName && !male.fullName && !female.dob && !male.dob) {
       return;
     }
-    
+
     // If hash changed, reset chat
-    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
-      console.log('[Matching] Form data changed, resetting chat:', {
+    if (
+      previousFormDataHashRef.current !== null &&
+      previousFormDataHashRef.current !== newHash
+    ) {
+      console.log("[Matching] Form data changed, resetting chat:", {
         previousHash: previousFormDataHashRef.current,
         newHash: newHash,
       });
       // Reset chat by incrementing session ID
-      setChatSessionId(prev => prev + 1);
+      setChatSessionId((prev) => prev + 1);
       setShouldResetChat(true);
       // Clear any existing chat data
       setChatData(null);
     }
-    
+
     // Update the hash
     previousFormDataHashRef.current = newHash;
     setCurrentFormDataHash(newHash);
@@ -219,6 +225,7 @@ export default function MatchingPage() {
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
   const [history, setHistory] = useState([]); // Array of history entries
+  const [historySearch, setHistorySearch] = useState(""); // Search filter for history
   /**
    * Retrieves matching history from localStorage.
    * @returns {array} Array of history objects or empty array on error.
@@ -237,12 +244,14 @@ export default function MatchingPage() {
    */
   const saveToHistory = (entry) => {
     let current = getHistory();
-    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${entry.femaleDob
-      }-${entry.maleDob}`;
+    const key = `${entry.femaleName.toUpperCase()}-${entry.maleName.toUpperCase()}-${
+      entry.femaleDob
+    }-${entry.maleDob}`;
     current = current.filter(
       (it) =>
-        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${it.femaleDob
-        }-${it.maleDob}` !== key
+        `${it.femaleName.toUpperCase()}-${it.maleName.toUpperCase()}-${
+          it.femaleDob
+        }-${it.maleDob}` !== key,
     );
     current.unshift(entry);
     if (current.length > 10) current = current.slice(0, 10);
@@ -264,7 +273,38 @@ export default function MatchingPage() {
   const clearHistory = () => {
     localStorage.removeItem(MATCHING_HISTORY_KEY);
     setHistory([]);
+    setHistorySearch("");
   };
+
+  // Filter history based on search query
+  const filteredHistory = useMemo(() => {
+    if (!historySearch.trim()) return history;
+    const searchLower = historySearch.toLowerCase();
+    return history.filter((item) => {
+      const femaleNameMatch = (item.femaleName || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const maleNameMatch = (item.maleName || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const femalePlaceMatch = (item.femalePlace || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const malePlaceMatch = (item.malePlace || "")
+        .toLowerCase()
+        .includes(searchLower);
+      const femaleDobMatch = (item.femaleDob || "").includes(searchLower);
+      const maleDobMatch = (item.maleDob || "").includes(searchLower);
+      return (
+        femaleNameMatch ||
+        maleNameMatch ||
+        femalePlaceMatch ||
+        malePlaceMatch ||
+        femaleDobMatch ||
+        maleDobMatch
+      );
+    });
+  }, [history, historySearch]);
 
   const resetAllFields = () => {
     setFemale({
@@ -289,9 +329,9 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-    
+
     // Reset chat when form is cleared
-    setChatSessionId(prev => prev + 1);
+    setChatSessionId((prev) => prev + 1);
     setShouldResetChat(true);
     setChatData(null);
     previousFormDataHashRef.current = null;
@@ -320,37 +360,40 @@ export default function MatchingPage() {
     // Optional: Reset coords so user must re-select or re-run
     setFCoords(null);
     setMCoords(null);
-    
+
     // Generate hash for loaded history item to check if chat should be restored
     const loadedHash = (() => {
       const formData = {
-        femaleName: (item.femaleName || '').trim().toUpperCase(),
-        femaleDob: (item.femaleDob || '').trim(),
-        femaleTob: (item.femaleTob || '').trim(),
-        femalePlace: (item.femalePlace || '').trim().toUpperCase(),
-        maleName: (item.maleName || '').trim().toUpperCase(),
-        maleDob: (item.maleDob || '').trim(),
-        maleTob: (item.maleTob || '').trim(),
-        malePlace: (item.malePlace || '').trim().toUpperCase(),
+        femaleName: (item.femaleName || "").trim().toUpperCase(),
+        femaleDob: (item.femaleDob || "").trim(),
+        femaleTob: (item.femaleTob || "").trim(),
+        femalePlace: (item.femalePlace || "").trim().toUpperCase(),
+        maleName: (item.maleName || "").trim().toUpperCase(),
+        maleDob: (item.maleDob || "").trim(),
+        maleTob: (item.maleTob || "").trim(),
+        malePlace: (item.malePlace || "").trim().toUpperCase(),
       };
       const hashString = JSON.stringify(formData);
       let hash = 0;
       for (let i = 0; i < hashString.length; i++) {
         const char = hashString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash;
       }
       return hash.toString();
     })();
-    
+
     // If this matches previous hash, don't reset chat (same data)
     // Otherwise, reset chat (different data loaded)
-    if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== loadedHash) {
-      setChatSessionId(prev => prev + 1);
+    if (
+      previousFormDataHashRef.current !== null &&
+      previousFormDataHashRef.current !== loadedHash
+    ) {
+      setChatSessionId((prev) => prev + 1);
       setShouldResetChat(true);
       setChatData(null);
     }
-    
+
     // Update hash reference
     previousFormDataHashRef.current = loadedHash;
     setCurrentFormDataHash(loadedHash);
@@ -412,7 +455,7 @@ export default function MatchingPage() {
           }
           try {
             const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-              v
+              v,
             )}`;
             const res = await fetch(url, {
               headers: { "Accept-Language": "en" },
@@ -423,7 +466,7 @@ export default function MatchingPage() {
                 label: it.display_name,
                 latitude: parseFloat(it.lat),
                 longitude: parseFloat(it.lon),
-              }))
+              })),
             );
           } catch {
             suggestSetter([]);
@@ -453,16 +496,27 @@ export default function MatchingPage() {
         [D, M, Y] = dobParts;
       }
     } else {
-      throw new Error(`Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`);
+      throw new Error(
+        `Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`,
+      );
     }
 
-    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+    if (
+      !Y ||
+      !M ||
+      !D ||
+      Number.isNaN(Y) ||
+      Number.isNaN(M) ||
+      Number.isNaN(D)
+    ) {
       throw new Error(`Invalid date values: ${dob}`);
     }
 
     // Validate date ranges
-    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (Y < 1900 || Y > 2100)
+      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12)
+      throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
     // Parse time
@@ -471,13 +525,18 @@ export default function MatchingPage() {
     const [H, Min, S = 0] = timeParts;
 
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
-      throw new Error(`Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`);
+      throw new Error(
+        `Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`,
+      );
     }
 
     // Validate time ranges
-    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    if (H < 0 || H > 23)
+      throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59)
+      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59)
+      throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
@@ -522,7 +581,7 @@ export default function MatchingPage() {
       setFSuggest([]);
     } catch (e) {
       setError(
-        "Could not access your location. Please allow permission or type the city manually."
+        "Could not access your location. Please allow permission or type the city manually.",
       );
     } finally {
       setFLocating(false);
@@ -552,7 +611,7 @@ export default function MatchingPage() {
       setMSuggest([]);
     } catch (e) {
       setError(
-        "Could not access your location. Please allow permission or type the city manually."
+        "Could not access your location. Please allow permission or type the city manually.",
       );
     } finally {
       setMLocating(false);
@@ -615,10 +674,10 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-    
+
     // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-    
+
     // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
     if (
@@ -632,7 +691,7 @@ export default function MatchingPage() {
       !male.place
     ) {
       setError(
-        "Please complete all fields for both individuals, including names."
+        "Please complete all fields for both individuals, including names.",
       );
       return;
     }
@@ -641,7 +700,7 @@ export default function MatchingPage() {
       const payload = await buildPayload();
       const res = await astrologyAPI.getSingleCalculation(
         "match-making/ashtakoot-score",
-        payload
+        payload,
       );
       const out =
         typeof res?.output === "string"
@@ -658,6 +717,7 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
+        lastGenerated: new Date().toISOString(),
       });
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -684,42 +744,49 @@ export default function MatchingPage() {
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
-      
+
       // Validate that both API calls succeeded
       if (!fCalc || !fCalc.results) {
-        console.error('[Matching] Female calculation failed:', fCalc);
-        throw new Error('Failed to fetch female individual data. Please try again.');
+        console.error("[Matching] Female calculation failed:", fCalc);
+        throw new Error(
+          "Failed to fetch female individual data. Please try again.",
+        );
       }
       if (!mCalc || !mCalc.results) {
-        console.error('[Matching] Male calculation failed:', mCalc);
-        throw new Error('Failed to fetch male individual data. Please try again.');
+        console.error("[Matching] Male calculation failed:", mCalc);
+        throw new Error(
+          "Failed to fetch male individual data. Please try again.",
+        );
       }
-      
+
       // Check for errors in API responses
       if (fCalc.errors && Object.keys(fCalc.errors).length > 0) {
-        console.warn('[Matching] Female calculation errors:', fCalc.errors);
+        console.warn("[Matching] Female calculation errors:", fCalc.errors);
       }
       if (mCalc.errors && Object.keys(mCalc.errors).length > 0) {
-        console.warn('[Matching] Male calculation errors:', mCalc.errors);
+        console.warn("[Matching] Male calculation errors:", mCalc.errors);
       }
-      
+
       // If Maha Dasha API call failed, retry separately for each individual
       const retryMahaDashaIfNeeded = async (calc, payload, gender) => {
         const mahaError = calc.errors?.["vimsottari/maha-dasas"];
         const hasMahaData = calc.results?.["vimsottari/maha-dasas"];
-        
+
         if (mahaError || !hasMahaData) {
-          console.warn(`[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`, {
-            error: mahaError,
-            hasData: !!hasMahaData,
-          });
-          
+          console.warn(
+            `[Matching] ${gender} Maha Dasha data missing or error occurred, retrying...`,
+            {
+              error: mahaError,
+              hasData: !!hasMahaData,
+            },
+          );
+
           try {
             const retryResult = await astrologyAPI.getSingleCalculation(
               "vimsottari/maha-dasas",
-              payload
+              payload,
             );
-            
+
             if (retryResult && calc.results) {
               calc.results["vimsottari/maha-dasas"] = retryResult;
               // Remove error if retry succeeded
@@ -729,35 +796,41 @@ export default function MatchingPage() {
               console.log(`[Matching] ${gender} Maha Dasha retry successful`);
             }
           } catch (retryError) {
-            console.error(`[Matching] ${gender} Maha Dasha retry failed:`, retryError);
+            console.error(
+              `[Matching] ${gender} Maha Dasha retry failed:`,
+              retryError,
+            );
             // Continue with existing data even if retry fails
           }
         }
       };
-      
+
       // Retry Maha Dasha for both if needed
       await Promise.all([
-        retryMahaDashaIfNeeded(fCalc, fPayload, 'Female'),
-        retryMahaDashaIfNeeded(mCalc, mPayload, 'Male'),
+        retryMahaDashaIfNeeded(fCalc, fPayload, "Female"),
+        retryMahaDashaIfNeeded(mCalc, mPayload, "Male"),
       ]);
-      
+
       // If Vimsottari data is missing, retry separately for each individual
       const retryVimsottariIfNeeded = async (calc, payload, gender) => {
         const vimsError = calc.errors?.["vimsottari/dasa-information"];
         const hasVimsData = calc.results?.["vimsottari/dasa-information"];
-        
+
         if (vimsError || !hasVimsData) {
-          console.warn(`[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`, {
-            error: vimsError,
-            hasData: !!hasVimsData,
-          });
-          
+          console.warn(
+            `[Matching] ${gender} Vimsottari data missing or error occurred, retrying...`,
+            {
+              error: vimsError,
+              hasData: !!hasVimsData,
+            },
+          );
+
           try {
             const retryResult = await astrologyAPI.getSingleCalculation(
               "vimsottari/dasa-information",
-              payload
+              payload,
             );
-            
+
             if (retryResult && calc.results) {
               calc.results["vimsottari/dasa-information"] = retryResult;
               // Remove error if retry succeeded
@@ -767,23 +840,26 @@ export default function MatchingPage() {
               console.log(`[Matching] ${gender} Vimsottari retry successful`);
             }
           } catch (retryError) {
-            console.error(`[Matching] ${gender} Vimsottari retry failed:`, retryError);
+            console.error(
+              `[Matching] ${gender} Vimsottari retry failed:`,
+              retryError,
+            );
             // Continue with existing data even if retry fails
           }
         }
       };
-      
+
       // Retry Vimsottari for both if needed
       await Promise.all([
-        retryVimsottariIfNeeded(fCalc, fPayload, 'Female'),
-        retryVimsottariIfNeeded(mCalc, mPayload, 'Male'),
+        retryVimsottariIfNeeded(fCalc, fPayload, "Female"),
+        retryVimsottariIfNeeded(mCalc, mPayload, "Male"),
       ]);
-      
+
       // Log to verify both have vimsottari data (only in development)
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         const fVims = fCalc.results["vimsottari/dasa-information"];
         const mVims = mCalc.results["vimsottari/dasa-information"];
-        console.log('[Matching] API Results:', {
+        console.log("[Matching] API Results:", {
           femaleHasVimsottari: !!fVims,
           maleHasVimsottari: !!mVims,
           femaleResultsKeys: Object.keys(fCalc.results || {}),
@@ -881,7 +957,7 @@ export default function MatchingPage() {
         if (Array.isArray(sb))
           sb = sb.reduce(
             (acc, it) => (typeof it === "object" ? { ...acc, ...it } : acc),
-            {}
+            {},
           );
         const maybePlanets = sb.planets || sb || {};
         return Object.keys(maybePlanets)
@@ -992,11 +1068,11 @@ export default function MatchingPage() {
         const shadbala = parseShadbala(r["shadbala/summary"]);
         const vims = r["vimsottari/dasa-information"]
           ? safeParse(
-            safeParse(
-              r["vimsottari/dasa-information"].output ??
-              r["vimsottari/dasa-information"]
+              safeParse(
+                r["vimsottari/dasa-information"].output ??
+                  r["vimsottari/dasa-information"],
+              ),
             )
-          )
           : null;
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
         const planets = parsePlanets(r["planets/extended"]);
@@ -1010,34 +1086,48 @@ export default function MatchingPage() {
       };
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
-      
+
       // Validate that both have vimsottari data (warn only if endpoint failed, not if it's just missing)
       if (!fDetailsBuilt.vimsottari) {
         const vimsError = fCalc.errors?.["vimsottari/dasa-information"];
         if (vimsError) {
-          console.warn('[Matching] ⚠️ Female vimsottari endpoint failed:', vimsError);
-        } else if (process.env.NODE_ENV === 'development') {
-          console.warn('[Matching] ⚠️ Female vimsottari data is missing (no error reported)', {
-            fCalcResults: Object.keys(fCalc.results || {}),
-            hasVimsottariEndpoint: !!fCalc.results["vimsottari/dasa-information"],
-          });
+          console.warn(
+            "[Matching] ⚠️ Female vimsottari endpoint failed:",
+            vimsError,
+          );
+        } else if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Matching] ⚠️ Female vimsottari data is missing (no error reported)",
+            {
+              fCalcResults: Object.keys(fCalc.results || {}),
+              hasVimsottariEndpoint:
+                !!fCalc.results["vimsottari/dasa-information"],
+            },
+          );
         }
       }
       if (!mDetailsBuilt.vimsottari) {
         const vimsError = mCalc.errors?.["vimsottari/dasa-information"];
         if (vimsError) {
-          console.warn('[Matching] ⚠️ Male vimsottari endpoint failed:', vimsError);
-        } else if (process.env.NODE_ENV === 'development') {
-          console.warn('[Matching] ⚠️ Male vimsottari data is missing (no error reported)', {
-            mCalcResults: Object.keys(mCalc.results || {}),
-            hasVimsottariEndpoint: !!mCalc.results["vimsottari/dasa-information"],
-          });
+          console.warn(
+            "[Matching] ⚠️ Male vimsottari endpoint failed:",
+            vimsError,
+          );
+        } else if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Matching] ⚠️ Male vimsottari data is missing (no error reported)",
+            {
+              mCalcResults: Object.keys(mCalc.results || {}),
+              hasVimsottariEndpoint:
+                !!mCalc.results["vimsottari/dasa-information"],
+            },
+          );
         }
       }
-      
+
       setFDetails(fDetailsBuilt);
       setMDetails(mDetailsBuilt);
-      
+
       // Prepare chat data with all details when results are ready
       // Use setTimeout to ensure state updates are complete
       setTimeout(() => {
@@ -1050,17 +1140,20 @@ export default function MatchingPage() {
 
       // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
-        setChatSessionId(prev => prev + 1);
+        setChatSessionId((prev) => prev + 1);
         setShouldResetChat(false);
       }
-      
+
       // Update hash reference after successful submission
       previousFormDataHashRef.current = newHash;
 
       // Auto-scroll to results after successful calculation
       setTimeout(() => {
         if (resultsRef.current) {
-          resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          resultsRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }
       }, 100);
 
@@ -1102,7 +1195,7 @@ export default function MatchingPage() {
     // Check if birth details are filled
     if (!validateBirthDetails()) {
       setError(
-        "Please complete all fields for both individuals, including names, before using the chat."
+        "Please complete all fields for both individuals, including names, before using the chat.",
       );
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1112,22 +1205,28 @@ export default function MatchingPage() {
     // If no result exists, calculate it first
     if (!result) {
       // Create a synthetic event to trigger form submission and await the computed result
-      const syntheticEvent = { preventDefault: () => { } };
+      const syntheticEvent = { preventDefault: () => {} };
       const computed = await onSubmit(syntheticEvent);
       if (computed) {
         // result state is set inside onSubmit; prepare chat and open
         prepareChatData();
-        setChatSessionId(prev => prev + 1);
+        setChatSessionId((prev) => prev + 1);
         setChatOpen(true);
         scrollToChat();
       }
     } else {
       // Result exists, prepare data and open chat
       prepareChatData();
-      setChatSessionId(prev => prev + 1);
+      setChatSessionId((prev) => prev + 1);
       setChatOpen(true);
       scrollToChat();
     }
+  };
+
+  const router = useRouter();
+
+  const onTalkToAstrologer = () => {
+    router.push("/talk-to-astrologer");
   };
 
   /**
@@ -1137,13 +1236,16 @@ export default function MatchingPage() {
   const prepareChatData = () => {
     // Ensure we have all the data before preparing
     if (!result || !fDetails || !mDetails) {
-      console.warn('[Matching] prepareChatData called but data is incomplete:', {
-        hasResult: !!result,
-        hasFDetails: !!fDetails,
-        hasMDetails: !!mDetails,
-      });
+      console.warn(
+        "[Matching] prepareChatData called but data is incomplete:",
+        {
+          hasResult: !!result,
+          hasFDetails: !!fDetails,
+          hasMDetails: !!mDetails,
+        },
+      );
     }
-    
+
     const data = {
       female: {
         input: {
@@ -1181,10 +1283,10 @@ export default function MatchingPage() {
       // This includes: total_score, out_of, rasi_kootam, graha_maitri_kootam, yoni_kootam, gana_kootam, nadi_kootam
       match: result || null,
     };
-    
+
     // Log data structure for debugging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Matching] Chat data prepared:', {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Matching] Chat data prepared:", {
         femaleName: data.female.input.name,
         maleName: data.male.input.name,
         hasMatch: !!data.match,
@@ -1202,7 +1304,7 @@ export default function MatchingPage() {
         maleHasShadbala: !!data.male.details?.shadbalaRows,
       });
     }
-    
+
     setChatData(data);
     return data;
   };
@@ -1235,43 +1337,70 @@ export default function MatchingPage() {
         match: result,
       };
       setChatData(data);
-      
+
       // Update form data hash when results are ready
       const newHash = generateFormDataHash();
       setCurrentFormDataHash(newHash);
       previousFormDataHashRef.current = newHash;
     }
   }, [result, fDetails, mDetails, female, male, fCoords, mCoords]);
-  
+
   // Monitor form data changes and reset chat if needed (before submission)
   useEffect(() => {
     // Only check if we have some form data filled
     if (female.fullName || male.fullName || female.dob || male.dob) {
       const newHash = generateFormDataHash();
       // Only reset if hash changed and we had a previous hash (not on initial load)
-      if (previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== newHash) {
-        console.log('[Matching] Form data changed before submission, will reset chat on submit:', {
-          previousHash: previousFormDataHashRef.current,
-          newHash: newHash,
-        });
+      if (
+        previousFormDataHashRef.current !== null &&
+        previousFormDataHashRef.current !== newHash
+      ) {
+        console.log(
+          "[Matching] Form data changed before submission, will reset chat on submit:",
+          {
+            previousHash: previousFormDataHashRef.current,
+            newHash: newHash,
+          },
+        );
         // Don't reset immediately, just mark that it should reset on next submit
         setShouldResetChat(true);
       }
       // Update the hash reference
-      if (previousFormDataHashRef.current === null || previousFormDataHashRef.current !== newHash) {
+      if (
+        previousFormDataHashRef.current === null ||
+        previousFormDataHashRef.current !== newHash
+      ) {
         previousFormDataHashRef.current = newHash;
         setCurrentFormDataHash(newHash);
       }
     }
-  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
-  
+  }, [
+    female.fullName,
+    female.dob,
+    female.tob,
+    female.place,
+    male.fullName,
+    male.dob,
+    male.tob,
+    male.place,
+  ]);
+
   // Monitor form data changes and reset chat if needed
   useEffect(() => {
     // Only check if we have some form data filled
     if (female.fullName || male.fullName || female.dob || male.dob) {
       checkAndResetChatOnFormChange();
     }
-  }, [female.fullName, female.dob, female.tob, female.place, male.fullName, male.dob, male.tob, male.place]);
+  }, [
+    female.fullName,
+    female.dob,
+    female.tob,
+    female.place,
+    male.fullName,
+    male.dob,
+    male.tob,
+    male.place,
+  ]);
 
   /**
    * Scrolls to the chat section smoothly.
@@ -1348,12 +1477,20 @@ export default function MatchingPage() {
   /**
    * Generates and downloads a PDF report of the matching result.
    */
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!result) {
       setError("No result to download.");
       return;
     }
-    const doc = new jsPDF();
+    
+    try {
+      // Dynamically import PDF libraries only when needed (saves ~80KB initial bundle)
+      const [{ default: jsPDF }, autoTable] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable")
+      ]);
+      
+      const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 10;
     let yPos = 20;
@@ -1374,16 +1511,17 @@ export default function MatchingPage() {
     const femaleName = female.fullName || "Female";
     const maleName = male.fullName || "Male";
     doc.text(
-      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${female.place
+      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
+        female.place
       }`,
       margin,
-      yPos
+      yPos,
     );
     yPos += 7;
     doc.text(
       `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
       margin,
-      yPos
+      yPos,
     );
     yPos += 15;
 
@@ -1501,11 +1639,15 @@ export default function MatchingPage() {
       "Generated on " + new Date().toLocaleDateString(),
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
-      { align: "center" }
+      { align: "center" },
     );
 
-    // Download
-    doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
+      // Download
+      doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setError("Failed to generate PDF. Please try again.");
+    }
   };
   /* -------------------------------------------------------------- */
   /* Formatting helpers */
@@ -1659,17 +1801,207 @@ export default function MatchingPage() {
       </div>
     </section>
   );
+
+  const getCompatibilityVerdict = (score = 0, outOf = 36) => {
+    const pct = (Number(score) / Number(outOf)) * 100;
+
+    if (pct >= 85) {
+      return {
+        label: "Excellent Compatibility",
+        tone: "success",
+        description:
+          "Strong emotional, mental, and spiritual alignment. This match flows naturally.",
+      };
+    }
+
+    if (pct >= 70) {
+      return {
+        label: "Very Good Match",
+        tone: "info",
+        description:
+          "Harmonious with minor adjustments needed in communication and expectations.",
+      };
+    }
+
+    if (pct >= 55) {
+      return {
+        label: "Acceptable Match",
+        tone: "neutral",
+        description:
+          "Moderate compatibility. Success depends on mutual effort and understanding.",
+      };
+    }
+
+    if (pct >= 40) {
+      return {
+        label: "Challenging Match",
+        tone: "warn",
+        description:
+          "Differences may cause friction. Conscious compromise is essential.",
+      };
+    }
+
+    return {
+      label: "Highly Challenging",
+      tone: "warn",
+      description:
+        "Significant emotional and temperament gaps. Requires strong commitment and guidance.",
+    };
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /* ---------- ACCORDION SECTION ---------- */
+  const Section = ({ title, content, children }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div
+        style={{
+          marginBottom: "1.25rem",
+          border: "1px solid rgba(212, 175, 55, 0.25)",
+          borderRadius: "1rem",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+          overflow: "hidden",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {/* HEADER */}
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            width: "100%",
+            textAlign: "left",
+            padding: "1rem 1.25rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <h2
+            className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+            style={{
+              fontFamily: "'Georgia','Times New Roman',serif",
+            }}
+          >
+            {title}
+          </h2>
+
+          <span
+            style={{
+              fontSize: "1.25rem",
+              color: "#b45309",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform 0.25s ease",
+            }}
+          >
+            +
+          </span>
+        </button>
+
+        {/* CONTENT */}
+        {open && (
+          <div
+            style={{
+              padding: "0 1.25rem 1.25rem",
+              animation: "fadeIn 0.3s ease",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.7,
+                marginBottom: "0.75rem",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {children}
+            </p>
+
+            <ul
+              style={{
+                paddingLeft: "1.25rem",
+                fontSize: "0.85rem",
+                color: "#374151",
+                lineHeight: 1.8,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {content.map((item, i) => (
+                <li key={i}>✔ {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const getChartSummary = (rows = []) => {
+    const avg = rows.reduce((a, b) => a + (b.percent || 0), 0) / rows.length;
+
+    let level = "Moderate";
+    let description = "Mixed planetary influences are present.";
+    let points = [];
+
+    if (avg >= 120) {
+      level = "Strong";
+      description =
+        "Emotional stability and relationship support are favorable.";
+    } else if (avg < 105) {
+      level = "Weak";
+      description =
+        "Emotional sensitivity and imbalance may require attention.";
+    }
+
+    rows.forEach((p) => {
+      if (p.percent >= 120) {
+        points.push({
+          type: "ok",
+          text: `${p.name} is strongly supportive`,
+        });
+      } else if (p.percent < 105) {
+        points.push({
+          type: "warn",
+          text: `${p.name} may cause emotional friction`,
+        });
+      }
+    });
+
+    return { level, description, points };
+  };
+
+  const maleSummary = getChartSummary(mDetails?.shadbalaRows);
+  const femaleSummary = getChartSummary(fDetails?.shadbalaRows);
+
   /* -------------------------------------------------------------- */
   /* Render */
   /* -------------------------------------------------------------- */
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
-    return <PageLoading type="matching" message="Analyzing compatibility between charts..." />;
+    return (
+      <PageLoading
+        type="matching"
+        message="Analyzing compatibility between charts..."
+      />
+    );
   }
 
   return (
     <>
-
       {/* ---------------------------------------------------------- */}
       {/* PAGE CONTENT */}
       {/* ---------------------------------------------------------- */}
@@ -1687,499 +2019,606 @@ export default function MatchingPage() {
           <div className="orb orb2" />
           <div className="orb orb3" />
         </div>
-        {error && <div className="error" style={{ maxWidth: "1600px", margin: "2rem auto", padding: "0 2rem" }}>{error}</div>}
-        {/* Header Section */}
-        <header className="header" style={{ textAlign: "center", marginTop: "0.01rem", marginBottom: "2rem" }}>
-          <div className="headerIcon" style={{ 
-            width: "64px", 
-            height: "64px", 
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            borderRadius: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 1rem",
-            boxShadow: "0 0 30px rgba(212, 175, 55, 0.3)"
-          }}>
-            <IoHeartCircle style={{ color: "white", width: "36px", height: "36px" }} />
+        {error && (
+          <div
+            className="error"
+            style={{
+              maxWidth: "1600px",
+              margin: "2rem auto",
+              padding: "0 2rem",
+            }}
+          >
+            {error}
           </div>
-          <h1 className="title" style={{
-            fontFamily: "'Georgia', 'Times New Roman', serif",
-            fontSize: "3rem",
-            fontWeight: 400,
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            margin: 0
-          }}>
-            Match Making
-          </h1>
-          <p className="subtitle" style={{
-            color: "#555",
-            marginTop: "0.5rem",
-            fontSize: "1rem"
-          }}>
-            Enter birth details for both to get Ashtakoot score
-          </p>
-        </header>
-        <div className="matching-page-container">
-          {/* Left Column - Birth Details */}
-          <div className="birth-details-section">
-            <form onSubmit={onSubmit}>
-              {/* Header */}
-              <div className="form-header">
-                <Moon className="w-6 h-6" style={{ color: "#ca8a04" }} />
-                <div>
-                  <h3 className="form-title">{t.matching.birthDetails}</h3>
-                  <p className="form-subtitle">
-                    {t.matching.enterBothDetails}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Grid */}
-              <div 
-                className="form-sections-container"
-              >
-            {/* ---------- Female ---------- */}
-            <div
-              className="form-section border border-pink-200 bg-pink-50 rounded-2xl"
-              style={{
-                background: "#fdf2f8",
-                borderColor: "#fbcfe8",
-                width: "100%",
-                boxSizing: "border-box",
-                minWidth: 0,
-              }}
+        )}
+
+        <div className="matching-page">
+          <form onSubmit={onSubmit} className="match-form">
+            {/* Header */}
+            <header
+              className="header"
+              style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
             >
-              <div className="results-header mb-3">
-                <Moon style={{ color: "#ec4899" }} />
-                <h3 className="results-title">{t.matching.femaleDetails}</h3>
-              </div>
-              <div className="form-grid-2col">
-                {/* Row 1: Full Name + Date */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.femaleName}</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Priya"
-                    value={female.fullName}
-                    onChange={onChangePerson(
-                      setFemale,
-                      setFCoords,
-                      setFSuggest,
-                      fTimer,
-                      "fullName"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">Enter full name as per records</p>
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={fDateInputRef}
-                      type="date"
-                      value={female.dob}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "dob"
-                      )}
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fDateInputRef.current?.showPicker?.() || fDateInputRef.current?.click()}
-                      className="input-icon-btn calendar-icon-btn"
-                    >
-                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                </div>
-                {/* Row 2: Time + Place */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={fTimeInputRef}
-                      type="time"
-                      step="60"
-                      value={female.tob}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "tob"
-                      )}
-                      className="form-field-input form-input-field"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fTimeInputRef.current?.showPicker?.() || fTimeInputRef.current?.click()}
-                      className="clock-icon-btn"
-                    >
-                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">24-hour format</p>
-                </div>
-                <div className="form-field relative">
-                  <label className="form-field-label">Place</label>
-                  <div className="input-with-icon">
-                    <input
-                      placeholder="e.g., Mumbai, India"
-                      value={female.place}
-                      onChange={onChangePerson(
-                        setFemale,
-                        setFCoords,
-                        setFSuggest,
-                        fTimer,
-                        "place"
-                      )}
-                      autoComplete="off"
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={useMyLocationFemale}
-                      disabled={fLocating}
-                      className="location-icon-btn"
-                    >
-                      {fLocating ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#ec4899" }} />
-                      ) : (
-                        <MapPin className="w-5 h-5" style={{ color: "#ec4899" }} />
-                      )}
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
-                  {fSuggest.length > 0 && (
-                    <div className="suggestions">
-                      {fSuggest.map((s, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setFemale((p) => ({ ...p, place: s.label }));
-                            setFCoords(s);
-                            setFSuggest([]);
-                          }}
-                          className="suggestion-item"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-pink-500" />
-                          <span className="truncate">{s.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* ---------- Male ---------- */}
-            <div
-              className="form-section border border-blue-200 bg-blue-50 rounded-2xl"
-              style={{
-                background: "#eff6ff",
-                borderColor: "#bfdbfe",
-                width: "100%",
-                boxSizing: "border-box",
-                minWidth: 0,
-              }}
-            >
-              <div className="results-header mb-3">
-                <Sun style={{ color: "#3b82f6" }} />
-                <h3 className="results-title">{t.matching.maleDetails}</h3>
-              </div>
-              <div className="form-grid-2col">
-                {/* Row 1: Full Name + Date */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.maleName}</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Rohan"
-                    value={male.fullName}
-                    onChange={onChangePerson(
-                      setMale,
-                      setMCoords,
-                      setMSuggest,
-                      mTimer,
-                      "fullName"
-                    )}
-                    required
-                    className="form-field-input form-input-field"
-                  />
-                  <p className="form-field-helper">Enter full name as per records</p>
-                </div>
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.dateOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={mDateInputRef}
-                      type="date"
-                      value={male.dob}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "dob"
-                      )}
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => mDateInputRef.current?.showPicker?.() || mDateInputRef.current?.click()}
-                      className="input-icon-btn calendar-icon-btn"
-                    >
-                      <Calendar className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Format: DD-MM-YYYY</p>
-                </div>
-                {/* Row 2: Time + Place */}
-                <div className="form-field">
-                  <label className="form-field-label">{t.matching.timeOfBirth}</label>
-                  <div className="input-with-icon">
-                    <input
-                      ref={mTimeInputRef}
-                      type="time"
-                      step="60"
-                      value={male.tob}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "tob"
-                      )}
-                      className="form-field-input form-input-field"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => mTimeInputRef.current?.showPicker?.() || mTimeInputRef.current?.click()}
-                      className="clock-icon-btn"
-                    >
-                      <Clock className="w-5 h-5" style={{ color: "#000000" }} />
-                    </button>
-                  </div>
-                  <p className="form-field-helper">24-hour format</p>
-                </div>
-                <div className="form-field relative">
-                  <label className="form-field-label">Place</label>
-                  <div className="input-with-icon">
-                    <input
-                      placeholder="e.g., Mumbai, India"
-                      value={male.place}
-                      onChange={onChangePerson(
-                        setMale,
-                        setMCoords,
-                        setMSuggest,
-                        mTimer,
-                        "place"
-                      )}
-                      autoComplete="off"
-                      required
-                      className="form-field-input form-input-field"
-                    />
-                    <button
-                      type="button"
-                      onClick={useMyLocationMale}
-                      disabled={mLocating}
-                      className="location-icon-btn"
-                    >
-                      {mLocating ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin" style={{ color: "#3b82f6" }} />
-                      ) : (
-                        <MapPin className="w-5 h-5" style={{ color: "#3b82f6" }} />
-                      )}
-                    </button>
-                  </div>
-                  <p className="form-field-helper">Choose the nearest city for accurate calculation</p>
-                  {mSuggest.length > 0 && (
-                    <div className="suggestions">
-                      {mSuggest.map((s, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setMale((p) => ({ ...p, place: s.label }));
-                            setMCoords(s);
-                            setMSuggest([]);
-                          }}
-                          className="suggestion-item"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="truncate">{s.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-              {/* Action Buttons */}
-              <div className="action-buttons">
-                <button
-                  type="submit"
-                  disabled={submitting || fFilled < 3 || mFilled < 3}
-                  className="btn-primary"
-                >
-                  {submitting ? (
-                    <>
-                      <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
-                      Calculating…
-                    </>
-                  ) : (
-                    <>It's a Match?</>
-                  )}
-                </button>
-                <button
-                  type="reset"
-                  onClick={resetAllFields}
-                  className="btn-ghost"
-                >
-                  <RotateCcw className="w-4 h-4" /> Reset
-                </button>
-              </div>
-            </form>
-          </div>
-
-        <div className="matching-history-sidebar">
-          <div className="history-header">
-            <h3 className="history-title">
-              <Sparkles className="w-5 h-5" style={{ color: "#ca8a04" }} />
-              Matching History
-            </h3>
-
-            {history.length > 0 && (
-              <button
-                onClick={clearHistory}
-                className="btn-ghost"
-                style={{ padding: "0.5rem", fontSize: "0.875rem" }}
+              <IoHeartCircle
+                className="headerIcon"
+                style={{
+                  color: "#ffff",
+                  padding: "0.4rem",
+                  width: 36,
+                  height: 36,
+                }}
+              />
+              <h1
+                className="title"
+                style={{ fontSize: "2.5rem", fontWeight: 700 }}
               >
-                <RotateCcw className="w-4 h-4" /> Clear
-              </button>
-            )}
-          </div>
+                {t.matching.title}
+              </h1>
+              <p
+                className="subtitle"
+                style={{
+                  fontSize: "1rem",
+                  color: "#6b7280",
+                  marginTop: "0.5rem",
+                }}
+              >
+                {t.matching.subtitle}
+              </p>
+              {/* Trust line */}
+              <div className="trust-line">
+                <span className="trust-line-item">
+                  <span>🔒</span>
+                  <span>Private</span>
+                </span>
+                <span className="trust-line-separator">•</span>
+                <span className="trust-line-item">
+                  <span>📍</span>
+                  <span>Accurate location</span>
+                </span>
+                <span className="trust-line-separator">•</span>
+                <span className="trust-line-item">
+                  <span>💾</span>
+                  <span>Saved profiles</span>
+                </span>
+              </div>
+            </header>
 
-          {/* 🔥 NEW SCROLL CONTAINER */}
-          <div className="history-scroll-area">
-            {history.length === 0 ? (
-              <div className="empty-state">No matching history yet.</div>
-            ) : (
-              <div className="history-cards">
-                {history.map((item) => {
-                  const isExpanded = expandedAddresses[`${item.id}-female`] || expandedAddresses[`${item.id}-male`];
-                  return (
-                    <div key={item.id} className={`history-card ${isExpanded ? 'expanded' : ''}`} onClick={() => loadHistoryIntoForm(item)}>
-                      <div className="history-card-top">
-                        <div className="history-card-names">
-                          <span className="pill pill-female"> {item.femaleName || "Female"} </span>
-                          <span className="dot-separator">↔</span>
-                          <span className="pill pill-male"> {item.maleName || "Male"} </span>
-                        </div>
-                        <div className="history-actions">
-                          <button className="use-btn" onClick={(e) => { e.stopPropagation(); loadHistoryIntoForm(item); }}>
-                            Use
+            {/* =====================
+      CARDS
+  ===================== */}
+            <section className="birth-cards">
+              {/* ========= FEMALE ========= */}
+              <div className="birth-card female card">
+                <div className="birth-card-header">
+                  <Moon className="icon-female" />
+                  <h3 className="font-medium">{t.matching.femaleDetails}</h3>
+                </div>
+
+                <div className="birth-grid">
+                  {/* Female Name */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-name">
+                      {t.matching.femaleName}
+                    </label>
+
+                    <input
+                      id="female-name"
+                      type="text"
+                      className="form-field-input"
+                      placeholder="e.g., Priya"
+                      value={female.fullName}
+                      onChange={onChangePerson(
+                        setFemale,
+                        setFCoords,
+                        setFSuggest,
+                        fTimer,
+                        "fullName",
+                      )}
+                      required
+                    />
+                    <p className="form-field-helper">Only letters and spaces</p>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-dob">
+                      {t.matching.dateOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-dob"
+                        ref={fDateInputRef}
+                        type="date"
+                        className="form-field-input"
+                        value={female.dob}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "dob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="calendar-icon-btn"
+                        onClick={() =>
+                          fDateInputRef.current?.showPicker?.() ||
+                          fDateInputRef.current?.click()
+                        }
+                      >
+                        <Calendar />
+                      </button>
+                    </div>
+                    <p className="form-field-helper">Format: DD-MM-YYYY</p>
+                  </div>
+
+                  {/* Time of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-tob">
+                      {t.matching.timeOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-tob"
+                        ref={fTimeInputRef}
+                        type="time"
+                        step="60"
+                        className="form-field-input"
+                        value={female.tob}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "tob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="clock-icon-btn"
+                        onClick={() =>
+                          fTimeInputRef.current?.showPicker?.() ||
+                          fTimeInputRef.current?.click()
+                        }
+                      >
+                        <Clock />
+                      </button>
+                    </div>
+                    <p className="form-field-helper">24-hour format</p>
+                  </div>
+
+                  {/* Place */}
+                  <div className="form-field full">
+                    <label className="form-field-label" htmlFor="female-place">
+                      Place
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="female-place"
+                        type="text"
+                        className="form-field-input"
+                        placeholder="e.g., Mumbai, India"
+                        value={female.place}
+                        onChange={onChangePerson(
+                          setFemale,
+                          setFCoords,
+                          setFSuggest,
+                          fTimer,
+                          "place",
+                        )}
+                        autoComplete="off"
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="location-icon-btn"
+                        title="Use current location"
+                        onClick={useMyLocationFemale}
+                      >
+                        <MapPin />
+                      </button>
+                    </div>
+
+                    {fSuggest.length > 0 && (
+                      <div className="suggestions">
+                        {fSuggest.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setFemale((p) => ({ ...p, place: s.label }));
+                              setFCoords(s);
+                              setFSuggest([]);
+                            }}
+                          >
+                            <MapPin size={14} />
+                            <span>{s.label}</span>
                           </button>
-                          <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="form-field-helper place-helper">
+                      Choose the nearest city for accurate calculation
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ========= MALE ========= */}
+              <div className="card birth-card male">
+                <div className="birth-card-header">
+                  <Sun className="icon-male" />
+                  <h3 className="font-medium">{t.matching.maleDetails}</h3>
+                </div>
+
+                <div className="birth-grid">
+                  {/* Female Name */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="female-name">
+                      {t.matching.femaleName}
+                    </label>
+
+                    <input
+                      id="male-name"
+                      type="text"
+                      className="form-field-input"
+                      placeholder="e.g., Rohan"
+                      value={male.fullName}
+                      onChange={onChangePerson(
+                        setMale,
+                        setMCoords,
+                        setMSuggest,
+                        mTimer,
+                        "fullName",
+                      )}
+                      required
+                    />
+                    <p className="form-field-helper">Only letters and spaces</p>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="male-dob">
+                      {t.matching.dateOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="male-dob"
+                        ref={mDateInputRef}
+                        type="date"
+                        className="form-field-input"
+                        value={male.dob}
+                        onChange={onChangePerson(
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
+                          "dob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="calendar-icon-btn"
+                        onClick={() =>
+                          mDateInputRef.current?.showPicker?.() ||
+                          mDateInputRef.current?.click()
+                        }
+                      >
+                        <Calendar />
+                      </button>
+                    </div>
+                    <p className="form-field-helper">Format: DD-MM-YYYY</p>
+                  </div>
+
+                  {/* Time of Birth */}
+                  <div className="form-field">
+                    <label className="form-field-label" htmlFor="male-tob">
+                      {t.matching.timeOfBirth}
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="male-tob"
+                        ref={mTimeInputRef}
+                        type="time"
+                        step="60"
+                        className="form-field-input"
+                        value={male.tob}
+                        onChange={onChangePerson(
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
+                          "tob",
+                        )}
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="clock-icon-btn"
+                        onClick={() =>
+                          mTimeInputRef.current?.showPicker?.() ||
+                          mTimeInputRef.current?.click()
+                        }
+                      >
+                        <Clock />
+                      </button>
+                    </div>
+                    <p className="form-field-helper">24-hour format</p>
+                  </div>
+
+                  {/* Place */}
+                  <div className="form-field full">
+                    <label className="form-field-label" htmlFor="male-place">
+                      Place
+                    </label>
+
+                    <div className="input-with-icon">
+                      <input
+                        id="male-place"
+                        type="text"
+                        className="form-field-input"
+                        placeholder="e.g., Mumbai, India"
+                        value={male.place}
+                        onChange={onChangePerson(
+                          setMale,
+                          setMCoords,
+                          setMSuggest,
+                          mTimer,
+                          "place",
+                        )}
+                        autoComplete="off"
+                        required
+                      />
+
+                      <button
+                        type="button"
+                        className="location-icon-btn"
+                        title="Use current location"
+                        onClick={useMyLocationMale}
+                      >
+                        <MapPin />
+                      </button>
+                    </div>
+
+                    {mSuggest.length > 0 && (
+                      <div className="suggestions">
+                        {fSuggest.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setMale((p) => ({ ...p, place: s.label }));
+                              setMCoords(s);
+                              setMSuggest([]);
+                            }}
+                          >
+                            <MapPin size={14} />
+                            <span>{s.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="form-field-helper place-helper">
+                      Choose the nearest city for accurate calculation
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* =====================
+      ACTIONS
+  ===================== */}
+            <footer className="form-actions">
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={submitting || fFilled < 3 || mFilled < 3}
+              >
+                {submitting ? "Calculating…" : "Check Compatibility"}
+              </button>
+
+              <button
+                type="reset"
+                className="ghost-btn"
+                onClick={resetAllFields}
+              >
+                Reset
+              </button>
+            </footer>
+          </form>
+
+          {/* ===================== */}
+          {/* HISTORY BELOW FORM */}
+          {/* ===================== */}
+          <section className="history-section">
+            {/* ---------- Header ---------- */}
+            <div className="history-header mt-6">
+              <h3
+                className="history-title flex text-gray-800"
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "500",
+                  textAlign: "center",
+                }}
+              >
+                <Sparkles className="w-5 h-5 text-gray-800" />
+                Saved Profiles
+              </h3>
+
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="btn-ghost">
+                  <RotateCcw className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* ---------- Search ---------- */}
+            {history.length > 0 && (
+              <input
+                type="text"
+                placeholder="Search by name, place, or date..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="history-search"
+              />
+            )}
+
+            {/* ---------- Horizontal Scroll ---------- */}
+            <div className="history-scroll-area horizontal">
+              {history.length === 0 ? (
+                <div className="empty-state">No matching history yet.</div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="empty-state">No matches found.</div>
+              ) : (
+                <div className="history-cards horizontal">
+                  {filteredHistory.map((item) => {
+                    const isExpanded =
+                      expandedAddresses[`${item.id}-female`] ||
+                      expandedAddresses[`${item.id}-male`];
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="history-card history-card-row"
+                        onClick={() => loadHistoryIntoForm(item)}
+                        style={{
+                          alignItems: "center", // prevent vertical stretching
+                          maxHeight: "unset",
+                        }}
+                      >
+                        {/* LEFT: FEMALE + MALE */}
+                        <div
+                          className="history-row-left"
+                          style={{ gap: "0.75rem" }}
+                        >
+                          {/* FEMALE */}
+                          <div className="history-row-person">
+                            <span className="pill pill-female">
+                              {item.femaleName || "Female"}
+                            </span>
+
+                            <div className="history-row-details">
+                              <div className="person-meta">
+                                <Calendar className="meta-icon" />
+                                <span>
+                                  {item.femaleDob || "-"} ·{" "}
+                                  {item.femaleTob || "-"}
+                                </span>
+                              </div>
+
+                              <div className="person-meta">
+                                <MapPin className="meta-icon" />
+                                <span className="address-text">
+                                  {item.femalePlace || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* MALE */}
+                          <div className="history-row-person">
+                            <span className="pill pill-male">
+                              {item.maleName || "Male"}
+                            </span>
+
+                            <div className="history-row-details">
+                              <div className="person-meta">
+                                <Calendar className="meta-icon" />
+                                <span>
+                                  {item.maleDob || "-"} · {item.maleTob || "-"}
+                                </span>
+                              </div>
+
+                              <div className="person-meta">
+                                <MapPin className="meta-icon" />
+                                <span className="address-text">
+                                  {item.malePlace || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CENTER: COMPATIBILITY */}
+                        <div
+                          className="history-row-compatibility"
+                          style={{
+                            alignSelf: "stretch",
+                            justifyContent: "center",
+                            minWidth: "140px",
+                          }}
+                        >
+                          <span className="compatibility-label">
+                            Compatibility
+                          </span>
+                          <span className="compatibility-value">
+                            {item.compatibility || "—"}
+                          </span>
+                        </div>
+
+                        {/* RIGHT: ACTIONS */}
+                        <div
+                          className="history-row-actions"
+                          style={{
+                            justifyContent: "center",
+                            alignItems: "stretch",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          <button
+                            className="use-btn"
+                            style={{
+                              flex: "unset",
+                              height: "40px", // 🔑 stops vertical stretch
+                              padding: "0 1rem",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              loadHistoryIntoForm(item);
+                            }}
+                          >
+                            Load
+                          </button>
+
+                          <button
+                            className="delete-btn"
+                            style={{
+                              flex: "unset",
+                              height: "40px",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistoryItem(item.id);
+                            }}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      <div className="history-card-body">
-                        <div className="person-block">
-                          <div className="person-label">FEMALE</div>
-                          <div className="person-meta">
-                            <Calendar className="meta-icon" />
-                            <span> {item.femaleDob || "-"} · {item.femaleTob || "-"} </span>
-                          </div>
-                          <div className="person-meta">
-                            <MapPin className="meta-icon" />
-                            <div style={{ flex: 1 }}>
-                              <span className={`address-text ${expandedAddresses[`${item.id}-female`] ? 'expanded' : ''}`}>
-                                {item.femalePlace || "-"}
-                              </span>
-                              {item.femalePlace && item.femalePlace.length > 50 && (
-                                <button
-                                  className="show-more-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedAddresses(prev => ({
-                                      ...prev,
-                                      [`${item.id}-female`]: !prev[`${item.id}-female`]
-                                    }));
-                                  }}
-                                >
-                                  {expandedAddresses[`${item.id}-female`] ? 'Show less' : 'Show more'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="person-divider" />
-
-                        <div className="person-block">
-                          <div className="person-label">MALE</div>
-                          <div className="person-meta">
-                            <Calendar className="meta-icon" />
-                            <span> {item.maleDob || "-"} · {item.maleTob || "-"} </span>
-                          </div>
-                          <div className="person-meta">
-                            <MapPin className="meta-icon" />
-                            <div style={{ flex: 1 }}>
-                              <span
-                                className={`address-text ${expandedAddresses[`${item.id}-male`] ? 'expanded' : ''}`}
-                              >
-                                {item.malePlace || "-"}
-                              </span>
-                              {item.malePlace && item.malePlace.length > 50 && (
-                                <button
-                                  className="show-more-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedAddresses(prev => ({
-                                      ...prev,
-                                      [`${item.id}-male`]: !prev[`${item.id}-male`]
-                                    }));
-                                  }}
-                                >
-                                  {expandedAddresses[`${item.id}-male`] ? 'Show less' : 'Show more'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
+                    );
+                  })}
+                </div>
               )}
             </div>
-            )}
-          </div>
+          </section>
         </div>
-      
-        </div>
-
-
-
 
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
@@ -2199,11 +2638,6 @@ export default function MatchingPage() {
               <div className="orb orb2" />
               <div className="orb orb3" />
             </div>
-
-            {/* Header */}
-            <header className="header left-align">
-              <h1 className="title">Pro Kundali Match</h1>
-            </header>
 
             {/* Birth Info Snapshot */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -2278,138 +2712,6 @@ export default function MatchingPage() {
               </div>
             </div>
 
-            {/* AI Astrologer CTA / Chat Window */}
-            <div 
-              className="card mt-8 ai-astrologer-section"
-              style={{ 
-                position: "relative",
-                zIndex: chatOpen ? 200 : 1,
-                marginBottom: "2rem",
-                background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-                border: "1px solid rgba(212, 175, 55, 0.3)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-                padding: "1.5rem"
-              }}
-            >
-              {!chatOpen ? (
-                <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="flex-1">
-                    <div
-                      className="results-header"
-                      style={{ marginBottom: "1rem" }}
-                    >
-                      <img
-                        src="/infinity-symbol.svg"
-                        alt="Infinity"
-                        style={{
-                          width: "24px",
-                          height: "24px",
-                          transform: "rotate(-45deg)",
-                          transformOrigin: "center center",
-                        }}
-                      />
-                      <h3 className="results-title">Astrologer</h3>
-                    </div>
-
-                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get a Personalized Reading
-                    </h3>
-                    <p className="text-sm text-gray-70 max-w-xl">
-                      Let our Astrologer interpret your birth chart, dashas
-                      and planetary strengths in simple, practical language
-                      tailored just for you.
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!validateBirthDetails()) {
-                          setError(
-                            "Please complete all fields for both individuals, including names, before using the chat."
-                          );
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                          return;
-                        }
-                        if (!result) {
-                          // Auto-submit if result doesn't exist
-                          document.querySelector("form")?.requestSubmit();
-                          setTimeout(() => {
-                            prepareChatData();
-                            setChatSessionId(prev => prev + 1);
-                            setChatOpen(true);
-                            scrollToChat();
-                          }, 2000);
-                        } else {
-                          prepareChatData();
-                          setChatSessionId(prev => prev + 1);
-                          setChatOpen(true);
-                          scrollToChat();
-                        }
-                      }}
-                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
-                    >
-                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to Astrologer
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="chat-window-container">
-                  <Chat
-                    key={`matching-chat-${chatSessionId}-${currentFormDataHash || 'new'}`}
-                    shouldReset={shouldResetChat}
-                    formDataHash={currentFormDataHash}
-                    pageTitle="Matching"
-                    chatType="matchmaking"
-                    initialData={(() => {
-                      // Use chatData if available, otherwise build from current state
-                      const data = chatData || {
-                      female: {
-                        input: {
-                          name: female.fullName,
-                          dob: female.dob,
-                          tob: female.tob,
-                          place: female.place,
-                          coords: fCoords,
-                        },
-                        details: fDetails,
-                      },
-                      male: {
-                        input: {
-                          name: male.fullName,
-                          dob: male.dob,
-                          tob: male.tob,
-                          place: male.place,
-                          coords: mCoords,
-                        },
-                        details: mDetails,
-                      },
-                      match: result || null,
-                      };
-                      
-                      // Log to verify match data is being passed (only in development)
-                      if (process.env.NODE_ENV === 'development' && data.match) {
-                        console.log('[Matching] Passing initialData to Chat component:', {
-                          hasMatch: !!data.match,
-                          matchTotalScore: data.match?.total_score,
-                          matchOutOf: data.match?.out_of,
-                          matchKeys: data.match ? Object.keys(data.match) : [],
-                          matchSample: data.match ? JSON.stringify(data.match).substring(0, 300) : null,
-                        });
-                      }
-                      
-                      return data;
-                    })()}
-                    onClose={() => {
-                      setChatOpen(false);
-                      setIsAssistantMinimized(true);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
             {/* Verdict Card */}
             <div className="card mt-6">
               <div className="results-header">
@@ -2417,17 +2719,35 @@ export default function MatchingPage() {
                 <h3 className="results-title">Ashtakoot Compatibility</h3>
               </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-4xl font-bold text-gold">
-                  {Number(result?.total_score ?? 0)}
-                  <span className="text-gray-500 text-xl">
-                    /{Number(result?.out_of ?? 36)}
-                  </span>
-                </div>
-                <div className="liveBadge">
-                  <div className="pulseDot" /> Score Summary
-                </div>
-              </div>
+              {(() => {
+                const verdict = getCompatibilityVerdict(
+                  result?.total_score,
+                  result?.out_of,
+                );
+
+                return (
+                  <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="text-4xl font-bold text-gold">
+                        {Number(result?.total_score ?? 0)}
+                        <span className="text-gray-500 text-xl">
+                          /{Number(result?.out_of ?? 36)}
+                        </span>
+                      </div>
+
+                      <Badge tone={verdict.tone}>{verdict.label}</Badge>
+
+                      <div className="liveBadge">
+                        <div className="pulseDot" /> Score Summary
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 max-w-xl">
+                      {verdict.description}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Koot Table */}
               <div className="table-scroll-container mt-4">
@@ -2490,250 +2810,352 @@ export default function MatchingPage() {
 
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <div className="grid md:grid-cols-2 gap-8 mt-8">
                 {/* Female Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Moon style={{ color: "#a78bfa" }} />
-                    <h3 className="results-title">{t.matching.femaleDetails}</h3>
-                  </div>
+                <div className="flex flex-col gap-6">
+                  {/* Female Shadbala Card */}
+                  {fDetails && (
+                    <div className="analysis-card female">
+                      {/* HEADER */}
+                      <div className="results-header">
+                        <Moon style={{ color: "#a855f7" }} />
+                        <h3 className="results-title">Female Details</h3>
+                      </div>
 
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div>
-                    <table className="planet-table shadbala-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength</th>
-                          <th>Ishta</th>
-                          <th>Kashta</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
-                            <td>
-                              {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                            </td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.ishta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.ishta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.kashta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.kashta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
+                      {/* SUMMARY */}
+                      {/* SUMMARY */}
+                      <div className="analysis-summary">
+                        <div className="summary-text">
+                          <h4 className="summary-question">
+                            How strong is her chart overall?
+                          </h4>
+
+                          <div className="summary-score">
+                            <span
+                              className={`score-pill ${femaleSummary.level.toLowerCase()}`}
+                            >
+                              {femaleSummary.level}
+                            </span>
+                            <span className="score-text">
+                              {femaleSummary.description}
+                            </span>
+                          </div>
+
+                          <ul className="summary-points">
+                            {femaleSummary.points.slice(0, 2).map((p, i) => (
+                              <li key={i} className={p.type}>
+                                <span className="bullet" />
+                                {p.text}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="summary-avatar moon">
+                          <Moon />
+                        </div>
+                      </div>
+
+
+
+                      {/* SHADBALA */}
+                      <table className="planet-table shadbala-table">
+                        <thead>
+                          <tr>
+                            <th>Planet</th>
+                            <th>Strength</th>
+                            <th>Ishta</th>
+                            <th>Kashta</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table placements-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Nakshatra (Pada)</th>
-                          <th>Degrees</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(fDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
-
-                          return (
+                        </thead>
+                        <tbody>
+                          {fDetails.shadbalaRows.map((p, i) => (
                             <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>
-                                <div className="planet-cell">
-                                  <span>{p.name}</span>
-                                  {p.retro && (
-                                    <span className="planet-retro">
-                                      (Retro)
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td>{p.currentSign || "—"}</td>
-                              <td>{p.house ?? "—"}</td>
-                              <td>{nakshatraDisplay}</td>
+                              <td className="planet-name">{p.name}</td>
+                              <td>{p.percent?.toFixed(1)}%</td>
                               <td>
-                                <div className="deg-cell">
-                                  {typeof p.fullDegree === "number" && (
-                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
-                                  )}
-                                  {typeof p.normDegree === "number" && (
-                                    <div className="deg-norm">
-                                      Norm: {p.normDegree.toFixed(2)}°
-                                    </div>
-                                  )}
-                                  {typeof p.fullDegree !== "number" &&
-                                    typeof p.normDegree !== "number" &&
-                                    "—"}
-                                </div>
+                                <span className="arc ishta">
+                                  {p.ishta?.toFixed(0)}%
+                                </span>
+                              </td>
+                              <td>
+                                <span className="arc kashta">
+                                  {p.kashta?.toFixed(0)}%
+                                </span>
                               </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* FOOTER */}
+                      <div className="analysis-footer">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                          Understand what this means →
+                        </button>
+                      </div>
+                      
+                    </div>
+
+                    
+                  )}
+
+                  
+
+                  {/* Female Planet Placements Card */}
+                  {fDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Moon style={{ color: "#a78bfa" }} />
+                        <h3 className="results-title">
+                          {t.matching.femaleDetails} - Planet Placements
+                        </h3>
+                      </div>
+
+                      {/* Planet Placements */}
+                      <div className="table-scroll-container">
+                        <table className="planet-table placements-table">
+                          <thead>
+                            <tr>
+                              <th>Planet</th>
+                              <th>Sign</th>
+                              <th>House</th>
+                              <th>Nakshatra</th>
+                              <th>Degrees</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(fDetails?.placements || []).map((p, i) => {
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                                p.pada ?? "—"
+                              })`;
+
+                              return (
+                                <tr key={i}>
+                                  <td style={{ fontWeight: 500 }}>
+                                    <div className="planet-cell">
+                                      <span>{p.name}</span>
+                                      {p.retro && (
+                                        <span className="planet-retro">
+                                          (Retro)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td>{p.currentSign || "—"}</td>
+                                  <td>{p.house ?? "—"}</td>
+                                  <td>{nakshatraDisplay}</td>
+                                  <td>
+                                    <div className="deg-cell">
+                                      {typeof p.fullDegree === "number" && (
+                                        <div>
+                                          Full: {p.fullDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.normDegree === "number" && (
+                                        <div className="deg-norm">
+                                          Norm: {p.normDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.fullDegree !== "number" &&
+                                        typeof p.normDegree !== "number" &&
+                                        "—"}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Male Details */}
-                <div className="card">
-                  <div className="results-header">
-                    <Sun style={{ color: "#d4af37" }} />
-                    <h3 className="results-title">{t.matching.maleDetails}</h3>
-                  </div>
+                <div className="flex flex-col gap-6">
+                  {/* Male Shadbala Card */}
+                  {mDetails && (
+                    <div className="analysis-card male">
+                      <div className="results-header">
+                        <Sun style={{ color: "#f59e0b" }} />
+                        <h3 className="results-title">Male Details</h3>
+                      </div>
 
-                  {/* Shadbala / Ishta-Kashta */}
-                  <div>
-                    <table className="planet-table shadbala-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Strength</th>
-                          <th>Ishta</th>
-                          <th>Kashta</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.shadbalaRows || []).map((p, i) => (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{p.name || "—"}</td>
-                            <td>
-                              {p.percent ? `${p.percent.toFixed(1)}%` : "—"}
-                            </td>
-                            <td>
-                              {p.ishta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.ishta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.ishta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>
-                              {p.kashta != null ? (
-                                <div className="progress-container">
-                                  <div className="progress-bar">
-                                    <div
-                                      className="progress-fill"
-                                      style={{ width: `${p.kashta}%` }}
-                                    />
-                                  </div>
-                                  <div className="progress-label">
-                                    {p.kashta.toFixed(1)}%
-                                  </div>
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
+                      <div className="analysis-summary">
+                        <div className="summary-text">
+                          <h4 className="summary-question">
+                            How strong is his chart overall?
+                          </h4>
+
+                          <div className="summary-score">
+                            <span
+                              className={`score-pill ${maleSummary.level.toLowerCase()}`}
+                            >
+                              {maleSummary.level}
+                            </span>
+                            <span className="score-text">
+                              {maleSummary.description}
+                            </span>
+                          </div>
+
+                          <ul className="summary-points">
+                            {maleSummary.points.slice(0, 2).map((p, i) => (
+                              <li key={i} className={p.type}>
+                                <span className="bullet" />
+                                {p.text}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="summary-avatar sun">
+                          <Sun />
+                        </div>
+                      </div>
+
+
+
+                      <table className="planet-table shadbala-table">
+                        <thead>
+                          <tr>
+                            <th>Planet</th>
+                            <th>Strength</th>
+                            <th>Ishta</th>
+                            <th>Kashta</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Planet Placements */}
-                  <div className="mt-6 table-scroll-container">
-                    <table className="planet-table placements-table">
-                      <thead>
-                        <tr>
-                          <th>Planet</th>
-                          <th>Sign</th>
-                          <th>House</th>
-                          <th>Nakshatra (Pada)</th>
-                          <th>Degrees</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(mDetails?.placements || []).map((p, i) => {
-                          const nakshatraDisplay = `${p.nakshatra ?? "—"} (${p.pada ?? "—"
-                            })`;
-
-                          return (
+                        </thead>
+                        <tbody>
+                          {mDetails.shadbalaRows.map((p, i) => (
                             <tr key={i}>
-                              <td style={{ fontWeight: 500 }}>
-                                <div className="planet-cell">
-                                  <span>{p.name}</span>
-                                  {p.retro && (
-                                    <span className="planet-retro">
-                                      (Retro)
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td>{p.currentSign || "—"}</td>
-                              <td>{p.house ?? "—"}</td>
-                              <td>{nakshatraDisplay}</td>
+                              <td className="planet-name">{p.name}</td>
+                              <td>{p.percent?.toFixed(1)}%</td>
                               <td>
-                                <div className="deg-cell">
-                                  {typeof p.fullDegree === "number" && (
-                                    <div>Full: {p.fullDegree.toFixed(2)}°</div>
-                                  )}
-                                  {typeof p.normDegree === "number" && (
-                                    <div className="deg-norm">
-                                      Norm: {p.normDegree.toFixed(2)}°
-                                    </div>
-                                  )}
-                                  {typeof p.fullDegree !== "number" &&
-                                    typeof p.normDegree !== "number" &&
-                                    "—"}
-                                </div>
+                                <span className="arc ishta">
+                                  {p.ishta?.toFixed(0)}%
+                                </span>
+                              </td>
+                              <td>
+                                <span className="arc kashta">
+                                  {p.kashta?.toFixed(0)}%
+                                </span>
                               </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className="analysis-footer">
+                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                          Understand what this means →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Male Planet Placements Card */}
+                  {mDetails && (
+                    <div className="card">
+                      <div className="results-header">
+                        <Sun style={{ color: "#d4af37" }} />
+                        <h3 className="results-title">
+                          {t.matching.maleDetails} - Planet Placements
+                        </h3>
+                      </div>
+
+                      {/* Planet Placements */}
+                      <div className="table-scroll-container">
+                        <table className="planet-table placements-table">
+                          <thead>
+                            <tr>
+                              <th>Planet</th>
+                              <th>Sign</th>
+                              <th>House</th>
+                              <th>Nakshatra</th>
+                              <th>Degrees</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(mDetails?.placements || []).map((p, i) => {
+                              const nakshatraDisplay = `${p.nakshatra ?? "—"} (${
+                                p.pada ?? "—"
+                              })`;
+
+                              return (
+                                <tr key={i}>
+                                  <td style={{ fontWeight: 500 }}>
+                                    <div className="planet-cell">
+                                      <span>{p.name}</span>
+                                      {p.retro && (
+                                        <span className="planet-retro">
+                                          (Retro)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td>{p.currentSign || "—"}</td>
+                                  <td>{p.house ?? "—"}</td>
+                                  <td>{nakshatraDisplay}</td>
+                                  <td>
+                                    <div className="deg-cell">
+                                      {typeof p.fullDegree === "number" && (
+                                        <div>
+                                          Full: {p.fullDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.normDegree === "number" && (
+                                        <div className="deg-norm">
+                                          Norm: {p.normDegree.toFixed(2)}°
+                                        </div>
+                                      )}
+                                      {typeof p.fullDegree !== "number" &&
+                                        typeof p.normDegree !== "number" &&
+                                        "—"}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+{/* ✅ PREMIUM – full width guidance banner */}
+<div
+  className="guidance-banner premium-full matchmaking-banner"
+  onClick={() => router.push("/talk-to-astrologer")}
+>
+  <div className="guidance-content">
+    <h3 className="guidance-title">
+      Wondering how strong this match really is?
+    </h3>
+
+    <p className="guidance-subtitle">
+      Talk to an experienced astrologer to understand compatibility, future
+      harmony, and the right steps forward for this relationship.
+    </p>
+
+    <button className="guidance-btn" onClick={onTalkToAstrologer}>
+      <PhoneIcon size={18} />
+      Talk to an astrologer
+    </button>
+  </div>
+
+  <div className="guidance-illustration" aria-hidden>
+    {/* matchmaking illustration / knot / couple sketch via CSS */}
+  </div>
+</div>
+
+
               </div>
             )}
+
+            
 
             {/* Footer */}
             <div className="actionBar mt-8">
@@ -2742,14 +3164,14 @@ export default function MatchingPage() {
               </button>
               <div className="flex gap-3">
                 <button
-                  className="btn btn-primary"
+                  className="btn-primary"
                   onClick={handleDownloadPDF}
                   disabled={!result}
                 >
                   Download PDF
                 </button>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-secondary"
                   onClick={handleShare}
                   disabled={!result}
                 >
@@ -2760,353 +3182,323 @@ export default function MatchingPage() {
           </div>
         )}
 
-
-                {/* Explanation Card - Below form and history */}
-        <div style={{ marginTop: "-3rem", width: "100%", padding: "0 1rem", margin: "0 auto" }}>
-          <div 
-            className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+        {/* MATCHING EXPLANATION – ACCORDION CARD */}
+        <div
+          style={{
+            marginTop: "2rem",
+            width: "100%",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
+          <div
+            className="card shadow-xl border"
             style={{
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9))",
-              borderColor: "rgba(212, 175, 55, 0.3)",
+              background: "#ffffff",
+              borderColor: "#eaeaea",
               maxWidth: "100%",
+              boxShadow:
+                "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
             }}
           >
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "1.5rem",
-            borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
-            marginBottom: "1.5rem",
-          }}>
-            <h2 style={{
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: 0,
-            }}>
-              Understanding Compatibility Matching
-            </h2>
-          </div>
-          <div style={{ padding: 0 }}>
-            <p style={{
-              fontSize: "0.875rem",
-              color: "#374151",
-              fontStyle: "normal",
-              marginBottom: 0,
-              fontFamily: "'Inter', sans-serif",
-              lineHeight: 1.6,
-            }}>
-              The <strong>Ashtakoot System</strong> (8-Point Matching) evaluates compatibility across eight key dimensions: <strong>Varna</strong> (spiritual compatibility), <strong>Vashya</strong> (mutual attraction), <strong>Tara</strong> (birth star compatibility), <strong>Yoni</strong> (nature compatibility), <strong>Graha Maitri</strong> (planetary friendship), <strong>Gana</strong> (temperament), <strong>Bhakoot</strong> (emotional compatibility), and <strong>Nadi</strong> (health compatibility). Each dimension contributes points to the total compatibility score, with higher scores indicating better alignment between partners.
-            </p>
-          </div>
-        </div>
-        </div>
-     
-
-
-
-      {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
-      <div
-        className="fixed bottom-6 right-6 z-50 ai-assistant-card"
-        style={{
-          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {(!result || isAssistantMinimized) ? (
-          // Minimized Icon - Astrologer + AI Assistant
-          <button
-            onClick={() => {
-              if (result) {
-                setIsAssistantMinimized(false);
-              }
-            }}
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "20px",
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Golden Infinity Icon (tilted 45 degrees) */}
-            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            {/* Pulsing indicator */}
+            {/* HERO */}
             <div
               style={{
-                position: "absolute",
-                top: "8px",
-                right: "8px",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                animation: "pulse 2s infinite",
-              }}
-            />
-          </button>
-        ) : (
-          <div
-            className="chat-assistant-card"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              borderRadius: "20px",
-              padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-            }}
-            onClick={() => {
-              // Check if form is filled
-              const isFormFilled = female.fullName && female.dob && female.tob && female.place &&
-                male.fullName && male.dob && male.tob && male.place;
-              if (!isFormFilled) {
-                setError("Please complete all birth details for both individuals before using the chat.");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-                return;
-              }
-              if (!result) {
-                // Submit form if no result yet
-                const form = document.querySelector("form");
-                if (form) {
-                  form.requestSubmit();
-                  setTimeout(() => {
-                    setChatSessionId(prev => prev + 1);
-                    setChatOpen(true);
-                    setTimeout(() => {
-                      document
-                        .querySelector(".ai-astrologer-section")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }, 100);
-                  }, 2000);
-                }
-              } else {
-                setChatSessionId(prev => prev + 1);
-                setChatOpen(true);
-                setTimeout(() => {
-                  document
-                    .querySelector(".ai-astrologer-section")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
-              }
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Minimize Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAssistantMinimized(true);
-              }}
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                width: "28px",
-                height: "28px",
-                borderRadius: "8px",
-                background: "rgba(212, 175, 55, 0.1)",
-                border: "1px solid rgba(212, 175, 55, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                zIndex: 10,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
-                e.currentTarget.style.transform = "scale(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
-                e.currentTarget.style.transform = "scale(1)";
+                borderBottom: "2px solid rgba(212,175,55,0.25)",
+                paddingBottom: "1.75rem",
+                marginBottom: "1.75rem",
+                textAlign: "center",
               }}
             >
-              <X size={16} color="#b8972e" />
-            </button>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
-              <div
+              <h1
                 style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "14px",
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
+                  fontFamily: "'Georgia','Times New Roman',serif",
+                  fontSize: "32px",
+                  fontWeight: 500,
+                  color: "#111827",
+                  marginBottom: "0.75rem",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexShrink: 0,
-                  boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
+                  gap: "0.5rem",
                 }}
               >
-                <img
-                  src="/infinity-symbol.svg"
-                  alt="Infinity"
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    transform: "rotate(-45deg)",
-                    transformOrigin: "center center",
-                    filter: "brightness(0) invert(1)",
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    color: "#111827",
-                    margin: "0 0 4px 0",
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
+                AI-Powered Kundli Matching Explained
+              </h1>
+
+              <p className="text-sm mt-1 text-slate-600 max-w-3xl mx-auto">
+                Understand how Ashtakoot scores, planetary strengths, dashas,
+                and doshas are analyzed to evaluate marriage compatibility —
+                beyond basic guna milan.
+              </p>
+
+              <div className="flex justify-center mt-4 gap-3">
+                <button className="btn-primary" onClick={scrollToTop}>
+                  Check Compatibility
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={onTalkToAstrologer}
+                  style={{ borderRadius: "12px" }}
                 >
-                  Astrologer Assistant
-                </h3>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    margin: 0,
-                    lineHeight: "1.5",
-                  }}
-                >
-                  Get personalized insights about your birth chart, planetary positions, and astrological predictions
-                </p>
+                  Talk to an Astrologer
+                </button>
               </div>
             </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingTop: "12px",
-                borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#10b981",
-                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                    animation: "pulse 2s infinite",
-                  }}
-                />
-                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                  Online
-                </span>
-              </div>
-              <button
-                disabled={submitting}
-                style={{
-                  background: submitting 
-                    ? "rgba(212, 175, 55, 0.5)" 
-                    : "linear-gradient(135deg, #d4af37, #b8972e)",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "8px 16px",
-                  color: "#1f2937",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: submitting ? "not-allowed" : "pointer",
-                  transition: "all 0.2s ease",
-                  boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-                  opacity: submitting ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!submitting) {
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                    e.currentTarget.style.transform = "scale(1.05)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!submitting) {
-                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }
-                }}
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering card click
-                  if (submitting) return;
-                  
-                  // Since we only show full card when result exists, we can directly open chat
-                  if (result) {
-                    setChatSessionId(prev => prev + 1);
-                    setChatOpen(true);
-                    setTimeout(() => {
-                      document
-                        .querySelector(".ai-astrologer-section")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }, 100);
-                  }
-                }}
+
+            {/* ACCORDIONS GO HERE */}
+            <div style={{ padding: 0 }}>
+              <Section
+                title="What Is Kundli Matching & Why It Matters for Marriage"
+                content={[
+                  "Evaluates long-term marriage compatibility",
+                  "Identifies emotional, mental, and physical harmony",
+                  "Highlights potential conflict areas early",
+                  "Helps in informed marriage decisions",
+                ]}
               >
-                {submitting ? "Loading..." : "Start Chat"}
-              </button>
+                Kundli matching is a Vedic astrology method used to assess
+                marriage compatibility between two individuals. It compares
+                planetary positions, Moon signs, and Nakshatras of both partners
+                to understand how their energies interact over time. Rather than
+                predicting fixed outcomes, kundli matching highlights strengths,
+                challenges, and adjustment areas so couples can make informed,
+                realistic, and prepared decisions about marriage.
+              </Section>
+
+              <Section
+                title="What Ashtakoot (Guna Milan) Actually Measures"
+                content={[
+                  "Mental compatibility and communication",
+                  "Physical and sexual harmony",
+                  "Health and genetic indicators",
+                  "Temperament and emotional balance",
+                ]}
+              >
+                Ashtakoot matching evaluates compatibility using eight factors
+                derived from Moon signs and Nakshatras. Each koot represents a
+                specific area of married life, such as emotional bonding,
+                attraction, health, and temperament. While the total score
+                provides an overview, understanding individual koot results is
+                far more important than focusing only on the final number.
+              </Section>
+
+              <Section
+                title="Why Guna Milan Alone Is Not Enough"
+                content={[
+                  "Does not analyze planetary strength",
+                  "Ignores dasha timing",
+                  "Misses dosha cancellations",
+                  "Cannot predict future phases",
+                ]}
+              >
+                Guna milan is a basic compatibility filter, not a complete
+                marriage analysis. Many successful marriages have low guna
+                scores, while high scores can still face difficulties if
+                planetary conditions are unfavorable. That’s why serious
+                marriage analysis must include planetary aspects, dashas, and
+                dosha evaluation alongside Ashtakoot scoring.
+              </Section>
+
+              <Section
+                title="Planetary Compatibility Between Partners"
+                content={[
+                  "Venus and Mars harmony",
+                  "Moon sign emotional alignment",
+                  "Jupiter and Saturn influence on stability",
+                  "Mutual planetary aspects",
+                ]}
+              >
+                Planetary compatibility examines how key planets like Venus,
+                Mars, Moon, Jupiter, and Saturn interact between both charts.
+                These interactions directly influence attraction, emotional
+                bonding, patience, and long-term stability. Favorable planetary
+                aspects can compensate for low guna scores, while challenging
+                interactions may require conscious effort and remedies.
+              </Section>
+
+              <Section
+                title="Manglik Dosha & Other Important Doshas"
+                content={[
+                  "Manglik (Mangal) dosha evaluation",
+                  "Nadi and Bhakoot dosha analysis",
+                  "Dosha cancellation rules",
+                  "Practical impact on married life",
+                ]}
+              >
+                Doshas indicate areas where planetary energies may cause
+                imbalance. Manglik dosha relates to Mars placement and its
+                impact on harmony and conflict. Nadi and Bhakoot doshas relate
+                to health, emotional bonding, and longevity. Not all doshas are
+                harmful. Proper analysis checks cancellations, planetary
+                strength, and overall chart balance before drawing conclusions.
+              </Section>
+
+              <Section
+                title="Dasha & Timing Compatibility After Marriage"
+                content={[
+                  "Marriage phase stability",
+                  "Career and financial growth periods",
+                  "Stress and adjustment phases",
+                  "Long-term life progression",
+                ]}
+              >
+                Dashas determine *when* certain planetary influences become
+                active. Even a compatible match can feel challenging if both
+                partners enter difficult dashas simultaneously. Dasha analysis
+                helps identify supportive periods for marriage, relocation,
+                career growth, and family planning — making timing as important
+                as matching.
+              </Section>
+
+              <Section
+                title="AI-Based Kundli Matching vs Manual Analysis"
+                content={[
+                  "Accurate astronomical calculations",
+                  "Consistent pattern analysis",
+                  "Cross-checking multiple compatibility layers",
+                  "Astrologer validation where required",
+                ]}
+              >
+                AI enhances kundli matching by analyzing large combinations
+                quickly and consistently. It calculates planetary positions,
+                dashas, and compatibility layers with precision. However,
+                interpretation still follows classical Vedic rules, and
+                astrologers provide human judgment, context, and remedies where
+                needed.
+              </Section>
+
+              <Section
+                title="What Your Compatibility Score Really Means"
+                content={[
+                  "Overall harmony indicator",
+                  "Not a guarantee or rejection",
+                  "Requires contextual interpretation",
+                  "Helps set realistic expectations",
+                ]}
+              >
+                A compatibility score summarizes multiple factors into a single
+                number, but it should never be viewed in isolation. The real
+                value lies in understanding *why* the score is high or low and
+                which areas need attention. Marriage success depends on
+                awareness, communication, and preparedness — not just numbers.
+              </Section>
+
+              <Section
+                title="Can Remedies Improve Marriage Compatibility?"
+                content={[
+                  "Planetary strengthening remedies",
+                  "Behavioral and lifestyle guidance",
+                  "Timing-based precautions",
+                  "Spiritual and practical balance",
+                ]}
+              >
+                Remedies aim to balance planetary influences, not override
+                destiny. They may include lifestyle adjustments, rituals,
+                gemstones, or timing guidance. Remedies work best when combined
+                with understanding, effort, and realistic expectations from both
+                partners.
+              </Section>
+            </div>
+            <div className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+              Kundli matching does not decide your future. It provides clarity,
+              awareness, and preparedness so you can make thoughtful decisions.
+              Astrology supports conscious choices — it does not replace
+              responsibility, communication, or mutual respect in marriage.
             </div>
           </div>
-        )}
+        </div>
 
+        <a
+          href="/talk-to-astrologer"
+          className="global-floater global-floater--astrologer"
+          aria-label="Talk to Astrologer"
+        >
+          <PhoneCallIcon className="global-floater-icon" />
+          <span className="global-floater-text">Talk to Astrologer</span>
+        </a>
+
+        {/* Astrologer Assistant Floating Card */}
+        <AstrologerAssistant
+          pageTitle="Matching"
+          initialData={(() => {
+            // Use chatData if available, otherwise build from current state
+            const data = chatData || {
+              female: {
+                input: {
+                  name: female.fullName,
+                  dob: female.dob,
+                  tob: female.tob,
+                  place: female.place,
+                  coords: fCoords,
+                },
+                details: fDetails,
+              },
+              male: {
+                input: {
+                  name: male.fullName,
+                  dob: male.dob,
+                  tob: male.tob,
+                  place: male.place,
+                  coords: mCoords,
+                },
+                details: mDetails,
+              },
+              match: result || null,
+            };
+            return data;
+          })()}
+          chatType="matchmaking"
+          shouldReset={shouldResetChat}
+          formDataHash={currentFormDataHash}
+          chatSessionId={chatSessionId}
+          show={true}
+          hasData={!!result}
+        />
       </div>
-
-
-      <a
-  href="/talk-to-astrologer"
-  className="global-floater global-floater--astrologer"
-  aria-label="Talk to Astrologer"
->
-<PhoneCallIcon className="global-floater-icon"/>
-  <span className="global-floater-text">Talk to Astrologer</span>
-</a>
-
-    </div>
+      
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="matching"
+        faqs={[
+          {
+            question: "What Is Kundli Matching & Why It Matters for Marriage",
+            answer: "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage."
+          },
+          {
+            question: "What Ashtakoot (Guna Milan) Actually Measures",
+            answer: "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number."
+          },
+          {
+            question: "Why Guna Milan Alone Is Not Enough",
+            answer: "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring."
+          },
+          {
+            question: "Planetary Compatibility Between Partners",
+            answer: "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies."
+          },
+          {
+            question: "Manglik Dosha & Other Important Doshas",
+            answer: "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions."
+          },
+          {
+            question: "Dasha & Timing Compatibility After Marriage",
+            answer: "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching."
+          },
+          {
+            question: "AI-Based Kundli Matching vs Manual Analysis",
+            answer: "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed."
+          },
+          {
+            question: "What Your Compatibility Score Really Means",
+            answer: "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers."
+          },
+          {
+            question: "Can Remedies Improve Marriage Compatibility?",
+            answer: "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners."
+          }
+        ]}
+      />
     </>
   );
 }

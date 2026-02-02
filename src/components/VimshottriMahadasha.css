@@ -1,0 +1,82 @@
+/* ===== Maha Dasha Rail ===== */
+.maha-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding: 1.5rem 0;
+}
+
+/* Wrapper allows connector */
+.maha-card-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* Connecting line */
+.maha-connector {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(to right, #e5e7eb, #d1d5db);
+}
+
+/* Maha card */
+.maha-card {
+  min-width: 220px;
+  background: #fff;
+  border: 2px solid #fde68a;
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+/* Planet name */
+.maha-lord {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #92400e;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Dates */
+.maha-dates {
+  font-size: 0.75rem;
+  color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 0.75rem;
+}
+
+/* ===== Antar Panel ===== */
+.antar-panel {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #fff7ed, #fffbeb);
+  border-radius: 18px;
+  border: 1px solid #fde68a;
+}
+
+.antar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #92400e;
+}
+
+/* Table stays as-is but feels grounded */
+.antar-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.antar-table th,
+.antar-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #fde68a;
+  font-size: 0.8rem;
+  text-align: center;
+}

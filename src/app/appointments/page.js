@@ -1,173 +1,135 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
-import { Calendar, Clock, User, Phone, Video, MessageSquare, CheckCircle, X, Loader2, CalendarCheck } from 'lucide-react'
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
+import {
+  Calendar,
+  Clock,
+  User,
+  Video,
+  MessageSquare,
+  X,
+  Loader2,
+  CalendarCheck,
+} from "lucide-react"
 
 export default function Appointments() {
   const router = useRouter()
   const { user, userProfile, loading: authLoading } = useAuth()
+
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all') // 'all', 'upcoming', 'past', 'cancelled'
+  const [filter, setFilter] = useState("all")
   const [cancelling, setCancelling] = useState(null)
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/user')
+      router.push("/auth/user")
       return
     }
-
-    if (user && userProfile) {
-      fetchAppointments()
-    }
+    if (user && userProfile) fetchAppointments()
   }, [user, userProfile, authLoading])
 
   const fetchAppointments = async () => {
     try {
       setLoading(true)
-      const userType = userProfile?.collection === 'astrologers' ? 'astrologer' : 'user'
+      const isAstrologer = userProfile?.collection === "astrologers"
       const id = user.uid
-      const url = userType === 'astrologer' 
+      const url = isAstrologer
         ? `/api/appointments?astrologerId=${id}`
         : `/api/appointments?userId=${id}`
-      
-      const response = await fetch(url)
-      const data = await response.json()
-      
-      if (data.success) {
-        setAppointments(data.appointments || [])
-      }
-    } catch (error) {
-      console.error('Error fetching appointments:', error)
+
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data.success) setAppointments(data.appointments || [])
     } finally {
       setLoading(false)
     }
   }
 
   const handleCancelAppointment = async (appointmentId) => {
-    if (!confirm('Are you sure you want to cancel this appointment?')) {
-      return
-    }
+    if (!confirm("Cancel this appointment?")) return
 
     setCancelling(appointmentId)
     try {
-      const userType = userProfile?.collection === 'astrologers' ? 'astrologer' : 'user'
+      const isAstrologer = userProfile?.collection === "astrologers"
       const id = user.uid
-      
-      const response = await fetch('/api/appointments', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+
+      const res = await fetch("/api/appointments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointmentId,
-          status: 'cancelled',
-          [userType === 'astrologer' ? 'astrologerId' : 'userId']: id
-        })
+          status: "cancelled",
+          [isAstrologer ? "astrologerId" : "userId"]: id,
+        }),
       })
 
-      const data = await response.json()
-      
-      if (data.success) {
-        fetchAppointments()
-      } else {
-        alert(data.error || 'Failed to cancel appointment')
-      }
-    } catch (error) {
-      console.error('Error cancelling appointment:', error)
-      alert('Network error. Please try again.')
+      const data = await res.json()
+      if (data.success) fetchAppointments()
+      else alert(data.error || "Failed to cancel")
     } finally {
       setCancelling(null)
     }
   }
 
   const handleConnect = (appointment) => {
-    // Store appointment details and redirect to call page
-    localStorage.setItem('tgs:profileCallAstrologerId', appointment.astrologerId)
-    localStorage.setItem('tgs:profileCallType', 'video')
-    localStorage.setItem('tgs:appointmentId', appointment.id)
-    
-    // Redirect to talk-to-astrologer page which will handle the call
-    router.push('/talk-to-astrologer')
+    localStorage.setItem("tgs:profileCallAstrologerId", appointment.astrologerId)
+    localStorage.setItem("tgs:profileCallType", "video")
+    localStorage.setItem("tgs:appointmentId", appointment.id)
+    router.push("/talk-to-astrologer")
   }
 
-  const filteredAppointments = appointments.filter(appointment => {
+  const getDisplayStatus = (a) => {
     const now = new Date()
-    const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
-    
-    if (filter === 'upcoming') {
-      return appointment.status === 'confirmed' && appointmentDate > now
-    } else if (filter === 'past') {
-      return appointmentDate < now || appointment.status === 'completed'
-    } else if (filter === 'cancelled') {
-      return appointment.status === 'cancelled'
-    }
-    return true
-  })
+    const dt = new Date(`${a.date}T${a.time}`)
 
-  const isAstrologer = userProfile?.collection === 'astrologers'
+    if (a.status === "cancelled") return "cancelled"
+    if (a.status === "completed") return "completed"
+    if (a.status === "confirmed" || a.status === "pending")
+      return dt > now ? "upcoming" : "missed"
+
+    return "missed"
+  }
+
+  // Memoize filtered appointments to prevent unnecessary recalculations
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((a) => {
+      const s = getDisplayStatus(a)
+      if (filter === "upcoming") return s === "upcoming"
+      if (filter === "past") return s === "completed" || s === "missed"
+      if (filter === "cancelled") return s === "cancelled"
+      return true
+    })
+  }, [appointments, filter])
+
+  const isAstrologer = userProfile?.collection === "astrologers"
 
   if (authLoading || loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <Loader2 size={32} className="animate-spin" style={{ color: '#6366f1' }} />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-[var(--color-gold)]" />
       </div>
     )
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f9fafb',
-      padding: '2rem 1rem'
-    }}>
-      <div style={{
-        maxWidth: '1000px',
-        margin: '0 auto'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '2rem'
-        }}>
-          <h1 style={{
-            fontSize: '1.875rem',
-            fontWeight: 700,
-            margin: 0
-          }}>
+    <div
+      className="min-h-screen"
+      style={{ background: "#FFFDF5", padding: "2rem 1rem" }}
+    >
+      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="title text-2xl font-medium ">
             My Appointments
           </h1>
+
           {isAstrologer && (
             <button
-              onClick={() => router.push('/appointments/availability')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#6366f1',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '0.5rem',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#4f46e5'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#6366f1'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
+              onClick={() => router.push("/appointments/availability")}
+              className="btn-primary flex items-center gap-2"
             >
               <CalendarCheck size={18} />
               Manage Availability
@@ -175,247 +137,151 @@ export default function Appointments() {
           )}
         </div>
 
-        <div style={{
-          display: 'flex',
-          gap: '0.5rem',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap'
-        }}>
-          {['all', 'upcoming', 'past', 'cancelled'].map(filterOption => (
+        {/* Filters */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {["all", "upcoming", "past", "cancelled"].map((f) => (
             <button
-              key={filterOption}
-              onClick={() => setFilter(filterOption)}
+              key={f}
+              onClick={() => setFilter(f)}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: filter === filterOption ? '#6366f1' : '#fff',
-                color: filter === filterOption ? '#fff' : '#374151',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.5rem',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                textTransform: 'capitalize'
+                padding: "0.5rem 1rem",
+                borderRadius: "0.5rem",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                border: "1px solid var(--color-gold)",
+                background:
+                  filter === f
+                    ? "var(--color-gold)"
+                    : "transparent",
+                color:
+                  filter === f ? "white" : "var(--color-gold-dark)",
+                textTransform: "capitalize",
               }}
             >
-              {filterOption}
+              {f}
             </button>
           ))}
         </div>
 
+        {/* Empty */}
         {filteredAppointments.length === 0 ? (
-          <div style={{
-            padding: '3rem',
-            textAlign: 'center',
-            backgroundColor: '#fff',
-            borderRadius: '0.75rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-          }}>
-            <Calendar size={48} style={{ margin: '0 auto 1rem', opacity: 0.5, color: '#9ca3af' }} />
-            <p style={{ color: '#6b7280' }}>
-              {filter === 'all' 
-                ? 'No appointments found.' 
-                : `No ${filter} appointments found.`}
+          <div className="card p-12 text-center">
+            <Calendar
+              size={48}
+              className="mx-auto mb-4 opacity-40 text-[var(--color-gold)]"
+            />
+            <p className="text-slate-500">
+              No {filter === "all" ? "" : filter} appointments found.
             </p>
           </div>
         ) : (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem'
-          }}>
-            {filteredAppointments.map(appointment => {
-              const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
-              const isUpcoming = appointmentDate > new Date() && appointment.status === 'confirmed'
-              const isPast = appointmentDate < new Date() || appointment.status === 'completed'
-              
-              // Check if this is user's own booking (for users viewing their appointments)
-              const isUserBooking = !isAstrologer && appointment.userId === user?.uid
-              
+          <div className="flex flex-col gap-4">
+            {filteredAppointments.map((a) => {
+              const date = new Date(`${a.date}T${a.time}`)
+              const status = getDisplayStatus(a)
+
+              const statusColor = {
+                upcoming: "var(--color-gold)",
+                completed: "#16a34a",
+                missed: "#d97706",
+                cancelled: "#dc2626",
+              }[status]
+
               return (
                 <div
-                  key={appointment.id}
-                  style={{
-                    backgroundColor: isUserBooking && appointment.status === 'confirmed' ? '#f0fdf4' : '#fff',
-                    borderRadius: '0.75rem',
-                    padding: '1.5rem',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    border: appointment.status === 'cancelled' 
-                      ? '1px solid #fee2e2' 
-                      : isUserBooking && appointment.status === 'confirmed'
-                        ? '2px solid #10b981' // Green border for user's bookings
-                        : isUpcoming 
-                          ? '1px solid #d1fae5' 
-                          : '1px solid #e5e7eb'
-                  }}
+                  key={a.id}
+                  className="card"
+                  style={{ padding: "1.5rem" }}
                 >
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '1rem'
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        <User size={18} style={{ color: '#6366f1' }} />
-                        <span style={{
-                          fontWeight: 600,
-                          fontSize: '1.125rem'
-                        }}>
-                          {isAstrologer ? appointment.userName : appointment.astrologerName}
+                  <div className="flex justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User size={18} className="text-[var(--color-gold)]" />
+                        <span className="font-semibold text-lg">
+                          {isAstrologer ? a.userName : a.astrologerName}
                         </span>
-                        {appointment.status === 'confirmed' && isUpcoming && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#d1fae5',
-                            color: '#065f46',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Upcoming
-                          </span>
-                        )}
-                        {appointment.status === 'cancelled' && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#fee2e2',
-                            color: '#991b1b',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Cancelled
-                          </span>
-                        )}
-                        {appointment.status === 'completed' && (
-                          <span style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#e0e7ff',
-                            color: '#3730a3',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 500
-                          }}>
-                            Completed
-                          </span>
-                        )}
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "999px",
+                            background: "rgba(180,83,9,0.1)",
+                            color: statusColor,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {status}
+                        </span>
                       </div>
-                      
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.5rem',
-                        marginTop: '0.75rem'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          color: '#6b7280',
-                          fontSize: '0.875rem'
-                        }}>
+
+                      <div className="flex flex-col gap-2 text-sm text-slate-600">
+                        <div className="flex items-center gap-2">
                           <Calendar size={16} />
-                          <span>
-                            {appointmentDate.toLocaleDateString('en-IN', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
+                          {date.toLocaleDateString("en-IN", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
                         </div>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          color: '#6b7280',
-                          fontSize: '0.875rem'
-                        }}>
+                        <div className="flex items-center gap-2">
                           <Clock size={16} />
-                          <span>
-                            {appointmentDate.toLocaleTimeString('en-IN', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })} ({appointment.duration} minutes)
-                          </span>
+                          {date.toLocaleTimeString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}{" "}
+                          ({a.duration} mins)
                         </div>
-                        {appointment.notes && (
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '0.5rem',
-                            color: '#6b7280',
-                            fontSize: '0.875rem',
-                            marginTop: '0.5rem'
-                          }}>
-                            <MessageSquare size={16} style={{ marginTop: '0.125rem' }} />
-                            <span>{appointment.notes}</span>
+                        {a.notes && (
+                          <div className="flex gap-2 mt-1">
+                            <MessageSquare size={16} />
+                            {a.notes}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem',
-                      alignItems: 'flex-end'
-                    }}>
-                      {isUpcoming && (
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2">
+                      {status === "upcoming" && (
                         <button
-                          onClick={() => handleConnect(appointment)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.5rem 1rem',
-                            backgroundColor: '#10b981',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem',
-                            fontWeight: 500
-                          }}
+                          onClick={() => handleConnect(a)}
+                          className="btn-primary flex items-center gap-2"
                         >
                           <Video size={16} />
                           Connect
                         </button>
                       )}
-                      {appointment.status === 'confirmed' && (
+
+                      {status === "upcoming" && a.status === "confirmed" && (
                         <button
-                          onClick={() => handleCancelAppointment(appointment.id)}
-                          disabled={cancelling === appointment.id}
+                          onClick={() => handleCancelAppointment(a.id)}
+                          disabled={cancelling === a.id}
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.5rem 1rem',
-                            backgroundColor: cancelling === appointment.id ? '#9ca3af' : '#fee2e2',
-                            color: cancelling === appointment.id ? '#fff' : '#dc2626',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            cursor: cancelling === appointment.id ? 'not-allowed' : 'pointer',
-                            fontSize: '0.875rem',
-                            fontWeight: 500
+                            padding: "0.5rem 1rem",
+                            borderRadius: "0.5rem",
+                            border: "1px solid #dc2626",
+                            background: "transparent",
+                            color: "#dc2626",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            cursor:
+                              cancelling === a.id
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
-                          {cancelling === appointment.id ? (
-                            <>
-                              <Loader2 size={16} className="animate-spin" />
-                              <span>Cancelling...</span>
-                            </>
+                          {cancelling === a.id ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 size={14} className="animate-spin" />
+                              Cancelling…
+                            </span>
                           ) : (
-                            <>
-                              <X size={16} />
-                              <span>Cancel</span>
-                            </>
+                            <span className="flex items-center gap-2">
+                              <X size={14} />
+                              Cancel
+                            </span>
                           )}
                         </button>
                       )}
@@ -427,17 +293,6 @@ export default function Appointments() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </div>
   )
 }
-

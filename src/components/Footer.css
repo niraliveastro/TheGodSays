@@ -1,0 +1,427 @@
+/* Footer: 80% viewport-width content frame (design rule) */
+.footer {
+  background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
+  color: #1f2937;
+  margin-top: clamp(2rem, 5vw, 4rem);
+  border-top: 2px solid rgba(212, 175, 55, 0.2);
+  font-family: 'Geom', sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1.5rem 10%;
+}
+
+.footer * {
+  text-transform: none !important;
+  box-sizing: border-box;
+}
+
+.footer-content {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.footer-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  margin-bottom: clamp(1.5rem, 3vw, 3rem);
+}
+
+.footer-section {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+  text-align: left;
+}
+
+.footer-brand {
+  max-width: min(350px, 100%);
+}
+
+.footer-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.footer-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.footer-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 500;
+  color: #C89F3A;
+  margin: 0;
+  font-family: 'Geom', sans-serif !important;
+  letter-spacing: -0.01em;
+}
+
+/* Override home page h3 Georgia: force Geom for footer brand title (landing + all pages) */
+.footer .footer-brand .footer-title,
+.footer .footer-logo-title .footer-title,
+.footer h3.footer-title {
+  font-family: 'Geom', sans-serif !important;
+}
+
+.footer-description {
+  color: #4b5563;
+  line-height: 1.7;
+  font-size: clamp(0.875rem, 1.5vw, 0.95rem);
+  font-weight: 400;
+  text-align: left;
+  font-family: 'Inter', sans-serif !important;
+  text-transform: none;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.footer-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(36px, 4vw, 40px);
+  height: clamp(36px, 4vw, 40px);
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  color: #d4af37;
+  transition: all 0.3s ease;
+}
+
+.footer-social a:hover {
+  background: #d4af37;
+  color: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.footer-social a svg {
+  width: 20px;
+  height: 20px;
+}
+
+.footer-heading {
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  font-weight: 300;
+  color: #000000;
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+  font-family: 'Geom', sans-serif !important;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.footer-links li a {
+  color: #b8972e;
+  text-decoration: none;
+  font-size: clamp(0.85rem, 1.4vw, 0.95rem);
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-transform: none;
+}
+
+.footer-links li a:hover {
+  color: #a08526;
+  padding-left: 0.5rem;
+}
+
+.footer-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.5rem, 1.2vw, 0.75rem);
+  color: #000000;
+  font-size: clamp(0.85rem, 1.4vw, 0.95rem);
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
+  text-transform: none;
+}
+
+.contact-icon {
+  width: 18px;
+  height: 18px;
+  color: #b8972e;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.contact-item a,
+.contact-item span {
+  color: #000000;
+  text-decoration: none;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif !important;
+  transition: color 0.2s ease;
+  text-transform: none;
+}
+
+.contact-item a:hover {
+  color: #d4af37;
+}
+
+.footer-bottom {
+  padding-top: clamp(1rem, 3vw, 2rem);
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
+}
+
+.footer-bottom-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 2rem);
+  row-gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+/* Single line at 100% zoom: prevent text wrap when there is space */
+.footer-bottom-content .footer-copyright {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.footer-social-bottom {
+  flex: 0 0 auto;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+.footer-bottom-content .footer-legal {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.footer-copyright {
+  color: #4b5563;
+  font-size: clamp(0.8rem, 1.4vw, 0.9rem);
+  font-weight: 400;
+  margin: 0;
+  font-family: 'Geom', sans-serif !important;
+
+  text-transform: none;
+}
+
+.heart-icon {
+  width: 14px;
+  height: 14px;
+  color: #ef4444;
+  fill: #ef4444;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.footer-legal {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.5rem, 1.5vw, 1rem);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.footer-legal a {
+  color: #4b5563;
+  font-weight: 400;
+  text-decoration: none;
+  font-size: clamp(0.8rem, 1.4vw, 0.9rem);
+  transition: color 0.2s ease;
+  font-family: 'Geom', sans-serif !important;
+  text-transform: none;
+}
+
+.footer-legal a:hover {
+  color: #d4af37;
+  text-decoration: underline;
+}
+
+.footer-legal .separator {
+  color: #4b5563;
+}
+
+.footer-disclaimer {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 8px;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  margin-top: clamp(1rem, 3vw, 2rem);
+}
+
+.footer-disclaimer p {
+  color: #4b5563;
+  font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+  font-weight: 400;
+  line-height: 1.6;
+  margin: 0;
+  text-align: left;
+  font-family: 'Inter', sans-serif !important;
+  text-transform: none;
+}
+
+.footer-disclaimer strong {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+/* Responsive: 80% view frame; narrow viewports use more width */
+@media (max-width: 1024px) {
+  .footer {
+    padding: 1.5rem 5%;
+  }
+
+  .footer-main {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .footer-brand {
+    max-width: none;
+    grid-column: span 2;
+  }
+
+  /* Allow text to wrap on smaller viewports / higher zoom so layout adjusts */
+  .footer-bottom-content .footer-copyright,
+  .footer-bottom-content .footer-legal {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 1rem;
+  }
+
+  .footer-main {
+    grid-template-columns: 1fr;
+    gap: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .footer-brand {
+    grid-column: auto;
+  }
+
+  .footer-section {
+    text-align: left;
+  }
+
+  .footer-logo-title {
+    justify-content: flex-start;
+  }
+
+  .footer-social {
+    justify-content: flex-start;
+  }
+
+  .footer-description {
+    text-align: left;
+  }
+
+  .footer-links li a:hover {
+    padding-left: 0;
+  }
+
+  .contact-item {
+    justify-content: flex-start;
+  }
+
+  .footer-bottom-content {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1rem);
+  }
+
+  .footer-bottom-content .footer-copyright {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .footer-bottom-content .footer-legal {
+    white-space: normal;
+    justify-content: center;
+  }
+
+  .footer-legal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: clamp(0.5rem, 2vw, 1rem);
+    justify-content: center;
+    width: 100%;
+  }
+
+  .footer-legal .separator {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer {
+    padding: 1rem;
+  }
+
+  .footer-title {
+    font-size: clamp(1.2rem, 5vw, 1.35rem);
+  }
+
+  .footer-heading {
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+     font-family: 'Geom', sans-serif !important;
+
+  }
+
+  .footer-description,
+  .footer-links li a,
+  .contact-item {
+    font-size: clamp(0.8rem, 3.5vw, 0.9rem);
+  }
+
+  .footer-disclaimer {
+    padding: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  .footer-disclaimer p {
+    font-size: clamp(0.7rem, 3vw, 0.8rem);
+  }
+
+  .footer-logo {
+    width: clamp(24px, 6vw, 28px);
+    height: clamp(24px, 6vw, 28px);
+  }
+}

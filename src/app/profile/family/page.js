@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -13,11 +13,13 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/Modal";
 import PlaceAutocomplete from "@/components/PlaceAutocomplete";
 import FamilyMemberPredictions from "@/components/FamilyMemberPredictions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+
+// Lazy load heavy components
+const Modal = lazy(() => import("@/components/Modal"));
 export default function FamilyPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -152,39 +154,49 @@ export default function FamilyPage() {
               Back to My Profile
             </button>
 
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <h1
-                  style={{
-                    fontSize: "2.5rem",
-                    fontWeight: 700,
-                    color: "#d4af37",
-                    marginBottom: "0.5rem",
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                  }}
-                >
-                  My Family
-                </h1>
-                <p style={{ color: "#6b7280", fontSize: "1rem" }}>
-                  Manage your family members and view their predictions
-                </p>
-              </div>
+            <div className="relative flex items-center justify-between gap-4 flex-wrap">
+  {/* Centered title */}
+  <div className="absolute left-1/2 -translate-x-1/2 text-center">
+    <h1
+      className="title"
+      style={{
+        fontSize: "2.5rem",
+        fontWeight: 500,
+        marginBottom: "0.5rem",
+        color: "var(--color-gold)",
+        fontFamily: "'Georgia', 'Times New Roman', serif",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      My Family
+    </h1>
+    <p style={{ color: "#6b7280", fontSize: "1rem" }}>
+      Manage your family members and view their predictions
+    </p>
+  </div>
 
-              <Button
-                onClick={() => setIsFamilyModalOpen(true)}
-                className="btn btn-primary"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.875rem 1.75rem",
-                  fontSize: "1rem",
-                }}
-              >
-                <Plus className="w-5 h-5" />
-                Add Family Member
-              </Button>
-            </div>
+  {/* Spacer (keeps layout balanced) */}
+  <div />
+
+  {/* Action button */}
+  <Button
+    onClick={() => setIsFamilyModalOpen(true)}
+    className="btn btn-primary"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.875rem 1.75rem",
+      fontSize: "1rem",
+    }}
+  >
+    <Plus className="w-5 h-5" />
+    Add Family Member
+  </Button>
+</div>
+
           </div>
 
           {/* Family Members Grid */}
@@ -370,8 +382,11 @@ export default function FamilyPage() {
       </div>
 
       {/* Add Family Member Modal */}
-      <Modal
-        open={isFamilyModalOpen}
+      {/* Family Modal - Lazy loaded */}
+      {isFamilyModalOpen && (
+        <Suspense fallback={null}>
+          <Modal
+            open={isFamilyModalOpen}
         onClose={() => setIsFamilyModalOpen(false)}
         title="Add Family Member"
       >
@@ -515,7 +530,9 @@ export default function FamilyPage() {
             </div>
           </div>
         </div>
-      </Modal>
+          </Modal>
+        </Suspense>
+      )}
 
       {/* Predictions Modal */}
       {showPredictions && selectedMember && (

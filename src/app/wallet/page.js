@@ -56,7 +56,7 @@ export default function WalletPage() {
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%)",
-        padding: "2rem 0",
+        padding: "0.5rem 0",
       }}
     >
       <div className="app">
@@ -75,7 +75,7 @@ export default function WalletPage() {
         </div>
 
         {/* Wallet Header */}
-        <header className="header">
+        <header className="header" style={{ marginTop: "0.5rem" }}>
           <h1 className="title">{t.wallet.title}</h1>
           <p className="subtitle">
             {t.wallet.subtitle}

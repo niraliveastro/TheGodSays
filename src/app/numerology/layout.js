@@ -1,9 +1,10 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
-  title: "Free Numerology Calculator - Complete Numerology Analysis",
-  description: "Get your complete numerology analysis using Pythagorean and Chaldean systems. Calculate your Life Path, Destiny, Soul Urge, Dream, and Power numbers. Discover your personality traits, strengths, and life insights through numerology.",
+  title: "Numerology Prediction | AI‑Based Number & Life Path Analysis",
+  description: "Discover life path, destiny & numerology cycles using AI + classical numerology. Combine with kundli for better accuracy.",
   keywords: [
+    "numerology prediction",
     "numerology",
     "numerology calculator",
     "life path number",
@@ -11,19 +12,19 @@ export const metadata = {
     "soul urge number",
     "pythagorean numerology",
     "chaldean numerology",
-    "numerology reading",
-    "name numerology",
-    "birth number"
+    "AI numerology",
+    "numerology reading"
   ],
   openGraph: {
-    title: "Free Numerology Calculator - Complete Analysis | NiraLive Astro",
-    description: "Get your complete numerology analysis using Pythagorean and Chaldean systems. Calculate your Life Path, Destiny, Soul Urge, and more.",
+    title: "Numerology Prediction | AI‑Based Number & Life Path Analysis",
+    description: "Discover life path, destiny & numerology cycles using AI + classical numerology. Combine with kundli for better accuracy.",
     url: `${SITE_URL}/numerology`,
     type: "website",
   },
   twitter: {
-    title: "Free Numerology Calculator - Complete Analysis | NiraLive Astro",
-    description: "Get your complete numerology analysis using Pythagorean and Chaldean systems. Calculate your Life Path, Destiny, and more.",
+    card: "summary_large_image",
+    title: "Numerology Prediction | AI‑Based Number & Life Path Analysis",
+    description: "Discover life path, destiny & numerology cycles using AI + classical numerology. Combine with kundli for better accuracy.",
   },
   alternates: {
     canonical: `${SITE_URL}/numerology`,

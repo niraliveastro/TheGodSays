@@ -14,6 +14,7 @@ import BlogFilters from './BlogFilters'
 import BlogFloatingCTA from './BlogFloatingCTA'
 import BlogTextFixer from './BlogTextFixer'
 import BackButtonHandler from './BackButtonHandler'
+import PageSEO from '@/components/PageSEO'
 import './blog.css'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveastro.com'
@@ -26,16 +27,29 @@ export async function generateMetadata() {
   const blogs = await getPublishedBlogs()
   
   return {
-    title: 'Astrology Blog | Vedic Astrology Articles & Insights | NiraLive Astro',
-    description: 'Discover insightful articles on Vedic astrology, numerology, planetary influences, spiritual remedies, and cosmic guidance. Read expert astrology blogs on NiraLive Astro.',
-    keywords: ['vedic astrology', 'astrology blog', 'numerology', 'planetary influences', 'spiritual remedies', 'astrology articles', 'cosmic guidance', 'horoscope insights'],
+    title: 'Astrology Blog | AI Astrology, Kundli & Vedic Insights',
+    description: 'Expert astrology articles on kundli matching, AI predictions, planetary transits, numerology & vastu. Learn Vedic astrology insights for marriage, career & life guidance.',
+    keywords: [
+      'astrology blog',
+      'vedic astrology articles',
+      'kundli matching blog',
+      'AI astrology insights',
+      'planetary transits guide',
+      'numerology articles',
+      'vastu shastra blog',
+      'marriage astrology',
+      'career astrology',
+      'astrology predictions',
+      'hindu astrology',
+      'indian astrologer blog'
+    ],
     authors: [{ name: 'NiraLive Astro' }],
     other: {
       'font-display': 'block',
     },
     openGraph: {
-      title: 'Astrology Blog | NiraLive Astro',
-      description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
+      title: 'Astrology Blog | AI Astrology, Kundli & Vedic Insights | NiraLive Astro',
+      description: 'Expert astrology articles on kundli matching, AI predictions, planetary transits, numerology & vastu. Learn Vedic astrology insights for marriage, career & life guidance.',
       url: `${SITE_URL}/blog`,
       siteName: 'NiraLive Astro',
       images: [
@@ -51,8 +65,8 @@ export async function generateMetadata() {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Astrology Blog | NiraLive Astro',
-      description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
+      title: 'Astrology Blog | AI Astrology, Kundli & Vedic Insights',
+      description: 'Expert astrology articles on kundli matching, AI predictions, planetary transits, numerology & vastu. Learn Vedic astrology insights for marriage, career & life guidance.',
       images: [`${SITE_URL}/og-image.png`],
       creator: '@niraliveastro',
     },
@@ -279,7 +293,10 @@ export default async function BlogPage({ searchParams }) {
             {/* Server-rendered blog list for SEO */}
             <div className="blog-grid">
               {blogs.map((blog) => {
-                const excerpt = generateExcerpt(blog.content || blog.excerpt || '', 100)
+                // Prioritize metaDescription or excerpt field, then fall back to content
+                const excerpt = blog.metaDescription 
+                  || blog.excerpt 
+                  || generateExcerpt(blog.content || '', 100)
                 const readTime = calculateReadTime(blog.content || '')
                 const publishedDate = blog.publishedAt
                   ? new Date(blog.publishedAt).toLocaleDateString('en-US', {
@@ -355,7 +372,7 @@ export default async function BlogPage({ searchParams }) {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Astrology Blog | NiraLive Astro',
-            description: 'Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies',
+            description: 'Expert astrology articles on kundli matching, AI predictions, planetary transits, numerology & vastu',
             url: `${SITE_URL}/blog`,
             publisher: {
               '@type': 'Organization',
@@ -389,6 +406,29 @@ export default async function BlogPage({ searchParams }) {
             },
           }),
         }}
+      />
+      
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="blog"
+        faqs={[
+          {
+            question: "What topics does the astrology blog cover?",
+            answer: "Our astrology blog covers kundli matching, AI-powered predictions, planetary transits, numerology, vastu shastra, marriage compatibility, career guidance, and life predictions. We provide expert insights on Vedic astrology, helping readers understand planetary influences and make informed decisions."
+          },
+          {
+            question: "How often are new blog posts published?",
+            answer: "We regularly publish new astrology articles covering various topics including planetary movements, kundli analysis, remedies, and spiritual guidance. Check back frequently for the latest insights on Vedic astrology and cosmic influences."
+          },
+          {
+            question: "Can I use blog insights for personal astrology consultations?",
+            answer: "While our blog provides valuable educational content on astrology, for personalized guidance tailored to your specific birth chart and life situation, we recommend consulting with our verified astrologers who can provide detailed kundli analysis and personalized predictions."
+          },
+          {
+            question: "Are the blog articles written by expert astrologers?",
+            answer: "Yes, our astrology blog articles are written by experienced astrologers and astrology experts who combine traditional Vedic wisdom with modern AI-powered insights. All content is reviewed for accuracy and relevance to help readers understand complex astrological concepts."
+          }
+        ]}
       />
       </div>
     </>

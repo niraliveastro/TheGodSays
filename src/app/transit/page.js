@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import PageSEO from "@/components/PageSEO";
 import "./transit.css";
 import { upcomingTransits as FIVE_YEARS } from "./transitData";
 import {
@@ -310,6 +311,106 @@ export default function TransitPage() {
     return picks.slice(0, 2);
   }, [result]);
 
+
+          /* ---------- ACCORDION SECTION ---------- */
+      const Section = ({ title, content, children }) => {
+        const [open, setOpen] = useState(false);
+    
+        return (
+          <div
+            style={{
+              marginBottom: "1.25rem",
+              border: "1px solid rgba(212, 175, 55, 0.25)",
+              borderRadius: "1rem",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+              overflow: "hidden",
+              transition: "all 0.3s ease",
+            }}
+          >
+            {/* HEADER */}
+            <button
+              onClick={() => setOpen(!open)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <h2
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
+    
+              <span
+                style={{
+                  fontSize: "1.25rem",
+                  color: "#b45309",
+                  transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              >
+                +
+              </span>
+            </button>
+    
+            {/* CONTENT */}
+            {open && (
+              <div
+                style={{
+                  padding: "0 1.25rem 1.25rem",
+                  animation: "fadeIn 0.3s ease",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.7,
+                    marginBottom: "0.75rem",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {children}
+                </p>
+    
+                <ul
+                  style={{
+                    paddingLeft: "1.25rem",
+                    fontSize: "0.85rem",
+                    color: "#374151",
+                    lineHeight: 1.8,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {content.map((item, i) => (
+                    <li key={i}>✔ {item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      };  
+
+
   return (
     <div className="transit-container" style={{ paddingTop: '0.01rem', marginTop: '0.9rem' }}>
       {/* Orbs */}
@@ -327,8 +428,8 @@ export default function TransitPage() {
       </div>
 
       <div className="transit-content">
-        <header className="transit-header">
-          <h1 className="title">Planetary Transit</h1>
+        <header className="header">
+          <h1 className="title mx-auto">Planetary Transit</h1>
           <p className="subtitle">
             Current planetary movements and their cosmic influences
           </p>
@@ -599,6 +700,178 @@ export default function TransitPage() {
           </main>
         )}
       </div>
+
+{/* Explanation Card */}
+<div
+  style={{
+    marginTop: "2rem",
+    width: "100%",
+    maxWidth: "90rem",
+    marginLeft: "auto",
+    marginRight: "auto",
+  }}
+>
+  <div
+    className="card backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-xl border"
+    style={{
+      background: "#ffffff",
+      borderColor: "#eaeaea",
+      maxWidth: "100%",
+      boxShadow:
+        "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingBottom: "1.5rem",
+        borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
+        marginBottom: "1.5rem",
+      }}
+    >
+      <h2
+        style={{
+          fontFamily: "'Georgia', 'Times New Roman', serif",
+          fontSize: "1.5rem",
+          fontWeight: 700,
+          color: "#1f2937",
+          margin: 0,
+        }}
+      >
+        Understanding Planetary Transits
+      </h2>
+    </div>
+
+    <Section
+  title="What Are Planetary Transits"
+  content={[
+    "Movement of planets through zodiac signs",
+    "Activation of different life themes",
+    "Gradual shifts rather than sudden events",
+    "Short-term and long-term planetary cycles",
+  ]}
+>
+  Planetary transits occur as planets move continuously through the zodiac.
+  Each planet represents a specific type of energy, such as action, discipline,
+  communication, growth, or reflection, and its movement changes how that energy
+  is expressed over time.
+
+  Transits do not create events on their own. Instead, they describe changing
+  conditions and phases, helping you understand when certain themes become more
+  active or subdued.
+</Section>
+<Section
+  title="How Transits Affect You Personally"
+  content={[
+    "Your birth chart (kundli) placements",
+    "Running dasha and sub-dasha periods",
+    "Strength and condition of the planet",
+  ]}
+>
+  While planetary movements are the same for everyone, their impact differs
+  from person to person. The actual effect of a transit depends on how the
+  moving planet interacts with your individual birth chart.
+
+  This is why a transit that feels challenging for one person may feel neutral
+  or even supportive for another. Personal context matters more than the
+  transit itself.
+</Section>
+<Section
+  title="Understanding Current Planetary Transits"
+  content={[
+    "Where each planet is positioned now",
+    "How long the planet stays in the sign",
+    "Overall duration of the current phase",
+  ]}
+>
+  The Current Planetary Transits section shows the present position of each
+  planet and the time span for which it remains there. This helps you recognize
+  the ongoing background influences shaping thoughts, emotions, and actions.
+
+  Think of these as the dominant themes operating in the present moment rather
+  than immediate triggers for change.
+</Section>
+<Section
+  title="Next Immediate Transits & Countdown"
+  content={[
+    "Closest upcoming sign changes",
+    "Live countdown until transition",
+    "Awareness of approaching shifts",
+  ]}
+>
+  Next Immediate Transits highlight the planetary sign changes that are about to
+  occur soon. The live countdown shows exactly when a planet moves into a new
+  sign, marking a subtle shift in tone.
+
+  These transitions are useful for staying mentally prepared rather than
+  reacting unexpectedly when energy patterns begin to change.
+</Section>
+<Section
+  title="Exploring Upcoming Transits Over Time"
+  content={[
+    "Six-month and five-year views",
+    "Long-term planetary cycles",
+    "Pattern recognition over time",
+  ]}
+>
+  The Upcoming Transits section allows you to explore planetary movements across
+  different time ranges. Shorter views help with near-term awareness, while
+  longer timelines reveal broader cycles influencing life direction.
+
+  This is especially useful for understanding repetition, pacing, and periods
+  of gradual buildup rather than focusing on isolated dates.
+</Section>
+<Section
+  title="Using Transit Awareness Practically"
+  content={[
+    "Better timing for important decisions",
+    "Reduced anxiety during intense phases",
+    "Improved long-term planning",
+  ]}
+>
+  Transit awareness is not about prediction but preparation. By understanding
+  when energies shift, you can plan actions more consciously and avoid forcing
+  outcomes during naturally resistant phases.
+
+  Used correctly, transits act as a timing tool that supports clarity,
+  patience, and better decision-making.
+</Section>
+
+  </div>
+</div>
+
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="transit"
+        faqs={[
+          {
+            question: "What Are Planetary Transits",
+            answer: "Planetary transits occur as planets move continuously through the zodiac. Each planet represents a specific type of energy, such as action, discipline, communication, growth, or reflection, and its movement changes how that energy is expressed over time. Transits do not create events on their own. Instead, they describe changing conditions and phases, helping you understand when certain themes become more active or subdued."
+          },
+          {
+            question: "How Transits Affect You Personally",
+            answer: "While planetary movements are the same for everyone, their impact differs from person to person. The actual effect of a transit depends on how the moving planet interacts with your individual birth chart. This is why a transit that feels challenging for one person may feel neutral or even supportive for another. Personal context matters more than the transit itself."
+          },
+          {
+            question: "Understanding Current Planetary Transits",
+            answer: "The Current Planetary Transits section shows the present position of each planet and the time span for which it remains there. This helps you recognize the ongoing background influences shaping thoughts, emotions, and actions. Think of these as the dominant themes operating in the present moment rather than immediate triggers for change."
+          },
+          {
+            question: "Next Immediate Transits & Countdown",
+            answer: "Next Immediate Transits highlight the planetary sign changes that are about to occur soon. The live countdown shows exactly when a planet moves into a new sign, marking a subtle shift in tone. These transitions are useful for staying mentally prepared rather than reacting unexpectedly when energy patterns begin to change."
+          },
+          {
+            question: "Exploring Upcoming Transits Over Time",
+            answer: "The Upcoming Transits section allows you to explore planetary movements across different time ranges. Shorter views help with near-term awareness, while longer timelines reveal broader cycles influencing life direction. This is especially useful for understanding repetition, pacing, and periods of gradual buildup rather than focusing on isolated dates."
+          },
+          {
+            question: "Using Transit Awareness Practically",
+            answer: "Transit awareness is not about prediction but preparation. By understanding when energies shift, you can plan actions more consciously and avoid forcing outcomes during naturally resistant phases. Used correctly, transits act as a timing tool that supports clarity, patience, and better decision-making."
+          }
+        ]}
+      />
     </div>
   );
 }

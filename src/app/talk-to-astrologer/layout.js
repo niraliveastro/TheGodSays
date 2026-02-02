@@ -1,29 +1,30 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
-  title: "Talk to Astrologer - Live Online Astrology Consultation",
-  description: "Connect with expert astrologers for live online consultations. Get personalized astrology advice, answer your questions, and receive guidance through video or voice calls. Book your session with verified astrologers now.",
+  title: "Talk to Astrologer Online | Chat, Call & WhatsApp Consultation",
+  description: "Talk to verified astrologers online for marriage, career & life guidance. AI‑assisted kundli analysis. India & NRI consultations.",
   keywords: [
+    "talk to astrologer",
     "online astrologer",
     "astrologer consultation",
-    "live astrology",
-    "talk to astrologer",
-    "astrology consultation",
-    "online astrology reading",
+    "chat with astrologer",
+    "astrologer for marriage",
+    "astrologer call",
     "video call astrologer",
     "phone astrology",
     "astrologer chat",
     "vedic astrologer"
   ],
   openGraph: {
-    title: "Talk to Astrologer - Live Online Consultation | NiraLive Astro",
-    description: "Connect with expert astrologers for live online consultations. Get personalized astrology advice through video or voice calls.",
+    title: "Talk to Astrologer Online | Chat, Call & WhatsApp Consultation",
+    description: "Talk to verified astrologers online for marriage, career & life guidance. AI‑assisted kundli analysis. India & NRI consultations.",
     url: `${SITE_URL}/talk-to-astrologer`,
     type: "website",
   },
   twitter: {
-    title: "Talk to Astrologer - Live Online Consultation | NiraLive Astro",
-    description: "Connect with expert astrologers for live online consultations. Get personalized astrology advice.",
+    card: "summary_large_image",
+    title: "Talk to Astrologer Online | Chat, Call & WhatsApp Consultation",
+    description: "Talk to verified astrologers online for marriage, career & life guidance. AI‑assisted kundli analysis.",
   },
   alternates: {
     canonical: `${SITE_URL}/talk-to-astrologer`,

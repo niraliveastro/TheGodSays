@@ -66,6 +66,10 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
+    // Increase body size limit for file uploads (50MB)
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
   },
   // Enable faster routing
   reactStrictMode: true,
@@ -150,6 +154,26 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=3600, stale-while-revalidate',
+          },
+        ],
+      },
+      {
+        // CSS files - prevent aggressive caching
+        source: '/:path*.css',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
+        // Next.js CSS chunks
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

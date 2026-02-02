@@ -1,8 +1,10 @@
 "use client";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import Modal from "@/components/Modal";
-import Chat from "@/components/Chat";
+import AstrologerAssistant from "@/components/AstrologerAssistant";
+
+// Lazy load heavy components
+const Modal = lazy(() => import("@/components/Modal"));
 import {
   Sparkles,
   History,
@@ -22,6 +24,7 @@ import "./prediction.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
 import { PageLoading } from "@/components/LoadingStates";
+import PageSEO from "@/components/PageSEO";
 export default function PredictionsPage() {
   const { t } = useTranslation();
       // Track page view on mount
@@ -1832,74 +1835,6 @@ export default function PredictionsPage() {
               </div>
             ) : null}
 
-            {/* Expert Astrologer CTA / Chat Window */}
-            <div 
-              className="card mt-8 ai-astrologer-section"
-              style={{ 
-                position: "relative",
-                zIndex: chatOpen ? 200 : 1,
-                marginBottom: "2rem",
-                background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-                border: "1px solid rgba(212, 175, 55, 0.3)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-                padding: "1.5rem"
-              }}
-            >
-              {!chatOpen ? (
-                <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="flex-1">
-                    <div
-                      className="results-header"
-                      style={{ marginBottom: "1rem" }}
-                    >
-                      <img
-                        src="/infinity-symbol.svg"
-                        alt="Infinity"
-                        style={{
-                          width: "24px",
-                          height: "24px",
-                          transform: "rotate(-45deg)",
-                          transformOrigin: "center center",
-                        }}
-                      />
-                      <h3 className="results-title">Astrologer</h3>
-                    </div>
-
-                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Get Expert Astrological Guidance
-                    </h3>
-                    <p className="text-sm text-gray-70 max-w-xl">
-                      Consult with our experienced Vedic astrologer who will interpret your birth chart, dashas, and planetary strengths using time-tested traditional methods. Receive clear, practical insights based on authentic Vedic astrology principles, personalized to your unique birth details.
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChatSessionId(prev => prev + 1);
-                        setChatOpen(true);
-                      }}
-                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden"
-                    >
-                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to Astrologer
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="chat-window-container">
-                  <Chat 
-                    key={`predictions-chat-${chatSessionId}-${currentFormDataHash || 'new'}`} 
-                    pageTitle="Predictions" 
-                    initialData={chatData}
-                    onClose={() => setChatOpen(false)}
-                    chatType="prediction"
-                    shouldReset={shouldResetChat}
-                    formDataHash={currentFormDataHash}
-                  />
-                </div>
-              )}
-            </div>
 
             {/* Planet Placements */}
             {placements.length > 0 ? (
@@ -2238,17 +2173,19 @@ export default function PredictionsPage() {
             </div>
           </div>
         )}
-        {/* Antar Dasha Modal */}
-        <Modal
-          open={antarOpen}
-          onClose={() => setAntarOpen(false)}
-          title={
-            selectedMaha
-              ? `${selectedMaha} Maha Dasha - Antar Periods`
-              : "Antar Dasha"
-          }
-          position="center"
-        >
+        {/* Antar Dasha Modal - Lazy loaded */}
+        {antarOpen && (
+          <Suspense fallback={null}>
+            <Modal
+              open={antarOpen}
+              onClose={() => setAntarOpen(false)}
+              title={
+                selectedMaha
+                  ? `${selectedMaha} Maha Dasha - Antar Periods`
+                  : "Antar Dasha"
+              }
+              position="center"
+            >
           {antarLoading ? (
             <div className="py-16 text-center">
               <Loader2 className="w-10 h-10 text-gold animate-spin mx-auto mb-4" />
@@ -2345,18 +2282,22 @@ export default function PredictionsPage() {
               )}
             </div>
           )}
-        </Modal>
-        {/* Astrological Predictions Modal */}
-        <Modal
-          open={predictionsOpen}
-          onClose={() => setPredictionsOpen(false)}
-          title={
-            selectedPlanetForPredictions
-              ? `Predictions - ${selectedPlanetForPredictions} Maha Dasha`
-              : "Predictions"
-          }
-          position="center"
-        >
+            </Modal>
+          </Suspense>
+        )}
+        {/* Astrological Predictions Modal - Lazy loaded */}
+        {predictionsOpen && (
+          <Suspense fallback={null}>
+            <Modal
+              open={predictionsOpen}
+              onClose={() => setPredictionsOpen(false)}
+              title={
+                selectedPlanetForPredictions
+                  ? `Predictions - ${selectedPlanetForPredictions} Maha Dasha`
+                  : "Predictions"
+              }
+              position="center"
+            >
           {predictionsLoading ? (
             <div className="py-12 text-center">
               <Loader2 className="w-8 h-8 text-gold animate-spin mx-auto mb-3" />
@@ -2405,7 +2346,9 @@ export default function PredictionsPage() {
               </div>
             </div>
           )}
-        </Modal>
+            </Modal>
+          </Suspense>
+        )}
       </div>
 
 
@@ -2455,291 +2398,7 @@ export default function PredictionsPage() {
         </div>
 
       {/* Fixed Chat Assistant Card - Show logo until result is generated, then show full card */}
-      <div 
-        className="fixed bottom-6 right-6 z-50 ai-assistant-card" 
-        style={{ 
-          maxWidth: (!result || isAssistantMinimized) ? "64px" : "320px",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {(!result || isAssistantMinimized) ? (
-          // Minimized Icon - Astrologer Assistant
-          <button
-            onClick={() => {
-              if (result) {
-                setIsAssistantMinimized(false);
-              }
-            }}
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "20px",
-              background: "linear-gradient(135deg, #d4af37, #b8972e)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-            }}
-          >
-            {/* Golden Infinity Icon (tilted 45 degrees) */}
-            <div style={{ position: "relative", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            {/* Pulsing indicator */}
-            <div
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "8px",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                animation: "pulse 2s infinite",
-              }}
-            />
-          </button>
-        ) : (
-          <div
-            className="chat-assistant-card"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%)",
-              border: "1px solid rgba(212, 175, 55, 0.3)",
-              borderRadius: "20px",
-              padding: "20px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-            }}
-            onClick={() => {
-            const isFormFilled = fullName && dob && tob && place;
-            if (!isFormFilled) {
-              setError(
-                "Please complete all birth details before using the chat."
-              );
-              window.scrollTo({ top: 0, behavior: "smooth" });
-              return;
-            }
-            if (!result) {
-              document.querySelector("form").requestSubmit();
-              setTimeout(() => {
-                setChatSessionId(prev => prev + 1);
-                setChatOpen(true);
-                setTimeout(() => {
-                  document
-                    .querySelector(".ai-astrologer-section")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
-              }, 2000);
-            } else {
-              setChatSessionId(prev => prev + 1);
-              setChatOpen(true);
-              setTimeout(() => {
-                document
-                  .querySelector(".ai-astrologer-section")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }, 100);
-            }
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-4px)";
-            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 20px rgba(212, 175, 55, 0.15)";
-          }}
-        >
-          {/* Minimize Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsAssistantMinimized(true);
-            }}
-            style={{
-              position: "absolute",
-              top: "12px",
-              right: "12px",
-              width: "28px",
-              height: "28px",
-              borderRadius: "8px",
-              background: "rgba(212, 175, 55, 0.1)",
-              border: "1px solid rgba(212, 175, 55, 0.2)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              zIndex: 10,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(212, 175, 55, 0.2)";
-              e.currentTarget.style.transform = "scale(1.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(212, 175, 55, 0.1)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
-            <X size={16} color="#b8972e" />
-          </button>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "14px",
-                background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-              }}
-            >
-              <img
-                src="/infinity-symbol.svg"
-                alt="Infinity"
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  transform: "rotate(-45deg)",
-                  transformOrigin: "center center",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 700,
-                  color: "#111827",
-                  margin: "0 0 4px 0",
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  background: "linear-gradient(135deg, #d4af37, #b8972e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Astrologer Assistant
-              </h3>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#6b7280",
-                  margin: 0,
-                  lineHeight: "1.5",
-                }}
-              >
-                Consult with our expert Vedic astrologer for trusted insights about your birth chart, planetary positions, and personalized astrological guidance
-              </p>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingTop: "12px",
-              borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "#10b981",
-                  boxShadow: "0 0 8px rgba(16, 185, 129, 0.5)",
-                  animation: "pulse 2s infinite",
-                }}
-              />
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 500 }}>
-                Online
-              </span>
-            </div>
-            <button
-              disabled={submitting}
-              style={{
-                background: submitting 
-                  ? "rgba(212, 175, 55, 0.5)" 
-                  : "linear-gradient(135deg, #d4af37, #b8972e)",
-                border: "none",
-                borderRadius: "10px",
-                padding: "8px 16px",
-                color: "#1f2937",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: submitting ? "not-allowed" : "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-                opacity: submitting ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(251, 191, 36, 0.5)";
-                  e.currentTarget.style.transform = "scale(1.05)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(251, 191, 36, 0.3)";
-                  e.currentTarget.style.transform = "scale(1)";
-                }
-              }}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering card click
-                if (submitting) return;
-                
-                // Since we only show full card when result exists, we can directly open chat
-                if (result) {
-                  setChatSessionId(prev => prev + 1);
-                  setChatOpen(true);
-                  setTimeout(() => {
-                    document
-                      .querySelector(".ai-astrologer-section")
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }, 100);
-                }
-              }}
-            >
-              {submitting ? "Loading..." : "Start Chat"}
-            </button>
-          </div>
-        </div>
-        )}
-
-      </div>
-
-            <a
+<a
         href="/talk-to-astrologer"
         className="global-floater global-floater--astrologer"
         aria-label="Talk to Astrologer"
@@ -2747,6 +2406,45 @@ export default function PredictionsPage() {
       <PhoneCallIcon className="global-floater-icon"/>
         <span className="global-floater-text">Talk to Astrologer</span>
       </a>
+
+      {/* Astrologer Assistant Floating Card */}
+      <AstrologerAssistant
+        pageTitle="Predictions"
+        initialData={chatData}
+        chatType="prediction"
+        shouldReset={shouldResetChat}
+        formDataHash={currentFormDataHash}
+        chatSessionId={chatSessionId}
+        show={true}
+        hasData={!!result}
+      />
+      
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="predictions"
+        faqs={[
+          {
+            question: "How are AI kundli predictions generated?",
+            answer: "AI kundli predictions are generated by analyzing your birth chart using Vedic astrology principles. The system calculates planetary positions, house placements, running dashas, and current transits to provide personalized predictions for career, marriage, and future life phases."
+          },
+          {
+            question: "What makes AI predictions different from traditional astrology?",
+            answer: "AI predictions combine accurate astronomical calculations with pattern recognition to identify trends and timing. While traditional astrology provides the foundation, AI helps analyze complex interactions between planets, dashas, and transits more quickly and consistently."
+          },
+          {
+            question: "Can I chat with AI about my predictions?",
+            answer: "Yes, you can chat with our AI assistant to get deeper insights into your predictions. The AI understands your birth chart data and can answer questions about specific planetary influences, dasha periods, and how they affect different areas of your life."
+          },
+          {
+            question: "How accurate are AI kundli predictions?",
+            answer: "AI predictions are based on precise astronomical calculations and classical Vedic astrology principles. Accuracy depends on correct birth details (date, time, place). For the most accurate and personalized guidance, we recommend consulting with our verified astrologers who can provide human judgment and context."
+          },
+          {
+            question: "Should I consult an astrologer after getting AI predictions?",
+            answer: "While AI predictions provide valuable insights, consulting with an astrologer can help you understand the practical implications, get remedies for challenging periods, and receive personalized guidance tailored to your specific life situation and questions."
+          }
+        ]}
+      />
     </div>
   );
 }

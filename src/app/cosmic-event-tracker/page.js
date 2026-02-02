@@ -30,7 +30,7 @@
  * @module CosmicEventTracker
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { nasaAPI } from "@/lib/nasaAPI";
 import {
@@ -50,6 +50,7 @@ import {
   Star,
 } from "lucide-react";
 import { PageLoading } from "@/components/LoadingStates";
+import PageSEO from "@/components/PageSEO";
 import "./cosmic-event-tracker.css";
 
 /**
@@ -261,6 +262,104 @@ export default function CosmicEventTracker() {
     )}`;
   };
 
+      /* ---------- ACCORDION SECTION ---------- */
+    const Section = ({ title, content, children }) => {
+      const [open, setOpen] = useState(false);
+  
+      return (
+        <div
+          style={{
+            marginBottom: "1.25rem",
+            border: "1px solid rgba(212, 175, 55, 0.25)",
+            borderRadius: "1rem",
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+            overflow: "hidden",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {/* HEADER */}
+          <button
+            onClick={() => setOpen(!open)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "1rem 1.25rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <h2
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
+  
+            <span
+              style={{
+                fontSize: "1.25rem",
+                color: "#b45309",
+                transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                transition: "transform 0.25s ease",
+              }}
+            >
+              +
+            </span>
+          </button>
+  
+          {/* CONTENT */}
+          {open && (
+            <div
+              style={{
+                padding: "0 1.25rem 1.25rem",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.7,
+                  marginBottom: "0.75rem",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {children}
+              </p>
+  
+              <ul
+                style={{
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.8,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {content.map((item, i) => (
+                  <li key={i}>✔ {item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    };  
+
   // Initial loading state
   if (loading && neoData.length === 0) {
     return <PageLoading type="cosmic" message="Scanning the cosmos for celestial visitors..." />;
@@ -342,48 +441,110 @@ export default function CosmicEventTracker() {
         </div>
       </div>
 
-      {/* Observation Period Card – Date range and stats */}
-      <div className="card period-card">
-        <div className="period-header">
-          <Calendar className="period-icon" />
-          <h2 className="section-title">Current Observation Period</h2>
-        </div>
-        <div className="period-content">
-          <p className="period-date-range">{formatDateRange()}</p>
-          <div className="period-stats">
-            <button className="stat-chip" type="button">
-              <div className="stat-icon-wrap">
-                <Rocket size={16} />
-              </div>
-              <div className="stat-text">
-                <span className="stat-value">{displayedNEOs.length}</span>
-                <span className="stat-label">
-                  Object{displayedNEOs.length !== 1 ? "s" : ""} Detected
-                </span>
-              </div>
-            </button>
-            <button
-              className={`stat-chip ${hazardousOnly ? "chip-active" : ""}`}
-              type="button"
-              onClick={() => setHazardousOnly(!hazardousOnly)}
-              title="Toggle hazardous-only filter"
-            >
-              <div className="stat-icon-wrap warning">
-                <AlertTriangle size={16} />
-              </div>
-              <div className="stat-text">
-                <span className="stat-value">
-                  {
-                    displayedNEOs.filter((neo) => neo.isPotentiallyHazardous)
-                      .length
-                  }
-                </span>
-                <span className="stat-label">Potentially Hazardous</span>
-              </div>
-            </button>
-          </div>
-        </div>
+{/* Observation Period – Modern Grid (Theme Preserved) */}
+
+  <h2 className="section-title mt-10">
+      Current Observation Period
+    </h2>
+<div className="card period-card">
+  {/* Header */}
+
+
+  <div className="text-center">
+    
+
+    <div className="flex items-center justify-center gap-4 mt-3">
+      <div className="h-px w-10 bg-border-muted" />
+      <p className="period-date-range font-medium">
+        {formatDateRange()}
+      </p>
+      <div className="h-px w-10 bg-border-muted" />
+    </div>
+  </div>
+
+  {/* Stats Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-0 overflow-hidden rounded-xl border border-card-border">
+    
+    {/* Inventory */}
+    <div className="p-6 border-b md:border-b-0 md:border-r border-card-border">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Inventory
+        </span>
+        <Rocket size={18} className="text-accent period-icon" />
       </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {displayedNEOs.length}
+        </span>
+        <span className="w-2 h-2 rounded-full bg-accent mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Celestial Objects</p>
+      <p className="text-xs text-muted mt-1">
+        Identified in this period
+      </p>
+    </div>
+
+    {/* Alignment (Non-interactive placeholder metric) */}
+    <div className="p-6 border-b md:border-b-0 md:border-r border-card-border">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Alignment
+        </span>
+        <Calendar size={18} className="text-accent period-icon" />
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {displayedNEOs.length - 
+            displayedNEOs.filter(n => n.isPotentiallyHazardous).length}
+        </span>
+        <span className="w-2 h-2 rounded-full bg-success mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Stable Objects</p>
+      <p className="text-xs text-muted mt-1">
+        No immediate threat vectors
+      </p>
+    </div>
+
+    {/* Risk Matrix (Interactive) */}
+    <button
+      type="button"
+      onClick={() => setHazardousOnly(!hazardousOnly)}
+      className={`p-6 text-left transition-colors
+        ${hazardousOnly ? "bg-chip-active" : ""}
+      `}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm text-muted">
+          Risk Matrix
+        </span>
+        <AlertTriangle size={18} className="text-warning period-icon" />
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-5xl font-light">
+          {
+            displayedNEOs.filter(
+              neo => neo.isPotentiallyHazardous
+            ).length
+          }
+        </span>
+        <span className="w-2 h-2 rounded-full bg-warning animate-pulse mb-2" />
+      </div>
+
+      <p className="text-sm mt-2">Potentially Hazardous</p>
+      <p className="text-xs text-muted mt-1">
+        Click to filter high-risk objects
+      </p>
+    </button>
+
+  </div>
+</div>
+
 
       {/* Error Alert */}
       {error && (
@@ -506,7 +667,7 @@ export default function CosmicEventTracker() {
         <button
           onClick={loadNextWeek}
           disabled={loading}
-          className="btn btn-gold btn-lg"
+          className="btn btn-primary"
         >
           {loading ? (
             <>
@@ -621,14 +782,14 @@ export default function CosmicEventTracker() {
                   href={detailsModalNEO.nasa_jpl_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-gold btn-lg"
+                  className="btn-primary"
                 >
                   <span>View on NASA JPL</span>
                   <ExternalLink size={18} />
                 </a>
                 <button
                   onClick={closeDetailsModal}
-                  className="btn btn-secondary btn-lg"
+                  className="btn btn-secondary"
                 >
                   Close
                 </button>
@@ -637,6 +798,138 @@ export default function CosmicEventTracker() {
           </div>
         </div>
       )}
+
+<div className="card shadow-xl border mt-16">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+      }}
+    >
+      Planetary Transits in Astrology – Understand Their Impact on Your Life
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      Planetary transits influence major life events. Our analysis focuses on
+      <strong> your kundli</strong>, not generic predictions.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Check Current Planetary Transits</button>
+    </div>
+  </div>
+
+<Section
+  title="What Are Planetary Transits"
+  content={[
+    "Saturn (Shani) transit and long-term life lessons",
+    "Jupiter (Guru) transit and growth opportunities",
+    "Rahu–Ketu transit and karmic shifts",
+    "Retrogrades, conjunctions, and planetary aspects",
+  ]}
+>
+  Planetary transits occur when planets move through different zodiac signs and
+  houses in the sky. As they move, they activate specific areas of life shown in
+  your birth chart, such as career, relationships, health, or finances.
+
+  Some transits bring expansion and clarity, while others slow things down and
+  demand patience. Major planets like Saturn and Jupiter tend to influence life
+  over longer periods, while faster-moving planets can trigger short-term
+  changes and emotional responses.
+</Section>
+
+<Section
+  title="How Transits Affect You Personally"
+  content={[
+    "Planetary positions in your kundli",
+    "Running dasha and sub-dasha periods",
+    "Strength, weakness, and dignity of planets",
+  ]}
+>
+  A transit does not affect everyone in the same way. Two people experiencing
+  the same planetary movement can have completely different outcomes.
+
+  The actual impact depends on how the transiting planet interacts with your
+  birth chart, which house it activates, and which planetary periods you are
+  currently running. This is why personal analysis matters far more than general
+  transit predictions.
+</Section>
+
+<Section
+  title="AI-Based Transit Analysis"
+  content={[
+    "Live and accurate planetary tracking",
+    "Transit interaction with kundli placements",
+    "Identification of sensitive and supportive phases",
+    "Practical preparedness guidance",
+  ]}
+>
+  Our AI system continuously tracks planetary movements and compares them with
+  your birth chart. Instead of broad predictions, it highlights how specific
+  transits interact with your planets, houses, and running dashas.
+
+  This helps you understand not just what is happening in the sky, but how those
+  movements translate into personal experiences, challenges, and opportunities
+  in real life.
+</Section>
+
+<Section
+  title="Use Transits for Better Timing"
+  content={[
+    "Plan important decisions with awareness",
+    "Avoid unnecessary pressure during difficult phases",
+    "Make better use of supportive planetary periods",
+  ]}
+>
+  Transit awareness allows you to work with time rather than struggle against
+  it. Knowing when to push forward, pause, or reflect can reduce stress and help
+  you make more balanced decisions.
+
+  Transits do not force outcomes, but they indicate periods when effort flows
+  more easily or requires extra patience. Understanding these rhythms helps you
+  stay prepared and grounded through change.
+</Section>
+
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Astrology offers guidance, not guaranteed outcomes.
+  </p>
+</div>
+
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="cosmic-event-tracker"
+        faqs={[
+          {
+            question: "What Are Planetary Transits",
+            answer: "Planetary transits occur when planets move through different zodiac signs and houses in the sky. As they move, they activate specific areas of life shown in your birth chart, such as career, relationships, health, or finances. Some transits bring expansion and clarity, while others slow things down and demand patience. Major planets like Saturn and Jupiter tend to influence life over longer periods, while faster-moving planets can trigger short-term changes and emotional responses."
+          },
+          {
+            question: "How Transits Affect You Personally",
+            answer: "A transit does not affect everyone in the same way. Two people experiencing the same planetary movement can have completely different outcomes. The actual impact depends on how the transiting planet interacts with your birth chart, which house it activates, and which planetary periods you are currently running. This is why personal analysis matters far more than general transit predictions."
+          },
+          {
+            question: "AI-Based Transit Analysis",
+            answer: "Our AI system continuously tracks planetary movements and compares them with your birth chart. Instead of broad predictions, it highlights how specific transits interact with your planets, houses, and running dashas. This helps you understand not just what is happening in the sky, but how those movements translate into personal experiences, challenges, and opportunities in real life."
+          },
+          {
+            question: "Use Transits for Better Timing",
+            answer: "Transit awareness allows you to work with time rather than struggle against it. Knowing when to push forward, pause, or reflect can reduce stress and help you make more balanced decisions. Transits do not force outcomes, but they indicate periods when effort flows more easily or requires extra patience. Understanding these rhythms helps you stay prepared and grounded through change."
+          }
+        ]}
+      />
     </div>
   );
 }

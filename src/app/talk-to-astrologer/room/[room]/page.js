@@ -730,6 +730,8 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
     alignItems: "stretch",
     justifyContent: "stretch",
     position: "relative",
+    minHeight: 0,
+    maxHeight: "100%",
   };
 
   // Main expanded video style
@@ -838,106 +840,68 @@ function CustomVideoGrid({ room, onMuteToggle, onVideoToggle, isMuted, isVideoEn
   );
 }
 
-// Chat Component for Video Call
-function VideoCallChat({ room, localParticipant }) {
+// Chat Component for Video Call - with Firestore persistence
+function VideoCallChat({ room, localParticipant, callId, onClose, onMouseDown, isDragging }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const userRole = localStorage.getItem("tgs:role") || "user";
+  const userName = localStorage.getItem("tgs:name") || (userRole === "astrologer" ? "Astrologer" : "User");
   const isAstrologer = userRole === "astrologer";
 
-  // Listen for incoming messages via room events
+  // Get Firebase auth UID
   useEffect(() => {
-    // Try to get room from localParticipant if not available in prop
-    const currentRoom = room || localParticipant?.room;
-    
-    if (!currentRoom) {
-      console.log("❌ Chat: Room not available yet");
-      return;
-    }
-
-    if (!localParticipant) {
-      console.log("❌ Chat: Local participant not available yet");
-      return;
-    }
-
-    console.log("✅ Chat: Setting up message listener", {
-      roomName: currentRoom.name,
-      roomState: currentRoom.state,
-      localIdentity: localParticipant.identity,
-      remoteParticipants: currentRoom.remoteParticipants?.size || 0
-    });
-
-    const handleDataReceived = (payload, participant, kind) => {
-      console.log("📨 Chat: Raw data received", {
-        kind,
-        fromParticipant: participant?.identity,
-        payloadSize: payload?.length
-      });
-      
-      try {
-        const decoder = new TextDecoder();
-        const text = decoder.decode(payload);
-        const data = JSON.parse(text);
-        
-        console.log("📦 Chat: Parsed data", data);
-        
-        // Handle call-ended signal
-        if (data.type === "call-ended") {
-          console.log("📞 Received call-ended signal from other party");
-          return;
-        }
-        
-        // Handle chat messages
-        if (data.type === "chat" && data.message) {
-          const isFromMe = participant?.identity === localParticipant.identity;
-          
-          console.log("💬 Chat: Message received", {
-            message: data.message,
-            sender: data.sender,
-            fromParticipant: participant?.identity,
-            isFromMe,
-            localIdentity: localParticipant.identity
-          });
-          
-          // Only add if not from me (we already added it locally)
-          if (!isFromMe) {
-            console.log("✅ Adding received message to chat");
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now() + Math.random(),
-                text: data.message,
-                sender: data.sender || participant?.name || (participant?.identity?.includes("astrologer") ? "Astrologer" : "User"),
-                isUser: false,
-                timestamp: new Date(),
-              },
-            ]);
-          } else {
-            console.log("⏭️ Skipping own message (already added locally)");
+    import('@/lib/firebase').then(({ auth }) => {
+      if (auth && auth.currentUser) {
+        setCurrentUserId(auth.currentUser.uid);
+      } else {
+        // Wait for auth state
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) {
+            setCurrentUserId(user.uid);
           }
-        }
-      } catch (error) {
-        console.error("❌ Chat: Error parsing data message:", error);
+        });
+        return () => unsubscribe();
       }
-    };
+    });
+  }, []);
 
-    // Add listener regardless of connection state - it will work once connected
-    currentRoom.on(RoomEvent.DataReceived, handleDataReceived);
-    console.log("✅ Chat: Message listener attached to room");
+  // Subscribe to Firestore messages for persistence
+  useEffect(() => {
+    if (!callId || !currentUserId) {
+      console.log("❌ Chat: No callId or userId available yet");
+      return;
+    }
+
+    console.log("✅ Chat: Subscribing to Firestore messages for callId:", callId);
     
-    // Also listen for connection to ensure it's set up
-    const handleConnected = () => {
-      console.log("✅ Chat: Room connected");
-    };
-    currentRoom.on(RoomEvent.Connected, handleConnected);
+    // Import the message service
+    import('@/lib/callMessages').then(({ subscribeToMessages }) => {
+      const unsubscribe = subscribeToMessages(callId, (firestoreMessages) => {
+        const formatted = firestoreMessages.map(msg => ({
+          id: msg.id,
+          text: msg.message,
+          sender: msg.senderName,
+          isUser: msg.senderId === currentUserId,
+          timestamp: msg.timestamp,
+          read: msg.read,
+        }));
+        setMessages(formatted);
+      });
 
-    return () => {
-      console.log("🔌 Chat: Cleaning up listeners");
-      currentRoom.off(RoomEvent.DataReceived, handleDataReceived);
-      currentRoom.off(RoomEvent.Connected, handleConnected);
-    };
-  }, [room, localParticipant]);
+      return () => unsubscribe();
+    });
+  }, [callId, currentUserId]);
+
+  // Mark messages as read when component mounts (chat is open)
+  useEffect(() => {
+    if (!callId || !currentUserId) return;
+
+    import('@/lib/callMessages').then(({ markMessagesAsRead }) => {
+      markMessagesAsRead(callId, currentUserId);
+    });
+  }, [callId, currentUserId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -953,65 +917,27 @@ function VideoCallChat({ room, localParticipant }) {
       return;
     }
     
-    // Try to get room from localParticipant if not available in prop
-    const currentRoom = room || localParticipant?.room;
-    
-    if (!currentRoom) {
-      console.error("❌ Chat: Room not available for sending message");
-      alert("Chat not connected. Please wait a moment and try again.");
-      return;
-    }
-    
-    if (!localParticipant) {
-      console.error("❌ Chat: Local participant not available for sending message");
-      alert("Chat not connected. Please wait a moment and try again.");
+    if (!callId) {
+      console.error("❌ Chat: No callId available");
+      alert("Chat not ready. Please wait a moment and try again.");
       return;
     }
 
-    // Check room connection state
-    if (currentRoom.state !== "connected") {
-      console.error("❌ Chat: Room not connected, state:", currentRoom.state);
-      alert("Chat connecting... Please wait and try again.");
+    if (!currentUserId) {
+      console.error("❌ Chat: User not authenticated");
+      alert("Please sign in to send messages.");
       return;
     }
-
-    const messageData = {
-      type: "chat",
-      message: input.trim(),
-      sender: isAstrologer ? "Astrologer" : "User",
-    };
 
     try {
-      console.log("📤 Chat: Sending message", {
-        message: messageData.message,
-        sender: messageData.sender,
-        roomState: currentRoom.state,
-        localIdentity: localParticipant.identity,
-        remoteParticipants: currentRoom.remoteParticipants?.size || 0
-      });
+      console.log("📤 Chat: Sending message via Firestore");
 
-      const encoder = new TextEncoder();
-      const data = encoder.encode(JSON.stringify(messageData));
-      
-      // Use localParticipant directly (from hook, not room.localParticipant)
-      await localParticipant.publishData(data, { reliable: true });
-      
-      console.log("✅ Chat: Data published successfully");
-      
-      // Add message to local state immediately for better UX
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(),
-          text: input.trim(),
-          sender: messageData.sender,
-          isUser: true,
-          timestamp: new Date(),
-        },
-      ]);
+      // Import and use the message service
+      const { sendMessage } = await import('@/lib/callMessages');
+      await sendMessage(callId, currentUserId, userName, input.trim(), isAstrologer);
       
       setInput("");
-      console.log("✅ Chat: Message sent and added to local state");
+      console.log("✅ Chat: Message sent successfully");
     } catch (error) {
       console.error("❌ Chat: Error sending message:", error);
       alert("Failed to send message. Please try again.");
@@ -1041,6 +967,7 @@ function VideoCallChat({ room, localParticipant }) {
       }}
     >
       <div
+        onMouseDown={onMouseDown}
         style={{
           padding: "1rem",
           borderBottom: "2px solid rgba(212, 175, 55, 0.2)",
@@ -1048,11 +975,14 @@ function VideoCallChat({ room, localParticipant }) {
           justifyContent: "space-between",
           alignItems: "center",
           background: "linear-gradient(135deg, #d4af37 0%, #b8972e 100%)",
+          cursor: isDragging ? "grabbing" : "grab",
+          userSelect: "none",
         }}
       >
-        <h3 style={{ color: "white", margin: 0, fontSize: "1rem", fontWeight: 700, fontFamily: "'Georgia', serif" }}>Chat</h3>
+        <h3 style={{ color: "white", margin: 0, fontSize: "1rem", fontWeight: 700, fontFamily: "'Georgia', serif", pointerEvents: "none" }}>Chat</h3>
         <button
-          onClick={() => {/* Close chat handled by parent */}}
+          onClick={onClose}
+          onMouseDown={(e) => e.stopPropagation()} // Prevent dragging when clicking close
           style={{
             background: "rgba(255, 255, 255, 0.2)",
             border: "none",
@@ -1380,26 +1310,98 @@ function CustomVideoGridWrapper({ room, onMuteToggle, onVideoToggle, isMuted, is
   return <CustomVideoGrid room={room} onMuteToggle={onMuteToggle} onVideoToggle={onVideoToggle} isMuted={isMuted} isVideoEnabled={isVideoEnabled} />;
 }
 
-// Chat Wrapper
-function VideoCallChatWrapper({ showChat, setShowChat }) {
+// Chat Wrapper - Draggable
+function VideoCallChatWrapper({ showChat, setShowChat, callId }) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext(); // FIXED: Use useRoomContext hook to get room instance
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const chatRef = useRef(null);
   
   if (!showChat) return null;
   
+  const handleClose = () => {
+    setShowChat(false);
+  };
+
+  // Initialize position on first render
+  useEffect(() => {
+    if (showChat && position.x === 0 && position.y === 0) {
+      // Position chat window in bottom-right corner initially, but higher up
+      const initialX = window.innerWidth - 340; // 320px width + 20px margin
+      const initialY = window.innerHeight - 600; // Position higher up (was 520, now 600)
+      setPosition({ x: initialX, y: initialY });
+    }
+  }, [showChat]);
+
+  // Handle mouse down for dragging
+  const handleMouseDown = (e) => {
+    if (!chatRef.current) return;
+    const rect = chatRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+    setIsDragging(true);
+  };
+
+  // Handle mouse move for dragging
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      
+      // Constrain to viewport bounds
+      const maxX = window.innerWidth - 320;
+      const maxY = window.innerHeight - 500;
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(64, Math.min(newY, maxY)), // 64px for navigation bar
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset]);
+  
   // Always render chat, even if room/participant not ready yet (it will connect when ready)
   return (
-    <div style={{ 
-      position: "fixed", 
-      right: "1rem", 
-      top: "4rem", 
-      width: "320px", 
-      height: "calc(100vh - 8rem)",
-      maxHeight: "500px",
-      zIndex: 2000,
-      pointerEvents: "auto",
-    }}>
-      <VideoCallChat room={room} localParticipant={localParticipant} />
+    <div 
+      ref={chatRef}
+      style={{ 
+        position: "fixed", 
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: "320px", 
+        height: "500px",
+        maxHeight: "500px",
+        zIndex: 2000,
+        pointerEvents: "auto",
+        cursor: isDragging ? "grabbing" : "default",
+      }}
+    >
+      <VideoCallChat 
+        room={room} 
+        localParticipant={localParticipant} 
+        callId={callId}
+        onClose={handleClose}
+        onMouseDown={handleMouseDown}
+        isDragging={isDragging}
+      />
     </div>
   );
 }
@@ -1419,13 +1421,26 @@ export default function VideoCallRoom() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const roomRef = useRef(null);
   const callIdRef = useRef(null);
   const isDisconnectingRef = useRef(false);
   const firebaseUnsubscribeRef = useRef(null);
   const mediaTracksRef = useRef([]);
   const controlHandlersRef = useRef({ handleToggleMute: null, handleToggleVideo: null });
+  const unreadUnsubscribeRef = useRef(null);
+
+  // Detect mobile for responsive layout
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const initializeRoom = async () => {
@@ -1502,6 +1517,16 @@ export default function VideoCallRoom() {
     initializeRoom();
   }, [params.room]);
 
+  // Prevent body scrolling when video call is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   // Firebase real-time listener for call state, duration, and billing
   useEffect(() => {
     const callId = callIdRef.current ||
@@ -1549,6 +1574,56 @@ export default function VideoCallRoom() {
       }
     };
   }, [params.room]); // Re-run when room changes
+
+  // Get Firebase auth UID for unread count
+  const [currentUserId, setCurrentUserId] = useState(null);
+  
+  useEffect(() => {
+    import('@/lib/firebase').then(({ auth }) => {
+      if (auth && auth.currentUser) {
+        setCurrentUserId(auth.currentUser.uid);
+      } else {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) {
+            setCurrentUserId(user.uid);
+          }
+        });
+        return () => unsubscribe();
+      }
+    });
+  }, []);
+
+  // Subscribe to unread messages for notification badge
+  useEffect(() => {
+    const callId = callIdRef.current ||
+      localStorage.getItem("tgs:currentCallId") ||
+      localStorage.getItem("tgs:callId");
+
+    if (!callId || !currentUserId) return;
+
+    // Subscribe to unread count
+    import('@/lib/callMessages').then(({ subscribeToUnreadCount }) => {
+      const unsubscribe = subscribeToUnreadCount(callId, currentUserId, (count) => {
+        setUnreadCount(count);
+      });
+      
+      unreadUnsubscribeRef.current = unsubscribe;
+    });
+
+    return () => {
+      if (unreadUnsubscribeRef.current) {
+        unreadUnsubscribeRef.current();
+        unreadUnsubscribeRef.current = null;
+      }
+    };
+  }, [params.room, currentUserId]);
+
+  // Clear unread count when chat is opened
+  useEffect(() => {
+    if (showChat) {
+      setUnreadCount(0);
+    }
+  }, [showChat]);
 
   // Track participant join for state management (not billing)
   useEffect(() => {
@@ -2329,134 +2404,36 @@ export default function VideoCallRoom() {
         height: "100vh",
         background: "linear-gradient(135deg, #fef9e7 0%, #fdf2d0 50%, #fef9e7 100%)",
         overflow: "hidden",
-        position: "relative",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: "flex",
         flexDirection: "column",
+        zIndex: 997, // Below navigation (999) and duration header (998)
       }}
     >
-      {/* Minimal Header - Zoom/Google Meet Style */}
-      <header
-        className="video-call-header"
-        style={{
-          background: "linear-gradient(135deg, rgba(244, 208, 63, 0.95) 0%, rgba(212, 175, 55, 0.95) 50%, rgba(184, 151, 46, 0.95) 100%)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          padding: "0.5rem 1rem",
-          position: "relative",
-          zIndex: 10,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "3px solid rgba(212, 175, 55, 0.6)",
-          boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <button
-            onClick={handleForceExit}
-            disabled={isDisconnecting}
-            className="btn btn-ghost video-call-back-btn"
-            style={{
-              color: "#1f2937",
-              border: "2px solid rgba(212, 175, 55, 0.5)",
-              background: "rgba(255, 255, 255, 0.9)",
-              cursor: isDisconnecting ? "not-allowed" : "pointer",
-              opacity: isDisconnecting ? 0.6 : 1,
-              padding: "0.5rem",
-              minWidth: "44px",
-              minHeight: "44px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "0.5rem",
-              transition: "all 0.15s ease",
-              boxShadow: "0 2px 4px rgba(212, 175, 55, 0.2)",
-            }}
-            onMouseEnter={(e) => {
-              if (!isDisconnecting) {
-                e.currentTarget.style.background = "rgba(244, 208, 63, 0.2)";
-                e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.8)";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isDisconnecting) {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
-                e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.5)";
-                e.currentTarget.style.transform = "scale(1)";
-              }
-            }}
-          >
-            <ArrowLeft style={{ width: "1.25rem", height: "1.25rem" }} />
-          </button>
-          <div>
-            <p
-              className="video-call-duration"
-              style={{
-                color: "#1f2937",
-                fontSize: "0.875rem",
-                margin: 0,
-                fontWeight: 600,
-                fontFamily: "'Georgia', serif",
-              }}
-            >
-              {formatDuration(callDuration)}
-            </p>
-          </div>
-        </div>
 
-        <div
-          className="video-call-header-right"
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-          }}
-        >
-          <div
-            className="video-call-live-badge"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.25rem 0.75rem",
-              background: "linear-gradient(135deg, #d4af37 0%, #b8972e 100%)",
-              borderRadius: "var(--radius-full)",
-              flexShrink: 0,
-              boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
-            }}
-          >
-            <div
-              style={{
-                width: "0.5rem",
-                height: "0.5rem",
-                borderRadius: "50%",
-                background: "white",
-                boxShadow: "0 0 8px rgba(255, 255, 255, 0.8)",
-                animation: "pulse 2s infinite",
-              }}
-            ></div>
-            <span
-              className="video-call-live-text"
-              style={{ fontSize: "0.75rem", color: "white", fontWeight: 600 }}
-            >
-              LIVE
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Video Conference Area - Full Screen */}
+      {/* Video Conference Area - Fixed between navigation and footer */}
       <div
         className="video-call-main-content"
         style={{
-          flex: 1,
-          height: "calc(100vh - 80px)", // Reduced header height
-          position: "relative",
-          minHeight: 0,
+          position: "fixed",
+          top: "64px", // Navigation bar height
+          bottom: isMobile ? "100px" : "90px", // Footer height (responsive, mobile footer might be taller)
+          left: 0,
+          right: 0,
           overflow: "hidden",
           background: "linear-gradient(135deg, #fef9e7 0%, #fdf2d0 50%, #fef9e7 100%)",
           width: "100%",
+          height: isMobile 
+            ? "calc(100vh - 64px - 100px)" // Full height minus nav and footer
+            : "calc(100vh - 64px - 90px)", // Full height minus nav and footer
+          minHeight: 0,
+          maxHeight: isMobile 
+            ? "calc(100vh - 64px - 100px)" 
+            : "calc(100vh - 64px - 90px)",
         }}
       >
         {!token || !wsUrl ? (
@@ -2617,7 +2594,7 @@ export default function VideoCallRoom() {
               },
             },
           }}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: "100%", width: "100%", overflow: "hidden" }}
         >
           <ErrorBoundary>
             {/* Room Capture - Fallback to get room from context if onConnected didn't provide it */}
@@ -2631,7 +2608,7 @@ export default function VideoCallRoom() {
               }
             }} />
             {isRoomReady ? (
-              <>
+              <div style={{ height: "100%", width: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 {/* Control Buttons Provider - Uses hooks inside LiveKitRoom */}
                 <VideoCallControlButtonsProvider
                   onHandlersReady={(handlers) => {
@@ -2642,21 +2619,24 @@ export default function VideoCallRoom() {
                     setIsVideoEnabled(videoEnabled);
                   }}
                 />
-                <CustomVideoGridWrapper
-                  room={roomRef.current || room}
-                  onMuteToggle={handleToggleMute}
-                  onVideoToggle={handleToggleVideo}
-                  isMuted={isMuted}
-                  isVideoEnabled={isVideoEnabled}
-                />
+                <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+                  <CustomVideoGridWrapper
+                    room={roomRef.current || room}
+                    onMuteToggle={handleToggleMute}
+                    onVideoToggle={handleToggleVideo}
+                    isMuted={isMuted}
+                    isVideoEnabled={isVideoEnabled}
+                  />
+                </div>
                 {/* Chat Overlay - Inside LiveKitRoom to access hooks */}
                 {showChat && (
                   <VideoCallChatWrapper 
                     showChat={showChat}
                     setShowChat={setShowChat}
+                    callId={callIdRef.current}
                   />
                 )}
-              </>
+              </div>
             ) : (
               <div style={{
                 display: "flex",
@@ -2676,7 +2656,7 @@ export default function VideoCallRoom() {
         )}
       </div>
 
-      {/* Bottom Control Bar - Zoom/Google Meet Style */}
+      {/* Bottom Control Bar - Zoom/Google Meet Style - Fixed at Bottom */}
       <div
         style={{
           position: "fixed",
@@ -2686,15 +2666,35 @@ export default function VideoCallRoom() {
           background: "linear-gradient(135deg, rgba(244, 208, 63, 0.95) 0%, rgba(212, 175, 55, 0.95) 50%, rgba(184, 151, 46, 0.95) 100%)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          padding: "1rem",
+          padding: isMobile ? "0.75rem" : "1rem",
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
           alignItems: "center",
           zIndex: 1000,
           borderTop: "3px solid rgba(212, 175, 55, 0.6)",
           boxShadow: "0 -4px 12px rgba(212, 175, 55, 0.3)",
+          flexShrink: 0,
+          minHeight: isMobile ? "100px" : "90px",
+          maxHeight: isMobile ? "100px" : "90px",
         }}
       >
+        {/* Duration on Left */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <p
+            className="video-call-duration"
+            style={{
+              color: "#1f2937",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              margin: 0,
+              fontWeight: 600,
+              fontFamily: "'Georgia', serif",
+            }}
+          >
+            {formatDuration(callDuration)}
+          </p>
+        </div>
+
+        {/* Control Buttons in Center */}
         <div
           style={{
             display: "flex",
@@ -2703,6 +2703,7 @@ export default function VideoCallRoom() {
             flexWrap: "wrap",
             justifyContent: "center",
             maxWidth: "100%",
+            flex: 1,
           }}
         >
           {/* Mute/Unmute Button */}
@@ -2828,6 +2829,7 @@ export default function VideoCallRoom() {
               cursor: "pointer",
               transition: "all 0.15s ease",
               boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
+              position: "relative",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "scale(1.1)";
@@ -2840,6 +2842,28 @@ export default function VideoCallRoom() {
             type="button"
           >
             <MessageSquare style={{ width: "1.5rem", height: "1.5rem" }} />
+            {/* Unread Message Badge */}
+            {unreadCount > 0 && !showChat && (
+              <div style={{
+                position: "absolute",
+                top: "-4px",
+                right: "-4px",
+                background: "#ef4444",
+                color: "white",
+                borderRadius: "50%",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+                fontWeight: "bold",
+                border: "2px solid white",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
           </button>
 
           {/* End Call Button - Red, Prominent */}
@@ -2867,6 +2891,38 @@ export default function VideoCallRoom() {
               <PhoneOff style={{ width: "1.5rem", height: "1.5rem" }} />
             )}
           </button>
+        </div>
+
+        {/* LIVE Badge on Right */}
+        <div
+          className="video-call-live-badge"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.25rem 0.75rem",
+            background: "linear-gradient(135deg, #d4af37 0%, #b8972e 100%)",
+            borderRadius: "var(--radius-full)",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(212, 175, 55, 0.3)",
+          }}
+        >
+          <div
+            style={{
+              width: "0.5rem",
+              height: "0.5rem",
+              borderRadius: "50%",
+              background: "white",
+              boxShadow: "0 0 8px rgba(255, 255, 255, 0.8)",
+              animation: "pulse 2s infinite",
+            }}
+          ></div>
+          <span
+            className="video-call-live-text"
+            style={{ fontSize: "0.75rem", color: "white", fontWeight: 600 }}
+          >
+            LIVE
+          </span>
         </div>
       </div>
 

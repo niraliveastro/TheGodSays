@@ -1,28 +1,30 @@
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
 
 export const metadata = {
-  title: "Daily Astrological Predictions - Personalized Horoscope Predictions",
-  description: "Get personalized daily, weekly, and monthly astrological predictions based on your birth chart. Understand what the planets have in store for you with accurate Vedic astrology predictions for all aspects of life.",
+  title: "AI Kundli Prediction | Personalized Astrology & Life Timeline",
+  description: "Get AI‑powered kundli predictions for career, marriage & future phases. Chat with AI or consult astrologers anytime.",
   keywords: [
-    "astrology predictions",
+    "kundli prediction",
+    "AI astrology",
+    "astrology prediction",
+    "AI kundli prediction",
+    "astrological predictions",
     "daily predictions",
     "weekly predictions",
     "monthly predictions",
     "horoscope predictions",
-    "astrological forecast",
-    "vedic predictions",
-    "future predictions",
-    "astrology forecast"
+    "vedic predictions"
   ],
   openGraph: {
-    title: "Daily Astrological Predictions - Personalized Forecasts | NiraLive Astro",
-    description: "Get personalized daily, weekly, and monthly astrological predictions based on your birth chart with accurate Vedic astrology.",
+    title: "AI Kundli Prediction | Personalized Astrology & Life Timeline",
+    description: "Get AI‑powered kundli predictions for career, marriage & future phases. Chat with AI or consult astrologers anytime.",
     url: `${SITE_URL}/predictions`,
     type: "website",
   },
   twitter: {
-    title: "Daily Astrological Predictions - Personalized Forecasts | NiraLive Astro",
-    description: "Get personalized daily, weekly, and monthly astrological predictions based on your birth chart.",
+    card: "summary_large_image",
+    title: "AI Kundli Prediction | Personalized Astrology & Life Timeline",
+    description: "Get AI‑powered kundli predictions for career, marriage & future phases. Chat with AI or consult astrologers anytime.",
   },
   alternates: {
     canonical: `${SITE_URL}/predictions`,

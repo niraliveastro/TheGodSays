@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Calculator, User, Calendar, Save, Trash2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import PageSEO from "@/components/PageSEO";
 import "./numerology.css";
 
 /**
@@ -34,7 +35,7 @@ import "./numerology.css";
  */
 export default function NumerologyPage() {
   const { t } = useTranslation();
-  
+
   // Form input states
   const [fullName, setFullName] = useState(""); // User's full birth name for letter-based calculations
   const [birthDate, setBirthDate] = useState(""); // Birth date (YYYY-MM-DD) for Life Path and Mulank
@@ -296,7 +297,7 @@ export default function NumerologyPage() {
     return reduceNumber(
       reduceLifePathComponent(month) +
         reduceLifePathComponent(day) +
-        reduceLifePathComponent(year)
+        reduceLifePathComponent(year),
     );
   };
 
@@ -440,14 +441,14 @@ export default function NumerologyPage() {
     let currentHistory = getHistory();
     const key = `${result.name.toUpperCase()}-${result.dob}`;
     currentHistory = currentHistory.filter(
-      (item) => `${item.name.toUpperCase()}-${item.dob}` !== key
+      (item) => `${item.name.toUpperCase()}-${item.dob}` !== key,
     );
     currentHistory.unshift(result);
     if (currentHistory.length > 10)
       currentHistory = currentHistory.slice(0, 10);
     localStorage.setItem(
       NUMEROLOGY_HISTORY_KEY,
-      JSON.stringify(currentHistory)
+      JSON.stringify(currentHistory),
     );
     setHistory(currentHistory);
   };
@@ -518,8 +519,109 @@ export default function NumerologyPage() {
     );
   };
 
+      /* ---------- ACCORDION SECTION ---------- */
+    const Section = ({ title, content, children }) => {
+      const [open, setOpen] = useState(false);
+  
+      return (
+        <div
+          style={{
+            marginBottom: "1.25rem",
+            border: "1px solid rgba(212, 175, 55, 0.25)",
+            borderRadius: "1rem",
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9))",
+            overflow: "hidden",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {/* HEADER */}
+          <button
+            onClick={() => setOpen(!open)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "1rem 1.25rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <h2
+  className="
+    font-serif
+    text-base sm:text-lg
+    font-medium
+    text-gray-800
+    m-0
+  "
+  style={{
+    fontFamily: "'Georgia','Times New Roman',serif",
+  }}
+>
+  {title}
+</h2>
+
+  
+            <span
+              style={{
+                fontSize: "1.25rem",
+                color: "#b45309",
+                transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                transition: "transform 0.25s ease",
+              }}
+            >
+              +
+            </span>
+          </button>
+  
+          {/* CONTENT */}
+          {open && (
+            <div
+              style={{
+                padding: "0 1.25rem 1.25rem",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.7,
+                  marginBottom: "0.75rem",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {children}
+              </p>
+  
+              <ul
+                style={{
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  color: "#374151",
+                  lineHeight: 1.8,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {content.map((item, i) => (
+                  <li key={i}>✔ {item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    };  
+
   return (
-    <div className="numerology-container" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+    <div
+      className="numerology-container"
+      style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+    >
       <div className="app">
         {/* Orbs */}
         <div
@@ -536,11 +638,12 @@ export default function NumerologyPage() {
         </div>
 
         {/* Header */}
-        <header className="header" style={{ paddingTop: '0.01rem', marginTop: '0.01rem' }}>
+        <header
+          className="header"
+          style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+        >
           <h1 className="title">{t.numerology.title}</h1>
-          <p className="subtitle">
-            {t.numerology.subtitle}
-          </p>
+          <p className="subtitle">{t.numerology.subtitle}</p>
         </header>
 
         {/* Two Column Layout */}
@@ -555,7 +658,9 @@ export default function NumerologyPage() {
                     <Calculator className="w-7 h-7 text-white" />
                   </div>
                   <div className="form-header-text">
-                    <h3 className="form-header-title">{t.profile.personalInfo}</h3>
+                    <h3 className="form-header-title">
+                      {t.profile.personalInfo}
+                    </h3>
                     <p className="form-header-subtitle">
                       {t.numerology.description}
                     </p>
@@ -570,7 +675,9 @@ export default function NumerologyPage() {
                       style={{ color: "#d4af37" }}
                     />
                     {t.numerology.fullName}
-                    <span className="required-badge">*{t.validation.required}</span>
+                    <span className="required-badge">
+                      *{t.validation.required}
+                    </span>
                   </label>
                   <input
                     id="fullName"
@@ -590,7 +697,9 @@ export default function NumerologyPage() {
                       style={{ color: "#d4af37" }}
                     />
                     {t.numerology.birthDate}
-                    <span className="required-badge">*{t.validation.required}</span>
+                    <span className="required-badge">
+                      *{t.validation.required}
+                    </span>
                   </label>
                   <input
                     id="birthDate"
@@ -1215,6 +1324,149 @@ export default function NumerologyPage() {
             9-Wealth, 10-Luck, 11-Health, 12-Speed.
           </p>
         </footer>
+
+<div className="card shadow-xl border mt-16">
+  {/* HERO */}
+  <div
+    style={{
+      borderBottom: "2px solid rgba(212,175,55,0.25)",
+      paddingBottom: "1.75rem",
+      marginBottom: "1.75rem",
+      textAlign: "center",
+    }}
+  >
+    <h1
+      style={{
+        fontFamily: "'Georgia','Times New Roman',serif",
+        fontSize: "32px",
+        fontWeight: 500,
+        color: "#111827",
+        marginBottom: "0.75rem",
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"center",
+        gap:"0.5rem",
+      }}
+    >
+      AI-Powered Numerology Prediction – Discover Your Numbers & Life Path
+    </h1>
+
+    <p className="text-sm mt-1 text-slate-600">
+      Numerology reveals how numbers influence your personality, decisions, and
+      life cycles. We combine <strong>AI-powered analysis</strong> with
+      traditional numerology principles to deliver personalized insights.
+    </p>
+
+    <div className="flex justify-center mt-4">
+      <button className="btn-primary" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Check Your Numerology Now</button>
+    </div>
+  </div>
+
+<Section
+  title="What Is Numerology & How It Works"
+  content={[
+    "Life Path, Destiny & Soul Urge number calculation",
+    "Name and date of birth based numeric mapping",
+    "Understanding repeating numbers and cycles",
+    "Interpreting strengths, challenges, and life focus areas",
+  ]}
+>
+  Numerology is the study of how numbers influence human life through natural
+  patterns. Your date of birth and name are converted into key numbers that
+  describe your personality traits, motivations, and the way you respond to
+  situations.
+
+  These numbers don’t define fixed outcomes. Instead, they highlight tendencies,
+  strengths you can rely on, and challenges you may repeatedly encounter. Over
+  time, numerology helps you recognize life cycles, understand why certain themes
+  repeat, and approach decisions with greater clarity.
+</Section>
+
+<Section
+  title="What Makes Our Numerology Different"
+  content={[
+    "Accurate AI-based number calculations",
+    "Interpretation using classical numerology principles",
+    "Career, relationship, and decision-focused insights",
+    "Identification of favorable and challenging phases",
+    "Optional astrologer consultation for deeper clarity",
+  ]}
+>
+  Many numerology tools simply list number meanings. At Nirali Live Astro, the
+  focus is on interpretation and relevance.
+
+  Our system connects individual numbers into a complete picture, showing how
+  they interact across different phases of life. AI helps identify patterns and
+  timing, while traditional numerology principles ensure the insights remain
+  grounded and meaningful. The result is guidance that feels practical rather
+  than generic.
+</Section>
+
+<Section
+  title="What You’ll Learn from Numerology"
+  content={[
+    "Natural strengths and areas of growth",
+    "Career and business tendencies",
+    "Relationship and compatibility patterns",
+    "Decision-making style and mindset",
+    "Recurring life themes and lessons",
+  ]}
+>
+  A numerology report acts like a personal roadmap. It explains why certain
+  choices feel natural to you, why some paths create resistance, and how your
+  mindset shapes outcomes.
+
+  By understanding your numbers, you gain awareness rather than prediction.
+  This awareness helps you make better choices, manage expectations, and align
+  your actions with your natural tendencies.
+</Section>
+
+<Section
+  title="Numerology + Astrology = Better Accuracy"
+  content={[
+    "Numerology insights",
+    "Kundli and planetary analysis",
+    "Current and upcoming planetary transits",
+  ]}
+>
+  Numbers and planets influence life from different angles. Numerology explains
+  inner tendencies and cycles, while astrology explains external timing and
+  planetary influences.
+
+  When combined, they provide a more balanced perspective. Numerology helps you
+  understand *why* something feels a certain way, while astrology helps explain
+  *when* specific events or shifts are more likely. Together, they offer deeper
+  clarity than either system alone.
+</Section>
+
+
+  <p className="text-sm mt-6 text-gray-500 text-center mx-auto max-w-2xl">
+    Numerology offers guidance and should not replace professional advice.
+  </p>
+</div>
+
+      {/* SEO: FAQ Schema - Invisible to users */}
+      <PageSEO 
+        pageType="numerology"
+        faqs={[
+          {
+            question: "What Is Numerology & How It Works",
+            answer: "Numerology is the study of how numbers influence human life through natural patterns. Your date of birth and name are converted into key numbers that describe your personality traits, motivations, and the way you respond to situations. These numbers don't define fixed outcomes. Instead, they highlight tendencies, strengths you can rely on, and challenges you may repeatedly encounter. Over time, numerology helps you recognize life cycles, understand why certain themes repeat, and approach decisions with greater clarity."
+          },
+          {
+            question: "What Makes Our Numerology Different",
+            answer: "Many numerology tools simply list number meanings. At Nirali Live Astro, the focus is on interpretation and relevance. Our system connects individual numbers into a complete picture, showing how they interact across different phases of life. AI helps identify patterns and timing, while traditional numerology principles ensure the insights remain grounded and meaningful. The result is guidance that feels practical rather than generic."
+          },
+          {
+            question: "What You'll Learn from Numerology",
+            answer: "A numerology report acts like a personal roadmap. It explains why certain choices feel natural to you, why some paths create resistance, and how your mindset shapes outcomes. By understanding your numbers, you gain awareness rather than prediction. This awareness helps you make better choices, manage expectations, and align your actions with your natural tendencies."
+          },
+          {
+            question: "Numerology + Astrology = Better Accuracy",
+            answer: "Numbers and planets influence life from different angles. Numerology explains inner tendencies and cycles, while astrology explains external timing and planetary influences. When combined, they provide a more balanced perspective. Numerology helps you understand why something feels a certain way, while astrology helps explain when specific events or shifts are more likely. Together, they offer deeper clarity than either system alone."
+          }
+        ]}
+      />
       </div>
     </div>
   );

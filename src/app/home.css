@@ -15,6 +15,12 @@ h1, h2, h3, h4, h5, h6,
   font-family: 'Georgia', 'Times New Roman', serif !important;
 }
 
+/* Footer "NiraLive Astro" always Geom on landing and all pages (overrides h3 above) */
+.footer h3.footer-title,
+.footer .footer-title {
+  font-family: 'Geom', sans-serif !important;
+}
+
 /* ---------- Page Layout ---------- */
 .home-page {
   min-height: 100vh;
@@ -22,6 +28,8 @@ h1, h2, h3, h4, h5, h6,
   position: relative;
   overflow-x: hidden;
   transition: background 0.5s ease;
+  padding: 1.5rem 10%;
+  box-sizing: border-box;
 }
 
 /* Animated starfield background */
@@ -97,11 +105,13 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .home-main {
-  max-width: 1280px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 1.5rem 1rem;
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 /* Fade-in animation for sections */
@@ -1313,6 +1323,10 @@ h1, h2, h3, h4, h5, h6,
 
 /* Mobile: Center align buttons */
 @media (max-width: 768px) {
+  .home-page {
+    padding: 1rem;
+  }
+
   .hero-actions {
     justify-content: center;
     width: 100%;

@@ -89,8 +89,18 @@ export async function POST(request) {
           })
         } catch (error) {
           console.error('Error creating recharge order:', error)
+          console.error('Razorpay error details:', {
+            message: error.message,
+            statusCode: error.statusCode,
+            description: error.description,
+            source: error.source,
+            step: error.step,
+            reason: error.reason,
+            metadata: error.metadata
+          })
           return NextResponse.json({
-            error: error.message || 'Failed to create payment order. Please check Razorpay configuration.'
+            error: error.message || 'Failed to create payment order. Please check Razorpay configuration.',
+            details: error.description || error.reason || 'Unknown error'
           }, { status: 500 })
         }
 

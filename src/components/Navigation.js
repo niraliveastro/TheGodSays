@@ -26,7 +26,7 @@ import {
   Rss,
   Globe,
   MessageCircle,
-  Radio
+  Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -44,14 +44,14 @@ const Navigation = () => {
   const { language, changeLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 767);
     };
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
   const pathname = usePathname();
   const router = useRouter();
@@ -71,7 +71,7 @@ const Navigation = () => {
   const [showPwSignin, setShowPwSignin] = useState(false);
   const [showPwSignup, setShowPwSignup] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
-  
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
@@ -79,38 +79,78 @@ const Navigation = () => {
   const isAstrologer = userProfile?.collection === "astrologers";
 
   // Astrologer-specific navigation items
-  const astrologerNavItems = useMemo(() => [
-    { href: "/astrologer-dashboard", label: t.astrologerDashboard?.title || "Dashboard", icon: LayoutDashboard },
-    { href: "/appointments", label: "My Appointments", icon: Calendar },
-    { href: `/account/astrologer/${user?.uid}`, label: t.profile?.myProfile || "My Profile", icon: User },
-    { href: "/profile/astrology", label: t.profile?.settings || "Account Settings", icon: Settings },
-  ], [language, user, t]);
+  const astrologerNavItems = useMemo(
+    () => [
+      {
+        href: "/astrologer-dashboard",
+        label: t.astrologerDashboard?.title || "Dashboard",
+        icon: LayoutDashboard,
+      },
+      { href: "/appointments", label: "My Appointments", icon: Calendar },
+      {
+        href: `/account/astrologer/${user?.uid}`,
+        label: t.profile?.myProfile || "My Profile",
+        icon: User,
+      },
+      {
+        href: "/profile/astrology",
+        label: t.profile?.settings || "Account Settings",
+        icon: Settings,
+      },
+    ],
+    [language, user, t],
+  );
 
   // Regular user navigation items - split into top and bottom
-  const userTopNavItems = useMemo(() => [
-    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
-    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
-    {
-      href: null,
-      label: t.nav.myAccount,
-      icon: User,
-      dropdownId: "account",
-      children: [
-        { href: "/profile/user", label: t.profile.myProfile, icon: User },
-        { href: "/appointments", label: "My Appointments", icon: Calendar },
-        { href: "/wallet", label: t.nav.wallet, icon: Wallet },
-        { href: "/profile/family", label: t.profile.familyMembers, icon: Users },
-        { href: "/admin/dashboard", label: "Admin Dashboard", icon: LayoutDashboard },
-      ],
-    },
-  ], [language, t]);
+  const userTopNavItems = useMemo(
+    () => [
+      {
+        href: "/talk-to-astrologer",
+        label: t.nav.talkToAstrologer,
+        icon: Phone,
+      },
+      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
+      {
+        href: null,
+        label: t.nav.myAccount,
+        icon: User,
+        dropdownId: "account",
+        children: [
+          { href: "/profile/user", label: t.profile.myProfile, icon: User },
+          { href: "/appointments", label: "My Appointments", icon: Calendar },
+          { href: "/wallet", label: t.nav.wallet, icon: Wallet },
+          {
+            href: "/profile/family",
+            label: t.profile.familyMembers,
+            icon: Users,
+          },
+          {
+            href: "/admin/dashboard",
+            label: "Admin Dashboard",
+            icon: LayoutDashboard,
+          },
+        ],
+      },
+    ],
+    [language, t],
+  );
 
   const userBottomNavItems = useMemo(() => {
     // Desktop items
     const desktopItems = [
       { href: "/matching", label: t.nav.matching, icon: BookOpen },
-      { href: "/cosmic-event-tracker", label: t.calendar.title, icon: Calendar },
+      {
+        href: "/cosmic-event-tracker",
+        label: t.calendar.title,
+        icon: Calendar,
+      },
       { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+      {
+        href: "https://vastu-ai.niraliveastro.com",
+        label: "Vastu AI",
+        icon: Home, 
+        external: true,
+      },
       {
         href: null,
         label: t.nav.tools,
@@ -121,25 +161,33 @@ const Navigation = () => {
           { href: "/transit", label: t.transit.title, icon: Zap },
         ],
       },
+      
       { href: "/blog", label: t.nav.blog, icon: Rss },
     ];
-    
+
     return desktopItems;
   }, [language, t]);
-  
+
   // Mobile bottom nav items - circular icons with text below
-  const userBottomNavItemsMobile = useMemo(() => [
-    { href: "/talk-to-astrologer", label: t.nav.talkToAstrologer, icon: Phone },
-    { href: "/predictions", label: t.nav.aiPredictions, icon: Star },
-    { href: "/blog", label: t.nav.blog, icon: Rss },
-    { href: "/appointments", label: "Booking", icon: Calendar },
-  ], [language, t]);
+  const userBottomNavItemsMobile = useMemo(
+    () => [
+      {
+        href: "/talk-to-astrologer",
+        label: t.nav.talkToAstrologer,
+        icon: Phone,
+      },
+      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
+      { href: "/blog", label: t.nav.blog, icon: Rss },
+      { href: "/appointments", label: "Booking", icon: Calendar },
+    ],
+    [language, t],
+  );
 
   // For mobile - combine all user nav items
-  const userMobileNavItems = useMemo(() => [
-    ...userBottomNavItems,
-    ...userTopNavItems,
-  ], [userBottomNavItems, userTopNavItems]);
+  const userMobileNavItems = useMemo(
+    () => [...userBottomNavItems, ...userTopNavItems],
+    [userBottomNavItems, userTopNavItems],
+  );
 
   useEffect(() => {
     if (user && showProfileModal) {
@@ -190,11 +238,12 @@ const Navigation = () => {
   async function onSignOutClick() {
     try {
       const wasAstrologer = isAstrologer;
-      
-      typeof trackEvent !== 'undefined' && trackEvent('sign_out', {
-        user_type: wasAstrologer ? 'astrologer' : 'user'
-      });
-      
+
+      typeof trackEvent !== "undefined" &&
+        trackEvent("sign_out", {
+          user_type: wasAstrologer ? "astrologer" : "user",
+        });
+
       await signOut();
       setShowProfileModal(false);
       await new Promise((res) => setTimeout(res, 50));
@@ -220,14 +269,21 @@ const Navigation = () => {
     const form = new FormData(e.currentTarget);
     const email = form.get("email")?.toString() || "";
     const password = form.get("password")?.toString() || "";
-    
-    typeof trackEvent !== 'undefined' && trackEvent('login_attempt', { method: 'email', source: 'navigation' });
-    
+
+    typeof trackEvent !== "undefined" &&
+      trackEvent("login_attempt", { method: "email", source: "navigation" });
+
     try {
       await signIn(email, password);
-      typeof trackEvent !== 'undefined' && trackEvent('login_success', { method: 'email', source: 'navigation' });
+      typeof trackEvent !== "undefined" &&
+        trackEvent("login_success", { method: "email", source: "navigation" });
     } catch (err) {
-      typeof trackEvent !== 'undefined' && trackEvent('login_failed', { method: 'email', source: 'navigation', error: err.message });
+      typeof trackEvent !== "undefined" &&
+        trackEvent("login_failed", {
+          method: "email",
+          source: "navigation",
+          error: err.message,
+        });
       setAuthError("Failed to sign in. Please check your credentials.");
       console.error("Nav SignIn error", err);
     } finally {
@@ -245,20 +301,32 @@ const Navigation = () => {
     const password = form.get("password")?.toString() || "";
     const confirm = form.get("confirm")?.toString() || "";
     if (password !== confirm) {
-      typeof trackEvent !== 'undefined' && trackEvent('signup_failed', { method: 'email', source: 'navigation', error: 'password_mismatch' });
+      typeof trackEvent !== "undefined" &&
+        trackEvent("signup_failed", {
+          method: "email",
+          source: "navigation",
+          error: "password_mismatch",
+        });
       setAuthError("Passwords do not match");
       setAuthSubmitting(false);
       return;
     }
-    
-    typeof trackEvent !== 'undefined' && trackEvent('signup_attempt', { method: 'email', source: 'navigation' });
-    
+
+    typeof trackEvent !== "undefined" &&
+      trackEvent("signup_attempt", { method: "email", source: "navigation" });
+
     try {
       await signUp(email, password, { displayName: name });
-      typeof trackEvent !== 'undefined' && trackEvent('signup_success', { method: 'email', source: 'navigation' });
+      typeof trackEvent !== "undefined" &&
+        trackEvent("signup_success", { method: "email", source: "navigation" });
       setDisplayName(name);
     } catch (err) {
-      typeof trackEvent !== 'undefined' && trackEvent('signup_failed', { method: 'email', source: 'navigation', error: err.message });
+      typeof trackEvent !== "undefined" &&
+        trackEvent("signup_failed", {
+          method: "email",
+          source: "navigation",
+          error: err.message,
+        });
       setAuthError("Failed to create account. Please try again.");
       console.error("Nav SignUp error", err);
     } finally {
@@ -292,77 +360,107 @@ const Navigation = () => {
     }
   }
 
-  // Render function for navigation items (used in both desktop styles)
-  const renderNavItem = (item, trackSource = 'desktop_nav') => {
-    const Icon = item.icon;
-    
-    if (item.children) {
-      const isActive = item.children.some(child => pathname === child.href);
-      const isOpen = openDropdown === item.dropdownId;
-      
-      return (
-        <div 
-          key={item.label} 
-          className="nav-dropdown"
-          data-dropdown-container
-          onMouseEnter={() => setOpenDropdown(item.dropdownId)}
-          onMouseLeave={() => setOpenDropdown(null)}
-        >
-          <button
-            className={`nav-dropdown-button ${isActive ? 'active' : ''}`}
-            onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
-          >
-            {Icon && <Icon />}
-            <span>{item.label}</span>
-            <ChevronDown className={`dropdown-icon ${isOpen ? 'rotated' : ''}`} />
-          </button>
-          
-          {isOpen && (
-            <>
-              <div className="nav-dropdown-bridge"></div>
-              <div className="nav-dropdown-menu">
-                <div className="nav-dropdown-content">
-                  {item.children.map((child) => {
-                    const ChildIcon = child.icon;
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={`nav-dropdown-item ${
-                          pathname === child.href ? 'active' : ''
-                        }`}
-                      >
-                        {ChildIcon && <ChildIcon />}
-                        <span>{child.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    }
+// Render function for navigation items
+const renderNavItem = (item, trackSource = "desktop_nav") => {
+  const Icon = item.icon;
+
+  // 🔹 1. Dropdown items
+  if (item.children) {
+    const isActive = item.children.some((child) => pathname === child.href);
+    const isOpen = openDropdown === item.dropdownId;
 
     return (
-      <Link
+      <div
+        key={item.label}
+        className="nav-dropdown"
+        data-dropdown-container
+        onMouseEnter={() => setOpenDropdown(item.dropdownId)}
+        onMouseLeave={() => setOpenDropdown(null)}
+      >
+        <button
+          className={`nav-dropdown-button ${isActive ? "active" : ""}`}
+          onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
+        >
+          {Icon && <Icon />}
+          <span>{item.label}</span>
+          <ChevronDown className={`dropdown-icon ${isOpen ? "rotated" : ""}`} />
+        </button>
+
+        {isOpen && (
+          <>
+            <div className="nav-dropdown-bridge"></div>
+            <div className="nav-dropdown-menu">
+              <div className="nav-dropdown-content">
+                {item.children.map((child) => {
+                  const ChildIcon = child.icon;
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      className={`nav-dropdown-item ${
+                        pathname === child.href ? "active" : ""
+                      }`}
+                    >
+                      {ChildIcon && <ChildIcon />}
+                      <span>{child.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // 🔹 2. External links (Vastu AI)
+  if (item.external) {
+    return (
+      <a
         key={item.href}
         href={item.href}
-        className={`nav-link ${pathname === item.href ? "nav-link-active" : ""}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="nav-link"
         onClick={() => {
-          typeof trackEvent !== 'undefined' && trackEvent('navigation_click', {
-            destination: item.href,
-            label: item.label,
-            source: trackSource
-          });
+          typeof trackEvent !== "undefined" &&
+            trackEvent("navigation_click", {
+              destination: item.href,
+              label: item.label,
+              source: trackSource,
+              external: true,
+            });
         }}
       >
         {Icon && <Icon />}
         <span>{item.label}</span>
-      </Link>
+      </a>
     );
-  };
+  }
+
+  // 🔹 3. Internal links (default)
+  return (
+    <Link
+      key={item.href}
+      href={item.href}
+      className={`nav-link ${
+        pathname === item.href ? "nav-link-active" : ""
+      }`}
+      onClick={() => {
+        typeof trackEvent !== "undefined" &&
+          trackEvent("navigation_click", {
+            destination: item.href,
+            label: item.label,
+            source: trackSource,
+          });
+      }}
+    >
+      {Icon && <Icon />}
+      <span>{item.label}</span>
+    </Link>
+  );
+};
 
   return (
     <nav className="enhanced-nav">
@@ -381,7 +479,7 @@ const Navigation = () => {
           {/* ASTROLOGER: Original style - all items in top navbar */}
           {isAstrologer && (
             <div className="nav-desktop">
-              {astrologerNavItems.map(item => renderNavItem(item))}
+              {astrologerNavItems.map((item) => renderNavItem(item))}
               <div className="ml-4">
                 <LanguageSwitcher />
               </div>
@@ -391,7 +489,7 @@ const Navigation = () => {
           {/* USER: My Account dropdown in top navbar */}
           {!isAstrologer && (
             <div className="nav-desktop">
-              {userTopNavItems.map(item => renderNavItem(item))}
+              {userTopNavItems.map((item) => renderNavItem(item))}
             </div>
           )}
 
@@ -417,25 +515,29 @@ const Navigation = () => {
                       return (
                         <Fragment key={item.href || index}>
                           {navItem}
-                          <div 
+                          <div
                             className="nav-language-bottom"
                             onMouseEnter={() => setLanguageDropdownOpen(true)}
                             onMouseLeave={() => setLanguageDropdownOpen(false)}
                           >
                             <button
                               className="nav-language-dropdown-button"
-                              onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                              onClick={() =>
+                                setLanguageDropdownOpen(!languageDropdownOpen)
+                              }
                             >
                               <Globe style={{ width: 18, height: 18 }} />
-                              <span>{language === 'en' ? 'ENG' : 'HIN'}</span>
-                              <ChevronDown 
-                                className="dropdown-icon" 
-                                style={{ 
-                                  width: 16, 
+                              <span>{language === "en" ? "ENG" : "HIN"}</span>
+                              <ChevronDown
+                                className="dropdown-icon"
+                                style={{
+                                  width: 16,
                                   height: 16,
-                                  transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                  transition: 'transform 0.3s ease'
-                                }} 
+                                  transform: languageDropdownOpen
+                                    ? "rotate(180deg)"
+                                    : "rotate(0deg)",
+                                  transition: "transform 0.3s ease",
+                                }}
                               />
                             </button>
                             {languageDropdownOpen && (
@@ -443,18 +545,18 @@ const Navigation = () => {
                                 <div className="nav-dropdown-bridge"></div>
                                 <div className="nav-language-dropdown-menu">
                                   <button
-                                    className={`nav-language-dropdown-item ${language === 'en' ? 'active' : ''}`}
+                                    className={`nav-language-dropdown-item ${language === "en" ? "active" : ""}`}
                                     onClick={() => {
-                                      changeLanguage('en');
+                                      changeLanguage("en");
                                       setLanguageDropdownOpen(false);
                                     }}
                                   >
                                     ENG
                                   </button>
                                   <button
-                                    className={`nav-language-dropdown-item ${language === 'hi' ? 'active' : ''}`}
+                                    className={`nav-language-dropdown-item ${language === "hi" ? "active" : ""}`}
                                     onClick={() => {
-                                      changeLanguage('hi');
+                                      changeLanguage("hi");
                                       setLanguageDropdownOpen(false);
                                     }}
                                   >
@@ -472,7 +574,9 @@ const Navigation = () => {
                 </>
               ) : (
                 /* Mobile: Show simplified bottom nav items with normal icon + text */
-                userBottomNavItemsMobile.map((item, index) => renderNavItem(item, index))
+                userBottomNavItemsMobile.map((item, index) =>
+                  renderNavItem(item, index),
+                )
               )}
             </div>
           </div>
@@ -481,333 +585,424 @@ const Navigation = () => {
 
       {/* Mobile Navigation */}
       {isOpen && (
-          <div className="nav-mobile-menu">
-            <div className="nav-mobile-menu-content">
-              {navItems.map((item) => {
-                const Icon = item.icon;
+        <div className="nav-mobile-menu">
+          <div className="nav-mobile-menu-content">
+            {navItems.map((item) => {
+              const Icon = item.icon;
 
-                if (item.children) {
-                  const isActive = item.children.some(child => pathname === child.href);
-                  const isOpen = openDropdown === item.dropdownId;
-                  return (
-                    <div key={item.label} data-dropdown-container>
-                      <button
-                        type="button"
-                        className={`nav-mobile-dropdown-button ${isActive ? 'active' : ''}`}
-                        onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
-                      >
-                        <div className="flex items-center">
-                          {Icon && <Icon className="mr-2" />}
-                          <span>{item.label}</span>
-                        </div>
-                        <ChevronDown className={`chevron-icon ${isOpen ? 'rotated' : ''}`} />
-                      </button>
-                      
-                      {isOpen && (
-                        <div className="nav-mobile-dropdown-content">
-                          {item.children.map((child) => {
-                            const ChildIcon = child.icon;
-                            return (
-                              <Link
-                                key={child.href}
-                                href={child.href}
-                                className={`nav-mobile-dropdown-item ${
-                                  pathname === child.href ? 'active' : ''
-                                }`}
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  setOpenDropdown(null);
-                                }}
-                              >
-                                {ChildIcon && <ChildIcon className="mr-2" />}
-                                <span>{child.label}</span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
+              if (item.children) {
+                const isActive = item.children.some(
+                  (child) => pathname === child.href,
+                );
+                const isOpen = openDropdown === item.dropdownId;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`nav-mobile-link ${
-                      pathname === item.href ? "nav-mobile-link-active" : ""
-                    }`}
-                    onClick={() => {
-                      typeof trackEvent !== 'undefined' && trackEvent('navigation_click', {
+                  <div key={item.label} data-dropdown-container>
+                    <button
+                      type="button"
+                      className={`nav-mobile-dropdown-button ${isActive ? "active" : ""}`}
+                      onClick={() =>
+                        setOpenDropdown(isOpen ? null : item.dropdownId)
+                      }
+                    >
+                      <div className="flex items-center">
+                        {Icon && <Icon className="mr-2" />}
+                        <span>{item.label}</span>
+                      </div>
+                      <ChevronDown
+                        className={`chevron-icon ${isOpen ? "rotated" : ""}`}
+                      />
+                    </button>
+
+                    {isOpen && (
+                      <div className="nav-mobile-dropdown-content">
+                        {item.children.map((child) => {
+                          const ChildIcon = child.icon;
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={`nav-mobile-dropdown-item ${
+                                pathname === child.href ? "active" : ""
+                              }`}
+                              onClick={() => {
+                                setIsOpen(false);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              {ChildIcon && <ChildIcon className="mr-2" />}
+                              <span>{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-mobile-link ${
+                    pathname === item.href ? "nav-mobile-link-active" : ""
+                  }`}
+                  onClick={() => {
+                    typeof trackEvent !== "undefined" &&
+                      trackEvent("navigation_click", {
                         destination: item.href,
                         label: item.label,
-                        source: 'mobile_nav'
+                        source: "mobile_nav",
                       });
-                      setIsOpen(false);
-                    }}
-                  >
-                    {Icon && <Icon className="mr-2" />}
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-              
-              {/* Language Dropdown at bottom of mobile menu */}
-              <div key="language-dropdown" data-dropdown-container>
-                <button
-                  className={`nav-mobile-dropdown-button ${openDropdown === 'mobile-language' ? 'active' : ''}`}
-                  onClick={() => setOpenDropdown(openDropdown === 'mobile-language' ? null : 'mobile-language')}
+                    setIsOpen(false);
+                  }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Globe size={20} />
-                    <span>Language ({language === 'en' ? 'English' : 'हिंदी'})</span>
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className={`chevron-icon ${openDropdown === 'mobile-language' ? 'rotated' : ''}`}
-                  />
-                </button>
-                {openDropdown === 'mobile-language' && (
-                  <div className="nav-mobile-dropdown-content">
-                    <button
-                      onClick={() => {
-                        changeLanguage('en');
-                        setOpenDropdown(null);
-                      }}
-                      className={`nav-mobile-dropdown-item ${language === 'en' ? 'active' : ''}`}
-                    >
-                      <span>English</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        changeLanguage('hi');
-                        setOpenDropdown(null);
-                      }}
-                      className={`nav-mobile-dropdown-item ${language === 'hi' ? 'active' : ''}`}
-                    >
-                      <span>हिंदी</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                  {Icon && <Icon className="mr-2" />}
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+
+            {/* Language Dropdown at bottom of mobile menu */}
+            <div key="language-dropdown" data-dropdown-container>
+              <button
+                className={`nav-mobile-dropdown-button ${openDropdown === "mobile-language" ? "active" : ""}`}
+                onClick={() =>
+                  setOpenDropdown(
+                    openDropdown === "mobile-language"
+                      ? null
+                      : "mobile-language",
+                  )
+                }
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <Globe size={20} />
+                  <span>
+                    Language ({language === "en" ? "English" : "हिंदी"})
+                  </span>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={`chevron-icon ${openDropdown === "mobile-language" ? "rotated" : ""}`}
+                />
+              </button>
+              {openDropdown === "mobile-language" && (
+                <div className="nav-mobile-dropdown-content">
+                  <button
+                    onClick={() => {
+                      changeLanguage("en");
+                      setOpenDropdown(null);
+                    }}
+                    className={`nav-mobile-dropdown-item ${language === "en" ? "active" : ""}`}
+                  >
+                    <span>English</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      changeLanguage("hi");
+                      setOpenDropdown(null);
+                    }}
+                    className={`nav-mobile-dropdown-item ${language === "hi" ? "active" : ""}`}
+                  >
+                    <span>हिंदी</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Profile / Auth Modal */}
-        <Modal
-          open={showProfileModal}
-          onClose={() => setShowProfileModal(false)}
-          title={
-            user
-              ? "My Profile"
-              : authTab === "signin"
+      {/* Profile / Auth Modal */}
+      <Modal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        title={
+          user
+            ? "My Profile"
+            : authTab === "signin"
               ? "Sign In"
               : "Create Account"
-          }
-          position={modalPosition}
-          topOffset={modalPosition === "top-right" ? 80 : undefined}
-          className="wider-modal"
-        >
-          {user ? (
-            <form onSubmit={onSaveProfile} className="form">
-              <div className="form-group">
-                <label className="label">Full Name</label>
-                <input
-                  className="input"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your Name"
-                />
-              </div>
+        }
+        position={modalPosition}
+        topOffset={modalPosition === "top-right" ? 80 : undefined}
+        className="wider-modal"
+      >
+        {user ? (
+          <form onSubmit={onSaveProfile} className="form">
+            <div className="form-group">
+              <label className="label">Full Name</label>
+              <input
+                className="input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Your Name"
+              />
+            </div>
 
+            <div className="form-group">
+              <label className="label">Email</label>
+              <input
+                className="input input-disabled"
+                value={user.email || ""}
+                disabled
+              />
+            </div>
+
+            {userProfile?.collection && (
               <div className="form-group">
-                <label className="label">Email</label>
+                <label className="label">Role</label>
                 <input
-                  className="input input-disabled"
-                  value={user.email || ""}
+                  className="input input-disabled capitalize"
+                  value={
+                    userProfile.collection === "astrologers"
+                      ? "Astrologer"
+                      : "User"
+                  }
                   disabled
                 />
               </div>
+            )}
 
-              {userProfile?.collection && (
-                <div className="form-group">
-                  <label className="label">Role</label>
-                  <input
-                    className="input input-disabled capitalize"
-                    value={
-                      userProfile.collection === "astrologers"
-                        ? "Astrologer"
-                        : "User"
-                    }
-                    disabled
-                  />
-                </div>
-              )}
+            <div className="form-group">
+              <label className="label">Phone</label>
+              <input
+                className="input"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 90000 00000"
+              />
+            </div>
 
-              <div className="form-group">
-                <label className="label">Phone</label>
-                <input
-                  className="input"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 90000 00000"
-                />
-              </div>
+            <div className="form-group">
+              <label className="label">Date of Birth</label>
+              <input
+                type="date"
+                className="input"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
 
-              <div className="form-group">
-                <label className="label">Date of Birth</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                />
-              </div>
+            <div className="form-group">
+              <label className="label">Gender</label>
+              <select
+                className="input"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
 
-              <div className="form-group">
-                <label className="label">Gender</label>
-                <select
-                  className="input"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                >
-                  <option value="">Select</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+            <div className="form-group">
+              <label className="label">Location</label>
+              <input
+                className="input"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="City, Country"
+              />
+            </div>
 
-              <div className="form-group">
-                <label className="label">Location</label>
-                <input
-                  className="input"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City, Country"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="btn submit-btn"
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-                <button
-                  type="button"
-                  variant="outline"
-                  onClick={onSignOutClick}
-                  className="btn submit-btn"
-                >
-                  {t.nav.signOut}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="auth-container">
-              <div className="tab-switcher">
-                <button
-                  type="button"
-                  onClick={() => setAuthTab("signin")}
-                  className={`tab ${authTab === "signin" ? "tab-active" : ""}`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAuthTab("signup")}
-                  className={`tab ${authTab === "signup" ? "tab-active" : ""}`}
-                >
-                  Sign Up
-                </button>
-              </div>
-
-              {authError && (
-                <div className="alert alert-error">{authError}</div>
-              )}
-
+            <div className="form-actions">
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn submit-btn"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
               <button
                 type="button"
-                onClick={async () => {
-                  setAuthError("");
-                  typeof trackEvent !== 'undefined' && trackEvent('login_attempt', { method: 'google', source: 'navigation' });
-                  try {
-                    await signInWithGoogle();
-                    typeof trackEvent !== 'undefined' && trackEvent('login_success', { method: 'google', source: 'navigation' });
-                  } catch (e) {
-                    typeof trackEvent !== 'undefined' && trackEvent('login_failed', { method: 'google', source: 'navigation', error: e.message });
-                    setAuthError("Google sign-in failed");
-                    console.error(e);
-                  }
-                }}
-                className="btn btn-google"
+                variant="outline"
+                onClick={onSignOutClick}
+                className="btn submit-btn"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 48 48"
-                  className="icon-google"
-                >
-                  <path
-                    fill="#FFC107"
-                    d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36 16.8 36 11 30.2 11 23s5.8-13 13-13c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 12.3 2 3 11.3 3 23s9.3 21 21 21c10.5 0 20-7.6 20-21 0-1.7-.2-3.3-.4-4.5z"
-                  />
-                  <path
-                    fill="#FF3D00"
-                    d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 15.5 2 8.2 6.7 6.3 14.7z"
-                  />
-                  <path
-                    fill="#4CAF50"
-                    d="M24 44c5.1 0 9.8-1.9 13.4-5.1l-6.2-5.1C29 35.5 26.7 36 24 36c-5.2 0-9.6-3.6-11.3-8.5l-6.5 5C8.1 38.9 15.4 44 24 44z"
-                  />
-                  <path
-                    fill="#1976D2"
-                    d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3.1 5.3-5.9 6.8l6.2 5.1C38.6 37.8 42 31.6 42 23c0-1.7-.2-3.3-.4-4.5z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
+                {t.nav.signOut}
               </button>
+            </div>
+          </form>
+        ) : (
+          <div className="auth-container">
+            <div className="tab-switcher">
+              <button
+                type="button"
+                onClick={() => setAuthTab("signin")}
+                className={`tab ${authTab === "signin" ? "tab-active" : ""}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthTab("signup")}
+                className={`tab ${authTab === "signup" ? "tab-active" : ""}`}
+              >
+                Sign Up
+              </button>
+            </div>
 
-              <div className="divider">
-                <span>or</span>
-              </div>
+            {authError && <div className="alert alert-error">{authError}</div>}
 
-              {authTab === "signin" ? (
-                <form onSubmit={handleSignIn} className="form">
-                  <div className="form-group">
-                    <label className="label">Email</label>
-                    <input
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      required
-                      className="input"
-                    />
-                  </div>
+            <button
+              type="button"
+              onClick={async () => {
+                setAuthError("");
+                typeof trackEvent !== "undefined" &&
+                  trackEvent("login_attempt", {
+                    method: "google",
+                    source: "navigation",
+                  });
+                try {
+                  await signInWithGoogle();
+                  typeof trackEvent !== "undefined" &&
+                    trackEvent("login_success", {
+                      method: "google",
+                      source: "navigation",
+                    });
+                } catch (e) {
+                  typeof trackEvent !== "undefined" &&
+                    trackEvent("login_failed", {
+                      method: "google",
+                      source: "navigation",
+                      error: e.message,
+                    });
+                  setAuthError("Google sign-in failed");
+                  console.error(e);
+                }
+              }}
+              className="btn btn-google"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 48 48"
+                className="icon-google"
+              >
+                <path
+                  fill="#FFC107"
+                  d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36 16.8 36 11 30.2 11 23s5.8-13 13-13c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 12.3 2 3 11.3 3 23s9.3 21 21 21c10.5 0 20-7.6 20-21 0-1.7-.2-3.3-.4-4.5z"
+                />
+                <path
+                  fill="#FF3D00"
+                  d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.3 0 6.3 1.2 8.6 3.3l5.7-5.7C34.5 4.1 29.5 2 24 2 15.5 2 8.2 6.7 6.3 14.7z"
+                />
+                <path
+                  fill="#4CAF50"
+                  d="M24 44c5.1 0 9.8-1.9 13.4-5.1l-6.2-5.1C29 35.5 26.7 36 24 36c-5.2 0-9.6-3.6-11.3-8.5l-6.5 5C8.1 38.9 15.4 44 24 44z"
+                />
+                <path
+                  fill="#1976D2"
+                  d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3.1 5.3-5.9 6.8l6.2 5.1C38.6 37.8 42 31.6 42 23c0-1.7-.2-3.3-.4-4.5z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
 
+            <div className="divider">
+              <span>or</span>
+            </div>
+
+            {authTab === "signin" ? (
+              <form onSubmit={handleSignIn} className="form">
+                <div className="form-group">
+                  <label className="label">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                    className="input"
+                  />
+                </div>
+
+                <div className="form-group password-group">
+                  <label className="label">Password</label>
+                  <input
+                    name="password"
+                    type={showPwSignin ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    required
+                    className="input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwSignin((v) => !v)}
+                    className="btn-icon"
+                    aria-label={
+                      showPwSignin ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPwSignin ? (
+                      <EyeOff className="icon" />
+                    ) : (
+                      <Eye className="icon" />
+                    )}
+                  </button>
+                </div>
+
+                <Button
+                  className="btn-full"
+                  type="submit"
+                  disabled={authSubmitting}
+                >
+                  {authSubmitting ? t.messages.processing : t.nav.signIn}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSignUp} className="form">
+                <div className="form-group">
+                  <label className="label">Full Name</label>
+                  <input
+                    name="name"
+                    placeholder="Your name"
+                    required
+                    className="input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="label">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                    className="input"
+                  />
+                </div>
+
+                <div className="grid-2">
                   <div className="form-group password-group">
                     <label className="label">Password</label>
                     <input
                       name="password"
-                      type={showPwSignin ? "text" : "password"}
-                      autoComplete="current-password"
+                      type={showPwSignup ? "text" : "password"}
+                      autoComplete="new-password"
                       placeholder="••••••••"
                       required
                       className="input"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPwSignin((v) => !v)}
+                      onClick={() => setShowPwSignup((v) => !v)}
                       className="btn-icon"
                       aria-label={
-                        showPwSignin ? "Hide password" : "Show password"
+                        showPwSignup ? "Hide password" : "Show password"
                       }
                     >
-                      {showPwSignin ? (
+                      {showPwSignup ? (
                         <EyeOff className="icon" />
                       ) : (
                         <Eye className="icon" />
@@ -815,104 +1010,45 @@ const Navigation = () => {
                     </button>
                   </div>
 
-                  <Button
-                    className="btn-full"
-                    type="submit"
-                    disabled={authSubmitting}
-                  >
-                    {authSubmitting ? t.messages.processing : t.nav.signIn}
-                  </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleSignUp} className="form">
-                  <div className="form-group">
-                    <label className="label">Full Name</label>
+                  <div className="form-group password-group">
+                    <label className="label">Confirm</label>
                     <input
-                      name="name"
-                      placeholder="Your name"
+                      name="confirm"
+                      type={showPwConfirm ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="••••••••"
                       required
                       className="input"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwConfirm((v) => !v)}
+                      className="btn-icon"
+                      aria-label={
+                        showPwConfirm ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPwConfirm ? (
+                        <EyeOff className="icon" />
+                      ) : (
+                        <Eye className="icon" />
+                      )}
+                    </button>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label className="label">Email</label>
-                    <input
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      required
-                      className="input"
-                    />
-                  </div>
-
-                  <div className="grid-2">
-                    <div className="form-group password-group">
-                      <label className="label">Password</label>
-                      <input
-                        name="password"
-                        type={showPwSignup ? "text" : "password"}
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        required
-                        className="input"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPwSignup((v) => !v)}
-                        className="btn-icon"
-                        aria-label={
-                          showPwSignup ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showPwSignup ? (
-                          <EyeOff className="icon" />
-                        ) : (
-                          <Eye className="icon" />
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="form-group password-group">
-                      <label className="label">Confirm</label>
-                      <input
-                        name="confirm"
-                        type={showPwConfirm ? "text" : "password"}
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        required
-                        className="input"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPwConfirm((v) => !v)}
-                        className="btn-icon"
-                        aria-label={
-                          showPwConfirm ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showPwConfirm ? (
-                          <EyeOff className="icon" />
-                        ) : (
-                          <Eye className="icon" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button
-                    className="btn-full"
-                    type="submit"
-                    disabled={authSubmitting}
-                  >
-                    {authSubmitting ? "Creating…" : "Create Account"}
-                  </Button>
-                </form>
-              )}
-            </div>
-          )}
-        </Modal>
+                <Button
+                  className="btn-full"
+                  type="submit"
+                  disabled={authSubmitting}
+                >
+                  {authSubmitting ? "Creating…" : "Create Account"}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+      </Modal>
     </nav>
   );
 };
