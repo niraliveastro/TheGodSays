@@ -163,7 +163,6 @@ export default function FamilyPage() {
         fontSize: "2.5rem",
         fontWeight: 500,
         marginBottom: "0.5rem",
-        color: "var(--color-gold)",
         fontFamily: "'Georgia', 'Times New Roman', serif",
         display: "flex",
         alignItems: "center",

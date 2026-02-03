@@ -1942,9 +1942,7 @@ export default function PredictionsPage() {
           style={{
             fontSize: "2.5rem",
             fontWeight: 700,
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            
           }}
         >
           {t.predictions.title}
@@ -2647,7 +2645,7 @@ export default function PredictionsPage() {
                   {/* RIGHT: Sage Illustration */}
                   <div className="relative hidden lg:flex justify-end">
                     <img
-                      src="/images/Untitled-removebg-preview.png"
+                      src="/images/cosmic.png"
                       alt="Astrologer sage illustration"
                       className="w-[360px] xl:w-[400px] opacity-90 drop-shadow-[0_15px_25px_rgba(251,191,36,0.35)]"
                     />

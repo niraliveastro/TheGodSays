@@ -646,6 +646,7 @@ body {
 
 .nav-link:hover, .nav-button:hover {
  /* Golden gradient on hover */
+ background-color: linear-gradient(135deg, #d4af37, #b8972e) !important;
   color: #ffffff; /* White text on hover */
   border-color: #d4af37;
   border-bottom: 3px solid #a08526 !important; /* Darker golden bottom border on hover */
