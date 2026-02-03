@@ -66,17 +66,20 @@ export default function UserAuth() {
   
   // Form state management
   const [isLogin, setIsLogin] = useState(true); // Toggle between login (true) and signup (false) modes
+  const [authMethod, setAuthMethod] = useState("email"); // "email" or "phone"
   const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
+  const [otpSent, setOtpSent] = useState(false); // Whether OTP has been sent
   const [formData, setFormData] = useState({
     email: "", // Email address
     password: "", // Password
     name: "", // Full name (signup only)
-    phone: "", // Phone number (signup only)
+    phone: "", // Phone number
+    otp: "", // OTP code
   });
   const [error, setError] = useState(""); // Form submission error message
 
   // Auth and routing hooks
-  const { signIn, signUp, signInWithGoogle, loading } = useAuth(); // Auth context methods and loading state
+  const { signIn, signUp, signInWithGoogle, signInWithPhoneNumber, verifyOTP, loading } = useAuth(); // Auth context methods and loading state
   const router = useRouter(); // Next.js router for navigation
 
   // --------------------------------------------------------------------------
@@ -128,8 +131,9 @@ export default function UserAuth() {
         await setDoc(doc(db, "users", user.uid), {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
+          phone: formData.phone || "",
           role: "user",
+          authProvider: "email",
           createdAt: new Date().toISOString(),
         });
 
@@ -156,15 +160,118 @@ export default function UserAuth() {
   };
 
   // --------------------------------------------------------------------------
+  // PHONE AUTHENTICATION
+  // --------------------------------------------------------------------------
+  /**
+   * Handle phone number OTP request.
+   * Sends OTP to the provided phone number.
+   */
+  const handleSendOTP = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!formData.phone) {
+      setError("Please enter your phone number");
+      return;
+    }
+
+    // Validate phone number format (basic validation)
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    const cleanPhone = formData.phone.replace(/\s/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      setError("Please enter a valid phone number with country code (e.g., +919305897506)");
+      return;
+    }
+
+    try {
+      trackEvent('login_attempt', { method: 'phone' });
+      
+      const result = await signInWithPhoneNumber(cleanPhone);
+      
+      // Show OTP in development mode if returned
+      if (result.otp && process.env.NODE_ENV === 'development') {
+        console.log(`[DEV MODE] OTP for ${cleanPhone}: ${result.otp}`);
+      }
+      
+      setOtpSent(true);
+      setError("");
+      
+      // Show success message if OTP was reused
+      if (result.reused) {
+        setError(`Previous OTP is still valid. Expires in ${result.expiresIn} minutes.`);
+      }
+    } catch (err) {
+      trackEvent('login_failed', { method: 'phone', error: err.message });
+      
+      // Handle rate limiting error
+      if (err.message?.includes('wait') || err.message?.includes('retry')) {
+        setError(err.message);
+      } else {
+        setError(err.message || "Failed to send OTP. Please try again.");
+      }
+    }
+  };
+
+  /**
+   * Handle OTP verification.
+   * Verifies the OTP code and signs in the user.
+   */
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!formData.otp || formData.otp.length !== 6) {
+      setError("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    try {
+      // Verify OTP and authenticate
+      const result = await verifyOTP(formData.otp, !isLogin ? formData.name : null);
+      
+      trackEvent('login_success', { method: 'phone' });
+
+      // Profile is already created in verifyOTP, just redirect
+
+      // Redirect based on role
+      if (result.profile?.collection === "users" || !result.profile) {
+        const returnUrl = typeof window !== 'undefined' ? sessionStorage.getItem('tgs:returnUrl') : null;
+        if (returnUrl) {
+          sessionStorage.removeItem('tgs:returnUrl');
+          router.push(returnUrl);
+        } else {
+          router.push("/talk-to-astrologer");
+        }
+      } else {
+        router.push("/unauthorized");
+      }
+    } catch (err) {
+      trackEvent('login_failed', { method: 'phone', error: err.message });
+      setError(err.message || "Invalid OTP. Please try again.");
+    }
+  };
+
+  /**
+   * Reset phone auth state (go back to phone input)
+   */
+  const handleResendOTP = () => {
+    setOtpSent(false);
+    setFormData({ ...formData, otp: "" });
+    setError("");
+  };
+
+  // --------------------------------------------------------------------------
   // GOOGLE AUTHENTICATION
   // --------------------------------------------------------------------------
   /**
    * Handle Google OAuth sign-in.
+   * Works independently of email/phone auth method selection.
    * If new user, creates user profile with defaults.
    * Redirects based on existing profile role.
    */
   const handleGoogleAuth = async () => {
     setError(""); // Clear previous errors
+    setOtpSent(false); // Reset phone auth state if any
 
     // Track Google auth attempt
     trackEvent('login_attempt', { method: 'google' });
@@ -177,11 +284,13 @@ export default function UserAuth() {
 
       // Check if profile exists
       if (!result.profile) {
-        // Create new user profile
+        // Create new user profile with Google account details
         await setDoc(doc(db, "users", result.user.uid), {
-          name: result.user.displayName,
-          email: result.user.email,
+          name: result.user.displayName || "User",
+          email: result.user.email || "",
+          photoURL: result.user.photoURL || "",
           role: "user",
+          authProvider: "google",
           createdAt: new Date().toISOString(),
         });
         
@@ -208,6 +317,8 @@ export default function UserAuth() {
         }
       }
     } catch (err) {
+      // Track Google auth failure
+      trackEvent('login_failed', { method: 'google', error: err.message });
       setError(err.message); // Display error message
     }
   };
@@ -217,11 +328,26 @@ export default function UserAuth() {
   // --------------------------------------------------------------------------
   /**
    * Toggle between login and signup modes.
-   * Clears any existing errors.
+   * Clears any existing errors and resets form state.
    */
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
     setError("");
+    setOtpSent(false);
+    setShowPassword(false);
+    setFormData({ email: "", password: "", name: "", phone: "", otp: "" });
+  };
+
+  /**
+   * Toggle between email and phone authentication methods.
+   * Resets form state when switching methods.
+   */
+  const toggleAuthMethod = (method) => {
+    setAuthMethod(method);
+    setError("");
+    setOtpSent(false);
+    setShowPassword(false);
+    setFormData({ email: "", password: "", name: "", phone: "", otp: "" });
   };
 
   /**
@@ -279,95 +405,240 @@ export default function UserAuth() {
             {error}
           </div>
         )}
-        {/* Auth form – Handles submission with dynamic fields */}
-        <form onSubmit={handleSubmit} className="auth-form" noValidate>
-          {/* Sign-up only fields – Conditionally rendered */}
-          {!isLogin && (
-            <>
-              <div className="form-field">
-                <label className="form-field-label">
-                  <User />
-                  <span>{t.formFields.fullName}</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={t.formFields.enterFullName}
-                  value={formData.name}
-                  onChange={(e) => updateFormField("name", e.target.value)}
-                  className="form-field-input"
-                  required
-                  aria-label={t.formFields.fullName}
-                />
-              </div>
+        {/* Auth method toggle - Email or Phone */}
+        <div className="auth-method-toggle" style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => toggleAuthMethod("email")}
+            className={authMethod === "email" ? "toggle-link" : ""}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: authMethod === "email" ? '#6366f1' : 'transparent',
+              color: authMethod === "email" ? 'white' : '#666',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: authMethod === "email" ? '600' : '400',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Email
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleAuthMethod("phone")}
+            className={authMethod === "phone" ? "toggle-link" : ""}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: authMethod === "phone" ? '#6366f1' : 'transparent',
+              color: authMethod === "phone" ? 'white' : '#666',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: authMethod === "phone" ? '600' : '400',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Phone
+          </button>
+        </div>
 
-              <div className="form-field">
-                <label className="form-field-label">
-                  <Phone />
-                  <span>{t.formFields.phone}</span>
-                </label>
-                <input
-                  type="tel"
-                  placeholder={t.formFields.phonePlaceholder}
-                  value={formData.phone}
-                  onChange={(e) => updateFormField("phone", e.target.value)}
-                  className="form-field-input"
-                  required
-                  aria-label={t.formFields.phone}
-                />
-              </div>
+        {/* Note: Custom OTP system doesn't require reCAPTCHA */}
+
+        {/* Auth form – Handles submission with dynamic fields */}
+        <form onSubmit={authMethod === "phone" && otpSent ? handleVerifyOTP : authMethod === "phone" ? handleSendOTP : handleSubmit} className="auth-form" noValidate>
+          {/* Phone Authentication Fields */}
+          {authMethod === "phone" && (
+            <>
+              {/* Phone number input - shown before OTP is sent */}
+              {!otpSent && (
+                <>
+                  {!isLogin && (
+                    <div className="form-field">
+                      <label className="form-field-label">
+                        <User />
+                        <span>{t.formFields.fullName}</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={t.formFields.enterFullName}
+                        value={formData.name}
+                        onChange={(e) => updateFormField("name", e.target.value)}
+                        className="form-field-input"
+                        required={!isLogin}
+                        aria-label={t.formFields.fullName}
+                      />
+                    </div>
+                  )}
+                  <div className="form-field">
+                    <label className="form-field-label">
+                      <Phone />
+                      <span>Phone Number</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+1234567890 (with country code)"
+                      value={formData.phone}
+                      onChange={(e) => updateFormField("phone", e.target.value)}
+                      className="form-field-input"
+                      required
+                      aria-label="Phone Number"
+                    />
+                    <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Enter your phone number with country code (e.g., +91 for India, +1 for USA)
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* OTP input - shown after OTP is sent */}
+              {otpSent && (
+                <>
+                  <div className="form-field">
+                    <label className="form-field-label">
+                      <Phone />
+                      <span>Enter OTP</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit OTP"
+                      value={formData.otp}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        updateFormField("otp", value);
+                      }}
+                      className="form-field-input"
+                      required
+                      maxLength={6}
+                      aria-label="OTP Code"
+                      style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+                    />
+                    <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', textAlign: 'center' }}>
+                      OTP sent to {formData.phone}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      className="toggle-link"
+                      style={{ 
+                        marginTop: '8px', 
+                        fontSize: '14px',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#6366f1'
+                      }}
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
-          {/* Email field – Common to both modes */}
-          <div className="form-field">
-            <label className="form-field-label">
-              <Mail />
-              <span>{t.formFields.email}</span>
-            </label>
-            <input
-              type="email"
-              placeholder={t.formFields.emailPlaceholder}
-              value={formData.email}
-              onChange={(e) => updateFormField("email", e.target.value)}
-              className="form-field-input"
-              required
-              aria-label={t.formFields.email}
-            />
-          </div>
+          {/* Email Authentication Fields */}
+          {authMethod === "email" && (
+            <>
+              {/* Sign-up only fields – Conditionally rendered */}
+              {!isLogin && (
+                <>
+                  <div className="form-field">
+                    <label className="form-field-label">
+                      <User />
+                      <span>{t.formFields.fullName}</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t.formFields.enterFullName}
+                      value={formData.name}
+                      onChange={(e) => updateFormField("name", e.target.value)}
+                      className="form-field-input"
+                      required
+                      aria-label={t.formFields.fullName}
+                    />
+                  </div>
 
-          {/* Password field – Common to both modes */}
-          <div className="form-field">
-            <label className="form-field-label">
-              <Lock />
-              <span>{t.formFields.password}</span>
-            </label>
-            <div className="auth-input-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder={t.formFields.passwordPlaceholder}
-                value={formData.password}
-                onChange={(e) => updateFormField("password", e.target.value)}
-                className="form-field-input password-input"
-                required
-                aria-label={t.formFields.password}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff /> : <Eye />}
-              </button>
-            </div>
-          </div>
+                  <div className="form-field">
+                    <label className="form-field-label">
+                      <Phone />
+                      <span>{t.formFields.phone}</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder={t.formFields.phonePlaceholder}
+                      value={formData.phone}
+                      onChange={(e) => updateFormField("phone", e.target.value)}
+                      className="form-field-input"
+                      required
+                      aria-label={t.formFields.phone}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Email field – Common to both modes */}
+              <div className="form-field">
+                <label className="form-field-label">
+                  <Mail />
+                  <span>{t.formFields.email}</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder={t.formFields.emailPlaceholder}
+                  value={formData.email}
+                  onChange={(e) => updateFormField("email", e.target.value)}
+                  className="form-field-input"
+                  required
+                  aria-label={t.formFields.email}
+                />
+              </div>
+
+              {/* Password field – Common to both modes */}
+              <div className="form-field">
+                <label className="form-field-label">
+                  <Lock />
+                  <span>{t.formFields.password}</span>
+                </label>
+                <div className="auth-input-wrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={t.formFields.passwordPlaceholder}
+                    value={formData.password}
+                    onChange={(e) => updateFormField("password", e.target.value)}
+                    className="form-field-input password-input"
+                    required
+                    aria-label={t.formFields.password}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Submit button – With loading spinner */}
           <button
             type="submit"
             disabled={loading}
             className="submit-btn"
-            aria-label={isLogin ? "Sign in" : "Create account"}
+            aria-label={
+              authMethod === "phone" && otpSent 
+                ? "Verify OTP" 
+                : authMethod === "phone" 
+                ? "Send OTP" 
+                : isLogin 
+                ? "Sign in" 
+                : "Create account"
+            }
           >
             {loading ? (
               <>
@@ -375,23 +646,33 @@ export default function UserAuth() {
                 <span>{t.messages.processing}</span>
               </>
             ) : (
-              <span>{isLogin ? t.auth.signIn : t.auth.createAccount}</span>
+              <span>
+                {authMethod === "phone" && otpSent 
+                  ? "Verify OTP" 
+                  : authMethod === "phone" 
+                  ? "Send OTP" 
+                  : isLogin 
+                  ? t.auth.signIn 
+                  : t.auth.createAccount}
+              </span>
             )}
           </button>
         </form>
         {/* Divider – Separates form from Google button */}
+        {/* Google sign-in is always available regardless of email/phone selection */}
         <div className="divider">
           <div className="divider-line" />
           <span className="divider-text">{t.auth.signInWithGoogle === "Sign in with Google" ? "OR CONTINUE WITH" : "या जारी रखें"}</span>
           <div className="divider-line" />
         </div>
-        {/* Google sign-in button – OAuth integration */}
+        {/* Google sign-in button – OAuth integration (works independently) */}
         <button
           onClick={handleGoogleAuth}
           disabled={loading}
           className="google-btn"
           type="button"
           aria-label="Continue with Google"
+          style={{ opacity: loading ? 0.6 : 1 }}
         >
           <svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path

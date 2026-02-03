@@ -69,9 +69,21 @@ export async function sendSMS(to, message) {
     const formattedTo = formatPhoneNumber(to)
     const formattedFrom = formatPhoneNumber(from)
 
+    console.log(`📤 Sending SMS via Twilio:`, {
+      from: formattedFrom,
+      to: formattedTo,
+      messageLength: message.length
+    })
+
     const result = await client.messages.create({
       body: message,
       from: formattedFrom,
+      to: formattedTo
+    })
+
+    console.log(`✅ SMS sent successfully:`, {
+      messageSid: result.sid,
+      status: result.status,
       to: formattedTo
     })
 
@@ -81,15 +93,20 @@ export async function sendSMS(to, message) {
       status: result.status
     }
   } catch (error) {
-    console.error('Twilio SMS Error:', error)
+    console.error('❌ Twilio SMS Error:', {
+      code: error.code,
+      message: error.message,
+      to: to,
+      from: process.env.TWILIO_PHONE_NUMBER
+    })
     
     // Handle specific Twilio error codes
     if (error.code === 21660) {
-      throw new Error(`The phone number ${formattedFrom} is not associated with your Twilio account. Please purchase a phone number for SMS or use a number that belongs to your account. Error code: 21660`)
+      throw new Error(`The phone number ${process.env.TWILIO_PHONE_NUMBER} is not associated with your Twilio account. Please purchase a phone number for SMS or use a number that belongs to your account. Error code: 21660`)
     } else if (error.code === 21211) {
-      throw new Error(`Invalid phone number format: ${formattedTo}. Please check the phone number.`)
+      throw new Error(`Invalid phone number format: ${to}. Please check the phone number.`)
     } else if (error.code === 21408) {
-      throw new Error(`Permission denied. The phone number ${formattedFrom} may not have SMS capabilities.`)
+      throw new Error(`Permission denied. The phone number ${process.env.TWILIO_PHONE_NUMBER} may not have SMS capabilities.`)
     }
     
     throw new Error(`Failed to send SMS: ${error.message} (Code: ${error.code || 'unknown'})`)
@@ -159,13 +176,22 @@ export async function sendWhatsApp(to, message) {
 export async function sendOTP(phoneNumber, otp) {
   const message = `Your OTP for TheGodSays is ${otp}. Valid for 10 minutes. Do not share this code with anyone.`
   
+  // Always try to send via SMS - no dev mode fallback
+  // Only log to console if Twilio is completely not configured
   try {
     const result = await sendSMS(phoneNumber, message)
+    console.log(`✅ SMS sent successfully to ${phoneNumber} via Twilio`)
     return result
   } catch (error) {
-    // Fallback: log OTP in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[DEV MODE] OTP for ${phoneNumber}: ${otp}`)
+    // Check if Twilio is not configured at all
+    const isNotConfigured = error.message?.includes('not configured') || 
+                           error.message?.includes('TWILIO_ACCOUNT_SID') ||
+                           error.message?.includes('TWILIO_AUTH_TOKEN')
+    
+    if (isNotConfigured && process.env.NODE_ENV === 'development') {
+      // Only log if Twilio is not configured at all
+      console.warn(`⚠️ Twilio not configured. OTP for ${phoneNumber}: ${otp}`)
+      console.warn(`⚠️ Configure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to send SMS`)
       return {
         success: true,
         messageSid: 'dev-mode',
@@ -173,6 +199,9 @@ export async function sendOTP(phoneNumber, otp) {
         devMode: true
       }
     }
+    
+    // For all other errors (including configured but failed), throw error
+    console.error(`❌ Failed to send SMS via Twilio:`, error.message)
     throw error
   }
 }
