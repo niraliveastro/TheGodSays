@@ -1764,7 +1764,7 @@ export default function Home() {
           {/* ───────────────────────────── END HERO SECTION ───────────────────────────── */}
 
           {/* ====== OUR SERVICES OVERVIEW — QUICK NAVIGATION ====== */}
-          <section className="max-w-7xl mx-auto mt-16 px-4">
+          <section className="max-w-90 mx-auto mt-16">
             <div className="text-center mb-10">
               <h2
                 className="text-4xl mb-3 justify-center"
@@ -1877,7 +1877,7 @@ export default function Home() {
           </section>
 
           {/* ====== HOW IT WORKS & QUICK AI READING - SIDE BY SIDE ====== */}
-          <section className="how-it-works-quick-start-container max-w-7xl mx-auto mt-20 px-4">
+          <section className="how-it-works-quick-start-container max-w-90 mx-auto mt-20">
             <div className="how-it-works-quick-start-wrapper">
               {/* LEFT COLUMN: How It Works */}
               <div className="how-it-works-column">
@@ -2654,10 +2654,13 @@ export default function Home() {
             <div
               role="region"
               aria-labelledby="loyalty-title"
-              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center w-full"
+              className="max-w-90 mx-auto bg-gradient-to-br from-white to-indigo-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg flex flex-col md:flex-row gap-6 items-center w-full"
               style={{
                 background: undefined,
                 borderColor: undefined,
+                width: "100%",
+                maxWidth: "80rem",
+                boxSizing: "border-box",
               }}
             >
               {/* Left: icon + copy */}
@@ -2787,7 +2790,7 @@ export default function Home() {
             <div
               role="region"
               aria-labelledby="panchang-title"
-              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
+              className="max-w-90 mx-auto bg-gradient-to-br from-white to-blue-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
               style={{
                 background: undefined,
                 borderColor: undefined,
@@ -2913,7 +2916,7 @@ export default function Home() {
             <div
               role="region"
               aria-labelledby="advanced-vedic-tools-title"
-              className="max-w-7xl mx-auto bg-gradient-to-br from-white to-purple-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
+              className="max-w-90 mx-auto bg-gradient-to-br from-white to-purple-50/40 border border-gray-100 rounded-2xl p-6 md:p-8 shadow-lg w-full"
               style={{
                 background: undefined,
                 borderColor: undefined,

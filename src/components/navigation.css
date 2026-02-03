@@ -645,9 +645,9 @@ body {
 }
 
 .nav-link:hover, .nav-button:hover {
- /* Golden gradient on hover */
- background-color: linear-gradient(135deg, #d4af37, #b8972e) !important;
-  color: #ffffff; /* White text on hover */
+  /* Golden gradient on hover */
+  background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Golden gradient background */
+  color: #ffffff !important; /* White text on hover */
   border-color: #d4af37;
   border-bottom: 3px solid #a08526 !important; /* Darker golden bottom border on hover */
   box-shadow: 0 3px 0 0 #a08526, 0 2px 8px rgba(212, 175, 55, 0.3) !important; /* Shadow to make bottom border visible */
@@ -664,6 +664,13 @@ body {
   z-index: 1;
   transition: all 0.3s ease;
   color: inherit; /* Inherit color from parent */
+}
+
+.nav-link:hover svg,
+.nav-button:hover svg {
+  color: #ffffff !important; /* White icons on hover */
+  opacity: 1 !important; /* Ensure icons are fully visible */
+  visibility: visible !important; /* Ensure icons are visible */
 }
 
 .nav-link span, .nav-button span {
@@ -686,6 +693,10 @@ body {
 .nav-button:hover span {
   text-decoration: none !important;
   border-bottom: none !important;
+  color: #ffffff !important; /* Ensure text is white and visible on hover */
+  opacity: 1 !important; /* Ensure text is fully visible */
+  visibility: visible !important; /* Ensure text is visible */
+  display: inline !important; /* Ensure text is displayed */
 }
 
 .nav-link:not(.nav-link-active) {
@@ -693,7 +704,15 @@ body {
 }
 
 .nav-link:not(.nav-link-active):hover {
-  color: #ffffff;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Golden gradient background */
+}
+
+.nav-link:not(.nav-link-active):hover span {
+  color: #ffffff !important; /* Ensure span text is white */
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
 }
 
 /* Bottom nav bar specific styles - rounded rectangles on hover */
@@ -895,10 +914,23 @@ body {
 }
 
 .nav-link-active:hover {
-  background: linear-gradient(135deg, #b8972e, #a08526);
+  background: linear-gradient(135deg, #b8972e, #a08526) !important;
   box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
   transform: translateY(-2px);
-  color: #ffffff;
+  color: #ffffff !important;
+}
+
+.nav-link-active:hover span {
+  color: #ffffff !important; /* Ensure span text is white */
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
+}
+
+.nav-link-active:hover svg {
+  color: #ffffff !important; /* White icons on hover */
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Mobile Menu Button */
