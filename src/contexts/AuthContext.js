@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useRef } from "react";
 import { auth, db } from "@/lib/firebase";
 import {
   onAuthStateChanged,
@@ -10,9 +10,12 @@ import {
   signOut as fbSignOut,
   GoogleAuthProvider,
   signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  PhoneAuthProvider,
+  signInWithCredential,
 } from "firebase/auth";
-import { sendOTP as sendCustomOTP, verifyOTP as verifyCustomOTP } from "@/lib/otp-service";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, query, where, getDocs, collection } from "firebase/firestore";
 
 const AuthContext = createContext({
   user: null,
@@ -33,6 +36,10 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  
+  // Use refs to persist phone auth state across re-renders
+  const recaptchaVerifierRef = useRef(null);
+  const confirmationResultRef = useRef(null);
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (uid) => {
@@ -262,13 +269,98 @@ export function AuthProvider({ children }) {
     return userProfile?.collection === 'astrologers' ? 'astrologer' : 'user';
   };
 
-  // Custom Phone authentication using Twilio (cost-effective)
-  // Store phone number and temp user ID for OTP verification
-  let phoneAuthSession = null;
+  // Firebase Phone Authentication
+  // Using refs to persist across re-renders (these cannot be serialized to sessionStorage)
 
   /**
-   * Send OTP to phone number using Twilio (custom service)
-   * Much cheaper than Firebase SMS (~25-50% cost savings)
+   * Initialize reCAPTCHA verifier for Firebase phone authentication
+   * Creates an invisible reCAPTCHA widget
+   */
+  const initializeRecaptcha = async () => {
+    if (typeof window === 'undefined' || !auth) {
+      console.error('Cannot initialize reCAPTCHA: window or auth not available');
+      return null;
+    }
+
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      await new Promise(resolve => {
+        if (document.readyState === 'complete') {
+          resolve();
+        } else {
+          document.addEventListener('DOMContentLoaded', resolve);
+        }
+      });
+    }
+
+    // Ensure the container exists in the DOM
+    let container = document.getElementById('recaptcha-container');
+    if (!container) {
+      // Create container if it doesn't exist
+      container = document.createElement('div');
+      container.id = 'recaptcha-container';
+      container.style.display = 'none';
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+      console.log('Created reCAPTCHA container');
+      
+      // Wait a bit for the container to be fully in the DOM
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    // Clean up existing verifier if any
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      recaptchaVerifierRef.current = null;
+    }
+
+    try {
+      // Verify auth is properly configured
+      if (!auth.app || !auth.app.options) {
+        throw new Error('Firebase auth is not properly initialized');
+      }
+
+      // Create invisible reCAPTCHA verifier
+      // Note: Firebase may show visible challenges initially or when risk is detected
+      // This is normal behavior - it will become more invisible over time
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          // reCAPTCHA solved, can proceed with phone auth
+          console.log('✅ reCAPTCHA verified - proceeding with phone auth');
+        },
+        'expired-callback': () => {
+          console.warn('⚠️ reCAPTCHA expired - will retry');
+        },
+        'error-callback': (error) => {
+          console.error('❌ reCAPTCHA error:', error);
+        }
+      });
+
+      // Render the verifier and wait for it to be ready
+      await recaptchaVerifierRef.current.render();
+      console.log('reCAPTCHA verifier rendered successfully');
+
+      return recaptchaVerifierRef.current;
+    } catch (error) {
+      console.error('Error initializing reCAPTCHA:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      recaptchaVerifierRef.current = null;
+      throw error;
+    }
+  };
+
+  /**
+   * Send OTP to phone number using Firebase phone authentication
    */
   const signInWithPhone = async (phoneNumber) => {
     setLoading(true);
@@ -276,37 +368,154 @@ export function AuthProvider({ children }) {
       // Format phone number (ensure it starts with +)
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
 
-      // Generate temporary user ID for OTP session
-      const tempUserId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-      // Send OTP via custom Twilio service (pass userId and userType)
-      const result = await sendCustomOTP(formattedPhone, tempUserId, 'user');
-
-      // Store session data with the userId returned from API
-      phoneAuthSession = {
-        phoneNumber: formattedPhone,
-        tempUserId: result.tempUserId || tempUserId, // Use the one from API response
-        sentAt: new Date()
-      };
-
-      // Store in sessionStorage for persistence
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('tgs:phoneAuthSession', JSON.stringify(phoneAuthSession));
+      // Validate auth is available
+      if (!auth) {
+        throw new Error('Firebase authentication is not initialized. Please refresh the page.');
       }
+
+      // Clean up any existing session before requesting new OTP
+      confirmationResultRef.current = null;
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        recaptchaVerifierRef.current = null;
+      }
+      
+      // Clear stored session
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+      }
+
+      // Initialize/reinitialize reCAPTCHA (always create fresh to avoid stale state)
+      try {
+        recaptchaVerifierRef.current = await initializeRecaptcha();
+        if (!recaptchaVerifierRef.current) {
+          throw new Error('Failed to initialize reCAPTCHA verifier');
+        }
+      } catch (recaptchaError) {
+        console.error('reCAPTCHA initialization error:', recaptchaError);
+        
+        // Provide specific error messages based on error type
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'unknown';
+        
+        if (recaptchaError.message?.includes('hostname') || recaptchaError.code === 'auth/captcha-check-failed') {
+          throw new Error(
+            `reCAPTCHA hostname mismatch. "${currentHost}" is not in your reCAPTCHA key domains. ` +
+            `Add "${currentHost}" to reCAPTCHA key domains in Google Cloud Console. ` +
+            `See LOCALHOST_FIREBASE_PHONE_AUTH_FIX.md for steps.`
+          );
+        } else if (recaptchaError.message?.includes('container') || recaptchaError.message?.includes('element')) {
+          throw new Error('reCAPTCHA container not found. Please refresh the page and try again.');
+        } else {
+          throw new Error(
+            `Failed to initialize reCAPTCHA: ${recaptchaError.message || 'Unknown error'}. ` +
+            `Please ensure: 1) Phone authentication is enabled in Firebase Console, ` +
+            `2) reCAPTCHA is configured, 3) "${currentHost}" is in reCAPTCHA key domains. ` +
+            `See FIREBASE_RECAPTCHA_TROUBLESHOOTING.md for help.`
+          );
+        }
+      }
+
+      // Send OTP via Firebase
+      confirmationResultRef.current = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current);
+
+      // Store confirmation result metadata in sessionStorage for persistence
+      // Note: confirmationResult itself cannot be serialized, but we store metadata
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('tgs:phoneAuthConfirmation', JSON.stringify({
+          phoneNumber: formattedPhone,
+          sentAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+        }));
+      }
+      
+      console.log('✅ OTP sent successfully. Valid for 10 minutes.');
 
       return { 
         success: true, 
-        message: result.message || 'OTP sent successfully',
-        tempUserId: phoneAuthSession.tempUserId,
-        // In development, return OTP for testing
-        ...(result.otp && { otp: result.otp })
+        message: 'OTP sent successfully',
+        phoneNumber: formattedPhone
       };
     } catch (error) {
       console.error('Error sending OTP:', error);
-      phoneAuthSession = null;
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('tgs:phoneAuthSession');
+      
+      // Clean up verifier on error
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          // Ignore cleanup errors
+        }
       }
+      
+      confirmationResultRef.current = null;
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+      }
+
+      // Provide user-friendly error messages
+      if (error.code === 'auth/invalid-phone-number') {
+        throw new Error('Invalid phone number format. Please include country code (e.g., +919305897506)');
+      } else if (error.code === 'auth/too-many-requests') {
+        throw new Error('Too many requests. Please try again later.');
+      } else if (error.code === 'auth/quota-exceeded') {
+        throw new Error('SMS quota exceeded. Please try again later.');
+      } else if (error.code === 'auth/captcha-check-failed') {
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'unknown';
+        const currentPort = typeof window !== 'undefined' ? window.location.port : '';
+        const fullHost = currentPort ? `${currentHost}:${currentPort}` : currentHost;
+        
+        console.error('❌ reCAPTCHA Hostname Mismatch Error');
+        console.error(`📍 Current hostname: ${fullHost}`);
+        console.error('📖 Fix Guide: See LOCALHOST_FIREBASE_PHONE_AUTH_FIX.md');
+        console.error('🔧 Quick Fixes:');
+        console.error(`   1. Add "${currentHost}" to reCAPTCHA key domains (Google Cloud Console)`);
+        if (currentHost === 'localhost') {
+          console.error('   2. Also add "127.0.0.1" to reCAPTCHA key domains');
+          console.error('   3. Try accessing via http://127.0.0.1:3000 instead');
+        }
+        console.error('   4. Verify domain is in Firebase Authorized Domains');
+        console.error('   5. Wait 2-5 minutes after adding domains');
+        console.error('   6. Clear browser cache and try again');
+        
+        throw new Error(
+          `reCAPTCHA hostname mismatch. Current hostname "${fullHost}" is not in your reCAPTCHA key domains. ` +
+          `Add "${currentHost}" to your reCAPTCHA key domains in Google Cloud Console. ` +
+          `See LOCALHOST_FIREBASE_PHONE_AUTH_FIX.md for detailed steps.`
+        );
+      } else if (error.code === 'auth/invalid-app-credential') {
+        const isLocalhost = typeof window !== 'undefined' && 
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        
+        console.error('❌ Firebase Phone Auth Error: reCAPTCHA not configured');
+        if (isLocalhost) {
+          console.error('⚠️  LOCALHOST DETECTED - This might be a localhost issue!');
+          console.error('📖 Localhost Fix Guide: See LOCALHOST_FIREBASE_PHONE_AUTH_FIX.md');
+          console.error('🔧 Quick Fixes for localhost:');
+          console.error('   1. Add "localhost" to reCAPTCHA key domains (Google Cloud Console)');
+          console.error('   2. Add "127.0.0.1" to reCAPTCHA key domains');
+          console.error('   3. Verify "localhost" is in Firebase Authorized Domains');
+          console.error('   4. Try accessing via http://127.0.0.1:3000 instead');
+          console.error('   5. Or use ngrok for testing (see guide)');
+        }
+        console.error('📖 Troubleshooting Guide: See FIREBASE_RECAPTCHA_TROUBLESHOOTING.md');
+        console.error('🔗 Firebase Console: https://console.firebase.google.com/');
+        console.error('   → Authentication → Settings → reCAPTCHA');
+        throw new Error(
+          isLocalhost 
+            ? 'reCAPTCHA not configured. This might be a localhost issue. Add "localhost" to your reCAPTCHA key domains. See LOCALHOST_FIREBASE_PHONE_AUTH_FIX.md'
+            : 'reCAPTCHA not properly configured. Click "Configure site keys" in Firebase Console and select your key. See FIREBASE_RECAPTCHA_TROUBLESHOOTING.md for detailed steps.'
+        );
+      } else if (error.code === 'auth/missing-phone-number') {
+        throw new Error('Phone number is required.');
+      } else if (error.code === 'auth/invalid-verification-code') {
+        throw new Error('Invalid verification code.');
+      }
+      
       throw error;
     } finally {
       setLoading(false);
@@ -314,125 +523,153 @@ export function AuthProvider({ children }) {
   };
 
   /**
-   * Verify OTP and create/authenticate user
-   * Creates Firebase auth user after OTP verification
+   * Verify OTP and sign in/create user with Firebase phone authentication
    */
   const verifyOTP = async (otp, name = null) => {
     setLoading(true);
     try {
-      // Get session from memory or sessionStorage
-      if (!phoneAuthSession && typeof window !== 'undefined') {
-        const stored = sessionStorage.getItem('tgs:phoneAuthSession');
-        if (stored) {
-          phoneAuthSession = JSON.parse(stored);
+      if (!confirmationResultRef.current) {
+        // Check if we have a stored session
+        if (typeof window !== 'undefined') {
+          const stored = sessionStorage.getItem('tgs:phoneAuthConfirmation');
+          if (stored) {
+            const sessionData = JSON.parse(stored);
+            const sentAt = new Date(sessionData.sentAt);
+            const now = new Date();
+            const minutesElapsed = (now - sentAt) / 1000 / 60;
+            
+            // Firebase OTP expires after 10 minutes
+            if (minutesElapsed > 10) {
+              sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+              throw new Error('OTP has expired (10 minutes). Please request a new OTP.');
+            }
+            
+            // Session exists but confirmationResult was lost (page refresh, etc.)
+            throw new Error('Session expired. Please click "Resend OTP" to get a new code.');
+          }
         }
-      }
-
-      if (!phoneAuthSession) {
         throw new Error('No phone verification session found. Please request OTP again.');
       }
-
-      // Verify OTP using custom service (must use same userId as when sending)
-      const verifyResult = await verifyCustomOTP(
-        phoneAuthSession.phoneNumber,
-        otp,
-        phoneAuthSession.tempUserId,
-        'user'
-      );
       
-      if (!verifyResult.success) {
-        throw new Error(verifyResult.error || 'OTP verification failed');
+      // Check if confirmationResult is still valid (not expired)
+      // Firebase OTPs expire after 10 minutes, but we can't check this directly
+      // So we check the stored timestamp
+      if (typeof window !== 'undefined') {
+        const stored = sessionStorage.getItem('tgs:phoneAuthConfirmation');
+        if (stored) {
+          const sessionData = JSON.parse(stored);
+          const sentAt = new Date(sessionData.sentAt);
+          const now = new Date();
+          const minutesElapsed = (now - sentAt) / 1000 / 60;
+          
+          if (minutesElapsed > 10) {
+            // OTP expired, clear everything
+            confirmationResultRef.current = null;
+            if (recaptchaVerifierRef.current) {
+              try {
+                recaptchaVerifierRef.current.clear();
+                recaptchaVerifierRef.current = null;
+              } catch (e) {}
+            }
+            sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+            throw new Error('OTP has expired (10 minutes). Please request a new OTP.');
+          }
+        }
       }
 
-      // OTP verified - now create Firebase auth user
-      // Check if user already exists with this phone number
-      const { collection, query, where, getDocs } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-      
-      let existingUser = null;
+      // Verify OTP with Firebase
+      let result;
       try {
-        // Search for existing user with this phone number
-        const usersQuery = query(
-          collection(db, 'users'),
-          where('phone', '==', phoneAuthSession.phoneNumber)
-        );
-        const querySnapshot = await getDocs(usersQuery);
-        
-        if (!querySnapshot.empty) {
-          // User exists - get their Firebase auth UID from profile
-          const userDoc = querySnapshot.docs[0];
-          existingUser = { uid: userDoc.id, profile: userDoc.data() };
+        result = await confirmationResultRef.current.confirm(otp);
+      } catch (confirmError) {
+        // Handle expired OTP
+        if (confirmError.code === 'auth/code-expired' || confirmError.code === 'auth/session-expired') {
+          confirmationResultRef.current = null;
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+          }
+          throw new Error('OTP has expired. Please request a new OTP.');
         }
-      } catch (searchError) {
-        console.warn('Error searching for existing user:', searchError);
-        // Continue with new user creation
+        throw confirmError;
       }
+      
+      const user = result.user;
 
-      let user;
-      let isNewUser = false;
+      setUser(user);
 
-      if (existingUser) {
-        // User exists - we need to sign them in
-        // Since we don't have their password, we'll create a new auth account
-        // and link it, or use a different approach
-        // For now, create new auth account but update existing profile
-        const phoneEmail = `phone_${phoneAuthSession.phoneNumber.replace(/[^0-9]/g, '')}@thegodsays.app`;
-        const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-        
-        try {
-          // Try to create new auth account (might fail if email exists)
-          user = await createUserWithEmailAndPassword(auth, phoneEmail, tempPassword);
-          isNewUser = true;
-        } catch (createError) {
-          // Email might exist, try signing in (unlikely to work without password)
-          // For now, create with unique email
-          const uniqueEmail = `phone_${phoneAuthSession.phoneNumber.replace(/[^0-9]/g, '')}_${Date.now()}@thegodsays.app`;
-          user = await createUserWithEmailAndPassword(auth, uniqueEmail, tempPassword);
-          isNewUser = true;
-        }
-      } else {
-        // New user - create Firebase auth account
-        const phoneEmail = `phone_${phoneAuthSession.phoneNumber.replace(/[^0-9]/g, '')}@thegodsays.app`;
-        const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-        
-        isNewUser = true;
-        user = await createUserWithEmailAndPassword(auth, phoneEmail, tempPassword);
-        
-        // Update profile with phone number
-        await updateProfile(user.user, {
-          displayName: name || 'User',
-          phoneNumber: phoneAuthSession.phoneNumber
+      // Check if user profile exists
+      let profile = await fetchUserProfile(user.uid);
+      let isNewUser = !profile;
+
+      if (isNewUser) {
+        // Create new user profile in Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          name: name || user.displayName || 'User',
+          phone: user.phoneNumber || confirmationResultRef.current?.verificationId?.split(':')[0] || '',
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString(),
+          role: 'user',
+          authProvider: 'phone',
+          createdAt: new Date().toISOString(),
         });
+
+        // Update Firebase auth profile if name provided
+        if (name && !user.displayName) {
+          await updateProfile(user, {
+            displayName: name
+          });
+        }
+
+        profile = await fetchUserProfile(user.uid);
+      } else {
+        // Update existing profile with phone verification status
+        await setDoc(doc(db, 'users', user.uid), {
+          phone: user.phoneNumber || confirmationResultRef.current?.verificationId?.split(':')[0] || '',
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        // Update name if provided and different
+        if (name && profile.name !== name) {
+          await setDoc(doc(db, 'users', user.uid), {
+            name: name
+          }, { merge: true });
+          await updateProfile(user, {
+            displayName: name
+          });
+        }
       }
 
-      setUser(user.user);
-
-      // Create or update user profile in Firestore
-      const { setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'users', user.user.uid), {
-        name: name || 'User',
-        phone: phoneAuthSession.phoneNumber,
-        phoneVerified: true,
-        phoneVerifiedAt: new Date().toISOString(),
-        role: 'user',
-        authProvider: 'phone',
-        createdAt: isNewUser ? new Date().toISOString() : undefined,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-
-      // Fetch user profile
-      const profile = await fetchUserProfile(user.user.uid);
       setUserProfile(profile);
 
-      // Clean up session
-      phoneAuthSession = null;
+      // Clean up after successful verification
+      confirmationResultRef.current = null;
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('tgs:phoneAuthSession');
+        sessionStorage.removeItem('tgs:phoneAuthConfirmation');
       }
 
-      return { user: user.user, profile };
+      return { user, profile };
     } catch (error) {
       console.error('Error verifying OTP:', error);
+      
+      // Provide user-friendly error messages
+      if (error.code === 'auth/invalid-verification-code') {
+        throw new Error('Invalid OTP. Please check and try again.');
+      } else if (error.code === 'auth/code-expired') {
+        throw new Error('OTP has expired. Please request a new OTP.');
+      } else if (error.code === 'auth/session-expired') {
+        throw new Error('Session expired. Please request a new OTP.');
+      }
+      
       throw error;
     } finally {
       setLoading(false);
