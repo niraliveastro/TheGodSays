@@ -1,46 +1,57 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { Lock, Phone } from "lucide-react";
 import "../high-converting.css";
 
 export default function LockedDeepPredictions({
   title = "Detailed Dasha & Event Timing",
   subtitle = "Antar-Dasha effects, exact event windows, remedies & outcomes",
   lockMessage = "Unlock to access detailed deep predictions",
-  ctaText = "Unlock full predictions",
+  ctaText = "Talk to an astrologer",
   onUnlock,
 }) {
   return (
-    <section className="mt-10 rounded-2xl bg-[#fffdf7] border border-[#f3e6c4] shadow-[0_12px_36px_rgba(212,175,55,0.12)]">
-      <div className="locked-content">
-        {/* Title */}
-        <h2 className="section-title">
-          {title}
-        </h2>
+    <section className="astrologer-cta">
+      {/* LEFT CONTENT */}
+      <div className="astrologer-cta-content">
+        <h3>{title}</h3>
 
-        {/* Subtitle */}
-        <p className="section-subtitle mb-4 text-center">
-          {subtitle}
-        </p>
+        <p>{subtitle}</p>
 
-        {/* Lock info */}
-        <div className="locked-text text-center">
-          <Lock size={24} className="text-[var(--color-gold)]" />
-          {lockMessage}
+        {/* Lock message */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginTop: "0.75rem",
+            color: "#92400e",
+            fontSize: "0.9rem",
+            fontWeight: 500,
+          }}
+        >
+          <Lock size={18} />
+          <span>{lockMessage}</span>
         </div>
 
         {/* CTA */}
-        <div>
-          <button
-            onClick={onUnlock}
-            className="
-            mx-auto mt-4
-              btn btn-gold
-            "
-          >
-            {ctaText}
-          </button>
-        </div>
+        <button
+          className="cta-btn cta-primary mt-4"
+          onClick={onUnlock}
+        >
+          <Phone size={18} />
+          {ctaText}
+        </button>
+      </div>
+
+      {/* RIGHT VISUAL */}
+      <div className="astrologer-cta-visual">
+        <img
+          src="/images/astrologer2.png"
+          alt="Astrologer guidance"
+          width={400}
+          height={500}
+        />
       </div>
     </section>
   );

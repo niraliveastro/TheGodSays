@@ -110,18 +110,17 @@ html, body {
   background: linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(250, 248, 245, 1));
 }
 
-.blog-hero h1 {
+/* .blog-hero h1 {
   font-family: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
   font-size: 3.5rem;
   font-weight: 400;
-  color: #c9a961;
   margin: 0 auto 1rem;
   letter-spacing: -0.02em;
   line-height: 1.2;
   text-align: center;
   width: 100%;
   display: block;
-}
+} */
 
 .blog-hero p {
   font-family: 'Inter', sans-serif;

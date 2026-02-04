@@ -1969,7 +1969,7 @@ select.form-field-input {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 10;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .ai-astrologer-section:has(.chat-window-container) {

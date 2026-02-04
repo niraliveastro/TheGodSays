@@ -327,9 +327,7 @@ export default function ProfilePage() {
           <h1 className="title" style={{
             fontSize: "2.5rem",
             fontWeight: 500,
-            background: "linear-gradient(135deg, var(--color-gold), var(--color-gold-dark))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
