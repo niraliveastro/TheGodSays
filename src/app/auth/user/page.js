@@ -44,8 +44,53 @@ import {
   Mail,
   Lock,
   Phone,
-  Infinity,
 } from "lucide-react";
+
+/**
+ * OTP Countdown Component
+ * Shows remaining time until OTP expires
+ */
+function OTPCountdown({ expiresAt, onExpired }) {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = expiresAt - now;
+      
+      if (diff <= 0) {
+        setTimeLeft('Expired');
+        onExpired();
+        return;
+      }
+      
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt, onExpired]);
+
+  if (!timeLeft || timeLeft === 'Expired') {
+    return null;
+  }
+
+  return (
+    <p style={{ 
+      fontSize: '12px', 
+      color: '#666', 
+      marginTop: '4px', 
+      textAlign: 'center',
+      fontWeight: '500'
+    }}>
+      OTP expires in: <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{timeLeft}</span>
+    </p>
+  );
+}
 
 /**
  * UserAuth Component
@@ -62,6 +107,14 @@ export default function UserAuth() {
   // Track page view on mount
   useEffect(() => {
     trackPageView('/auth/user', 'User Authentication');
+    
+    // Cleanup on unmount
+    return () => {
+      // Clean up phone auth session on unmount
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+      }
+    };
   }, []);
   
   // Form state management
@@ -69,6 +122,7 @@ export default function UserAuth() {
   const [authMethod, setAuthMethod] = useState("email"); // "email" or "phone"
   const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
   const [otpSent, setOtpSent] = useState(false); // Whether OTP has been sent
+  const [otpExpiresAt, setOtpExpiresAt] = useState(null); // OTP expiration timestamp
   const [formData, setFormData] = useState({
     email: "", // Email address
     password: "", // Password
@@ -188,27 +242,17 @@ export default function UserAuth() {
       
       const result = await signInWithPhoneNumber(cleanPhone);
       
-      // Show OTP in development mode if returned
-      if (result.otp && process.env.NODE_ENV === 'development') {
-        console.log(`[DEV MODE] OTP for ${cleanPhone}: ${result.otp}`);
-      }
-      
       setOtpSent(true);
       setError("");
       
-      // Show success message if OTP was reused
-      if (result.reused) {
-        setError(`Previous OTP is still valid. Expires in ${result.expiresIn} minutes.`);
-      }
+      // Set expiration time (10 minutes from now)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      setOtpExpiresAt(expiresAt);
     } catch (err) {
       trackEvent('login_failed', { method: 'phone', error: err.message });
-      
-      // Handle rate limiting error
-      if (err.message?.includes('wait') || err.message?.includes('retry')) {
-        setError(err.message);
-      } else {
-        setError(err.message || "Failed to send OTP. Please try again.");
-      }
+      setError(err.message || "Failed to send OTP. Please try again.");
+      setOtpSent(false);
+      setOtpExpiresAt(null);
     }
   };
 
@@ -252,12 +296,37 @@ export default function UserAuth() {
   };
 
   /**
-   * Reset phone auth state (go back to phone input)
+   * Reset phone auth state and resend OTP
+   * This will trigger a new OTP request with fresh reCAPTCHA
    */
-  const handleResendOTP = () => {
-    setOtpSent(false);
-    setFormData({ ...formData, otp: "" });
+  const handleResendOTP = async () => {
     setError("");
+    setOtpSent(false);
+    setOtpExpiresAt(null);
+    
+    // Clear the OTP input
+    setFormData({ ...formData, otp: "" });
+    
+    // Clear any stored session
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+    }
+    
+    // Automatically resend OTP if phone number is still available
+    if (formData.phone) {
+      try {
+        // Small delay to ensure state is cleared
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Resend OTP
+        await handleSendOTP({ preventDefault: () => {} });
+      } catch (err) {
+        // Error will be set by handleSendOTP
+        console.error('Error resending OTP:', err);
+      }
+    } else {
+      setError("Phone number is required to resend OTP.");
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -348,6 +417,12 @@ export default function UserAuth() {
     setOtpSent(false);
     setShowPassword(false);
     setFormData({ email: "", password: "", name: "", phone: "", otp: "" });
+    
+    // Clean up reCAPTCHA when switching methods
+    if (method === "email" && typeof window !== 'undefined') {
+      // reCAPTCHA cleanup is handled by AuthContext
+      sessionStorage.removeItem('tgs:phoneAuthConfirmation');
+    }
   };
 
   /**
@@ -382,22 +457,24 @@ export default function UserAuth() {
       {/* Auth card – centered container for form and branding */}
       <div className="auth-card">
         <div className="accent-line" /> {/* Decorative accent line */}
-        {/* Logo section – Branding and dynamic messaging */}
+        {/* Logo section – Same as nav bar */}
         <div className="logo-section">
-          <div className="logo-badge">
-            <div className="logo-icon">
-              <Infinity style={{ width: '100%', height: '100%' }} />
+          <div className="logo-badge auth-logo-match-nav">
+            <div className="nav-logo-icon">
+              <img src="/niralive.svg" alt="NiraLive Astro" className="nav-logo-icon-svg" />
             </div>
-            <span className="logo-text">NiraLive Astro</span>
+            <span className="nav-logo-text">NiraLive Astro</span>
           </div>
-          <h1 className="auth-title">
-            {isLogin ? "Welcome Back" : "Join Our Journey"}
-          </h1>
-          <p className="auth-subtitle">
-            {isLogin
-              ? "Continue your cosmic exploration"
-              : "Begin your path to enlightenment"}
-          </p>
+          <div className="auth-heading-wrap">
+            <h1 className="auth-title">
+              {isLogin ? "Welcome Back" : "Join Our Journey"}
+            </h1>
+            <p className="auth-subtitle">
+              {isLogin
+                ? "Continue your cosmic exploration"
+                : "Begin your path to enlightenment"}
+            </p>
+          </div>
         </div>
         {/* Error alert – Displays validation or auth errors */}
         {error && (
@@ -406,46 +483,25 @@ export default function UserAuth() {
           </div>
         )}
         {/* Auth method toggle - Email or Phone */}
-        <div className="auth-method-toggle" style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
+        <div className="auth-method-toggle">
           <button
             type="button"
             onClick={() => toggleAuthMethod("email")}
-            className={authMethod === "email" ? "toggle-link" : ""}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              background: authMethod === "email" ? '#6366f1' : 'transparent',
-              color: authMethod === "email" ? 'white' : '#666',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: authMethod === "email" ? '600' : '400',
-              transition: 'all 0.2s ease'
-            }}
+            className={`auth-toggle-btn ${authMethod === "email" ? "auth-toggle-btn-active" : ""}`}
           >
             Email
           </button>
           <button
             type="button"
             onClick={() => toggleAuthMethod("phone")}
-            className={authMethod === "phone" ? "toggle-link" : ""}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              background: authMethod === "phone" ? '#6366f1' : 'transparent',
-              color: authMethod === "phone" ? 'white' : '#666',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: authMethod === "phone" ? '600' : '400',
-              transition: 'all 0.2s ease'
-            }}
+            className={`auth-toggle-btn ${authMethod === "phone" ? "auth-toggle-btn-active" : ""}`}
           >
             Phone
           </button>
         </div>
 
-        {/* Note: Custom OTP system doesn't require reCAPTCHA */}
+        {/* reCAPTCHA container for Firebase phone authentication (invisible) */}
+        <div id="recaptcha-container" style={{ display: 'none' }}></div>
 
         {/* Auth form – Handles submission with dynamic fields */}
         <form onSubmit={authMethod === "phone" && otpSent ? handleVerifyOTP : authMethod === "phone" ? handleSendOTP : handleSubmit} className="auth-form" noValidate>
@@ -518,20 +574,20 @@ export default function UserAuth() {
                     <p style={{ fontSize: '12px', color: '#666', marginTop: '4px', textAlign: 'center' }}>
                       OTP sent to {formData.phone}
                     </p>
+                    {otpExpiresAt && (
+                      <OTPCountdown expiresAt={otpExpiresAt} onExpired={() => {
+                        setOtpSent(false);
+                        setOtpExpiresAt(null);
+                        setError("OTP has expired. Please request a new OTP.");
+                      }} />
+                    )}
                     <button
                       type="button"
                       onClick={handleResendOTP}
-                      className="toggle-link"
-                      style={{ 
-                        marginTop: '8px', 
-                        fontSize: '14px',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#6366f1'
-                      }}
+                      className="auth-resend-otp-btn"
+                      disabled={loading}
                     >
-                      Resend OTP
+                      {loading ? "Sending..." : "Resend OTP"}
                     </button>
                   </div>
                 </>
