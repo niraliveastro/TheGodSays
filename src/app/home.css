@@ -26,9 +26,9 @@ h1, h2, h3, h4, h5, h6,
   min-height: 100vh;
   background: linear-gradient(135deg, #fdfbf7 0%, #f8f5f0 100%);
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip prevents overflow-y from becoming auto (which clips vertical content) */
   transition: background 0.5s ease;
-  padding: 1.5rem 10%;
+  padding: 0.5rem 10%;
   box-sizing: border-box;
 }
 
@@ -108,7 +108,7 @@ h1, h2, h3, h4, h5, h6,
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 1.5rem 0.25rem;
+  padding: 0.25rem 0.25rem 1.5rem;
   position: relative;
   z-index: 1;
   box-sizing: border-box;
@@ -921,9 +921,10 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   align-items: flex-start;
   overflow: visible;
-  padding: 0.5rem 0 2rem;
-  margin: 0 -1rem;
-  /* Negative margin to break out of container */
+  padding: 0 0 2rem;
+  /* Full viewport width - break out of parent padding */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
 }
 
 /* ────────── Background Layers ────────── */
@@ -1135,12 +1136,12 @@ h1, h2, h3, h4, h5, h6,
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 0.5rem;
+  padding: 0 clamp(1.5rem, 4%, 3rem);
   display: grid;
   grid-template-columns: 1fr;
   gap: 3rem;
   align-items: center;
-  margin-top: -1rem;
+  margin-top: -0.75rem;
 }
 
 @media (min-width: 1024px) {
@@ -1152,7 +1153,7 @@ h1, h2, h3, h4, h5, h6,
 
 @media (min-width: 1280px) {
   .hero-content-wrapper {
-    padding: 0 1rem;
+    padding: 0 clamp(2rem, 5%, 4rem);
     gap: 6rem;
   }
 }
@@ -1163,6 +1164,7 @@ h1, h2, h3, h4, h5, h6,
   flex-direction: column;
   gap: 1.5rem;
   max-width: 650px;
+  overflow: visible;
   animation: slideInLeft 1s ease-out forwards;
   opacity: 0;
 }
@@ -1217,7 +1219,8 @@ h1, h2, h3, h4, h5, h6,
 .hero-main-title {
   font-size: 4rem;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.2;
+  padding-top: 0.15em;
   color: var(--color-gray-900);
   margin: 0;
   letter-spacing: -0.02em;
@@ -2054,11 +2057,12 @@ h1, h2, h3, h4, h5, h6,
   .hero-section {
     min-height: auto;
     padding: 2rem 0 2rem;
-    margin: 0;
+    /* Keep full-width break-out on mobile too */
+    margin-left: calc(50% - 50vw);
   }
 
   .hero-content-wrapper {
-    padding: 0 0.5rem;
+    padding: 0 1rem;
   }
 
   .hero-main-title {
