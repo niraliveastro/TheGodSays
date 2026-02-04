@@ -19,7 +19,7 @@ const icons = {
 
 export default function LifeAreaInsights({ scores, handleUnlockClick }) {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 lg:py-24">
+    <div className="max-w-7xl mx-auto px-6 mt-6">
       {/* Heading */}
       <h2 className="section-title mx-auto text-center">
         Life Area Insights
@@ -111,7 +111,7 @@ export default function LifeAreaInsights({ scores, handleUnlockClick }) {
       </div>
 
       {/* Footer note */}
-      <p className="mt-24 text-center text-xs italic text-gray-400">
+      <p className="mt-12 text-center text-xs italic text-gray-400">
         * Insights are updated every 24 hours based on planetary movements.
       </p>
     </div>
