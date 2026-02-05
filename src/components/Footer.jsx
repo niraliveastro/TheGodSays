@@ -36,7 +36,6 @@ export default function Footer() {
             <h4 className="footer-heading">Quick Links</h4>
             <ul className="footer-links">
               <li><Link href="/panchang">Panchang</Link></li>
-              <li><Link href="/matching">Kundali Matching</Link></li>
               <li><Link href="/numerology">Numerology</Link></li>
               <li><Link href="/talk-to-astrologer">Talk to Astrologer</Link></li>
               <li><Link href="/blog">Blog</Link></li>
@@ -48,7 +47,7 @@ export default function Footer() {
             <h4 className="footer-heading">Our Services</h4>
             <ul className="footer-links">
               <li><Link href="/new-predictions">Personalized Readings</Link></li>
-              <li><Link href="/ai-predictions">AI Astrology</Link></li>
+              <li><Link href="/matching">Kundali Matching</Link></li>
               <li><Link href="/blog">Astrology Articles</Link></li>
               <li><Link href="/account/astrologer">Astrologer Profiles</Link></li>
             </ul>

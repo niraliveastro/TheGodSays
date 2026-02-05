@@ -2023,7 +2023,7 @@ export default function PredictionsPage() {
         type="text"
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
-        placeholder="Nehr (as per records)"
+        placeholder="Neha (as per records)"
         className="form-field-input"
         required
       />
