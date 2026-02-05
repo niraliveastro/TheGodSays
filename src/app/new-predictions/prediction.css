@@ -178,6 +178,10 @@ select.form-field-input {
   margin-top: 0.375rem !important;
 }
 
+.place-wrapper{
+  margin-left: 1rem;
+}
+
 .place-helper {
   margin-top: 0.25rem;
   display: block;
@@ -188,7 +192,7 @@ select.form-field-input {
   display: flex;
   gap: 0.25rem;
   background: #f3f4f6;
-  padding: 0.25rem;
+  /* padding:; */
   border-radius: 0.75rem;
   border: 1px solid #e5e7eb;
   height: 48px;
@@ -2495,4 +2499,37 @@ select.form-field-input {
   .antar-columnar-table {
     display: none;
   }
+}
+
+@media (max-width: 768px) {
+  input[type="date"],
+  input[type="time"] {
+    padding-right: 0.5rem;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    right: 0.25rem;
+  }
+}
+
+/* Force native picker icons to edge */
+input[type="date"],
+input[type="time"] {
+  position: relative;
+  padding-right: 0.75rem; /* tight edge spacing */
+}
+
+/* Chrome / Edge / Safari */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0.5rem;
+  cursor: pointer;
+}
+
+/* Remove extra spacing box */
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit {
+  padding-right: 0;
 }

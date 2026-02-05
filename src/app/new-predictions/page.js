@@ -1993,228 +1993,165 @@ export default function PredictionsPage() {
         {/* === Birth form + History side-by-side === */}
         <div className="birth-history-layout" style={{ width: "100%" }}>
           {/* ==== FORM ==== */}
-          <form
-            ref={formRef}
-            onSubmit={onSubmit}
-            className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl"
-            style={{
-              background: "#ffffff",
-              borderColor: "#eaeaea",
-              boxShadow:
-                "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <div className="form-header" style={{ alignItems: "center" }}>
-              <div className="form-header-icon">
-                <Moon className="w-6 h-6 text-gold" />
-              </div>
-              <div className="form-header-text" style={{ flex: 1 }}>
-                <h3 className="form-title">{t.predictions.enterDetails}</h3>
-                <p className="form-subtitle">
-                  {t.predictions.enterCosmicCoordinates}
-                </p>
-              </div>
-            </div>
+<form
+  ref={formRef}
+  onSubmit={onSubmit}
+  className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
+>
+  {/* Header */}
+  <div className="flex items-center gap-3 mb-6">
+    <Moon className="w-6 h-6 text-gold" />
+    <div>
+      <h3 className="form-title">
+        {t.predictions.enterDetails}
+      </h3>
+      <p className="form-subtitle">
+        {t.predictions.enterCosmicCoordinates}
+      </p>
+    </div>
+  </div>
 
-            {/* ---- Birth Details Section ---- */}
-            <div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"
-              style={{ width: "100%" }}
-            >
-              {/* Full Name */}
-              <div>
-                <label className="form-field-label flex items-center gap-2 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nehr (as per records)"
-                  className="form-field-input form-input-field"
-                  required
-                  pattern="[A-Za-z\s]+"
-                  title="Only letters and spaces allowed"
-                />
-                <p className="form-field-helper">Only letters and spaces</p>
-              </div>
+  {/* === GRID WRAPPER === */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
 
-              {/* Date of Birth */}
-              <div>
-                <label className="form-field-label flex items-center gap-2 mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="form-field-input form-input-field"
-                  placeholder="DD / MM / YYYY"
-                  required
-                />
-                <p className="form-field-helper">Format: DD-MM-YYYY</p>
-              </div>
+    {/* Name */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Name
+      </label>
+      <input
+        type="text"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        placeholder="Nehr (as per records)"
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        Only letters and spaces
+      </p>
+    </div>
 
-              {/* Time of Birth */}
-              <div>
-                <label className="form-field-label flex items-center gap-2">
-                  Time of Birth
-                </label>
-                <input
-                  type="time"
-                  value={tob}
-                  onChange={(e) => setTob(e.target.value)}
-                  step="60"
-                  className="form-field-input form-input-field"
-                  placeholder="14:30"
-                  required
-                />
-                <p className="form-field-helper">24-hour format</p>
-              </div>
+    {/* Date */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Date of Birth
+      </label>
+      <input
+        type="date"
+        value={dob}
+        onChange={(e) => setDob(e.target.value)}
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        Format: DD-MM-YYYY
+      </p>
+    </div>
 
-              {/* Gender + Place + Get Predictions in one row */}
-              <div className="md:col-span-3">
-                <div className="place-row">
-                  {/* Gender Field - Segmented Control */}
-                  <div className="w-full md:w-48">
-                    <label className="form-field-label flex items-center gap-2 mb-2">
-                      Gender
-                    </label>
+    {/* Time */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Time of Birth
+      </label>
+      <input
+        type="time"
+        value={tob}
+        onChange={(e) => setTob(e.target.value)}
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        24-hour format
+      </p>
+    </div>
 
-                    <div
-                      className="gender-segmented"
-                      role="radiogroup"
-                      aria-label="Gender selection"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setGender("Male")}
-                        className={`gender-segment ${gender === "Male" ? "active" : ""}`}
-                        aria-pressed={gender === "Male"}
-                      >
-                        Male
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGender("Female")}
-                        className={`gender-segment ${gender === "Female" ? "active" : ""}`}
-                        aria-pressed={gender === "Female"}
-                      >
-                        Female
-                      </button>
-                    </div>
-                    <input
-                      type="hidden"
-                      name="gender"
-                      value={gender}
-                      required
-                    />
+    {/* === ROW 2 (same grid, no span) === */}
 
-                    <p className="form-field-helper">
-                      Personalize chart reading
-                    </p>
-                  </div>
+    {/* Gender */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Gender
+      </label>
 
-                  {/* Place of Birth */}
-                  <div className="flex-1 place-wrapper">
-                    <label className="form-field-label flex items-center gap-2 mb-2">
-                      Place
-                    </label>
+      <div className="gender-segmented">
+        <button
+          type="button"
+          onClick={() => setGender("Male")}
+          className={`gender-segment ${gender === "Male" ? "active" : ""}`}
+        >
+          Male
+        </button>
 
-                    <div className="relative">
-                      <div className="place-input-wrapper">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={place}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setPlace(q);
-                            setSelectedCoords(null);
-                            fetchSuggestions(q);
-                          }}
-                          className="form-field-input form-input-field"
-                          autoComplete="off"
-                          required
-                          style={{ paddingRight: "2.5rem" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={useMyLocation}
-                          disabled={locating}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            cursor: locating ? "wait" : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          title="Use current location"
-                        >
-                          {locating ? (
-                            <Loader2
-                              className="w-4 h-4 animate-spin"
-                              style={{ color: "#d4af37" }}
-                            />
-                          ) : (
-                            <MapPin
-                              className="w-4 h-4"
-                              style={{ color: "#6b7280" }}
-                            />
-                          )}
-                        </button>
-                      </div>
+        <button
+          type="button"
+          onClick={() => setGender("Female")}
+          className={`gender-segment ${gender === "Female" ? "active" : ""}`}
+        >
+          Female
+        </button>
+      </div>
 
-                      {suggestions.length > 0 && (
-                        <div className="suggest-list">
-                          {suggestions.map((s, i) => (
-                            <div
-                              key={i}
-                              className="suggest-item"
-                              onClick={() => {
-                                setPlace(s.label);
-                                setSelectedCoords(s);
-                                setSuggestions([]);
-                              }}
-                            >
-                              {s.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+      <p className="form-field-helper">
+        Personalize chart reading
+      </p>
+    </div>
 
-                    {/* helper, absolutely positioned -> doesn't affect column height */}
-                    <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
-                    </p>
-                  </div>
+    {/* Place */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Place
+      </label>
 
-                  {/* Get Predictions button - fixed width, not shrinking */}
-                  <div className="w-full md:w-48">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="btn-primary w-full h-[52px]"
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Calculating...
-                        </>
-                      ) : (
-                        <>Get Predictions</>
-                      )}
-                    </button>
-                    <p className="cta-helper">
-                      No signup required • Takes ~10 seconds
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
+      <div className="relative">
+        <input
+          placeholder="e.g., Mumbai, India"
+          value={place}
+          onChange={(e) => {
+            const q = e.target.value;
+            setPlace(q);
+            fetchSuggestions(q);
+          }}
+          className="form-field-input pr-10"
+          required
+        />
+
+        <button
+          type="button"
+          onClick={useMyLocation}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
+        >
+          <MapPin className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
+
+      <p className="form-field-helper">
+        Choose the nearest city
+      </p>
+    </div>
+
+    {/* Button */}
+    <div className="flex flex-col">
+      <label className="invisible mb-2">
+        Hidden
+      </label>
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="btn-primary h-[52px] w-full"
+      >
+        {submitting ? "Calculating..." : "Get Predictions"}
+      </button>
+
+      <p className="cta-helper text-center">
+        No signup required • Takes ~10 seconds
+      </p>
+    </div>
+
+  </div>
+</form>
+
 
           {/* Prediction History to the RIGHT of the form */}
           {showHistory && (
