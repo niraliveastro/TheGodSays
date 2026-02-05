@@ -717,8 +717,11 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
+         compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
         lastGenerated: new Date().toISOString(),
       });
+
+
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
         year: p.year,
@@ -1166,6 +1169,7 @@ export default function MatchingPage() {
       setSubmitting(false);
     }
   };
+
 
   /* -------------------------------------------------------------- */
   /* Chat functionality */
