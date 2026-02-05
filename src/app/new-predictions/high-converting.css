@@ -496,7 +496,8 @@ section {
   box-shadow: 0 12px 36px rgba(217,119,6,0.14);
 
   min-height: 150px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 
@@ -570,6 +571,7 @@ section {
     flex-wrap: nowrap;
   }
   .problem-card{
+    width: 100%;
     justify-self: center;
     align-self: center;
     align-items: center;

@@ -111,8 +111,7 @@ export async function GET(request) {
     return Response.json({ blogs }, { 
       status: 200,
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       }
     })
   } catch (error) {

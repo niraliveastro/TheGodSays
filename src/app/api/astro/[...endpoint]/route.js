@@ -5,9 +5,27 @@ import {
   validateDate,
   validateTime,
 } from "@/lib/validation";
+import crypto from "crypto";
 
 const API_BASE_URL = process.env.ASTRO_API_BASE_URL;
 const API_KEY = process.env.ASTRO_API_KEY;
+
+// In-memory cache for astrology API responses (same inputs = same outputs)
+// Cache TTL: 1 hour (3600000ms)
+const CACHE_TTL = 3600000;
+const astroCache = new Map();
+
+// Clean up old cache entries periodically (prevent memory leaks)
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of astroCache.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        astroCache.delete(key);
+      }
+    }
+  }, 600000); // Clean every 10 minutes
+}
 
 if (!API_BASE_URL || !API_KEY) {
   console.error(
@@ -69,6 +87,13 @@ export async function POST(request, { params }) {
 
     const payload = await request.json();
     console.log("[DEBUG] Payload:", payload);
+    
+    // Extract name and gender for cache key (even if not sent to external API)
+    // This ensures different people with same birth details get separate cache entries
+    const cacheIdentifier = {
+      name: payload.name || payload.fullName || null,
+      gender: payload.gender || null,
+    };
 
     // CONDITIONAL VALIDATION
     if (endpointPath.startsWith("match-making/")) {
@@ -295,6 +320,35 @@ export async function POST(request, { params }) {
     console.log("[DEBUG] API Base URL:", API_BASE_URL);
     console.log("[DEBUG] API Key present:", !!API_KEY);
 
+    // Check cache: Create hash of endpoint + payload + name + gender (same inputs = same outputs)
+    // The hash includes ALL form data: name, gender, year, month, date, hours, minutes, seconds, latitude, longitude, timezone, config
+    // Different person (name/gender) OR different birth details = different hash = different cache key = fresh API call
+    const payloadHash = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({ 
+        endpoint: endpointPath, 
+        payload: finalPayload,
+        name: cacheIdentifier.name,
+        gender: cacheIdentifier.gender
+      }))
+      .digest('hex');
+    const cacheKey = `${endpointPath}:${payloadHash}`;
+    
+    const cached = astroCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log(`[CACHE] HIT for ${endpointPath} - Same person (name: ${cacheIdentifier.name || 'N/A'}, gender: ${cacheIdentifier.gender || 'N/A'}) and birth details, returning cached result`);
+      return NextResponse.json(cached.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'X-Cache': 'HIT',
+          'X-Cache-Age': Math.floor((Date.now() - cached.timestamp) / 1000).toString(),
+        }
+      });
+    }
+    
+    // Cache MISS = Different person (name/gender) OR different birth details or first request = Fetch fresh data from API
+    console.log(`[CACHE] MISS for ${endpointPath} - Unique form data detected (name: ${cacheIdentifier.name || 'N/A'}, gender: ${cacheIdentifier.gender || 'N/A'}), fetching fresh astrology data`);
+
     // Forward the request to the astrology API with retry logic for rate limiting
     const apiUrl = `${API_BASE_URL}/${endpointPath}`;
     console.log("[DEBUG] Full API URL:", apiUrl);
@@ -380,30 +434,69 @@ export async function POST(request, { params }) {
 
     const text = await res.text();
     
-    // Special handling for western chart - it might return SVG as plain text
+    // Parse response based on endpoint type
+    let responseData;
     if (endpointPath === "western/natal-wheel-chart") {
       // If it's an SVG string, wrap it in a JSON object
       if (text.trim().startsWith("<svg")) {
-        return NextResponse.json({ output: text, svg: text }, { status: res.status });
+        responseData = { output: text, svg: text };
+      } else {
+        // If it's already JSON, parse it
+        try {
+          responseData = JSON.parse(text);
+        } catch {
+          // If parsing fails but it's not SVG, return as output field
+          responseData = { output: text };
+        }
       }
-      // If it's already JSON, parse it
+    } else {
+      // For other endpoints, try to parse as JSON
       try {
-        const json = JSON.parse(text);
-        return NextResponse.json(json, { status: res.status });
+        responseData = JSON.parse(text);
       } catch {
-        // If parsing fails but it's not SVG, return as output field
-        return NextResponse.json({ output: text }, { status: res.status });
+        // If not JSON, return as text (some endpoints return plain text)
+        // Store as object for consistency
+        responseData = { output: text };
       }
+    }
+
+    // Cache successful response for this specific person + birth data combination
+    astroCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    });
+    console.log(`[CACHE] Stored fresh result for ${endpointPath} - Will cache for identical person (name: ${cacheIdentifier.name || 'N/A'}, gender: ${cacheIdentifier.gender || 'N/A'}) and birth details`);
+
+    // Return response with cache headers
+    if (endpointPath === "western/natal-wheel-chart" && text.trim().startsWith("<svg")) {
+      return NextResponse.json(responseData, {
+        status: res.status,
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'X-Cache': 'MISS',
+        }
+      });
     }
     
-    // For other endpoints, try to parse as JSON
-    try {
-      const json = JSON.parse(text);
-      return NextResponse.json(json, { status: res.status });
-    } catch {
-      // If not JSON, return as text (some endpoints return plain text)
-      return new NextResponse(text, { status: res.status });
+    // For JSON responses
+    if (typeof responseData === 'object' && !text.trim().startsWith("<svg")) {
+      return NextResponse.json(responseData, {
+        status: res.status,
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'X-Cache': 'MISS',
+        }
+      });
     }
+    
+    // For plain text responses
+    return new NextResponse(text, {
+      status: res.status,
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'X-Cache': 'MISS',
+      }
+    });
   } catch (err) {
     console.error("Astro API route error:", err?.message || err);
     return NextResponse.json(
