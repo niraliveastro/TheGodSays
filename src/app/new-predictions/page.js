@@ -3,6 +3,10 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import Modal from "@/components/Modal";
 import Chat from "@/components/Chat";
+import ChartHighlights from "./components/ChartHighlights";
+import DashaIQ from "./components/DashaIQ";
+import VimshottariMahaDasha from "@/components/VimshottariMahaDasha";
+import WhatsBlocking from "./components/WhatsBlocking";
 import {
   Sparkles,
   History,
@@ -1896,6 +1900,7 @@ export default function PredictionsPage() {
     );
   };
 
+
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
     return (
@@ -1942,9 +1947,6 @@ export default function PredictionsPage() {
           style={{
             fontSize: "2.5rem",
             fontWeight: 700,
-            background: "linear-gradient(135deg, #d4af37, #b8972e)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
           }}
         >
           {t.predictions.title}
@@ -1991,228 +1993,165 @@ export default function PredictionsPage() {
         {/* === Birth form + History side-by-side === */}
         <div className="birth-history-layout" style={{ width: "100%" }}>
           {/* ==== FORM ==== */}
-          <form
-            ref={formRef}
-            onSubmit={onSubmit}
-            className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl"
-            style={{
-              background: "#ffffff",
-              borderColor: "#eaeaea",
-              boxShadow:
-                "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <div className="form-header" style={{ alignItems: "center" }}>
-              <div className="form-header-icon">
-                <Moon className="w-6 h-6 text-gold" />
-              </div>
-              <div className="form-header-text" style={{ flex: 1 }}>
-                <h3 className="form-title">{t.predictions.enterDetails}</h3>
-                <p className="form-subtitle">
-                  {t.predictions.enterCosmicCoordinates}
-                </p>
-              </div>
-            </div>
+<form
+  ref={formRef}
+  onSubmit={onSubmit}
+  className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
+>
+  {/* Header */}
+  <div className="flex items-center gap-3 mb-6">
+    <Moon className="w-6 h-6 text-gold" />
+    <div>
+      <h3 className="form-title">
+        {t.predictions.enterDetails}
+      </h3>
+      <p className="form-subtitle">
+        {t.predictions.enterCosmicCoordinates}
+      </p>
+    </div>
+  </div>
 
-            {/* ---- Birth Details Section ---- */}
-            <div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end"
-              style={{ width: "100%" }}
-            >
-              {/* Full Name */}
-              <div>
-                <label className="form-field-label flex items-center gap-2 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nehr (as per records)"
-                  className="form-field-input form-input-field"
-                  required
-                  pattern="[A-Za-z\s]+"
-                  title="Only letters and spaces allowed"
-                />
-                <p className="form-field-helper">Only letters and spaces</p>
-              </div>
+  {/* === GRID WRAPPER === */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
 
-              {/* Date of Birth */}
-              <div>
-                <label className="form-field-label flex items-center gap-2 mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="form-field-input form-input-field"
-                  placeholder="DD / MM / YYYY"
-                  required
-                />
-                <p className="form-field-helper">Format: DD-MM-YYYY</p>
-              </div>
+    {/* Name */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Name
+      </label>
+      <input
+        type="text"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        placeholder="Neha (as per records)"
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        Only letters and spaces
+      </p>
+    </div>
 
-              {/* Time of Birth */}
-              <div>
-                <label className="form-field-label flex items-center gap-2">
-                  Time of Birth
-                </label>
-                <input
-                  type="time"
-                  value={tob}
-                  onChange={(e) => setTob(e.target.value)}
-                  step="60"
-                  className="form-field-input form-input-field"
-                  placeholder="14:30"
-                  required
-                />
-                <p className="form-field-helper">24-hour format</p>
-              </div>
+    {/* Date */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Date of Birth
+      </label>
+      <input
+        type="date"
+        value={dob}
+        onChange={(e) => setDob(e.target.value)}
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        Format: DD-MM-YYYY
+      </p>
+    </div>
 
-              {/* Gender + Place + Get Predictions in one row */}
-              <div className="md:col-span-3">
-                <div className="place-row">
-                  {/* Gender Field - Segmented Control */}
-                  <div className="w-full md:w-48">
-                    <label className="form-field-label flex items-center gap-2 mb-2">
-                      Gender
-                    </label>
+    {/* Time */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Time of Birth
+      </label>
+      <input
+        type="time"
+        value={tob}
+        onChange={(e) => setTob(e.target.value)}
+        className="form-field-input"
+        required
+      />
+      <p className="form-field-helper">
+        24-hour format
+      </p>
+    </div>
 
-                    <div
-                      className="gender-segmented"
-                      role="radiogroup"
-                      aria-label="Gender selection"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setGender("Male")}
-                        className={`gender-segment ${gender === "Male" ? "active" : ""}`}
-                        aria-pressed={gender === "Male"}
-                      >
-                        Male
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGender("Female")}
-                        className={`gender-segment ${gender === "Female" ? "active" : ""}`}
-                        aria-pressed={gender === "Female"}
-                      >
-                        Female
-                      </button>
-                    </div>
-                    <input
-                      type="hidden"
-                      name="gender"
-                      value={gender}
-                      required
-                    />
+    {/* === ROW 2 (same grid, no span) === */}
 
-                    <p className="form-field-helper">
-                      Personalize chart reading
-                    </p>
-                  </div>
+    {/* Gender */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Gender
+      </label>
 
-                  {/* Place of Birth */}
-                  <div className="flex-1 place-wrapper">
-                    <label className="form-field-label flex items-center gap-2 mb-2">
-                      Place
-                    </label>
+      <div className="gender-segmented">
+        <button
+          type="button"
+          onClick={() => setGender("Male")}
+          className={`gender-segment ${gender === "Male" ? "active" : ""}`}
+        >
+          Male
+        </button>
 
-                    <div className="relative">
-                      <div className="place-input-wrapper">
-                        <input
-                          placeholder="e.g., Mumbai, India"
-                          value={place}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setPlace(q);
-                            setSelectedCoords(null);
-                            fetchSuggestions(q);
-                          }}
-                          className="form-field-input form-input-field"
-                          autoComplete="off"
-                          required
-                          style={{ paddingRight: "2.5rem" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={useMyLocation}
-                          disabled={locating}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded transition-colors"
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            cursor: locating ? "wait" : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          title="Use current location"
-                        >
-                          {locating ? (
-                            <Loader2
-                              className="w-4 h-4 animate-spin"
-                              style={{ color: "#d4af37" }}
-                            />
-                          ) : (
-                            <MapPin
-                              className="w-4 h-4"
-                              style={{ color: "#6b7280" }}
-                            />
-                          )}
-                        </button>
-                      </div>
+        <button
+          type="button"
+          onClick={() => setGender("Female")}
+          className={`gender-segment ${gender === "Female" ? "active" : ""}`}
+        >
+          Female
+        </button>
+      </div>
 
-                      {suggestions.length > 0 && (
-                        <div className="suggest-list">
-                          {suggestions.map((s, i) => (
-                            <div
-                              key={i}
-                              className="suggest-item"
-                              onClick={() => {
-                                setPlace(s.label);
-                                setSelectedCoords(s);
-                                setSuggestions([]);
-                              }}
-                            >
-                              {s.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+      <p className="form-field-helper">
+        Personalize chart reading
+      </p>
+    </div>
 
-                    {/* helper, absolutely positioned -> doesn't affect column height */}
-                    <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
-                    </p>
-                  </div>
+    {/* Place */}
+    <div className="flex flex-col">
+      <label className="form-field-label mb-2">
+        Place
+      </label>
 
-                  {/* Get Predictions button - fixed width, not shrinking */}
-                  <div className="w-full md:w-48">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="btn-primary w-full h-[52px]"
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Calculating...
-                        </>
-                      ) : (
-                        <>Get Predictions</>
-                      )}
-                    </button>
-                    <p className="cta-helper">
-                      No signup required • Takes ~10 seconds
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
+      <div className="relative">
+        <input
+          placeholder="e.g., Mumbai, India"
+          value={place}
+          onChange={(e) => {
+            const q = e.target.value;
+            setPlace(q);
+            fetchSuggestions(q);
+          }}
+          className="form-field-input pr-10"
+          required
+        />
+
+        <button
+          type="button"
+          onClick={useMyLocation}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
+        >
+          <MapPin className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
+
+      <p className="form-field-helper">
+        Choose the nearest city
+      </p>
+    </div>
+
+    {/* Button */}
+    <div className="flex flex-col">
+      <label className="invisible mb-2">
+        Hidden
+      </label>
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="btn-primary h-[52px] w-full"
+      >
+        {submitting ? "Calculating..." : "Get Predictions"}
+      </button>
+
+      <p className="cta-helper text-center">
+        No signup required • Takes ~10 seconds
+      </p>
+    </div>
+
+  </div>
+</form>
+
 
           {/* Prediction History to the RIGHT of the form */}
           {showHistory && (
@@ -2508,10 +2447,108 @@ export default function PredictionsPage() {
               </div>
             </div>
 
+<ChartHighlights
+  strongObservations={observationData?.strongObservations || []}
+  potential={observationData?.potential || []}
+/>
+
+            {challengeAnalysis?.hasChallenges && (
+              <div className="mt-6 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
+                {/* Decorative Glow */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute -top-24 -left-24 w-64 h-64 bg-amber-200/40 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100/60 rounded-full blur-2xl" />
+                </div>
+
+                {/* Content Grid */}
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                  {/* LEFT: Text Content */}
+                  <div className="max-w-2xl">
+                    <div
+                      className="results-header"
+                      // style={{ marginBottom: "1rem" }}
+                    >
+                      <img
+                        src="/infinity-symbol.svg"
+                        alt="Infinity"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          transform: "rotate(-45deg)",
+                          transformOrigin: "center center",
+                        }}
+                      />
+                      <h3 className="results-title">Astrologer</h3>
+                    </div>
+                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
+                      Feeling uncertain about what lies ahead?
+                    </h3>
+
+                    <p className="text-sm text-gray-70 max-w-xl">
+                      Your chart indicates phases where clarity and direction
+                      matter most. A seasoned astrologer can help translate
+                      these patterns into confident, grounded decisions.
+                    </p>
+
+                    <ul className="mt-4 space-y-2 text-sm text-gray-700">
+                      {challengeAnalysis.reasons.map((r, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          <span>{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChatSessionId((prev) => prev + 1);
+                        setInlineChatOpen(true);
+                      }}
+                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden mt-6"
+                    >
+                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
+                      Talk to Astrologer
+                    </button>
+                  </div>
+
+                  {/* RIGHT: Sage Illustration */}
+                  <div className="relative hidden lg:flex justify-end">
+                    <img
+                      src="/images/cosmic.png"
+                      alt="Astrologer sage illustration"
+                      className="w-[360px] xl:w-[400px] opacity-90 drop-shadow-[0_15px_25px_rgba(251,191,36,0.35)]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DashaIQ
+  dashaIQ={dashaIQ}
+  onTalkToAstrologer={handleTalkToAstrologer}
+/>
+
+      <VimshottariMahaDasha
+        mahaRows={mahaRows}
+        antarRows={antarRows}
+        openAntarFor={openAntarFor}
+        antarLoadingFor={antarLoadingFor}
+        openAntarInlineFor={openAntarInlineFor}
+        activeMahaLord={activeMahaLord}
+      />
+
+      <WhatsBlocking
+  blockers={insights?.blockers || []}
+  onTalkToAstrologer={handleTalkToAstrologer}
+/>
+
+
+
 
             {/* Expert Astrologer CTA / Chat Window */}
             <div
-              className="card mt-8 ai-astrologer-section"
+              className="card ai-astrologer-section mt-6"
               style={{
                 position: "relative",
                 zIndex: inlineChatOpen ? 200 : 1,
@@ -2584,80 +2621,10 @@ export default function PredictionsPage() {
               )}
             </div>
 
-            {challengeAnalysis?.hasChallenges && (
-              <div className="mt-8 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
-                {/* Decorative Glow */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute -top-24 -left-24 w-64 h-64 bg-amber-200/40 rounded-full blur-3xl" />
-                  <div className="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100/60 rounded-full blur-2xl" />
-                </div>
 
-                {/* Content Grid */}
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                  {/* LEFT: Text Content */}
-                  <div className="max-w-2xl">
-                    <div
-                      className="results-header"
-                      // style={{ marginBottom: "1rem" }}
-                    >
-                      <img
-                        src="/infinity-symbol.svg"
-                        alt="Infinity"
-                        style={{
-                          width: "24px",
-                          height: "24px",
-                          transform: "rotate(-45deg)",
-                          transformOrigin: "center center",
-                        }}
-                      />
-                      <h3 className="results-title">Astrologer</h3>
-                    </div>
-                    <h3 className="text-xl md:text-2xl text-gray-900 mb-1">
-                      Feeling uncertain about what lies ahead?
-                    </h3>
-
-                    <p className="text-sm text-gray-70 max-w-xl">
-                      Your chart indicates phases where clarity and direction
-                      matter most. A seasoned astrologer can help translate
-                      these patterns into confident, grounded decisions.
-                    </p>
-
-                    <ul className="mt-4 space-y-2 text-sm text-gray-700">
-                      {challengeAnalysis.reasons.map((r, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChatSessionId((prev) => prev + 1);
-                        setInlineChatOpen(true);
-                      }}
-                      className="relative inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-indigo-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-[0_0_25px_rgba(250,204,21,0.5)] hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] transition-all duration-200 border border-amber-200/80 group overflow-hidden mt-6"
-                    >
-                      <span className="absolute text-[#1e1b0c] inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_top,_white,transparent_60%)] transition-opacity duration-200" />
-                      Talk to Astrologer
-                    </button>
-                  </div>
-
-                  {/* RIGHT: Sage Illustration */}
-                  <div className="relative hidden lg:flex justify-end">
-                    <img
-                      src="/images/Untitled-removebg-preview.png"
-                      alt="Astrologer sage illustration"
-                      className="w-[360px] xl:w-[400px] opacity-90 drop-shadow-[0_15px_25px_rgba(251,191,36,0.35)]"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {result && insights && (
-              <section className="converting-card mt-10">
+              <section className="converting-card">
                 <HighConvertingInsights
                   insights={insights}
                   observations={observationData}

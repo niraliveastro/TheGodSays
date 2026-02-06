@@ -15,7 +15,6 @@ import {
 
 import LockedDeepPredictions from "./components/LockedDeepPredictions";
 import "./high-converting.css";
-import VimshottariMahaDasha from "../../components/VismottriMahadasha";
 import LifeAreaInsights from "@/components/LifeScore";
 
 export default function HighConvertingInsights({
@@ -56,7 +55,6 @@ export default function HighConvertingInsights({
     timeline = { future: [] },
   } = insights || {};
 
-  const { strongObservations = [], potential = [] } = observations || {};
 
   // --- Planet classification ---
   const potentialPlanets = (shadbalaRows || [])
@@ -251,195 +249,9 @@ return (
 
   return (
     <div>
-      {/* Next 30 Days */}
-      <h2 className="section-title">Your Next 30 Days</h2>
-      <div className="snapshot-grid">
-        <Snapshot label="Career" icon={Briefcase} data={next30Days.career} />
-        <Snapshot label="Money" icon={DollarSign} data={next30Days.money} />
-        <Snapshot
-          label="Relationship"
-          icon={Heart}
-          data={next30Days.relationship}
-        />
-      </div>
 
-      <LifeAreaInsights scores={scores} handleUnlockClick={handleUnlockClick} />
-
-      <h2 className="section-title mt-8">Chart Highlights</h2>
-
-      <div
-        className="
-    grid
-    grid-cols-1
-    gap-6
-    md:grid-cols-1
-    lg:grid-cols-[3fr_2fr]
-  "
-      >
-        {/* LEFT – Strong Observations (60%) */}
-        <div className="observations-panel">
-          <h4 className="font-medium sub-title flex items-center gap-2">
-            <span className="observations-dot" />
-            Strong Observations
-          </h4>
-
-          <div className="observations-stack">
-            {strongObservations.map((h, i) => (
-              <div key={i} className="observation-card">
-                <div className="observation-left">
-                  <span className="observation-index">{i + 1}</span>
-                </div>
-
-                <div className="observation-content">
-                  <p className="observation-text">{h}</p>
-                  <span className="observation-badge">
-                    Verified planetary pattern
-                  </span>
-                </div>
-
-                <div className="observation-icon-wrap">
-                  <CheckCircle2 size={18} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RIGHT – Potential in Chart (40%) */}
-        <div className="potential-panel">
-          <h4 className="font-medium sub-title flex items-center gap-2">
-            <span className="potential-dot" />
-            Potential in Your Chart
-          </h4>
-
-          <div className="potential-stack">
-            {potential.map((p, i) => (
-              <div key={i} className="potential-card-advanced">
-                <div className="potential-left">
-                  <span className="potential-index">{i + 1}</span>
-                </div>
-
-                <div className="potential-content">
-                  <p className="potential-text">{p}</p>
-                  <span className="potential-hint">
-                    Can activate with correct timing & guidance
-                  </span>
-                </div>
-
-                <div className="potential-icon-wrap">
-                  <AlertCircle size={18} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {dashaIQ && (
-        <>
-          <h2 className="section-title mt-10">Dasha IQ</h2>
-
-          <div className="dasha-iq-panel">
-            <div className="dasha-iq-accent" />
-
-            <div className="dasha-iq-header">
-              <div className="dasha-iq-planet">
-                <Moon size={20} />
-              </div>
-
-              <div>
-                <h3 className="dasha-iq-title">
-                  {dashaIQ.mahaLord} Maha Dasha
-                </h3>
-                <p className="dasha-iq-subtitle">
-                  Decision intelligence for this period
-                </p>
-              </div>
-
-              <div className="dasha-iq-score">
-                <span className="iq-value">{dashaIQ.iq}</span>
-                <span className="iq-label">IQ</span>
-              </div>
-            </div>
-
-            <div className="dasha-iq-grid">
-              {/* LEFT */}
-              <div className="dasha-iq-card">
-                <h4>Why this score</h4>
-                <ul className="dasha-iq-points">
-                  {dashaIQ.reasoning.map((r, i) => (
-                    <li key={i}>• {r}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* RIGHT */}
-              <div className="dasha-iq-card highlight">
-                <h4>Decision Readiness</h4>
-
-                <div className="dasha-iq-meter">
-                  <div className="meter-track">
-                    <div
-                      className="meter-fill"
-                      style={{ width: `${dashaIQ.iq}%` }}
-                    />
-                  </div>
-                  <span className="meter-label">{dashaIQ.iq}% Supportive</span>
-                </div>
-
-                <p className="dasha-iq-note">
-                  Best used for{" "}
-                  <strong>
-                    {dashaIQ.iq >= 70
-                      ? "career moves, commitments, investments"
-                      : dashaIQ.iq >= 55
-                        ? "planning, preparation, cautious decisions"
-                        : "reflection and correction"}
-                  </strong>
-                </p>
-
-                <button className="btn btn-gold" onClick={onTalkToAstrologer}>
-                  Decode my Dasha →
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* 🔥 ADD THIS RIGHT AFTER */}
-      <VimshottariMahaDasha
-        mahaRows={mahaRows}
-        antarRows={antarRows}
-        openAntarFor={openAntarFor}
-        antarLoadingFor={antarLoadingFor}
-        openAntarInlineFor={openAntarInlineFor}
-        activeMahaLord={activeMahaLord}
-      />
-
-      {/* Blocks */}
-      <h2 className="section-title mt-8">What’s Blocking You</h2>
-      <div className="problems-list">
-        {blockers.map((b, i) => (
-          <div className="problem-card">
-            <AlertCircle className="problem-icon" />
-
-            <div className="problem-content">
-              <strong className="problem-title">{b.area}</strong>
-              <p className="problem-reason">{b.reason}</p>
-            </div>
-
-            {b.fixable && (
-              <button className="fix-btn" onClick={onTalkToAstrologer}>
-                Fix faster →
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* 🌟 High Potential Planets */}
-      <h2 className="section-title mt-10">High Potential Planets</h2>
+            {/* 🌟 High Potential Planets */}
+      <h2 className="section-title ">High Potential Planets</h2>
 
       <div className="planet-card-grid-tiles">
         {potentialPlanets.length > 0 ? (
@@ -455,7 +267,7 @@ return (
       </div>
 
       {/* ⚠️ Challenging Planets */}
-      <h2 className="section-title mt-12">Challenging Planets</h2>
+      <h2 className="section-title mt-6">Challenging Planets</h2>
 
       <div className="planet-card-grid-tiles">
         {problematicPlanets.length > 0 ? (
@@ -470,6 +282,25 @@ return (
         )}
       </div>
 
+      {/* Next 30 Days */}
+      {/* <h2 className="section-title">Your Next 30 Days</h2>
+      <div className="snapshot-grid">
+        <Snapshot label="Career" icon={Briefcase} data={next30Days.career} />
+        <Snapshot label="Money" icon={DollarSign} data={next30Days.money} />
+        <Snapshot
+          label="Relationship"
+          icon={Heart}
+          data={next30Days.relationship}
+        />
+      </div> */}
+
+      <LifeAreaInsights scores={scores} handleUnlockClick={handleUnlockClick} />
+
+
+
+
+
+
       <LockedDeepPredictions
         title="Advanced Career & Marriage Timings"
         subtitle="Exact windows, delays, causes & corrective paths"
@@ -477,30 +308,6 @@ return (
         onUnlock={handleUnlockClick}
       />
 
-      {/* Astrologer CTA */}
-      <div className="astrologer-cta">
-        <div className="astrologer-cta-content">
-          <h3>Confused about what’s coming next?</h3>
-          <p>
-            Get personal guidance from an experienced astrologer and turn these
-            insights into clear actions.
-          </p>
-
-          {/* ✅ USE handleCTA HERE */}
-          <button className="cta-btn cta-primary" onClick={handleCTA}>
-            <Phone size={18} /> Get your guidance today
-          </button>
-        </div>
-
-        <div className="astrologer-cta-visual">
-          <img
-            src="/images/astrologer2.png"
-            alt="Astrologer guidance"
-            width={400}
-            height={500}
-          />
-        </div>
-      </div>
 
       {showUnlockModal && (
         <div className="unlock-modal-overlay">

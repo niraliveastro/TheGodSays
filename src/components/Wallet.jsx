@@ -114,6 +114,45 @@ export default function Wallet() {
   }, [sortedTransactions, currentPage]);
 
   /* ------------------------------------------------------------------ */
+  /*  LOAD RAZORPAY SCRIPT DYNAMICALLY                                  */
+  /* ------------------------------------------------------------------ */
+  const loadRazorpayScript = () => {
+    return new Promise((resolve, reject) => {
+      // Check if already loaded
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        resolve();
+        return;
+      }
+
+      // Check if script is already being loaded
+      if (document.querySelector('script[src*="checkout.razorpay.com"]')) {
+        // Wait for script to load
+        const checkInterval = setInterval(() => {
+          if (window.Razorpay) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!window.Razorpay) {
+            reject(new Error('Razorpay script loading timeout'));
+          }
+        }, 10000);
+        return;
+      }
+
+      // Load script dynamically
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Razorpay script'));
+      document.head.appendChild(script);
+    });
+  };
+
+  /* ------------------------------------------------------------------ */
   /*  RECHARGE HANDLER                                                  */
   /* ------------------------------------------------------------------ */
   const handleRecharge = async (e) => {
@@ -127,6 +166,9 @@ export default function Wallet() {
     trackActionStart("wallet_recharge");
 
     try {
+      // Load Razorpay script if not already loaded
+      await loadRazorpayScript();
+
       // Get Razorpay key
       const configRes = await fetch("/api/payments/config");
       const configData = await configRes.json();
@@ -151,9 +193,9 @@ export default function Wallet() {
         throw new Error(data.error || "Failed to create payment order");
       }
 
-      // Check if Razorpay is loaded
+      // Verify Razorpay is loaded (should already be loaded from loadRazorpayScript above)
       if (typeof window === "undefined" || !window.Razorpay) {
-        throw new Error("Payment gateway is not loaded. Please refresh the page.");
+        throw new Error("Payment gateway failed to load. Please try again.");
       }
 
       // Open Razorpay checkout

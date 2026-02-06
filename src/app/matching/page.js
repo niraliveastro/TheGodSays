@@ -22,7 +22,7 @@ import {
   PhoneIcon,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
-import AstrologerAssistant from "@/components/AstrologerAssistant";
+import AstrologerAssistantTab from "@/components/AstrologerAssistantTab";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import PageSEO from "@/components/PageSEO";
 
@@ -717,8 +717,11 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
+         compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
         lastGenerated: new Date().toISOString(),
       });
+
+
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
         year: p.year,
@@ -1166,6 +1169,7 @@ export default function MatchingPage() {
       setSubmitting(false);
     }
   };
+
 
   /* -------------------------------------------------------------- */
   /* Chat functionality */
@@ -3418,43 +3422,41 @@ export default function MatchingPage() {
           <span className="global-floater-text">Talk to Astrologer</span>
         </a>
 
-        {/* Astrologer Assistant Floating Card */}
-        <AstrologerAssistant
-          pageTitle="Matching"
-          initialData={(() => {
-            // Use chatData if available, otherwise build from current state
-            const data = chatData || {
-              female: {
-                input: {
-                  name: female.fullName,
-                  dob: female.dob,
-                  tob: female.tob,
-                  place: female.place,
-                  coords: fCoords,
-                },
-                details: fDetails,
-              },
-              male: {
-                input: {
-                  name: male.fullName,
-                  dob: male.dob,
-                  tob: male.tob,
-                  place: male.place,
-                  coords: mCoords,
-                },
-                details: mDetails,
-              },
-              match: result || null,
-            };
-            return data;
-          })()}
-          chatType="matchmaking"
-          shouldReset={shouldResetChat}
-          formDataHash={currentFormDataHash}
-          chatSessionId={chatSessionId}
-          show={true}
-          hasData={!!result}
-        />
+        <AstrologerAssistantTab
+  pageTitle="Matching"
+  initialData={(() => {
+    const data = chatData || {
+      female: {
+        input: {
+          name: female.fullName,
+          dob: female.dob,
+          tob: female.tob,
+          place: female.place,
+          coords: fCoords,
+        },
+        details: fDetails,
+      },
+      male: {
+        input: {
+          name: male.fullName,
+          dob: male.dob,
+          tob: male.tob,
+          place: male.place,
+          coords: mCoords,
+        },
+        details: mDetails,
+      },
+      match: result || null,
+    };
+    return data;
+  })()}
+  chatType="matchmaking"
+  shouldReset={shouldResetChat}
+  formDataHash={currentFormDataHash}
+  chatSessionId={chatSessionId}
+  show={true}
+  hasData={!!result}
+/>
       </div>
       
       {/* SEO: FAQ Schema - Invisible to users */}

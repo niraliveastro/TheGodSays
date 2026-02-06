@@ -11,7 +11,11 @@ export const runtime = 'nodejs'
 export async function GET() {
   try {
     const pricing = await AIPricingService.getPricing()
-    return NextResponse.json({ pricing })
+    return NextResponse.json({ pricing }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600',
+      }
+    })
   } catch (error) {
     console.error('Error in GET /api/pricing/public:', error)
     return NextResponse.json(

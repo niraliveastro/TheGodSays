@@ -64,21 +64,69 @@ export async function POST(request) {
     }
 
     const db = getFirestore()
+    const cleanedPhone = phoneNumber.replace(/\s/g, '')
+    
+    // ============================================
+    // RATE LIMITING & COST OPTIMIZATION
+    // ============================================
+    // Check for recent OTP requests to prevent abuse and reduce costs
+    const otpRef = db.collection('otp_verifications').doc(`${userType}_${userId}`)
+    const existingOtpDoc = await otpRef.get()
+    
+    if (existingOtpDoc.exists) {
+      const existingData = existingOtpDoc.data()
+      const now = new Date()
+      const createdAt = existingData.createdAt?.toDate() || new Date(0)
+      const timeSinceLastOTP = (now - createdAt) / 1000 / 60 // minutes
+      
+      // Rate limit: Max 1 OTP per 2 minutes (cost optimization)
+      if (timeSinceLastOTP < 2) {
+        const waitTime = Math.ceil(2 - timeSinceLastOTP)
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Please wait ${waitTime} minute(s) before requesting a new OTP. This helps us reduce costs.`,
+            retryAfter: waitTime * 60
+          },
+          { status: 429 }
+        )
+      }
+      
+      // If previous OTP is still valid (not expired), reuse it to save costs
+      const expiresAt = existingData.expiresAt?.toDate()
+      if (expiresAt && now < expiresAt && !existingData.verified) {
+        // Previous OTP still valid - don't send new one, just return success
+        // This saves SMS costs!
+        return NextResponse.json({
+          success: true,
+          message: 'Previous OTP is still valid. Please check your messages.',
+          reused: true,
+          expiresIn: Math.ceil((expiresAt - now) / 1000 / 60) // minutes remaining
+        })
+      }
+    }
+    
+    // Generate new OTP
     const otp = generateOTP()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes expiry
 
     // Store OTP in Firestore
-    const otpRef = db.collection('otp_verifications').doc(`${userType}_${userId}`)
+    const docId = `${userType}_${userId}`
+    console.log('Storing OTP:', { docId, userId, userType, phoneNumber: cleanedPhone })
+    
     await otpRef.set({
-      phoneNumber: phoneNumber.replace(/\s/g, ''),
+      phoneNumber: cleanedPhone,
       otp,
       userId,
       userType,
       expiresAt: expiresAt,
       createdAt: new Date(),
       verified: false,
-      attempts: 0
+      attempts: 0,
+      sentCount: (existingOtpDoc.exists ? (existingOtpDoc.data().sentCount || 0) + 1 : 1)
     })
+    
+    console.log('OTP stored successfully:', docId)
 
     // Send OTP via Twilio SMS
     try {
@@ -93,9 +141,9 @@ export async function POST(request) {
 
       return NextResponse.json({
         success: true,
-        message: 'OTP sent successfully',
-        // In development, return OTP for testing
-        ...(process.env.NODE_ENV === 'development' && { otp })
+        message: 'OTP sent successfully via SMS',
+        // Only return OTP in dev mode if Twilio is not configured
+        ...(process.env.NODE_ENV === 'development' && smsResult.devMode && { otp })
       })
     } catch (smsError) {
       console.error('Failed to send OTP via Twilio:', smsError)
@@ -104,26 +152,41 @@ export async function POST(request) {
       const isPhoneNumberError = smsError.message?.includes('21660') || 
                                  smsError.message?.includes('not associated with your Twilio account')
       
-      // In development, still return success with OTP (for testing)
+      // In development, check if it's a configuration issue
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV MODE] OTP for ${phoneNumber}: ${otp}`)
-        console.warn(`[TWILIO ERROR] ${smsError.message}`)
+        const isNotConfigured = smsError.message?.includes('not configured')
         
-        if (isPhoneNumberError) {
-          console.warn(`[FIX REQUIRED] You're using the wrong phone number for SMS.`)
-          console.warn(`[FIX REQUIRED] The WhatsApp sandbox number (+14155238886) cannot be used for SMS.`)
-          console.warn(`[FIX REQUIRED] Go to Twilio Console → Phone Numbers → Buy a number for SMS.`)
+        if (isNotConfigured) {
+          // Only log to console if Twilio is completely not configured
+          console.warn(`⚠️ Twilio not configured. OTP for ${phoneNumber}: ${otp}`)
+          return NextResponse.json({
+            success: true,
+            message: 'OTP sent successfully (dev mode - Twilio not configured)',
+            otp,
+            warning: 'Twilio not configured. Configure TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to send SMS.'
+          })
+        } else {
+          // For other errors (like phone number issues), show error but still return OTP for testing
+          console.error(`❌ Twilio SMS Error: ${smsError.message}`)
+          console.log(`[DEV MODE] OTP for ${phoneNumber}: ${otp}`)
+          
+          if (isPhoneNumberError) {
+            console.warn(`[FIX REQUIRED] You're using the wrong phone number for SMS.`)
+            console.warn(`[FIX REQUIRED] The WhatsApp sandbox number (+14155238886) cannot be used for SMS.`)
+            console.warn(`[FIX REQUIRED] Go to Twilio Console → Phone Numbers → Buy a number for SMS.`)
+            console.warn(`[FIX REQUIRED] Current TWILIO_PHONE_NUMBER: ${process.env.TWILIO_PHONE_NUMBER}`)
+          }
+          
+          return NextResponse.json({
+            success: true,
+            message: 'OTP sent successfully (dev mode - SMS failed)',
+            otp,
+            warning: isPhoneNumberError 
+              ? `Twilio error: ${smsError.message}. Check TWILIO_PHONE_NUMBER in .env`
+              : `Twilio error: ${smsError.message}`,
+            error: smsError.message
+          })
         }
-        
-        return NextResponse.json({
-          success: true,
-          message: 'OTP sent successfully (dev mode)',
-          otp,
-          warning: isPhoneNumberError 
-            ? 'Twilio phone number mismatch - using dev mode. Please purchase a phone number for SMS.'
-            : 'Twilio error - using dev mode',
-          error: smsError.message
-        })
       }
       
       // In production, return error with helpful message

@@ -269,8 +269,8 @@ export default async function BlogPage({ searchParams }) {
       <div className="blog-listing-page" key={categoryFilter}>
         {/* Hero Section */}
         <div className="blog-hero" style={{ paddingTop: '0.25rem', marginTop: '0.01rem' }}>
-          <h1>Astrology Blog</h1>
-          <p>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
+          <h1 className='title mx-auto flex align-center justify-center font-[700]'>Astrology Blog</h1>
+          <p className='subtitle'>Discover insights on Vedic astrology, numerology, planetary influences, and spiritual remedies</p>
         </div>
 
       {/* Category Filters */}

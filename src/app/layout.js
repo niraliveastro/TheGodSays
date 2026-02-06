@@ -131,7 +131,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        {/* Resource hints for faster external connections */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+        <link rel="dns-prefetch" href="https://www.clarity.ms" />
+        {/* Razorpay script removed from head - now loads on-demand in Wallet component */}
       </head>
       <body className={inter.className} suppressHydrationWarning={true}>
         {/* Cosmic Theme - Falling Stars & Particles */}
