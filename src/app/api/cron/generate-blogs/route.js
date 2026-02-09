@@ -13,42 +13,52 @@
 
 import { generateBlogs } from '@/lib/blog-generator/blog-generator-service'
 import { getBlogGenerationConfig } from '@/lib/blog-generator/config'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 // Verify this is a legitimate cron request
-function verifyCronRequest(request) {
-  // Vercel Cron sends a special header
+async function verifyCronRequest(request) {
+  // Vercel Cron sends a special header with CRON_SECRET
   const authHeader = request.headers.get('authorization')
   
   // Check for Vercel Cron secret (set in environment variables)
   const cronSecret = process.env.CRON_SECRET || process.env.VERCEL_CRON_SECRET
   
   if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    console.log('[Cron Auth] Verified via CRON_SECRET')
     return true
   }
   
-  // Also allow admin passcode for manual triggers
-  const adminPasscode = process.env.ADMIN_PASSCODE
-  if (adminPasscode && authHeader === `Bearer ${adminPasscode}`) {
-    return true
+  // Also allow admin passcode for manual triggers (use same auth as other admin endpoints)
+  try {
+    const { isAdmin, error } = await verifyAdminAuth(request)
+    if (isAdmin) {
+      console.log('[Cron Auth] Verified via ADMIN_PASSCODE')
+      return true
+    }
+    console.log('[Cron Auth] Admin auth failed:', error)
+  } catch (authError) {
+    console.error('[Cron Auth] Error verifying admin auth:', authError)
   }
   
   // In development, allow localhost requests
   if (process.env.NODE_ENV === 'development') {
     const host = request.headers.get('host')
     if (host && (host.includes('localhost') || host.includes('127.0.0.1'))) {
+      console.log('[Cron Auth] Verified via development mode')
       return true
     }
   }
   
+  console.log('[Cron Auth] All authentication methods failed')
   return false
 }
 
 export async function GET(request) {
   try {
     // Verify request is from cron or admin
-    if (!verifyCronRequest(request)) {
+    if (!(await verifyCronRequest(request))) {
       return Response.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', message: 'Invalid authentication. Please check your admin passcode or CRON_SECRET.' },
         { status: 401 }
       )
     }
@@ -98,9 +108,9 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     // Verify request is from admin
-    if (!verifyCronRequest(request)) {
+    if (!(await verifyCronRequest(request))) {
       return Response.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', message: 'Invalid authentication. Please check your admin passcode or CRON_SECRET.' },
         { status: 401 }
       )
     }

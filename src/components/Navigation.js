@@ -27,6 +27,8 @@ import {
   Globe,
   MessageCircle,
   Radio,
+  Sparkles,
+  Orbit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
@@ -105,11 +107,16 @@ const Navigation = () => {
   const userTopNavItems = useMemo(
     () => [
       {
-        href: "/talk-to-astrologer",
+        href: "/talk-to-astrologer/",
         label: t.nav.talkToAstrologer,
         icon: Phone,
       },
-      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
+      {
+        href: "https://vastu-ai.niraliveastro.com",
+        label: "Vastu AI",
+        icon: Home,
+        external: true,
+      },
       {
         href: null,
         label: t.nav.myAccount,
@@ -136,32 +143,18 @@ const Navigation = () => {
   );
 
   const userBottomNavItems = useMemo(() => {
-    // Desktop items
+    // Desktop items - ordered as requested
     const desktopItems = [
-      { href: "/matching", label: t.nav.matching, icon: BookOpen },
-      {
-        href: "/cosmic-event-tracker",
-        label: t.calendar.title,
-        icon: Calendar,
-      },
+      { href: "/kundli-matching/", label: t.nav.matching, icon: BookOpen },
+      { href: "/kundli-prediction/", label: t.nav.aiPredictions, icon: Star },
       { href: "/panchang", label: t.panchang.title, icon: BookOpen },
+      { href: "/numerology", label: t.numerology.title, icon: Hash },
+      { href: "/planetary-transits/", label: t.transit.title, icon: Zap },
       {
-        href: "https://vastu-ai.niraliveastro.com",
-        label: "Vastu AI",
-        icon: Home, 
-        external: true,
+        href: "/cosmic-events/",
+        label: t.calendar.title,
+        icon: Sparkles, // Changed to Sparkles for cosmic events
       },
-      {
-        href: null,
-        label: t.nav.tools,
-        icon: Settings,
-        dropdownId: "tools",
-        children: [
-          { href: "/numerology", label: t.numerology.title, icon: Hash },
-          { href: "/transit", label: t.transit.title, icon: Zap },
-        ],
-      },
-      
       { href: "/blog", label: t.nav.blog, icon: Rss },
     ];
 
@@ -172,11 +165,11 @@ const Navigation = () => {
   const userBottomNavItemsMobile = useMemo(
     () => [
       {
-        href: "/talk-to-astrologer",
+        href: "/talk-to-astrologer/",
         label: t.nav.talkToAstrologer,
         icon: Phone,
       },
-      { href: "/new-predictions", label: t.nav.aiPredictions, icon: Star },
+      { href: "/kundli-prediction/", label: t.nav.aiPredictions, icon: Star },
       { href: "/blog", label: t.nav.blog, icon: Rss },
       { href: "/appointments", label: "Booking", icon: Calendar },
     ],
