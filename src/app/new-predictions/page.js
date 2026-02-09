@@ -35,10 +35,45 @@ import {
 import { useRouter } from "next/navigation";
 import { PageLoading } from "@/components/LoadingStates";
 import HighConvertingInsights from "./high-converting-page";
+import AstrologerAssistant from "@/components/AstrologerAssistant";
+
 
 // -----------------------------
 // Chart Challenge Analyzer
 // -----------------------------
+
+
+// -----------------------------
+// Life Area Scoring Rules
+// -----------------------------
+const LIFE_RULES = {
+  career: {
+    houses: [10, 6, 2],
+    planets: ["Sun", "Saturn", "Mercury"],
+  },
+  wealth: {
+    houses: [2, 11],
+    planets: ["Jupiter", "Venus"],
+  },
+  marriage: {
+    houses: [7],
+    planets: ["Venus", "Moon"],
+  },
+  health: {
+    houses: [1, 6, 8],
+    planets: ["Sun", "Mars"],
+  },
+  property: {
+    houses: [4],
+    planets: ["Moon", "Mars"],
+  },
+  travel: {
+    houses: [3, 9, 12],
+    planets: ["Mercury", "Rahu"],
+  },
+};
+
+
 function analyzeChartChallenges({
   shadbalaRows,
   placements,
@@ -108,6 +143,70 @@ function analyzeChartChallenges({
   };
 }
 
+// -----------------------------
+// Life Area Score Calculator
+// -----------------------------
+function calculateLifeScores({
+  placements,
+  shadbalaRows,
+  currentDashaChain,
+}) {
+  const scores = {};
+
+  Object.entries(LIFE_RULES).forEach(([area, rule]) => {
+    let score = 50;
+
+    // Planet strength
+    rule.planets.forEach((planet) => {
+      const p = shadbalaRows.find(
+        (x) => x.name?.toLowerCase() === planet.toLowerCase(),
+      );
+
+      if (p?.percent >= 70) score += 10;
+      else if (p?.percent >= 55) score += 5;
+      else if (p?.percent < 45) score -= 8;
+    });
+
+    // House activation
+    const houseHits = placements.filter(
+  (p) => rule.houses.includes(Number(p.house))
+).length;
+
+const normalize = (s) =>
+  s?.toLowerCase().replace(/[^a-z]/g, "");
+
+rule.planets.forEach((planet) => {
+  const p = shadbalaRows.find(
+    (x) => normalize(x.name) === normalize(planet),
+  );
+});
+
+
+    score += Math.min(houseHits * 4, 12);
+
+    // Dasha emphasis
+    if (currentDashaChain) {
+      rule.planets.forEach((planet) => {
+        if (currentDashaChain.includes(planet)) {
+          score += 6;
+        }
+      });
+    }
+
+    // Retrograde penalty
+    placements.forEach((p) => {
+      if (p.retro && rule.planets.includes(p.name)) {
+        score -= 5;
+      }
+    });
+
+    scores[area] = Math.max(25, Math.min(95, Math.round(score)));
+  });
+
+  return scores;
+}
+
+
 export default function PredictionsPage() {
   const { t } = useTranslation();
   // Track page view on mount
@@ -168,6 +267,8 @@ export default function PredictionsPage() {
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
   const router = useRouter();
+  
+
 
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
@@ -338,6 +439,24 @@ export default function PredictionsPage() {
 
   // Track if we should auto-submit
   const shouldAutoSubmit = useRef(false);
+
+// Auto-scroll target
+const birthInfoRef = useRef(null);
+
+  // Auto-scroll to Birth Info when result is ready
+useEffect(() => {
+  if (result && birthInfoRef.current) {
+    const t = setTimeout(() => {
+      birthInfoRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+
+    return () => clearTimeout(t);
+  }
+}, [result]);
+
 
   useEffect(() => {
     setHistory(getHistory());
@@ -739,7 +858,7 @@ export default function PredictionsPage() {
         config: {
           observation_point: "topocentric",
           ayanamsha: "lahiri",
-          house_system: "Placidus",
+          house_system: "whole_sign",
         },
       };
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
@@ -1493,67 +1612,76 @@ export default function PredictionsPage() {
       });
   }, [result]);
 
-  const insights = useMemo(() => {
-    if (!result) return null;
 
-    return {
-      accuracy: {
-        level: selectedCoords ? "HIGH" : "MEDIUM",
+
+
+const insights = useMemo(() => {
+  if (!result) return null;
+
+  const lifeScores = calculateLifeScores({
+    placements,
+    shadbalaRows,
+    currentDashaChain,
+  });
+
+  return {
+    accuracy: {
+      level: selectedCoords ? "HIGH" : "MEDIUM",
+    },
+
+    next30Days: {
+      career: { level: "Medium-High", probability: 78, locked: true },
+      money: { level: "Mixed", probability: 61, locked: true },
+      relationship: { level: "Caution", probability: 48, locked: true },
+    },
+
+    scores: lifeScores,
+
+    strongHits: [
+      "Authority figures strongly influence your career decisions",
+      "Money comes in cycles, not steady flow",
+      "You delay commitment until certainty is achieved",
+    ],
+
+    blockers: [
+      {
+        area: "Career Growth",
+        reason: "Saturn transit over the 10th lord",
+        fixable: true,
       },
-
-      next30Days: {
-        career: { level: "Medium-High", probability: 78, locked: true },
-        money: { level: "Mixed", probability: 61, locked: true },
-        relationship: { level: "Caution", probability: 48, locked: true },
+      {
+        area: "Money Flow",
+        reason: "Family karma influencing wealth",
+        fixable: true,
       },
+    ],
 
-      scores: {
-        career: 72,
-        wealth: 68,
-        marriage: 65,
-        health: 80,
-        property: 55,
-        travel: 45,
-      },
-
-      strongHits: [
-        "Authority figures strongly influence your career decisions",
-        "Money comes in cycles, not steady flow",
-        "You delay commitment until certainty is achieved",
-      ],
-
-      blockers: [
+     timeline: {
+      past: [
         {
-          area: "Career Growth",
-          reason: "Saturn transit over the 10th lord",
-          fixable: true,
-        },
-        {
-          area: "Money Flow",
-          reason: "Family karma influencing wealth",
-          fixable: true,
+          label: "8 months ago",
+          description: "Career opportunity missed",
+          confidence: 82,
         },
       ],
+      future: [
+        {
+          label: "Next 3 months",
+          description: "New responsibility window",
+          confidence: 68,
+          locked: true,
+        },
+      ],
+    },
+  };
+}, [
+  result,
+  selectedCoords,
+  placements,
+  shadbalaRows,
+  currentDashaChain,
+]);
 
-      timeline: {
-        past: [
-          {
-            label: "8 months ago",
-            description: "Career opportunity missed",
-            confidence: 82,
-          },
-        ],
-        future: [
-          {
-            label: "Next 3 months",
-            description: "New responsibility window",
-            confidence: 68,
-            locked: true,
-          },
-        ],
-      },
-    };
-  }, [result, selectedCoords]);
 
   const challengeAnalysis = useMemo(() => {
     if (!result) return null;
@@ -1803,6 +1931,8 @@ export default function PredictionsPage() {
     return active?.lord || null;
   }, [mahaRows]);
 
+  
+
   /* ---------- ACCORDION SECTION ---------- */
   const Section = ({ title, content, children }) => {
     const [open, setOpen] = useState(false);
@@ -1899,6 +2029,33 @@ export default function PredictionsPage() {
       </div>
     );
   };
+
+  const astrologerAssistantData = result
+  ? {
+      person: {
+        input: {
+          name: fullName,
+          dob: result.input.dob,
+          tob: result.input.tob,
+          place: result.input.place,
+          coords: result.coords,
+        },
+        gender,
+      },
+
+      chart: {
+        placements,
+        shadbalaRows,
+        mahaRows,
+        currentDashaChain,
+      },
+
+      meta: {
+        page: "predictions",
+      },
+    }
+  : null;
+
 
 
   // Show full-page loading when submitting and no result yet
@@ -2395,7 +2552,12 @@ export default function PredictionsPage() {
             }}
           >
             {/* Birth Info */}
-            <div className="card">
+<div
+  ref={birthInfoRef}
+  id="birth-info"
+  className="card"
+  style={{ scrollMarginTop: "96px" }}
+>
               <div className="results-header">
                 <Sun style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Birth Information</h3>
@@ -2637,6 +2799,7 @@ export default function PredictionsPage() {
                   openAntarInlineFor={openAntarInlineFor}
                   activeMahaLord={activeMahaLord}
                   onTalkToAstrologer={handleTalkToAstrologer}
+                  currentDashaChain = {currentDashaChain}
                 />
               </section>
             )}
@@ -3051,7 +3214,7 @@ export default function PredictionsPage() {
           </div>
 
           {/* ACCORDIONS GO HERE */}
-          <div style={{ padding: 0 }}></div>
+          
           {/* EXPLANATION ACCORDIONS */}
           <Section
             title="How Your Birth Chart Is Calculated"
@@ -3176,6 +3339,19 @@ export default function PredictionsPage() {
         <PhoneCallIcon className="global-floater-icon" />
         <span className="global-floater-text">Talk to Astrologer</span>
       </a>
+
+      <AstrologerAssistant
+  pageTitle="Predictions"
+  initialData={astrologerAssistantData}
+  chatType="prediction"
+  shouldReset={shouldResetChat}
+  formDataHash={currentFormDataHash}
+  chatSessionId={chatSessionId}
+  show={true}
+  hasData={!!result}
+  tabLabel={fullName || "Astrologer"} // 👈 NAME ON TAB
+ />
+
     </div>
   );
 }
