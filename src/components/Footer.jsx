@@ -46,8 +46,8 @@ export default function Footer() {
           <div className="footer-section">
             <h4 className="footer-heading">Our Services</h4>
             <ul className="footer-links">
-              <li><Link href="/new-predictions">Personalized Readings</Link></li>
-              <li><Link href="/matching">Kundali Matching</Link></li>
+              <li><Link href="/kundli-prediction/">Personalized Readings</Link></li>
+              <li><Link href="/kundli-matching/">Kundali Matching</Link></li>
               <li><Link href="/blog">Astrology Articles</Link></li>
               <li><Link href="/account/astrologer">Astrologer Profiles</Link></li>
             </ul>

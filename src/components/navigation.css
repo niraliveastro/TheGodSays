@@ -91,9 +91,11 @@ body {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-    background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Exact button gradient */
+  background: linear-gradient(135deg, #d4af37, #b8972e) !important; /* Exact button gradient */
   z-index: 998 !important; /* Just below top nav */
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3), 0 0 20px rgba(212, 175, 55, 0.2) !important;
+  overflow-x: hidden !important; /* Prevent horizontal overflow */
+  box-sizing: border-box !important;
 }
 
 /* Mobile: Hide bottom nav bar completely */
@@ -165,6 +167,14 @@ body {
   position: relative !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  overflow-x: auto !important; /* Allow scroll on zoom if needed */
+  scrollbar-width: none !important; /* Hide scrollbar */
+  -ms-overflow-style: none !important; /* Hide scrollbar IE/Edge */
+}
+
+/* Hide scrollbar for webkit browsers */
+.nav-bottom-row-wrapper .nav-content::-webkit-scrollbar {
+  display: none !important;
 }
 
 /* Align bottom nav items to start exactly under "N" of NiraLive Astro - HARD CSS */
@@ -173,9 +183,11 @@ body {
   align-items: center !important;
   justify-content: flex-start !important;
   width: 100% !important;
+  min-width: fit-content !important; /* Allow items to shrink if needed */
   padding-left: 0 !important;
   margin-left: 56px !important; /* Align Matching under left edge of "N" */
   box-sizing: border-box !important;
+  flex-wrap: nowrap !important; /* Keep items on one line */
 }
 
 /* Mobile responsive: maintain alignment at all zoom levels */
@@ -387,7 +399,7 @@ body {
 
 /* Language Switcher in Bottom Nav Bar */
 .nav-language-bottom {
-  margin-left: auto; /* Push to the right side */
+  margin-left: 0 !important; /* Remove auto margin to keep inline */
   display: flex;
   align-items: center;
   padding-left: 1rem;
@@ -401,10 +413,10 @@ body {
 .nav-language-dropdown-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  gap: 0.4rem; /* Slightly reduced gap */
+  padding: 0.5rem 1rem; /* Original padding */
   border-radius: 12px;
-  font-size: 0.9375rem;
+  font-size: 0.9375rem; /* Original font size */
   font-weight: 400; /* Normal weight - removed bold */
   color: #000000; /* Black text */
   text-decoration: none;
@@ -444,6 +456,7 @@ body {
   filter: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
 .nav-language-dropdown-button:hover svg {
@@ -569,11 +582,14 @@ body {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 1.5rem !important; /* Increased gap between items like in image */
+    gap: 0.75rem !important; /* Reduced gap to fit all items on one line */
     width: 100% !important;
-    flex-wrap: wrap !important; /* Allow wrapping on smaller screens */
+    flex-wrap: nowrap !important; /* Prevent wrapping - keep on single line */
     padding: 0 !important;
     margin-left: 0 !important; /* Remove duplicate margin, already set in .nav-bottom-row-wrapper .nav-desktop */
+    overflow-x: auto !important; /* Allow horizontal scroll on zoom if needed */
+    scrollbar-width: none !important; /* Hide scrollbar */
+    -ms-overflow-style: none !important; /* Hide scrollbar IE/Edge */
   }
   
   /* Ensure bottom nav starts exactly under "N" of NiraLive Astro */
@@ -584,9 +600,15 @@ body {
   }
   
   /* Responsive gap adjustment - HARD CSS */
+  @media (max-width: 1400px) {
+    .nav-bottom-row .nav-desktop {
+      gap: 0.65rem !important; /* Smaller gap on large screens */
+    }
+  }
+  
   @media (max-width: 1200px) {
     .nav-bottom-row .nav-desktop {
-      gap: 1rem !important; /* Smaller gap on medium screens */
+      gap: 0.5rem !important; /* Smaller gap on medium screens */
     }
     
     .nav-bottom-row-wrapper .nav-desktop {
@@ -597,7 +619,7 @@ body {
   
   @media (max-width: 1024px) {
     .nav-bottom-row .nav-desktop {
-      gap: 0.75rem !important; /* Even smaller gap on tablets */
+      gap: 0.4rem !important; /* Even smaller gap on tablets */
     }
     
     .nav-bottom-row-wrapper .nav-desktop {
@@ -606,10 +628,23 @@ body {
     }
   }
   
+  /* Handle zoomed views - ensure items don't overflow */
+  @media (max-width: 1600px) {
+    .nav-bottom-row .nav-desktop {
+      gap: 0.7rem !important;
+    }
+  }
+  
+  /* Hide scrollbar for webkit browsers */
+  .nav-bottom-row .nav-desktop::-webkit-scrollbar {
+    display: none !important;
+  }
+  
   /* Language switcher positioning - beside Blog */
   .nav-bottom-row .nav-language-bottom {
-    margin-left: 0;
-    padding-left: 0;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    flex-shrink: 0; /* Prevent language selector from wrapping */
   }
 }
 
@@ -720,8 +755,8 @@ body {
 .nav-bottom-row .nav-button {
   color: #000000; /* Black text on golden background */
   font-weight: 300 !important; /* Normal weight - removed bold */
-  padding: 0.5rem 1rem; /* Comfortable padding */
-  font-size: 0.9375rem; /* Slightly larger text */
+  padding: 0.5rem 1rem; /* Original padding */
+  font-size: 0.9375rem; /* Original font size */
   white-space: nowrap;
   border-radius: 12px; /* Rounded corners */
   border: none !important;
@@ -879,10 +914,11 @@ body {
   width: 18px;
   height: 18px;
   color: #000000; /* Black icons */
-  margin-right: 0.5rem; /* Space between icon and text */
+  margin-right: 0.4rem; /* Slightly reduced space between icon and text */
   filter: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
 .nav-bottom-row .nav-link:hover svg,
