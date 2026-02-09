@@ -29,6 +29,7 @@ export default function HighConvertingInsights({
   openAntarInlineFor,
   activeMahaLord,
   onTalkToAstrologer,
+  currentDashaChain
 }) {
   const router = useRouter();
 
@@ -294,7 +295,9 @@ return (
         />
       </div> */}
 
-      <LifeAreaInsights scores={scores} handleUnlockClick={handleUnlockClick} />
+      <LifeAreaInsights scores={scores} 
+       currentDashaChain={currentDashaChain}
+      handleUnlockClick={handleUnlockClick} />
 
 
 
