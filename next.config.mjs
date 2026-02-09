@@ -209,6 +209,119 @@ const nextConfig = {
       },
     ]
   },
+  // SEO URL restructuring - 301 redirects (permanent)
+  async redirects() {
+    return [
+      // 1. CORE MONEY & AUTHORITY PAGES
+      {
+        source: '/matching',
+        destination: '/kundli-matching/',
+        permanent: true,
+      },
+      {
+        source: '/new-matching',
+        destination: '/kundli-matching/',
+        permanent: true,
+      },
+      {
+        source: '/predictions',
+        destination: '/kundli-prediction/',
+        permanent: true,
+      },
+      {
+        source: '/new-predictions',
+        destination: '/kundli-prediction/',
+        permanent: true,
+      },
+      {
+        source: '/ai-predictions',
+        destination: '/kundli-prediction/ai/',
+        permanent: true,
+      },
+      // Enforce trailing slash for /talk-to-astrologer
+      {
+        source: '/talk-to-astrologer',
+        destination: '/talk-to-astrologer/',
+        permanent: true,
+      },
+      
+      // 2. COSMIC / TRANSIT AUTHORITY CLUSTER
+      {
+        source: '/cosmic-event-tracker',
+        destination: '/cosmic-events/',
+        permanent: true,
+      },
+      {
+        source: '/transit',
+        destination: '/planetary-transits/',
+        permanent: true,
+      },
+      {
+        source: '/maha-dasas',
+        destination: '/dashas/mahadasha/',
+        permanent: true,
+      },
+      {
+        source: '/panchang/maha-dasas',
+        destination: '/dashas/mahadasha/',
+        permanent: true,
+      },
+      
+      // 3. PANCHANG & MUHURAT (CRITICAL - FIX SPELLING)
+      {
+        source: '/panchang/calender',
+        destination: '/panchang/calendar/',
+        permanent: true,
+      },
+      {
+        source: '/calendar',
+        destination: '/panchang/calendar/',
+        permanent: true,
+      },
+      {
+        source: '/panchang/kundali',
+        destination: '/panchang/kundli/',
+        permanent: true,
+      },
+      {
+        source: '/choghadiya-timings',
+        destination: '/panchang/choghadiya/',
+        permanent: true,
+      },
+      {
+        source: '/panchang/choghadiya-timings',
+        destination: '/panchang/choghadiya/',
+        permanent: true,
+      },
+      {
+        source: '/hora-timings',
+        destination: '/panchang/hora/',
+        permanent: true,
+      },
+      {
+        source: '/panchang/hora-timings',
+        destination: '/panchang/hora/',
+        permanent: true,
+      },
+      {
+        source: '/tithi-timings',
+        destination: '/panchang/tithi/',
+        permanent: true,
+      },
+      
+      // 5. KUNDLI STANDARDIZATION
+      {
+        source: '/kundali',
+        destination: '/kundli/',
+        permanent: true,
+      },
+      {
+        source: '/personalized',
+        destination: '/kundli/personalized/',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

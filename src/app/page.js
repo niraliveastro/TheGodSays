@@ -1002,7 +1002,7 @@ export default function Home() {
     }
 
     // Navigate to predictions page (fast client-side routing)
-    fastNavigate(router, "/predictions");
+    fastNavigate(router, "/kundli-prediction/");
   };
 
   // Debounce location search
@@ -1060,13 +1060,13 @@ export default function Home() {
   const handleOptionClick = (optionId) => {
     if (optionId === "tithi-timings") {
       // Redirect to dedicated tithi timings page (fast client-side routing)
-      fastNavigate(router, "/tithi-timings");
+      fastNavigate(router, "/panchang/tithi/");
       return;
     }
 
     if (optionId === "choghadiya-timings") {
       // Redirect to dedicated choghadiya timings page (fast client-side routing)
-      fastNavigate(router, "/choghadiya-timings");
+      fastNavigate(router, "/panchang/choghadiya/");
       return;
     }
 
@@ -1499,7 +1499,7 @@ export default function Home() {
                     className="hero-pill"
                     onClick={() => {
                       // quick link to Life Insights (fast client-side routing)
-                      fastNavigate(router, "/predictions");
+                      fastNavigate(router, "/kundli-prediction/");
                     }}
                   >
                     {t.hero.lifeInsights}
@@ -1507,7 +1507,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      fastNavigate(router, "/matching");
+                      fastNavigate(router, "/kundli-matching/");
                     }}
                   >
                     {t.hero.kundaliMatching}
@@ -1515,7 +1515,7 @@ export default function Home() {
                   <button
                     className="hero-pill"
                     onClick={() => {
-                      fastNavigate(router, "/panchang/calender");
+                      fastNavigate(router, "/panchang/calendar/");
                     }}
                   >
                     {t.hero.panchangToday}
@@ -1534,7 +1534,7 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() => fastNavigate(router, "/predictions")}
+                    onClick={() => fastNavigate(router, "/kundli-prediction/")}
                     className="hero-btn hero-btn-secondary-gold"
                     type="button"
                   >
@@ -1827,7 +1827,7 @@ export default function Home() {
               {/* Service Card 3: Compatibility Check */}
               <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                onClick={() => fastNavigate(router, "/matching")}
+                onClick={() => fastNavigate(router, "/kundli-matching/")}
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">
@@ -2743,7 +2743,7 @@ export default function Home() {
               <div className="flex-shrink-0 flex flex-col items-stretch gap-3">
                 <button
                   type="button"
-                  onClick={() => fastNavigate(router, "/matching")}
+                  onClick={() => fastNavigate(router, "/kundli-matching/")}
                   className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:scale-[1.01] active:translate-y-0.5 transition transform"
                   aria-label="Check compatibility now — go to matching page"
                   style={{

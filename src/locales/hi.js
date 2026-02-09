@@ -2,7 +2,7 @@ export const hi = {
   // Navigation
   nav: {
     talkToAstrologer: "ज्योतिषी से बात करें",
-    aiPredictions: "AI भविष्यवाणी",
+    aiPredictions: "कुंडली भविष्यवाणी",
     matching: "कुंडली मिलान",
     tools: "उपकरण",
     blog: "ब्लॉग",
@@ -60,7 +60,7 @@ export const hi = {
 
   // Panchang Section
   panchang: {
-    title: "आज का पंचांग",
+    title: "पंचांग",
     titleFor: "पंचांग",
     description: "आज के शुभ समय, ग्रहों की स्थिति और महत्वपूर्ण गतिविधियों के लिए मुहूर्त देखें। वैदिक गणनाओं के आधार पर दैनिक अपडेट।",
     selectDate: "पंचांग देखने के लिए तिथि चुनें",
@@ -260,7 +260,7 @@ export const hi = {
 
   // Numerology Page
   numerology: {
-    title: "अंकज्योतिष कैलकुलेटर",
+    title: "अंकज्योतिष",
     subtitle: "अपने अंक जानें",
     description: "अपने जीवन पथ, भाग्य और अन्य मुख्य अंकों की गणना करें",
     fullName: "पूरा नाम",
@@ -306,7 +306,7 @@ export const hi = {
 
   // Calendar Page
   calendar: {
-    title: "हिंदू कैलेंडर",
+    title: "ब्रह्मांडीय घटनाएं",
     subtitle: "पंचांग कैलेंडर",
     description: "त्योहार, तिथियां और शुभ तिथियां देखें",
     selectMonth: "महीना चुनें",

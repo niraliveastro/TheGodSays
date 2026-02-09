@@ -8,37 +8,37 @@ import Link from "next/link";
 export default function InternalLinks({ currentPage }) {
   const linkGroups = {
     "matching": [
-      { href: "/talk-to-astrologer", text: "Talk to an Astrologer", description: "Get expert guidance on your compatibility" },
-      { href: "/predictions", text: "Get AI Predictions", description: "Understand your future together" }
+      { href: "/talk-to-astrologer/", text: "Talk to an Astrologer", description: "Get expert guidance on your compatibility" },
+      { href: "/kundli-prediction/", text: "Get AI Predictions", description: "Understand your future together" }
     ],
     "predictions": [
-      { href: "/talk-to-astrologer", text: "Talk to an Astrologer", description: "Discuss your predictions with experts" },
-      { href: "/matching", text: "Check Compatibility", description: "See if you're compatible with your partner" }
+      { href: "/talk-to-astrologer/", text: "Talk to an Astrologer", description: "Discuss your predictions with experts" },
+      { href: "/kundli-matching/", text: "Check Compatibility", description: "See if you're compatible with your partner" }
     ],
     "cosmic-event-tracker": [
-      { href: "/predictions", text: "Get Personalized Predictions", description: "Understand how transits affect you" },
-      { href: "/talk-to-astrologer", text: "Consult an Astrologer", description: "Get expert transit analysis" }
+      { href: "/kundli-prediction/", text: "Get Personalized Predictions", description: "Understand how transits affect you" },
+      { href: "/talk-to-astrologer/", text: "Consult an Astrologer", description: "Get expert transit analysis" }
     ],
     "numerology": [
-      { href: "/talk-to-astrologer", text: "Talk to an Astrologer", description: "Get numerology guidance" },
-      { href: "/predictions", text: "Combine with Astrology", description: "See how numbers and planets align" }
+      { href: "/talk-to-astrologer/", text: "Talk to an Astrologer", description: "Get numerology guidance" },
+      { href: "/kundli-prediction/", text: "Combine with Astrology", description: "See how numbers and planets align" }
     ],
     "transit": [
-      { href: "/predictions", text: "Get Predictions", description: "Understand transit impact on your life" },
-      { href: "/talk-to-astrologer", text: "Consult an Astrologer", description: "Expert transit guidance" }
+      { href: "/kundli-prediction/", text: "Get Predictions", description: "Understand transit impact on your life" },
+      { href: "/talk-to-astrologer/", text: "Consult an Astrologer", description: "Expert transit guidance" }
     ],
     "panchang": [
-      { href: "/talk-to-astrologer", text: "Talk to an Astrologer", description: "Get muhurat guidance" },
-      { href: "/predictions", text: "Get Predictions", description: "Understand daily influences" }
+      { href: "/talk-to-astrologer/", text: "Talk to an Astrologer", description: "Get muhurat guidance" },
+      { href: "/kundli-prediction/", text: "Get Predictions", description: "Understand daily influences" }
     ],
     "talk-to-astrologer": [
-      { href: "/matching", text: "Check Compatibility", description: "For marriage guidance" },
-      { href: "/predictions", text: "Get AI Predictions", description: "Before your consultation" }
+      { href: "/kundli-matching/", text: "Check Compatibility", description: "For marriage guidance" },
+      { href: "/kundli-prediction/", text: "Get AI Predictions", description: "Before your consultation" }
     ],
     "home": [
-      { href: "/talk-to-astrologer", text: "Talk to Astrologer", description: "Live consultations" },
-      { href: "/matching", text: "Kundli Matching", description: "Marriage compatibility" },
-      { href: "/predictions", text: "AI Predictions", description: "Personalized forecasts" }
+      { href: "/talk-to-astrologer/", text: "Talk to Astrologer", description: "Live consultations" },
+      { href: "/kundli-matching/", text: "Kundli Matching", description: "Marriage compatibility" },
+      { href: "/kundli-prediction/", text: "AI Predictions", description: "Personalized forecasts" }
     ]
   };
 

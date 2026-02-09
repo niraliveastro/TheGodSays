@@ -34,10 +34,10 @@ export function prefetchRoutes(router, routes) {
  * Common routes to prefetch on app load
  */
 export const COMMON_ROUTES = [
-  '/predictions',
-  '/matching',
+  '/kundli-prediction/',
+  '/kundli-matching/',
   '/panchang',
-  '/talk-to-astrologer',
+  '/talk-to-astrologer/',
   '/wallet',
   '/numerology',
 ];
