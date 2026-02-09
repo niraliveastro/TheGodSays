@@ -24,6 +24,8 @@ import {
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistantTab from "@/components/AstrologerAssistantTab";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+
 import PageSEO from "@/components/PageSEO";
 
 // Lazy load heavy components for better initial load
@@ -162,6 +164,7 @@ export default function MatchingPage() {
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
+  const googleLoaded = useGoogleMaps();
 
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
@@ -441,39 +444,51 @@ export default function MatchingPage() {
    * @param {string} key - The field key being changed.
    * @returns {function} Event handler for input change.
    */
-  const onChangePerson =
-    (setter, coordsSetter, suggestSetter, timerRef, key) => (e) => {
-      const v = e.target.value;
-      setter((prev) => ({ ...prev, [key]: v }));
-      if (key === "place") {
-        coordsSetter(null);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(async () => {
-          if (!v || v.length < 2) {
-            suggestSetter([]);
-            return;
-          }
-          try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-              v,
-            )}`;
-            const res = await fetch(url, {
-              headers: { "Accept-Language": "en" },
-            });
-            const arr = await res.json();
-            suggestSetter(
-              (arr || []).map((it) => ({
-                label: it.display_name,
-                latitude: parseFloat(it.lat),
-                longitude: parseFloat(it.lon),
-              })),
-            );
-          } catch {
-            suggestSetter([]);
-          }
-        }, 250);
-      }
-    };
+// Option 1: Make the whole onChange handler async (most common fix)
+const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key) => 
+  async (e) => {    //  ← add async here
+    const v = e.target.value;
+    setter((prev) => ({ ...prev, [key]: v }));
+
+    if (key === "place") {
+      coordsSetter(null);
+
+      if (timerRef.current) clearTimeout(timerRef.current);
+
+      timerRef.current = setTimeout(async () => {   // ← also async
+        if (!googleLoaded || !v || v.length < 3) {
+          suggestSetter([]);
+          return;
+        }
+
+        try {
+         const { AutocompleteSuggestion } =
+  await google.maps.importLibrary("places");
+
+const { suggestions } =
+  await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+    input: v,
+    language: "en",
+    region: "IN",
+  });
+
+suggestSetter(
+  suggestions.map(s => ({
+    label: s.placePrediction.text.text,
+    placeId: s.placePrediction.placeId,
+  }))
+);
+
+
+        } catch (err) {
+          console.warn("Google Places failed:", err);
+          suggestSetter([]);
+        }
+      }, 350);  // slightly longer debounce is usually better
+    }
+  };
+
+
   /**
    * Parses DOB (handles both YYYY-MM-DD and DD-MM-YYYY formats) and TOB (HH:MM) into API payload format.
    * @param {string} dob - Date of birth string (YYYY-MM-DD or DD-MM-YYYY).
@@ -548,15 +563,67 @@ export default function MatchingPage() {
    */
   async function reverseGeocodeCoords(lat, lon) {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
-      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      if (!googleLoaded) {
+        return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+
+      const res = await new Promise((resolve, reject) => {
+        geocoder.geocode({ location: { lat, lng: lon } }, (results, status) => {
+          if (status === "OK" && results?.length) {
+            resolve(results[0]);
+          } else {
+            reject(status);
+          }
+        });
+      });
+
+      return res.formatted_address || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     } catch {
       return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     }
   }
+
+  // Get Place Suggestion in the form using Google places
+
+
+
+const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
+  if (!placeId || !window.google?.maps?.importLibrary) return;
+
+  try {
+    const { Place } = await google.maps.importLibrary("places");
+
+    const place = new Place({ id: placeId });
+
+    await place.fetchFields({
+      fields: ["location", "formattedAddress"],
+    });
+
+    if (!place.location) return;
+
+    const lat = place.location.lat();
+    const lng = place.location.lng();
+    const label = place.formattedAddress;
+
+    // ✅ Update input field
+    setter((prev) => ({
+      ...prev,
+      place: label,
+    }));
+
+    // ✅ Save coordinates
+    coordsSetter({
+      latitude: lat,
+      longitude: lng,
+      label,
+    });
+  } catch (err) {
+    console.error("resolvePlaceDetails failed:", err);
+  }
+};
+
 
   /**
    * Fetches current location for female and fills place field.
@@ -717,10 +784,9 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
-         compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
+        compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
         lastGenerated: new Date().toISOString(),
       });
-
 
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -1170,7 +1236,6 @@ export default function MatchingPage() {
     }
   };
 
-
   /* -------------------------------------------------------------- */
   /* Chat functionality */
   /* -------------------------------------------------------------- */
@@ -1486,165 +1551,165 @@ export default function MatchingPage() {
       setError("No result to download.");
       return;
     }
-    
+
     try {
       // Dynamically import PDF libraries only when needed (saves ~80KB initial bundle)
       const [{ default: jsPDF }, autoTable] = await Promise.all([
         import("jspdf"),
-        import("jspdf-autotable")
+        import("jspdf-autotable"),
       ]);
-      
+
       const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
-    let yPos = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      let yPos = 20;
 
-    // Title
-    doc.setFontSize(20);
-    doc.setFont(undefined, "bold");
-    doc.text("Vedic Astrology Match Report", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += 15;
-
-    // Birth Info
-    doc.setFontSize(12);
-    doc.setFont(undefined, "normal");
-    doc.text("Birth Details:", margin, yPos);
-    yPos += 10;
-    const femaleName = female.fullName || "Female";
-    const maleName = male.fullName || "Male";
-    doc.text(
-      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
-        female.place
-      }`,
-      margin,
-      yPos,
-    );
-    yPos += 7;
-    doc.text(
-      `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
-      margin,
-      yPos,
-    );
-    yPos += 15;
-
-    // Score Summary
-    doc.setFont(undefined, "bold");
-    doc.text("Ashtakoot Compatibility Score:", margin, yPos);
-    yPos += 7;
-    doc.setFont(undefined, "normal");
-    const totalScore = Number(result?.total_score ?? 0);
-    const outOf = Number(result?.out_of ?? 36);
-    doc.text(`${totalScore}/${outOf}`, margin, yPos);
-    yPos += 15;
-
-    // Koot Table
-    doc.setFont(undefined, "bold");
-    doc.text("Koot Breakdown:", margin, yPos);
-    yPos += 10;
-    const kootTableData = KOOTS.map((k) => {
-      const sec = result?.[k];
-      const name = k
-        .replace(/_/g, " ")
-        .replace(/kootam/i, "")
-        .trim();
-      const score = typeof sec?.score === "number" ? sec.score : 0;
-      const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
-      const area =
-        {
-          varna: "Spiritual Compatibility",
-          vasya: "Mutual Affection / Control",
-          tara: "Health & Longevity",
-          yoni: "Sexual Compatibility",
-          "graha maitri": "Mental Harmony",
-          gana: "Temperament",
-          rasi: "Love & Emotion",
-          nadi: "Health & Genes",
-        }[name.toLowerCase()] || "—";
-      return [name, `${score}/${outOfK}`, area];
-    });
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Kootam", "Points", "Area of Life"]],
-      body: kootTableData,
-      theme: "striped",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [218, 165, 32] },
-      margin: { left: margin, right: margin },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 100 },
-      },
-    });
-    yPos = doc.lastAutoTable.finalY + 15;
-
-    // Female Details
-    if (fDetails) {
+      // Title
+      doc.setFontSize(20);
       doc.setFont(undefined, "bold");
-      doc.text("Female Details:", margin, yPos);
+      doc.text("Vedic Astrology Match Report", pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += 15;
+
+      // Birth Info
+      doc.setFontSize(12);
+      doc.setFont(undefined, "normal");
+      doc.text("Birth Details:", margin, yPos);
       yPos += 10;
-      if (fDetails.currentDasha) {
-        doc.setFont(undefined, "normal");
-        doc.text(`Current Dasha: ${fDetails.currentDasha}`, margin, yPos);
-        yPos += 7;
-      }
-      // Shadbala Table
-      const fShadData = (fDetails.shadbalaRows || []).map((p) => [
-        p.name,
-        p.percent ? `${p.percent.toFixed(1)}%` : "—",
-        p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
-        p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
-      ]);
+      const femaleName = female.fullName || "Female";
+      const maleName = male.fullName || "Male";
+      doc.text(
+        `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
+          female.place
+        }`,
+        margin,
+        yPos,
+      );
+      yPos += 7;
+      doc.text(
+        `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
+        margin,
+        yPos,
+      );
+      yPos += 15;
+
+      // Score Summary
+      doc.setFont(undefined, "bold");
+      doc.text("Ashtakoot Compatibility Score:", margin, yPos);
+      yPos += 7;
+      doc.setFont(undefined, "normal");
+      const totalScore = Number(result?.total_score ?? 0);
+      const outOf = Number(result?.out_of ?? 36);
+      doc.text(`${totalScore}/${outOf}`, margin, yPos);
+      yPos += 15;
+
+      // Koot Table
+      doc.setFont(undefined, "bold");
+      doc.text("Koot Breakdown:", margin, yPos);
+      yPos += 10;
+      const kootTableData = KOOTS.map((k) => {
+        const sec = result?.[k];
+        const name = k
+          .replace(/_/g, " ")
+          .replace(/kootam/i, "")
+          .trim();
+        const score = typeof sec?.score === "number" ? sec.score : 0;
+        const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
+        const area =
+          {
+            varna: "Spiritual Compatibility",
+            vasya: "Mutual Affection / Control",
+            tara: "Health & Longevity",
+            yoni: "Sexual Compatibility",
+            "graha maitri": "Mental Harmony",
+            gana: "Temperament",
+            rasi: "Love & Emotion",
+            nadi: "Health & Genes",
+          }[name.toLowerCase()] || "—";
+        return [name, `${score}/${outOfK}`, area];
+      });
       autoTable(doc, {
         startY: yPos,
-        head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
-        body: fShadData,
-        theme: "grid",
-        styles: { fontSize: 8 },
+        head: [["Kootam", "Points", "Area of Life"]],
+        body: kootTableData,
+        theme: "striped",
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [218, 165, 32] },
         margin: { left: margin, right: margin },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 100 },
+        },
       });
-      yPos = doc.lastAutoTable.finalY + 10;
-    }
+      yPos = doc.lastAutoTable.finalY + 15;
 
-    // Male Details
-    if (mDetails) {
-      doc.setFont(undefined, "bold");
-      doc.text("Male Details:", margin, yPos);
-      yPos += 10;
-      if (mDetails.currentDasha) {
-        doc.setFont(undefined, "normal");
-        doc.text(`Current Dasha: ${mDetails.currentDasha}`, margin, yPos);
-        yPos += 7;
+      // Female Details
+      if (fDetails) {
+        doc.setFont(undefined, "bold");
+        doc.text("Female Details:", margin, yPos);
+        yPos += 10;
+        if (fDetails.currentDasha) {
+          doc.setFont(undefined, "normal");
+          doc.text(`Current Dasha: ${fDetails.currentDasha}`, margin, yPos);
+          yPos += 7;
+        }
+        // Shadbala Table
+        const fShadData = (fDetails.shadbalaRows || []).map((p) => [
+          p.name,
+          p.percent ? `${p.percent.toFixed(1)}%` : "—",
+          p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
+          p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
+        ]);
+        autoTable(doc, {
+          startY: yPos,
+          head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
+          body: fShadData,
+          theme: "grid",
+          styles: { fontSize: 8 },
+          margin: { left: margin, right: margin },
+        });
+        yPos = doc.lastAutoTable.finalY + 10;
       }
-      // Shadbala Table
-      const mShadData = (mDetails.shadbalaRows || []).map((p) => [
-        p.name,
-        p.percent ? `${p.percent.toFixed(1)}%` : "—",
-        p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
-        p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
-      ]);
-      autoTable(doc, {
-        startY: yPos,
-        head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
-        body: mShadData,
-        theme: "grid",
-        styles: { fontSize: 8 },
-        margin: { left: margin, right: margin },
-      });
-      yPos = doc.lastAutoTable.finalY + 10;
-    }
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setFont(undefined, "italic");
-    doc.text(
-      "Generated on " + new Date().toLocaleDateString(),
-      pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: "center" },
-    );
+      // Male Details
+      if (mDetails) {
+        doc.setFont(undefined, "bold");
+        doc.text("Male Details:", margin, yPos);
+        yPos += 10;
+        if (mDetails.currentDasha) {
+          doc.setFont(undefined, "normal");
+          doc.text(`Current Dasha: ${mDetails.currentDasha}`, margin, yPos);
+          yPos += 7;
+        }
+        // Shadbala Table
+        const mShadData = (mDetails.shadbalaRows || []).map((p) => [
+          p.name,
+          p.percent ? `${p.percent.toFixed(1)}%` : "—",
+          p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
+          p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
+        ]);
+        autoTable(doc, {
+          startY: yPos,
+          head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
+          body: mShadData,
+          theme: "grid",
+          styles: { fontSize: 8 },
+          margin: { left: margin, right: margin },
+        });
+        yPos = doc.lastAutoTable.finalY + 10;
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setFont(undefined, "italic");
+      doc.text(
+        "Generated on " + new Date().toLocaleDateString(),
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" },
+      );
 
       // Download
       doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
@@ -2233,23 +2298,24 @@ export default function MatchingPage() {
                     </div>
 
                     {fSuggest.length > 0 && (
-                      <div className="suggestions">
-                        {fSuggest.map((s, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setFemale((p) => ({ ...p, place: s.label }));
-                              setFCoords(s);
-                              setFSuggest([]);
-                            }}
-                          >
-                            <MapPin size={14} />
-                            <span>{s.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+  <div className="suggestions">
+    {fSuggest.map((s, i) => (
+      <button
+        key={i}
+        type="button"
+        onClick={() => {
+  resolvePlaceDetails(s.placeId, setFemale, setFCoords);
+  setFSuggest([]);
+}}
+
+
+      >
+        <MapPin size={14} />
+        <span>{s.label}</span>
+      </button>
+    ))}
+  </div>
+)}
 
                     <p className="form-field-helper place-helper">
                       Choose the nearest city for accurate calculation
@@ -2401,14 +2467,42 @@ export default function MatchingPage() {
 
                     {mSuggest.length > 0 && (
                       <div className="suggestions">
-                        {fSuggest.map((s, i) => (
+                        {mSuggest.map((s, i) => (
                           <button
                             key={i}
                             type="button"
                             onClick={() => {
-                              setMale((p) => ({ ...p, place: s.label }));
-                              setMCoords(s);
-                              setMSuggest([]);
+                              const service =
+                                new window.google.maps.places.PlacesService(
+                                  document.createElement("div"),
+                                );
+
+                              service.getDetails(
+                                {
+                                  placeId: s.placeId,
+                                  fields: ["geometry", "formatted_address"],
+                                },
+                                (place, status) => {
+                                  if (
+                                    status ===
+                                      window.google.maps.places
+                                        .PlacesServiceStatus.OK &&
+                                    place?.geometry?.location
+                                  ) {
+                                    const lat = place.geometry.location.lat();
+                                    const lng = place.geometry.location.lng();
+                                    const label = place.formatted_address;
+
+                                    setMale((p) => ({ ...p, place: label }));
+                                    setMCoords({
+                                      latitude: lat,
+                                      longitude: lng,
+                                      label,
+                                    });
+                                    setMSuggest([]);
+                                  }
+                                },
+                              );
                             }}
                           >
                             <MapPin size={14} />
@@ -2417,6 +2511,7 @@ export default function MatchingPage() {
                         ))}
                       </div>
                     )}
+
                     <p className="form-field-helper place-helper">
                       Choose the nearest city for accurate calculation
                     </p>
@@ -2860,8 +2955,6 @@ export default function MatchingPage() {
                         </div>
                       </div>
 
-
-
                       {/* SHADBALA */}
                       <table className="planet-table shadbala-table">
                         <thead>
@@ -2894,17 +2987,15 @@ export default function MatchingPage() {
 
                       {/* FOOTER */}
                       <div className="analysis-footer">
-                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                        <button
+                          className="outline-btn"
+                          onClick={onTalkToAstrologer}
+                        >
                           Understand what this means →
                         </button>
                       </div>
-                      
                     </div>
-
-                    
                   )}
-
-                  
 
                   {/* Female Planet Placements Card */}
                   {fDetails && (
@@ -3019,8 +3110,6 @@ export default function MatchingPage() {
                         </div>
                       </div>
 
-
-
                       <table className="planet-table shadbala-table">
                         <thead>
                           <tr>
@@ -3051,7 +3140,10 @@ export default function MatchingPage() {
                       </table>
 
                       <div className="analysis-footer">
-                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                        <button
+                          className="outline-btn"
+                          onClick={onTalkToAstrologer}
+                        >
                           Understand what this means →
                         </button>
                       </div>
@@ -3129,37 +3221,37 @@ export default function MatchingPage() {
                   )}
                 </div>
 
-{/* ✅ PREMIUM – full width guidance banner */}
-<div
-  className="guidance-banner premium-full matchmaking-banner"
-  onClick={() => router.push("/talk-to-astrologer")}
->
-  <div className="guidance-content">
-    <h3 className="guidance-title">
-      Wondering how strong this match really is?
-    </h3>
+                {/* ✅ PREMIUM – full width guidance banner */}
+                <div
+                  className="guidance-banner premium-full matchmaking-banner"
+                  onClick={() => router.push("/talk-to-astrologer")}
+                >
+                  <div className="guidance-content">
+                    <h3 className="guidance-title">
+                      Wondering how strong this match really is?
+                    </h3>
 
-    <p className="guidance-subtitle">
-      Talk to an experienced astrologer to understand compatibility, future
-      harmony, and the right steps forward for this relationship.
-    </p>
+                    <p className="guidance-subtitle">
+                      Talk to an experienced astrologer to understand
+                      compatibility, future harmony, and the right steps forward
+                      for this relationship.
+                    </p>
 
-    <button className="guidance-btn" onClick={onTalkToAstrologer}>
-      <PhoneIcon size={18} />
-      Talk to an astrologer
-    </button>
-  </div>
+                    <button
+                      className="guidance-btn"
+                      onClick={onTalkToAstrologer}
+                    >
+                      <PhoneIcon size={18} />
+                      Talk to an astrologer
+                    </button>
+                  </div>
 
-  <div className="guidance-illustration" aria-hidden>
-    {/* matchmaking illustration / knot / couple sketch via CSS */}
-  </div>
-</div>
-
-
+                  <div className="guidance-illustration" aria-hidden>
+                    {/* matchmaking illustration / knot / couple sketch via CSS */}
+                  </div>
+                </div>
               </div>
             )}
-
-            
 
             {/* Footer */}
             <div className="actionBar mt-8">
@@ -3423,82 +3515,91 @@ export default function MatchingPage() {
         </a>
 
         <AstrologerAssistantTab
-  pageTitle="Matching"
-  initialData={(() => {
-    const data = chatData || {
-      female: {
-        input: {
-          name: female.fullName,
-          dob: female.dob,
-          tob: female.tob,
-          place: female.place,
-          coords: fCoords,
-        },
-        details: fDetails,
-      },
-      male: {
-        input: {
-          name: male.fullName,
-          dob: male.dob,
-          tob: male.tob,
-          place: male.place,
-          coords: mCoords,
-        },
-        details: mDetails,
-      },
-      match: result || null,
-    };
-    return data;
-  })()}
-  chatType="matchmaking"
-  shouldReset={shouldResetChat}
-  formDataHash={currentFormDataHash}
-  chatSessionId={chatSessionId}
-  show={true}
-  hasData={!!result}
-/>
+          pageTitle="Matching"
+          initialData={(() => {
+            const data = chatData || {
+              female: {
+                input: {
+                  name: female.fullName,
+                  dob: female.dob,
+                  tob: female.tob,
+                  place: female.place,
+                  coords: fCoords,
+                },
+                details: fDetails,
+              },
+              male: {
+                input: {
+                  name: male.fullName,
+                  dob: male.dob,
+                  tob: male.tob,
+                  place: male.place,
+                  coords: mCoords,
+                },
+                details: mDetails,
+              },
+              match: result || null,
+            };
+            return data;
+          })()}
+          chatType="matchmaking"
+          shouldReset={shouldResetChat}
+          formDataHash={currentFormDataHash}
+          chatSessionId={chatSessionId}
+          show={true}
+          hasData={!!result}
+        />
       </div>
-      
+
       {/* SEO: FAQ Schema - Invisible to users */}
-      <PageSEO 
+      <PageSEO
         pageType="matching"
         faqs={[
           {
             question: "What Is Kundli Matching & Why It Matters for Marriage",
-            answer: "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage."
+            answer:
+              "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage.",
           },
           {
             question: "What Ashtakoot (Guna Milan) Actually Measures",
-            answer: "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number."
+            answer:
+              "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number.",
           },
           {
             question: "Why Guna Milan Alone Is Not Enough",
-            answer: "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring."
+            answer:
+              "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring.",
           },
           {
             question: "Planetary Compatibility Between Partners",
-            answer: "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies."
+            answer:
+              "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies.",
           },
           {
             question: "Manglik Dosha & Other Important Doshas",
-            answer: "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions."
+            answer:
+              "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions.",
           },
           {
             question: "Dasha & Timing Compatibility After Marriage",
-            answer: "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching."
+            answer:
+              "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching.",
           },
           {
             question: "AI-Based Kundli Matching vs Manual Analysis",
-            answer: "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed."
+            answer:
+              "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed.",
           },
           {
             question: "What Your Compatibility Score Really Means",
-            answer: "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers."
+            answer:
+              "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers.",
           },
           {
             question: "Can Remedies Improve Marriage Compatibility?",
-            answer: "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners."
-          }
+            answer:
+              "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners.",
+          },
         ]}
       />
     </>
