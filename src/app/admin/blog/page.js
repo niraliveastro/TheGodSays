@@ -359,8 +359,45 @@ export default function BlogAdminPage() {
       <div className="admin-container">
         {/* Header */}
         <div className="admin-header">
-          <h1>Blog Admin</h1>
-          <p>Manage your astrology blog posts</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1>Blog Admin</h1>
+              <p>Manage your astrology blog posts</p>
+            </div>
+            <button
+              onClick={() => router.push('/admin/blog/generate')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#d4af37',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 2px 8px rgba(212, 175, 55, 0.3)',
+                transition: 'all 0.2s',
+                fontFamily: "'Inter', sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.background = '#b8972e'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(212, 175, 55, 0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.background = '#d4af37'
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(212, 175, 55, 0.3)'
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2v20M2 12h20" />
+              </svg>
+              Automated Blog Generation
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
