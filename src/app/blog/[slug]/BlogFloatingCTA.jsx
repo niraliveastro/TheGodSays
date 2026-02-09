@@ -73,12 +73,12 @@ export default function BlogFloatingCTA() {
         </h2>
 
         <div className="blog-cta-actions">
-          <Link href="/predictions" className="btn-primary">
+          <Link href="/kundli-prediction/" className="btn-primary">
             <StarIcon size={16} /> AI Predictions
           </Link>
 
           <Link
-            href="/talk-to-astrologer"
+            href="/talk-to-astrologer/"
             className="btn btn-secondary"
           >
             <PhoneCallIcon size={16} /> Talk to Astrologer

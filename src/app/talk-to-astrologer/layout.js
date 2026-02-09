@@ -18,7 +18,7 @@ export const metadata = {
   openGraph: {
     title: "Talk to Astrologer Online | Chat, Call & WhatsApp Consultation",
     description: "Talk to verified astrologers online for marriage, career & life guidance. AI‑assisted kundli analysis. India & NRI consultations.",
-    url: `${SITE_URL}/talk-to-astrologer`,
+    url: `${SITE_URL}/talk-to-astrologer/`,
     type: "website",
   },
   twitter: {
@@ -27,7 +27,7 @@ export const metadata = {
     description: "Talk to verified astrologers online for marriage, career & life guidance. AI‑assisted kundli analysis.",
   },
   alternates: {
-    canonical: `${SITE_URL}/talk-to-astrologer`,
+    canonical: `${SITE_URL}/talk-to-astrologer/`,
   },
 };
 

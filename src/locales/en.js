@@ -2,8 +2,8 @@ export const en = {
   // Navigation
   nav: {
     talkToAstrologer: "Talk to Astrologer",
-    aiPredictions: "AI Predictions",
-    matching: "Matching",
+    aiPredictions: "Kundli Predictions",
+    matching: "Kundli Matching",
     tools: "Tools",
     blog: "Blog",
     wallet: "Wallet",
@@ -60,7 +60,7 @@ export const en = {
 
   // Panchang Section
   panchang: {
-    title: "Today's Panchang",
+    title: "Panchang",
     titleFor: "Panchang for",
     description: "View today's auspicious timings, planetary positions, and muhurat for important activities. Updated daily based on Vedic calculations.",
     selectDate: "Select Date to View Panchang",
@@ -260,7 +260,7 @@ export const en = {
 
   // Numerology Page
   numerology: {
-    title: "Numerology Calculator",
+    title: "Numerology",
     subtitle: "Discover Your Numbers",
     description: "Calculate your life path, destiny, and other core numbers",
     fullName: "Full Name",
@@ -306,7 +306,7 @@ export const en = {
 
   // Calendar Page
   calendar: {
-    title: "Hindu Calendar",
+    title: "Cosmic Events",
     subtitle: "Panchang Calendar",
     description: "View festivals, tithis, and auspicious dates",
     selectMonth: "Select Month",

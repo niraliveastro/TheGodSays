@@ -12,59 +12,53 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://niraliveast
  * Full list of static routes (from codebase). Used as fallback when discovery fails and for priority/changeFrequency overrides.
  * Discovery adds any new page.js under src/app automatically; this list ensures no page is missing from sitemap.
  */
+// Restricted pages that should NOT appear in sitemap (noindex)
+const RESTRICTED_PATHS = new Set([
+  'appointments',
+  'appointments/availability',
+  'call-history',
+  'wallet',
+  'profile/astrology',
+  'profile/family',
+  'profile/user',
+  'astrologer-dashboard',
+  'astrologer-dashboard/pricing',
+  'auth',
+  'auth/astrologer',
+  'auth/user',
+  'unauthorized',
+])
+
 export const STATIC_PATHS = [
-  // Core SEO Pages (High Priority)
+  // Core SEO Pages (High Priority) - NEW URLs
   { path: '', changeFrequency: 'daily', priority: 1.0 },
   { path: 'talk-to-astrologer', changeFrequency: 'daily', priority: 0.9 },
-  { path: 'matching', changeFrequency: 'weekly', priority: 0.9 },
-  { path: 'predictions', changeFrequency: 'daily', priority: 0.9 },
-  { path: 'cosmic-event-tracker', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'kundli-matching', changeFrequency: 'weekly', priority: 0.9 },
+  { path: 'kundli-prediction', changeFrequency: 'daily', priority: 0.9 },
+  { path: 'kundli-prediction/ai', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'cosmic-events', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'planetary-transits', changeFrequency: 'daily', priority: 0.8 },
   { path: 'numerology', changeFrequency: 'weekly', priority: 0.8 },
-  { path: 'transit', changeFrequency: 'daily', priority: 0.8 },
-  { path: 'panchang/calender', changeFrequency: 'daily', priority: 0.8 },
+  { path: 'panchang/calendar', changeFrequency: 'daily', priority: 0.8 },
   
   // Blog (High Priority)
   { path: 'blog', changeFrequency: 'daily', priority: 0.9 },
   
-  // Other Important Pages
-  { path: 'ai-predictions', changeFrequency: 'daily', priority: 0.8 },
-  { path: 'kundali', changeFrequency: 'weekly', priority: 0.8 },
+  // Other Important Pages - NEW URLs
+  { path: 'kundli', changeFrequency: 'weekly', priority: 0.8 },
+  { path: 'kundli/personalized', changeFrequency: 'daily', priority: 0.7 },
   { path: 'panchang', changeFrequency: 'daily', priority: 0.8 },
   { path: 'panchang/personalized', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/kundali', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'calendar', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'choghadiya-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/choghadiya-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'hora-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'panchang/hora-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'tithi-timings', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'maha-dasas', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'panchang/maha-dasas', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'personalized', changeFrequency: 'daily', priority: 0.7 },
-  { path: 'new-matching', changeFrequency: 'weekly', priority: 0.7 },
-  { path: 'new-predictions', changeFrequency: 'daily', priority: 0.7 },
-  
-  // User/Account Pages
-  { path: 'appointments', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'appointments/availability', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'call-history', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'wallet', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'profile/astrology', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'profile/family', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'profile/user', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'astrologer-dashboard', changeFrequency: 'weekly', priority: 0.6 },
-  { path: 'astrologer-dashboard/pricing', changeFrequency: 'weekly', priority: 0.6 },
-  
-  // Auth Pages
-  { path: 'auth', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'auth/astrologer', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'auth/user', changeFrequency: 'monthly', priority: 0.5 },
+  { path: 'panchang/kundli', changeFrequency: 'weekly', priority: 0.7 },
+  { path: 'panchang/choghadiya', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'panchang/hora', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'panchang/tithi', changeFrequency: 'daily', priority: 0.7 },
+  { path: 'dashas/mahadasha', changeFrequency: 'weekly', priority: 0.7 },
   
   // Legal/Policy Pages
   { path: 'privacy-policy', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'terms-and-conditions', changeFrequency: 'monthly', priority: 0.5 },
   { path: 'refund-policy', changeFrequency: 'monthly', priority: 0.5 },
-  { path: 'unauthorized', changeFrequency: 'monthly', priority: 0.3 },
 ]
 
 const DEFAULT_CHANGE_FREQUENCY = 'weekly'
@@ -91,18 +85,20 @@ export function getDiscoveredSitemapEntries(lastModified) {
     const overrides = getStaticOverrides()
     const paths = discoverAppRoutes()
     if (!paths || paths.length === 0) return getStaticSitemapEntries(lastModified)
-    return paths.map((p) => {
-      const config = overrides.get(p) || {
-        changeFrequency: DEFAULT_CHANGE_FREQUENCY,
-        priority: DEFAULT_PRIORITY,
-      }
-      return {
-        url: p ? `${SITE_URL}/${p}` : SITE_URL,
-        lastModified,
-        changeFrequency: config.changeFrequency,
-        priority: config.priority,
-      }
-    })
+    return paths
+      .filter((p) => !RESTRICTED_PATHS.has(p)) // Exclude restricted pages
+      .map((p) => {
+        const config = overrides.get(p) || {
+          changeFrequency: DEFAULT_CHANGE_FREQUENCY,
+          priority: DEFAULT_PRIORITY,
+        }
+        return {
+          url: p ? `${SITE_URL}/${p}` : SITE_URL,
+          lastModified,
+          changeFrequency: config.changeFrequency,
+          priority: config.priority,
+        }
+      })
   } catch {
     return getStaticSitemapEntries(lastModified)
   }
@@ -113,10 +109,12 @@ export function getDiscoveredSitemapEntries(lastModified) {
  * Build static sitemap entries from STATIC_PATHS only (no discovery).
  */
 export function getStaticSitemapEntries(lastModified) {
-  return STATIC_PATHS.map(({ path: p, changeFrequency, priority }) => ({
-    url: p ? `${SITE_URL}/${p}` : SITE_URL,
-    lastModified,
-    changeFrequency,
-    priority,
-  }))
+  return STATIC_PATHS
+    .filter(({ path: p }) => !RESTRICTED_PATHS.has(p)) // Exclude restricted pages
+    .map(({ path: p, changeFrequency, priority }) => ({
+      url: p ? `${SITE_URL}/${p}` : SITE_URL,
+      lastModified,
+      changeFrequency,
+      priority,
+    }))
 }
