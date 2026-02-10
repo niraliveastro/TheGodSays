@@ -42,7 +42,10 @@ const API_ENDPOINTS = {
   // New combined endpoint returning maha + antar lists grouped by maha
   'vimsottari/maha-dasas-and-antar-dasas': 'vimsottari/maha-dasas-and-antar-dasas'
   //match-making
-  ,'match-making/ashtakoot-score': 'match-making/ashtakoot-score'
+  ,'match-making/ashtakoot-score': 'match-making/ashtakoot-score',
+  'navamsa-chart-info': 'navamsa-chart-info',
+
+
 }
 
 async function parseErrorResponse(response) {

@@ -38,11 +38,9 @@ import { PageLoading } from "@/components/LoadingStates";
 import HighConvertingInsights from "./high-converting-page";
 import AstrologerAssistant from "@/components/AstrologerAssistant";
 
-
 // -----------------------------
 // Chart Challenge Analyzer
 // -----------------------------
-
 
 // -----------------------------
 // Life Area Scoring Rules
@@ -73,7 +71,6 @@ const LIFE_RULES = {
     planets: ["Mercury", "Rahu"],
   },
 };
-
 
 function analyzeChartChallenges({
   shadbalaRows,
@@ -147,11 +144,7 @@ function analyzeChartChallenges({
 // -----------------------------
 // Life Area Score Calculator
 // -----------------------------
-function calculateLifeScores({
-  placements,
-  shadbalaRows,
-  currentDashaChain,
-}) {
+function calculateLifeScores({ placements, shadbalaRows, currentDashaChain }) {
   const scores = {};
 
   Object.entries(LIFE_RULES).forEach(([area, rule]) => {
@@ -169,19 +162,17 @@ function calculateLifeScores({
     });
 
     // House activation
-    const houseHits = placements.filter(
-  (p) => rule.houses.includes(Number(p.house))
-).length;
+    const houseHits = placements.filter((p) =>
+      rule.houses.includes(Number(p.house)),
+    ).length;
 
-const normalize = (s) =>
-  s?.toLowerCase().replace(/[^a-z]/g, "");
+    const normalize = (s) => s?.toLowerCase().replace(/[^a-z]/g, "");
 
-rule.planets.forEach((planet) => {
-  const p = shadbalaRows.find(
-    (x) => normalize(x.name) === normalize(planet),
-  );
-});
-
+    rule.planets.forEach((planet) => {
+      const p = shadbalaRows.find(
+        (x) => normalize(x.name) === normalize(planet),
+      );
+    });
 
     score += Math.min(houseHits * 4, 12);
 
@@ -206,7 +197,6 @@ rule.planets.forEach((planet) => {
 
   return scores;
 }
-
 
 export default function PredictionsPage() {
   const { t } = useTranslation();
@@ -268,8 +258,6 @@ export default function PredictionsPage() {
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
   const router = useRouter();
-  
-
 
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
@@ -441,23 +429,22 @@ export default function PredictionsPage() {
   // Track if we should auto-submit
   const shouldAutoSubmit = useRef(false);
 
-// Auto-scroll target
-const birthInfoRef = useRef(null);
+  // Auto-scroll target
+  const birthInfoRef = useRef(null);
 
   // Auto-scroll to Birth Info when result is ready
-useEffect(() => {
-  if (result && birthInfoRef.current) {
-    const t = setTimeout(() => {
-      birthInfoRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 100);
+  useEffect(() => {
+    if (result && birthInfoRef.current) {
+      const t = setTimeout(() => {
+        birthInfoRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
 
-    return () => clearTimeout(t);
-  }
-}, [result]);
-
+      return () => clearTimeout(t);
+    }
+  }, [result]);
 
   useEffect(() => {
     setHistory(getHistory());
@@ -862,17 +849,43 @@ useEffect(() => {
           house_system: "whole_sign",
         },
       };
+      const navamsaPayload = {
+        year: Y,
+        month: M,
+        date: D,
+        hours: H,
+        minutes: Min,
+        seconds: S,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        timezone: tz,
+        config: {
+          observation_point: "geocentric", // ✅ REQUIRED
+          ayanamsha: "lahiri",
+        },
+      };
+      let navamsaRaw = null;
+try {
+  navamsaRaw = await astrologyAPI.getSingleCalculation(
+    "navamsa-chart-info",
+    navamsaPayload
+  );
+} catch (e) {
+  console.warn("[Navamsa] Failed:", e.message);
+}
+
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
         [
           "shadbala/summary",
           "vimsottari/dasa-information",
           "vimsottari/maha-dasas",
           "planets",
-          "western/natal-wheel-chart",
           "planets/extended",
+          "western/natal-wheel-chart",
         ],
         payload,
       );
+
       const vimsRaw = results?.["vimsottari/dasa-information"];
       const shadbalaRaw = results?.["shadbala/summary"];
       const mahaRaw = results?.["vimsottari/maha-dasas"];
@@ -1025,6 +1038,7 @@ useEffect(() => {
         planets: finalPlanetParsed,
         maha: mahaParsed,
         shadbala: finalShadbala,
+        navamsa: navamsaRaw,
         westernChartSvg,
         apiErrors: { ...errors },
       });
@@ -1613,89 +1627,133 @@ useEffect(() => {
       });
   }, [result]);
 
-// -----------------------------
-// Ashtakavarga (BAV + SAV)
-// -----------------------------
-const ashtakavarga = useMemo(() => {
-  if (!result?.planets) return null;
+  // -----------------------------
+  // Navamsa (D9) Placements
+  // -----------------------------
+const navamsaPlacements = useMemo(() => {
+  const raw = result?.navamsa;
+  if (!raw) return [];
 
-  try {
-    return computeAshtakavarga(result.planets);
-  } catch (e) {
-    console.warn("[Ashtakavarga] Failed to compute:", e);
-    return null;
+  let data = raw;
+
+  // unwrap first output
+  if (data?.output) {
+    data =
+      typeof data.output === "string"
+        ? safeParse(data.output)
+        : data.output;
   }
+
+  // unwrap nested output (critical)
+  if (data?.output) {
+    data = data.output;
+  }
+
+  // 👇 DEBUG LOG — MUST BE HERE
+  console.log(
+    "[Navamsa FINAL ARRAY]",
+    Array.isArray(data),
+    data
+  );
+
+  if (!Array.isArray(data)) {
+    console.warn("[Navamsa] Unexpected format:", data);
+    return [];
+  }
+
+  const SIGN_NAMES = [
+    "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+    "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
+  ];
+
+  return data
+    .filter((p) => p.name?.toLowerCase() !== "ascendant")
+    .map((p) => ({
+      name: p.name,
+      sign: p.current_sign
+        ? `${SIGN_NAMES[p.current_sign - 1]} (${p.current_sign})`
+        : "-",
+      house: p.house_number ?? "-",
+      nakshatra: p.nakshatra_name ?? "-",
+      pada: p.nakshatra_pada ?? "-",
+      degree: p.normDegree ?? p.longitude ?? null,
+    }));
 }, [result]);
 
+  // -----------------------------
+  // Ashtakavarga (BAV + SAV)
+  // -----------------------------
+  const ashtakavarga = useMemo(() => {
+    if (!result?.planets) return null;
 
+    try {
+      return computeAshtakavarga(result.planets);
+    } catch (e) {
+      console.warn("[Ashtakavarga] Failed to compute:", e);
+      return null;
+    }
+  }, [result]);
 
-const insights = useMemo(() => {
-  if (!result) return null;
+  const insights = useMemo(() => {
+    if (!result) return null;
 
-  const lifeScores = calculateLifeScores({
-    placements,
-    shadbalaRows,
-    currentDashaChain,
-  });
+    const lifeScores = calculateLifeScores({
+      placements,
+      shadbalaRows,
+      currentDashaChain,
+    });
 
-  return {
-    accuracy: {
-      level: selectedCoords ? "HIGH" : "MEDIUM",
-    },
-
-    next30Days: {
-      career: { level: "Medium-High", probability: 78, locked: true },
-      money: { level: "Mixed", probability: 61, locked: true },
-      relationship: { level: "Caution", probability: 48, locked: true },
-    },
-
-    scores: lifeScores,
-
-    strongHits: [
-      "Authority figures strongly influence your career decisions",
-      "Money comes in cycles, not steady flow",
-      "You delay commitment until certainty is achieved",
-    ],
-
-    blockers: [
-      {
-        area: "Career Growth",
-        reason: "Saturn transit over the 10th lord",
-        fixable: true,
+    return {
+      accuracy: {
+        level: selectedCoords ? "HIGH" : "MEDIUM",
       },
-      {
-        area: "Money Flow",
-        reason: "Family karma influencing wealth",
-        fixable: true,
-      },
-    ],
 
-     timeline: {
-      past: [
+      next30Days: {
+        career: { level: "Medium-High", probability: 78, locked: true },
+        money: { level: "Mixed", probability: 61, locked: true },
+        relationship: { level: "Caution", probability: 48, locked: true },
+      },
+
+      scores: lifeScores,
+
+      strongHits: [
+        "Authority figures strongly influence your career decisions",
+        "Money comes in cycles, not steady flow",
+        "You delay commitment until certainty is achieved",
+      ],
+
+      blockers: [
         {
-          label: "8 months ago",
-          description: "Career opportunity missed",
-          confidence: 82,
+          area: "Career Growth",
+          reason: "Saturn transit over the 10th lord",
+          fixable: true,
+        },
+        {
+          area: "Money Flow",
+          reason: "Family karma influencing wealth",
+          fixable: true,
         },
       ],
-      future: [
-        {
-          label: "Next 3 months",
-          description: "New responsibility window",
-          confidence: 68,
-          locked: true,
-        },
-      ],
-    },
-  };
-}, [
-  result,
-  selectedCoords,
-  placements,
-  shadbalaRows,
-  currentDashaChain,
-]);
 
+      timeline: {
+        past: [
+          {
+            label: "8 months ago",
+            description: "Career opportunity missed",
+            confidence: 82,
+          },
+        ],
+        future: [
+          {
+            label: "Next 3 months",
+            description: "New responsibility window",
+            confidence: 68,
+            locked: true,
+          },
+        ],
+      },
+    };
+  }, [result, selectedCoords, placements, shadbalaRows, currentDashaChain]);
 
   const challengeAnalysis = useMemo(() => {
     if (!result) return null;
@@ -1945,8 +2003,6 @@ const insights = useMemo(() => {
     return active?.lord || null;
   }, [mahaRows]);
 
-  
-
   /* ---------- ACCORDION SECTION ---------- */
   const Section = ({ title, content, children }) => {
     const [open, setOpen] = useState(false);
@@ -2045,32 +2101,30 @@ const insights = useMemo(() => {
   };
 
   const astrologerAssistantData = result
-  ? {
-      person: {
-        input: {
-          name: fullName,
-          dob: result.input.dob,
-          tob: result.input.tob,
-          place: result.input.place,
-          coords: result.coords,
+    ? {
+        person: {
+          input: {
+            name: fullName,
+            dob: result.input.dob,
+            tob: result.input.tob,
+            place: result.input.place,
+            coords: result.coords,
+          },
+          gender,
         },
-        gender,
-      },
 
-      chart: {
-        placements,
-        shadbalaRows,
-        mahaRows,
-        currentDashaChain,
-      },
+        chart: {
+          placements,
+          shadbalaRows,
+          mahaRows,
+          currentDashaChain,
+        },
 
-      meta: {
-        page: "predictions",
-      },
-    }
-  : null;
-
-
+        meta: {
+          page: "predictions",
+        },
+      }
+    : null;
 
   // Show full-page loading when submitting and no result yet
   if (submitting && !result) {
@@ -2164,165 +2218,138 @@ const insights = useMemo(() => {
         {/* === Birth form + History side-by-side === */}
         <div className="birth-history-layout" style={{ width: "100%" }}>
           {/* ==== FORM ==== */}
-<form
-  ref={formRef}
-  onSubmit={onSubmit}
-  className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
->
-  {/* Header */}
-  <div className="flex items-center gap-3 mb-6">
-    <Moon className="w-6 h-6 text-gold" />
-    <div>
-      <h3 className="form-title">
-        {t.predictions.enterDetails}
-      </h3>
-      <p className="form-subtitle">
-        {t.predictions.enterCosmicCoordinates}
-      </p>
-    </div>
-  </div>
+          <form
+            ref={formRef}
+            onSubmit={onSubmit}
+            className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <Moon className="w-6 h-6 text-gold" />
+              <div>
+                <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                <p className="form-subtitle">
+                  {t.predictions.enterCosmicCoordinates}
+                </p>
+              </div>
+            </div>
 
-  {/* === GRID WRAPPER === */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+            {/* === GRID WRAPPER === */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+              {/* Name */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Neha (as per records)"
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">Only letters and spaces</p>
+              </div>
 
-    {/* Name */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Name
-      </label>
-      <input
-        type="text"
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
-        placeholder="Neha (as per records)"
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        Only letters and spaces
-      </p>
-    </div>
+              {/* Date */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Date of Birth</label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
+              </div>
 
-    {/* Date */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Date of Birth
-      </label>
-      <input
-        type="date"
-        value={dob}
-        onChange={(e) => setDob(e.target.value)}
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        Format: DD-MM-YYYY
-      </p>
-    </div>
+              {/* Time */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Time of Birth</label>
+                <input
+                  type="time"
+                  value={tob}
+                  onChange={(e) => setTob(e.target.value)}
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">24-hour format</p>
+              </div>
 
-    {/* Time */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Time of Birth
-      </label>
-      <input
-        type="time"
-        value={tob}
-        onChange={(e) => setTob(e.target.value)}
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        24-hour format
-      </p>
-    </div>
+              {/* === ROW 2 (same grid, no span) === */}
 
-    {/* === ROW 2 (same grid, no span) === */}
+              {/* Gender */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Gender</label>
 
-    {/* Gender */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Gender
-      </label>
+                <div className="gender-segmented">
+                  <button
+                    type="button"
+                    onClick={() => setGender("Male")}
+                    className={`gender-segment ${gender === "Male" ? "active" : ""}`}
+                  >
+                    Male
+                  </button>
 
-      <div className="gender-segmented">
-        <button
-          type="button"
-          onClick={() => setGender("Male")}
-          className={`gender-segment ${gender === "Male" ? "active" : ""}`}
-        >
-          Male
-        </button>
+                  <button
+                    type="button"
+                    onClick={() => setGender("Female")}
+                    className={`gender-segment ${gender === "Female" ? "active" : ""}`}
+                  >
+                    Female
+                  </button>
+                </div>
 
-        <button
-          type="button"
-          onClick={() => setGender("Female")}
-          className={`gender-segment ${gender === "Female" ? "active" : ""}`}
-        >
-          Female
-        </button>
-      </div>
+                <p className="form-field-helper">Personalize chart reading</p>
+              </div>
 
-      <p className="form-field-helper">
-        Personalize chart reading
-      </p>
-    </div>
+              {/* Place */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Place</label>
 
-    {/* Place */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Place
-      </label>
+                <div className="relative">
+                  <input
+                    placeholder="e.g., Mumbai, India"
+                    value={place}
+                    onChange={(e) => {
+                      const q = e.target.value;
+                      setPlace(q);
+                      fetchSuggestions(q);
+                    }}
+                    className="form-field-input pr-10"
+                    required
+                  />
 
-      <div className="relative">
-        <input
-          placeholder="e.g., Mumbai, India"
-          value={place}
-          onChange={(e) => {
-            const q = e.target.value;
-            setPlace(q);
-            fetchSuggestions(q);
-          }}
-          className="form-field-input pr-10"
-          required
-        />
+                  <button
+                    type="button"
+                    onClick={useMyLocation}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
+                  >
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
 
-        <button
-          type="button"
-          onClick={useMyLocation}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
-        >
-          <MapPin className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
+                <p className="form-field-helper">Choose the nearest city</p>
+              </div>
 
-      <p className="form-field-helper">
-        Choose the nearest city
-      </p>
-    </div>
+              {/* Button */}
+              <div className="flex flex-col">
+                <label className="invisible mb-2">Hidden</label>
 
-    {/* Button */}
-    <div className="flex flex-col">
-      <label className="invisible mb-2">
-        Hidden
-      </label>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-primary h-[52px] w-full"
+                >
+                  {submitting ? "Calculating..." : "Get Predictions"}
+                </button>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="btn-primary h-[52px] w-full"
-      >
-        {submitting ? "Calculating..." : "Get Predictions"}
-      </button>
-
-      <p className="cta-helper text-center">
-        No signup required • Takes ~10 seconds
-      </p>
-    </div>
-
-  </div>
-</form>
-
+                <p className="cta-helper text-center">
+                  No signup required • Takes ~10 seconds
+                </p>
+              </div>
+            </div>
+          </form>
 
           {/* Prediction History to the RIGHT of the form */}
           {showHistory && (
@@ -2566,12 +2593,12 @@ const insights = useMemo(() => {
             }}
           >
             {/* Birth Info */}
-<div
-  ref={birthInfoRef}
-  id="birth-info"
-  className="card"
-  style={{ scrollMarginTop: "96px" }}
->
+            <div
+              ref={birthInfoRef}
+              id="birth-info"
+              className="card"
+              style={{ scrollMarginTop: "96px" }}
+            >
               <div className="results-header">
                 <Sun style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Birth Information</h3>
@@ -2623,10 +2650,10 @@ const insights = useMemo(() => {
               </div>
             </div>
 
-<ChartHighlights
-  strongObservations={observationData?.strongObservations || []}
-  potential={observationData?.potential || []}
-/>
+            <ChartHighlights
+              strongObservations={observationData?.strongObservations || []}
+              potential={observationData?.potential || []}
+            />
 
             {challengeAnalysis?.hasChallenges && (
               <div className="mt-6 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
@@ -2701,26 +2728,23 @@ const insights = useMemo(() => {
             )}
 
             <DashaIQ
-  dashaIQ={dashaIQ}
-  onTalkToAstrologer={handleTalkToAstrologer}
-/>
+              dashaIQ={dashaIQ}
+              onTalkToAstrologer={handleTalkToAstrologer}
+            />
 
-      <VimshottariMahaDasha
-        mahaRows={mahaRows}
-        antarRows={antarRows}
-        openAntarFor={openAntarFor}
-        antarLoadingFor={antarLoadingFor}
-        openAntarInlineFor={openAntarInlineFor}
-        activeMahaLord={activeMahaLord}
-      />
+            <VimshottariMahaDasha
+              mahaRows={mahaRows}
+              antarRows={antarRows}
+              openAntarFor={openAntarFor}
+              antarLoadingFor={antarLoadingFor}
+              openAntarInlineFor={openAntarInlineFor}
+              activeMahaLord={activeMahaLord}
+            />
 
-      <WhatsBlocking
-  blockers={insights?.blockers || []}
-  onTalkToAstrologer={handleTalkToAstrologer}
-/>
-
-
-
+            <WhatsBlocking
+              blockers={insights?.blockers || []}
+              onTalkToAstrologer={handleTalkToAstrologer}
+            />
 
             {/* Expert Astrologer CTA / Chat Window */}
             <div
@@ -2797,99 +2821,93 @@ const insights = useMemo(() => {
               )}
             </div>
 
-    
-    {ashtakavarga && (
-  <div>
-    {/* Header */}
-    <div className="">
-      {/* <Orbit style={{ color: "#ca8a04" }} /> */}
-      <div>
-        <h3 className="section-title flex justify-center align-center">Ashtakavarga</h3>
-        
-      </div>
-    </div>
-  <div className="card mt-6">
-    {/* Legend */}
-    <div
-      className="flex flex-wrap gap-4 text-xs mb-4"
-      style={{ color: "#374151" }}
-    >
-      <div className="flex items-center gap-1">
-        <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-        Strong support (30+)
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-        Moderate (23–29)
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-        Low support (≤22)
-      </div>
-    </div>
+            {ashtakavarga && (
+              <div>
+                {/* Header */}
 
-    {/* SAV Grid */}
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-      {ashtakavarga.SAV.map((v, i) => {
-        const strength =
-          v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
+                {/* <Orbit style={{ color: "#ca8a04" }} /> */}
+                <div>
+                  <h3 className="section-title flex justify-center align-center">
+                    Ashtakavarga
+                  </h3>
+                </div>
 
-        return (
-          <div
-            key={i}
-            className="rounded-xl border text-center py-3 px-2 transition"
-            style={{
-              borderColor:
-                strength === "strong"
-                  ? "rgba(34,197,94,0.4)"
-                  : strength === "weak"
-                  ? "rgba(239,68,68,0.4)"
-                  : "rgba(156,163,175,0.4)",
-              background:
-                strength === "strong"
-                  ? "rgba(34,197,94,0.06)"
-                  : strength === "weak"
-                  ? "rgba(239,68,68,0.06)"
-                  : "rgba(107,114,128,0.04)",
-            }}
-          >
-            <div
-  style={{
-    fontSize: "0.75rem",
-    color: "#6b7280",
-    marginBottom: "0.15rem",
-  }}
->
-  {SIGNS[i]}
-</div>
+                <div className="card mt-6">
+                  {/* Legend */}
+                  <div
+                    className="flex flex-wrap gap-4 text-xs mb-4"
+                    style={{ color: "#374151" }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                      Strong support (30+)
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                      Moderate (23–29)
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                      Low support (≤22)
+                    </div>
+                  </div>
 
+                  {/* SAV Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {ashtakavarga.SAV.map((v, i) => {
+                      const strength =
+                        v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
 
-            <div
-              style={{
-                fontSize: "1.1rem",
-                fontWeight: 600,
-                color:
-                  strength === "strong"
-                    ? "#15803d"
-                    : strength === "weak"
-                    ? "#b91c1c"
-                    : "#374151",
-              }}
-            >
-              {v}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-  </div>
-)}
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-xl border text-center py-3 px-2 transition"
+                          style={{
+                            borderColor:
+                              strength === "strong"
+                                ? "rgba(34,197,94,0.4)"
+                                : strength === "weak"
+                                  ? "rgba(239,68,68,0.4)"
+                                  : "rgba(156,163,175,0.4)",
+                            background:
+                              strength === "strong"
+                                ? "rgba(34,197,94,0.06)"
+                                : strength === "weak"
+                                  ? "rgba(239,68,68,0.06)"
+                                  : "rgba(107,114,128,0.04)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "#6b7280",
+                              marginBottom: "0.15rem",
+                            }}
+                          >
+                            {SIGNS[i]}
+                          </div>
 
-
-
-
-
+                          <div
+                            style={{
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                              color:
+                                strength === "strong"
+                                  ? "#15803d"
+                                  : strength === "weak"
+                                    ? "#b91c1c"
+                                    : "#374151",
+                            }}
+                          >
+                            {v}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {result && insights && (
               <section className="converting-card">
@@ -2905,7 +2923,7 @@ const insights = useMemo(() => {
                   openAntarInlineFor={openAntarInlineFor}
                   activeMahaLord={activeMahaLord}
                   onTalkToAstrologer={handleTalkToAstrologer}
-                  currentDashaChain = {currentDashaChain}
+                  currentDashaChain={currentDashaChain}
                 />
               </section>
             )}
@@ -3075,6 +3093,50 @@ const insights = useMemo(() => {
                 <div className="empty-state">
                   No planet data found. Submit the form or try a different
                   timezone.
+                </div>
+              </div>
+            )}
+
+            {navamsaPlacements.length > 0 && (
+              <div
+                id="navamsa-placements"
+                className="card mt-6 mb-6"
+                style={{ scrollMarginTop: "96px" }}
+              >
+                <div className="results-header">
+                  <Orbit style={{ color: "#ca8a04" }} />
+                  <h3 className="results-title">Navamsa (D9) Placements</h3>
+                </div>
+
+                <div className="table-scroll-container">
+                  <table className="planet-table">
+                    <thead>
+                      <tr>
+                        <th>Planet</th>
+                        <th>Sign</th>
+                        <th>House</th>
+                        <th>Nakshatra (Pada)</th>
+                        <th>Degrees</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {navamsaPlacements.map((p) => (
+                        <tr key={p.name}>
+                          <td style={{ fontWeight: 500 }}>{p.name}</td>
+                          <td>{p.sign}</td>
+                          <td>{p.house}</td>
+                          <td>
+                            {p.nakshatra} ({p.pada})
+                          </td>
+                          <td>
+                            {typeof p.degree === "number"
+                              ? `${p.degree.toFixed(2)}°`
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -3320,7 +3382,7 @@ const insights = useMemo(() => {
           </div>
 
           {/* ACCORDIONS GO HERE */}
-          
+
           {/* EXPLANATION ACCORDIONS */}
           <Section
             title="How Your Birth Chart Is Calculated"
@@ -3447,17 +3509,16 @@ const insights = useMemo(() => {
       </a>
 
       <AstrologerAssistant
-  pageTitle="Predictions"
-  initialData={astrologerAssistantData}
-  chatType="prediction"
-  shouldReset={shouldResetChat}
-  formDataHash={currentFormDataHash}
-  chatSessionId={chatSessionId}
-  show={true}
-  hasData={!!result}
-  tabLabel={fullName || "Astrologer"} // 👈 NAME ON TAB
- />
-
+        pageTitle="Predictions"
+        initialData={astrologerAssistantData}
+        chatType="prediction"
+        shouldReset={shouldResetChat}
+        formDataHash={currentFormDataHash}
+        chatSessionId={chatSessionId}
+        show={true}
+        hasData={!!result}
+        tabLabel={fullName || "Astrologer"} // 👈 NAME ON TAB
+      />
     </div>
   );
 }
