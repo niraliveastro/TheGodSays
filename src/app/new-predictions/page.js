@@ -35,6 +35,8 @@ import {
 import { computeAshtakavarga, SIGNS } from "@/lib/ashtakavarga";
 import { useRouter } from "next/navigation";
 import { PageLoading } from "@/components/LoadingStates";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { getHoroscopeChartSvg } from "@/lib/api";
 import HighConvertingInsights from "./high-converting-page";
 import AstrologerAssistant from "@/components/AstrologerAssistant";
 
@@ -753,31 +755,51 @@ export default function PredictionsPage() {
     }
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
     suggestTimer.current = setTimeout(async () => {
+      // If Google Maps JS API not ready, skip suggestions gracefully
+      if (
+        !googleLoaded ||
+        typeof window === "undefined" ||
+        !window.google?.maps?.importLibrary
+      ) {
+        setSuggestions([]);
+        return;
+      }
+
       try {
-        setSuggesting(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-          q,
-        )}`;
-        const res = await fetch(url, {
-          headers: {
-            "Accept-Language": "en",
-            "User-Agent": "NiraLive Astro/1.0 (education)",
-          },
-        });
-        const arr = await res.json();
-        const opts = (arr || []).map((it) => ({
-          label: it.display_name,
-          latitude: parseFloat(it.lat),
-          longitude: parseFloat(it.lon),
+        const { AutocompleteSuggestion } =
+          await window.google.maps.importLibrary("places");
+
+        const { suggestions: placeSuggestions } =
+          await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: q,
+            language: "en",
+            region: "IN",
+          });
+
+        const opts = (placeSuggestions || []).map((s) => ({
+          label: s.placePrediction.text.text,
+          placeId: s.placePrediction.placeId,
         }));
         setSuggestions(opts);
-      } catch {
-        setSuggestions([]);
+      } catch (err) {
+        console.warn("Place suggestions failed:", err);
       } finally {
         setSuggesting(false);
       }
-    }, 250);
+    }, 300);
   };
+
+  function normalizeSvg(svg) {
+  if (!svg || typeof svg !== "string") return svg;
+  if (svg.includes("viewBox")) return svg;
+
+  return svg.replace(
+    "<svg",
+    '<svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet"',
+  );
+}
+
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -865,14 +887,60 @@ export default function PredictionsPage() {
         },
       };
       let navamsaRaw = null;
-try {
-  navamsaRaw = await astrologyAPI.getSingleCalculation(
-    "navamsa-chart-info",
-    navamsaPayload
-  );
-} catch (e) {
-  console.warn("[Navamsa] Failed:", e.message);
-}
+      let d1ChartSvg = null;
+      let d9ChartSvg = null;
+      try {
+        navamsaRaw = await astrologyAPI.getSingleCalculation(
+          "navamsa-chart-info",
+          navamsaPayload,
+        );
+      } catch (e) {
+        console.warn("[Navamsa] Failed:", e.message);
+      }
+      try {
+        // --- D1 Chart (Lagna / Rasi)
+        const d1Raw = await astrologyAPI.getSingleCalculation(
+          "horoscope-chart-svg-code",
+          payload,
+        );
+
+        // --- D9 Chart (Navamsa SVG – correct endpoint)
+const d9Raw = await astrologyAPI.getSingleCalculation(
+  "navamsa-chart-svg-code",
+  {
+    year: payload.year,
+    month: payload.month,
+    date: payload.date,
+    hours: payload.hours,
+    minutes: payload.minutes,
+    seconds: payload.seconds,
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    timezone: payload.timezone,
+    config: {
+      observation_point: "topocentric",
+      ayanamsha: "lahiri",
+    },
+  },
+);
+
+
+        // Extract SVG safely
+        d1ChartSvg = normalizeSvg(
+  typeof d1Raw === "string"
+    ? d1Raw
+    : d1Raw?.output || d1Raw?.svg || null
+);
+
+d9ChartSvg = normalizeSvg(
+  typeof d9Raw === "string"
+    ? d9Raw
+    : d9Raw?.output || d9Raw?.svg || null
+);
+
+      } catch (e) {
+        console.warn("[Chart SVG] Failed:", e.message);
+      }
 
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
         [
@@ -1034,11 +1102,17 @@ try {
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: "geocentric", ayanamsha: "lahiri" },
+
         vimsottari: vimsParsed,
         planets: finalPlanetParsed,
         maha: mahaParsed,
         shadbala: finalShadbala,
         navamsa: navamsaRaw,
+
+        // ✅ ADD THESE
+        d1ChartSvg,
+        d9ChartSvg,
+
         westernChartSvg,
         apiErrors: { ...errors },
       });
@@ -1630,55 +1704,79 @@ try {
   // -----------------------------
   // Navamsa (D9) Placements
   // -----------------------------
-const navamsaPlacements = useMemo(() => {
-  const raw = result?.navamsa;
-  if (!raw) return [];
+  const navamsaPlacements = useMemo(() => {
+    const raw = result?.navamsa;
+    if (!raw) return [];
 
-  let data = raw;
+    let data = raw;
 
-  // unwrap first output
-  if (data?.output) {
-    data =
-      typeof data.output === "string"
-        ? safeParse(data.output)
-        : data.output;
-  }
+    // unwrap first output
+    if (data?.output) {
+      data =
+        typeof data.output === "string" ? safeParse(data.output) : data.output;
+    }
 
-  // unwrap nested output (critical)
-  if (data?.output) {
-    data = data.output;
-  }
+    // unwrap nested output (critical)
+    if (data?.output) {
+      data = data.output;
+    }
 
-  // 👇 DEBUG LOG — MUST BE HERE
-  console.log(
-    "[Navamsa FINAL ARRAY]",
-    Array.isArray(data),
-    data
-  );
+    // 👇 DEBUG LOG
+    console.log("[Navamsa FINAL ARRAY]", Array.isArray(data), data);
 
-  if (!Array.isArray(data)) {
-    console.warn("[Navamsa] Unexpected format:", data);
-    return [];
-  }
+    // ✅ FIX: Convert object to array if needed
+    if (!Array.isArray(data)) {
+      if (typeof data === "object" && data !== null) {
+        // Check if it's an object with numeric keys (like {0: {...}, 1: {...}})
+        const keys = Object.keys(data);
+        const isNumericObject = keys.length > 0 && keys.every((k) => !isNaN(k));
 
-  const SIGN_NAMES = [
-    "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
-    "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
-  ];
+        if (isNumericObject) {
+          // Convert to array: Object.values() will extract all the planet objects
+          data = Object.values(data);
+          console.log(
+            "[Navamsa] Converted object to array:",
+            data.length,
+            "planets",
+          );
+        } else {
+          console.warn("[Navamsa] Unexpected object format:", data);
+          return [];
+        }
+      } else {
+        console.warn("[Navamsa] Unexpected format:", data);
+        return [];
+      }
+    }
 
-  return data
-    .filter((p) => p.name?.toLowerCase() !== "ascendant")
-    .map((p) => ({
-      name: p.name,
-      sign: p.current_sign
-        ? `${SIGN_NAMES[p.current_sign - 1]} (${p.current_sign})`
-        : "-",
-      house: p.house_number ?? "-",
-      nakshatra: p.nakshatra_name ?? "-",
-      pada: p.nakshatra_pada ?? "-",
-      degree: p.normDegree ?? p.longitude ?? null,
-    }));
-}, [result]);
+    const SIGN_NAMES = [
+      "Aries",
+      "Taurus",
+      "Gemini",
+      "Cancer",
+      "Leo",
+      "Virgo",
+      "Libra",
+      "Scorpio",
+      "Sagittarius",
+      "Capricorn",
+      "Aquarius",
+      "Pisces",
+    ];
+
+    return data
+      .filter((p) => p.name?.toLowerCase() !== "ascendant")
+      .map((p) => ({
+        name: p.name,
+        sign: p.current_sign
+          ? `${SIGN_NAMES[p.current_sign - 1]} (${p.current_sign})`
+          : "-",
+        house: p.house_number ?? "-",
+        nakshatra: p.nakshatra_name ?? "-",
+        pada: p.nakshatra_pada ?? "-",
+        degree: p.normDegree ?? p.longitude ?? null,
+      }));
+  }, [result]);
 
   // -----------------------------
   // Ashtakavarga (BAV + SAV)
@@ -3097,6 +3195,21 @@ const navamsaPlacements = useMemo(() => {
               </div>
             )}
 
+           {result?.d1ChartSvg && (
+  <div className="card mt-4">
+    <div className="results-header">
+      <Orbit style={{ color: "#ca8a04" }} />
+      <h3 className="results-title">D1 – Lagna (Rasi) Chart</h3>
+    </div>
+
+    <div
+      className="chart-svg"
+      dangerouslySetInnerHTML={{ __html: result.d1ChartSvg }}
+    />
+  </div>
+)}
+
+
             {navamsaPlacements.length > 0 && (
               <div
                 id="navamsa-placements"
@@ -3115,8 +3228,7 @@ const navamsaPlacements = useMemo(() => {
                         <th>Planet</th>
                         <th>Sign</th>
                         <th>House</th>
-                        <th>Nakshatra (Pada)</th>
-                        <th>Degrees</th>
+                        {/* Remove Nakshatra and Degrees columns since API doesn't provide them */}
                       </tr>
                     </thead>
                     <tbody>
@@ -3125,14 +3237,6 @@ const navamsaPlacements = useMemo(() => {
                           <td style={{ fontWeight: 500 }}>{p.name}</td>
                           <td>{p.sign}</td>
                           <td>{p.house}</td>
-                          <td>
-                            {p.nakshatra} ({p.pada})
-                          </td>
-                          <td>
-                            {typeof p.degree === "number"
-                              ? `${p.degree.toFixed(2)}°`
-                              : "-"}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -3140,6 +3244,21 @@ const navamsaPlacements = useMemo(() => {
                 </div>
               </div>
             )}
+
+            {result?.d9ChartSvg && (
+  <div className="card mt-4">
+    <div className="results-header">
+      <Orbit style={{ color: "#ca8a04" }} />
+      <h3 className="results-title">D9 – Navamsa Chart</h3>
+    </div>
+
+    <div
+      className="chart-svg"
+      dangerouslySetInnerHTML={{ __html: result.d9ChartSvg }}
+    />
+  </div>
+)}
+
           </div>
         )}
         {/* Antar Dasha Modal */}

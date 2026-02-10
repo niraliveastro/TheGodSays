@@ -44,6 +44,8 @@ const API_ENDPOINTS = {
   //match-making
   ,'match-making/ashtakoot-score': 'match-making/ashtakoot-score',
   'navamsa-chart-info': 'navamsa-chart-info',
+  'navamsa-chart-svg-code': 'navamsa-chart-svg-code',
+
 
 
 }
@@ -441,3 +443,5 @@ export async function getTimezoneOffsetHours(lat, lon) {
     return Math.round(clamped * 2) / 2
   }
 }
+
+

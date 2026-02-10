@@ -66,6 +66,8 @@ const ALLOWED_ENDPOINTS = [
   "samvatinfo",
   "aayanam",
   "navamsa-chart-info",
+  "navamsa-chart-svg-code",
+
 
 ];
 
