@@ -926,7 +926,13 @@ export default function AdminDashboard() {
     if (!confirm('Are you sure you want to delete this blog post?')) return
     
     try {
-      const res = await fetch(`/api/blog/${blogId}`, { method: 'DELETE' })
+      // Use same admin auth mechanism as /admin/blog page
+      const res = await fetch(`/api/blog/${blogId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${ADMIN_PASSCODE}`,
+        },
+      })
       if (res.ok) {
         setBlogs(blogs.filter(b => b.id !== blogId))
         setCachedData(CACHE_KEYS.BLOGS, blogs.filter(b => b.id !== blogId))

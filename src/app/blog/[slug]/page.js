@@ -98,9 +98,10 @@ export default async function BlogPostPage({ params }) {
 
   // Fetch related blogs (exclude current blog)
   const allBlogs = await getPublishedBlogs();
-  const relatedBlogs = allBlogs
-    .filter((b) => b.id !== blog.id && b.slug !== slug)
-    .slice(0, 6); // Show up to 6 related blogs
+  // Show ALL other published blogs under "More Articles"
+  const relatedBlogs = allBlogs.filter(
+    (b) => b.id !== blog.id && b.slug !== slug
+  );
 
   const publishedDate = blog.publishedAt
     ? new Date(blog.publishedAt).toLocaleDateString("en-US", {

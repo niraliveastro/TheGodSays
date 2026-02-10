@@ -11,6 +11,7 @@ import AstrologerRedirect from "@/components/AstrologerRedirect";
 // import MicrosoftClarity from "@/components/MicrosoftClarity";
 import SEOStructuredData from "@/components/SEOStructuredData";
 import EnvironmentBanner from "@/components/EnvironmentBanner";
+import ScrollToTop from "./ScrollToTop";
 const inter = Inter({ subsets: ["latin"] });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://niraliveastro.com";
@@ -187,8 +188,10 @@ export default function RootLayout({ children }) {
         {/* Persistent modal portal root */}
         <div id="modal-root" />
         <Providers>
-           {/* ✅ STAGING BANNER (Preview only) */}
-           <EnvironmentBanner />
+          {/* Global scroll reset on route change */}
+          <ScrollToTop />
+          {/* ✅ STAGING BANNER (Preview only) */}
+          <EnvironmentBanner />
           <AstrologerRedirect />
           <Navigation />
           {children}
