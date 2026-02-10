@@ -2,6 +2,8 @@ const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+
 
 
 exports.redeemCoupon = onCall(
@@ -95,3 +97,33 @@ exports.redeemCoupon = onCall(
     },
 );
 
+exports.fetchDailyPanchang = onSchedule(
+  {
+    schedule: "58 23 * * *", // 11:58 PM
+    timeZone: "Asia/Kolkata",
+  },
+  async () => {
+    const today = new Date().toISOString().split("T")[0];
+
+    const panchangData = {
+      date: today,
+      location: "Ujjain",
+      tithi: "Shukla Paksha Dwadashi",
+      nakshatra: "Pushya",
+      yoga: "Siddha",
+      karana: "Bava",
+      sunrise: "06:42 AM",
+      sunset: "06:11 PM",
+      moonrise: "04:58 PM",
+      moonset: "05:21 AM",
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await db
+      .collection("panchang_daily")
+      .doc(today)
+      .set(panchangData);
+
+    console.log("Panchang stored for", today);
+  }
+);

@@ -1,1 +1,1 @@
-export { default } from '@/app/predictions/page'
+export { default } from '@/app/new-predictions/page'
