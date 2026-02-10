@@ -32,6 +32,7 @@ import {
   trackActionAbandon,
   trackPageView,
 } from "@/lib/analytics";
+import { computeAshtakavarga, SIGNS } from "@/lib/ashtakavarga";
 import { useRouter } from "next/navigation";
 import { PageLoading } from "@/components/LoadingStates";
 import HighConvertingInsights from "./high-converting-page";
@@ -1612,6 +1613,19 @@ useEffect(() => {
       });
   }, [result]);
 
+// -----------------------------
+// Ashtakavarga (BAV + SAV)
+// -----------------------------
+const ashtakavarga = useMemo(() => {
+  if (!result?.planets) return null;
+
+  try {
+    return computeAshtakavarga(result.planets);
+  } catch (e) {
+    console.warn("[Ashtakavarga] Failed to compute:", e);
+    return null;
+  }
+}, [result]);
 
 
 
@@ -2782,6 +2796,98 @@ const insights = useMemo(() => {
                 </div>
               )}
             </div>
+
+    
+    {ashtakavarga && (
+  <div>
+    {/* Header */}
+    <div className="">
+      {/* <Orbit style={{ color: "#ca8a04" }} /> */}
+      <div>
+        <h3 className="section-title flex justify-center align-center">Ashtakavarga</h3>
+        
+      </div>
+    </div>
+  <div className="card mt-6">
+    {/* Legend */}
+    <div
+      className="flex flex-wrap gap-4 text-xs mb-4"
+      style={{ color: "#374151" }}
+    >
+      <div className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+        Strong support (30+)
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+        Moderate (23–29)
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+        Low support (≤22)
+      </div>
+    </div>
+
+    {/* SAV Grid */}
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+      {ashtakavarga.SAV.map((v, i) => {
+        const strength =
+          v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
+
+        return (
+          <div
+            key={i}
+            className="rounded-xl border text-center py-3 px-2 transition"
+            style={{
+              borderColor:
+                strength === "strong"
+                  ? "rgba(34,197,94,0.4)"
+                  : strength === "weak"
+                  ? "rgba(239,68,68,0.4)"
+                  : "rgba(156,163,175,0.4)",
+              background:
+                strength === "strong"
+                  ? "rgba(34,197,94,0.06)"
+                  : strength === "weak"
+                  ? "rgba(239,68,68,0.06)"
+                  : "rgba(107,114,128,0.04)",
+            }}
+          >
+            <div
+  style={{
+    fontSize: "0.75rem",
+    color: "#6b7280",
+    marginBottom: "0.15rem",
+  }}
+>
+  {SIGNS[i]}
+</div>
+
+
+            <div
+              style={{
+                fontSize: "1.1rem",
+                fontWeight: 600,
+                color:
+                  strength === "strong"
+                    ? "#15803d"
+                    : strength === "weak"
+                    ? "#b91c1c"
+                    : "#374151",
+              }}
+            >
+              {v}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+  </div>
+)}
+
+
+
 
 
 
