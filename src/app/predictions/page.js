@@ -23,6 +23,7 @@ import {
 import "./prediction.css";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
 import { trackEvent, trackActionStart, trackActionComplete, trackActionAbandon, trackPageView } from "@/lib/analytics";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { PageLoading } from "@/components/LoadingStates";
 import PageSEO from "@/components/PageSEO";
 export default function PredictionsPage() {
@@ -41,6 +42,7 @@ export default function PredictionsPage() {
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const suggestTimer = useRef(null);
+  const googleLoaded = useGoogleMaps();
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
   const initialHistoryHeightRef = useRef(null); // Store initial height to lock it
@@ -516,37 +518,45 @@ export default function PredictionsPage() {
       return v;
     }
   };
+  // Place suggestions (used by kundli-prediction) – now powered by Google Places,
+  // same pattern as matching page. Current location still uses reverse geocode.
   const fetchSuggestions = (q) => {
     if (!q || q.length < 2) {
       setSuggestions([]);
       return;
     }
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
+
     suggestTimer.current = setTimeout(async () => {
+      // If Google Maps JS API not ready, skip suggestions gracefully
+      if (!googleLoaded || typeof window === "undefined" || !window.google?.maps?.importLibrary) {
+        setSuggestions([]);
+        return;
+      }
+
       try {
         setSuggesting(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-          q
-        )}`;
-        const res = await fetch(url, {
-          headers: {
-            "Accept-Language": "en",
-            "User-Agent": "NiraLive Astro/1.0 (education)",
-          },
-        });
-        const arr = await res.json();
-        const opts = (arr || []).map((it) => ({
-          label: it.display_name,
-          latitude: parseFloat(it.lat),
-          longitude: parseFloat(it.lon),
+        const { AutocompleteSuggestion } = await window.google.maps.importLibrary("places");
+
+        const { suggestions: placeSuggestions } =
+          await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: q,
+            language: "en",
+            region: "IN",
+          });
+
+        const opts = (placeSuggestions || []).map((s) => ({
+          label: s.placePrediction.text.text,
+          placeId: s.placePrediction.placeId,
         }));
         setSuggestions(opts);
-      } catch {
+      } catch (err) {
+        console.warn("Place suggestions failed:", err);
         setSuggestions([]);
       } finally {
         setSuggesting(false);
       }
-    }, 250);
+    }, 300);
   };
   async function onSubmit(e) {
     e.preventDefault();

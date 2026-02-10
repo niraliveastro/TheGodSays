@@ -9,6 +9,7 @@ import { generateSlug } from '@/lib/blog-utils'
 import { generateKeywords, filterExistingKeywords, ZODIAC_SIGNS, TOPICS } from './keyword-generator'
 import { generateBlogContent, generateInternalLinks } from './content-generator'
 import { getBlogGenerationConfig } from './config'
+import { generateFeaturedImageForKeyword } from '@/lib/blog-image-service'
 
 const BLOGS_COLLECTION = 'blogs'
 
@@ -107,6 +108,9 @@ async function createBlogPost(keyword, generatedContent, internalLinks = []) {
       finalContent = addInternalLinks(finalContent, internalLinks)
     }
 
+    // Generate a topic-relevant featured image using AI (no local assets)
+    const featuredImageUrl = await generateFeaturedImageForKeyword(keyword)
+
     // Prepare blog data
     const now = Timestamp.now()
     const blogData = {
@@ -117,7 +121,8 @@ async function createBlogPost(keyword, generatedContent, internalLinks = []) {
       metaDescription: generatedContent.metaDescription,
       author: 'NiraLive Astro',
       tags: [keyword.zodiac, keyword.topic, keyword.timeType === 'yearly' ? `${keyword.year}` : keyword.month || ''],
-      featuredImage: null,
+      // AI-generated image based on zodiac/topic; may be null if generation fails
+      featuredImage: featuredImageUrl || null,
       status: 'published', // Auto-publish
       publishedAt: now,
       updatedAt: now,

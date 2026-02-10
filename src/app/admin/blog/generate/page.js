@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
-import { Sparkles, Play, Pause, RefreshCw, Settings, CheckCircle, XCircle, Clock, FileText } from 'lucide-react'
+import { Sparkles, Play, RefreshCw, Settings, CheckCircle, XCircle, Clock, FileText, PenLine } from 'lucide-react'
 import { ZODIAC_SIGNS, TOPICS } from '@/lib/blog-generator/keyword-generator'
 import '../admin-blog.css'
 import './generate.css'
@@ -22,6 +22,7 @@ export default function BlogGenerationPage() {
   const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
   const [isPasscodeVerified, setIsPasscodeVerified] = useState(false)
   const [showPasscodeModal, setShowPasscodeModal] = useState(false)
+  const [isReady, setIsReady] = useState(false) // avoid partial render before client hydration
   const [passcodeInput, setPasscodeInput] = useState('')
   const [passcodeError, setPasscodeError] = useState('')
   
@@ -39,6 +40,11 @@ export default function BlogGenerationPage() {
     monthsAhead: 3,
   })
   
+  // Topic-to-blog (admin input field)
+  const [topicInput, setTopicInput] = useState('')
+  const [generatingFromTopic, setGeneratingFromTopic] = useState(false)
+  const [topicResult, setTopicResult] = useState(null)
+
   // Stats
   const [stats, setStats] = useState({
     totalGenerated: 0,
@@ -46,7 +52,7 @@ export default function BlogGenerationPage() {
     lastGeneration: null,
   })
 
-  // Check authentication
+  // Check authentication once on client
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const verified = sessionStorage.getItem(PASSCODE_STORAGE_KEY)
@@ -55,6 +61,7 @@ export default function BlogGenerationPage() {
       } else {
         setShowPasscodeModal(true)
       }
+      setIsReady(true)
     }
   }, [])
 
@@ -192,6 +199,38 @@ export default function BlogGenerationPage() {
     }
   }
 
+  const handleGenerateFromTopic = async () => {
+    const topic = (topicInput || '').trim()
+    if (!topic || generatingFromTopic) return
+    setGeneratingFromTopic(true)
+    setTopicResult(null)
+    showSuccess('Generating blog from topic...')
+    try {
+      const response = await fetch('/api/admin/generate-blog-from-topic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ADMIN_PASSCODE}`,
+        },
+        body: JSON.stringify({ topic, publish: true }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        setTopicResult(data)
+        showSuccess(data.saved ? `Blog published: ${data.blog.title}` : (data.error || 'Blog generated (not saved: slug exists)'))
+        if (data.saved) loadStats()
+      } else {
+        showError(data.error || 'Failed to generate blog')
+        setTopicResult({ error: data.error })
+      }
+    } catch (err) {
+      showError('Error: ' + err.message)
+      setTopicResult({ error: err.message })
+    } finally {
+      setGeneratingFromTopic(false)
+    }
+  }
+
   const handleTestGeneration = async () => {
     if (generating) return
     
@@ -219,6 +258,21 @@ export default function BlogGenerationPage() {
     } finally {
       setGenerating(false)
     }
+  }
+
+  // Avoid rendering full layout until we've checked auth on client
+  if (!isReady) {
+    return (
+      <div className="admin-container">
+        <div className="passcode-modal-overlay">
+          <div className="passcode-modal">
+            <h2>Loading admin tools…</h2>
+            <p>Please wait a moment.</p>
+          </div>
+        </div>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </div>
+    )
   }
 
   if (!isPasscodeVerified) {
@@ -307,11 +361,69 @@ export default function BlogGenerationPage() {
           </div>
         </div>
 
+        {/* Generate from topic (admin input) */}
+        <div className="generation-panel topic-panel">
+          <div className="panel-header">
+            <PenLine className="panel-icon" />
+            <h2>Generate from topic</h2>
+          </div>
+          <p className="topic-description">
+            Type any natural-language topic. The system will produce a full SEO-optimized blog (title, slug, content, images, internal links) and publish it.
+          </p>
+          <div className="topic-controls">
+            <input
+              type="text"
+              placeholder="e.g. aries career problems in 2026, top 10 astrologers of india, love marriage chances for virgo female"
+              value={topicInput}
+              onChange={(e) => setTopicInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromTopic()}
+              disabled={generatingFromTopic}
+              className="topic-input"
+            />
+            <button
+              type="button"
+              onClick={handleGenerateFromTopic}
+              disabled={!topicInput.trim() || generatingFromTopic}
+              className="btn-generate btn-topic"
+            >
+              {generatingFromTopic ? (
+                <>
+                  <RefreshCw className="spinning" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles />
+                  Generate &amp; publish
+                </>
+              )}
+            </button>
+          </div>
+          {topicResult && (
+            <div className={`topic-result ${topicResult.error ? 'topic-result-error' : 'topic-result-success'}`}>
+              {topicResult.error && <p><strong>Error:</strong> {topicResult.error}</p>}
+              {topicResult.blog && (
+                <>
+                  <p><strong>Title:</strong> {topicResult.blog.title}</p>
+                  <p><strong>Slug:</strong> {topicResult.blog.slug}</p>
+                  {topicResult.saved && (
+                    <p>
+                      <a href={`/blog/${topicResult.blog.slug}`} target="_blank" rel="noopener noreferrer">
+                        View blog →
+                      </a>
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Generation Controls */}
         <div className="generation-panel">
           <div className="panel-header">
             <Settings className="panel-icon" />
-            <h2>Generation Settings</h2>
+            <h2>Generation Settings (keyword trail)</h2>
           </div>
           
           <div className="generation-controls">
