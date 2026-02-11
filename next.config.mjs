@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // SEO: Use trailing slashes site-wide. Next.js 301-redirects /x to /x/ automatically.
+  // This aligns with redirect destinations (e.g. /kundli-matching/) and fixes talk-to-astrologer.
+  trailingSlash: true,
   images: {
     // We use our custom image optimization API (/api/image-optimize) for better control
     // Keep unoptimized: true to allow external images, but our custom API handles optimization
@@ -238,12 +241,7 @@ const nextConfig = {
         destination: '/kundli-prediction/ai/',
         permanent: true,
       },
-      // Enforce trailing slash for /talk-to-astrologer
-      {
-        source: '/talk-to-astrologer',
-        destination: '/talk-to-astrologer/',
-        permanent: true,
-      },
+      // talk-to-astrologer: trailingSlash: true handles /talk-to-astrologer → /talk-to-astrologer/ automatically
       
       // 2. COSMIC / TRANSIT AUTHORITY CLUSTER
       {

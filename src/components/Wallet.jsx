@@ -157,8 +157,9 @@ export default function Wallet() {
   /* ------------------------------------------------------------------ */
   const handleRecharge = async (e) => {
     e.preventDefault();
-    if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {
-      alert("Please enter a valid amount");
+    const amountValue = parseFloat(rechargeAmount);
+    if (!rechargeAmount || isNaN(amountValue) || amountValue < 15) {
+      alert("Please enter a valid amount (minimum ₹15)");
       return;
     }
 
@@ -445,7 +446,7 @@ export default function Wallet() {
                 <input
                   type="number"
                   id="amount"
-                  min="1"
+                  min="15"
                   step="0.01"
                   value={rechargeAmount}
                   onChange={(e) => setRechargeAmount(e.target.value)}
@@ -455,7 +456,7 @@ export default function Wallet() {
                   disabled={rechargeLoading}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Minimum amount: ₹1
+                  Minimum amount: ₹15
                 </p>
               </div>
               <div className="flex gap-3">

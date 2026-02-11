@@ -131,11 +131,6 @@ const Navigation = () => {
             label: t.profile.familyMembers,
             icon: Users,
           },
-          {
-            href: "/admin/dashboard",
-            label: "Admin Dashboard",
-            icon: LayoutDashboard,
-          },
         ],
       },
     ],
