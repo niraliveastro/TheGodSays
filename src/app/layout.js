@@ -1,14 +1,14 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./globals-responsive.css";
-
+import Script from "next/script";
 import { Providers } from "./providers";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AstrologerRedirect from "@/components/AstrologerRedirect";
-import GoogleAnalytics from "@/components/GoogleAnalytics";
-import MicrosoftClarity from "@/components/MicrosoftClarity";
+// import GoogleAnalytics from "@/components/GoogleAnalytics";
+// import MicrosoftClarity from "@/components/MicrosoftClarity";
 import SEOStructuredData from "@/components/SEOStructuredData";
 import EnvironmentBanner from "@/components/EnvironmentBanner";
 import ScrollToTop from "./ScrollToTop";
@@ -132,14 +132,40 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Resource hints for faster external connections */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://www.google-analytics.com" />
-        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
-        <link rel="dns-prefetch" href="https://www.clarity.ms" />
-        {/* Razorpay script removed from head - now loads on-demand in Wallet component */}
-      </head>
+  {/* Resource hints */}
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+  <link rel="preconnect" href="https://www.google-analytics.com" />
+  <link rel="dns-prefetch" href="https://www.clarity.ms" />
+
+  {/* Google Tag Manager */}
+  <Script
+    id="gtm-script"
+    strategy="afterInteractive"
+    dangerouslySetInnerHTML={{
+      __html: `
+        (function(w,d,s,l,i){w[l]=w[l]||[];
+        w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
+        var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+        j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;
+        f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-53G2VPLC');
+      `,
+    }}
+  />
+</head>
+
       <body className={inter.className} suppressHydrationWarning={true}>
+         <noscript>
+    <iframe
+      src="https://www.googletagmanager.com/ns.html?id=GTM-53G2VPLC"
+      height="0"
+      width="0"
+      style={{ display: "none", visibility: "hidden" }}
+    />
+  </noscript>
+
         {/* Cosmic Theme - Falling Stars & Particles */}
         <div className="falling-stars-1"></div>
         <div className="falling-stars-2"></div>
@@ -149,12 +175,12 @@ export default function RootLayout({ children }) {
         <div className="meteoroids"></div>
         
         {/* Analytics Scripts */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <MicrosoftClarity CLARITY_PROJECT_ID={process.env.NEXT_PUBLIC_CLARITY_ID} />
-        )}
+          {/* {process.env.NEXT_PUBLIC_GA_ID && (
+            <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_ID} />
+          )}
+          {process.env.NEXT_PUBLIC_CLARITY_ID && (
+            <MicrosoftClarity CLARITY_PROJECT_ID={process.env.NEXT_PUBLIC_CLARITY_ID} />
+          )} */}
         
         {/* Structured Data for SEO */}
         <SEOStructuredData />
