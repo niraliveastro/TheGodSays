@@ -19,6 +19,7 @@ export function getBlogGenerationConfig() {
     includeYearly: process.env.BLOG_GEN_INCLUDE_YEARLY !== 'false',
     includeMonthly: process.env.BLOG_GEN_INCLUDE_MONTHLY !== 'false',
     includeThisYear: process.env.BLOG_GEN_INCLUDE_THIS_YEAR !== 'false',
+    includeToday: process.env.BLOG_GEN_INCLUDE_TODAY !== 'false',
     
     // AI settings
     useHighLevelModel: process.env.BLOG_GEN_USE_HIGH_MODEL !== 'false', // Use high-level models by default

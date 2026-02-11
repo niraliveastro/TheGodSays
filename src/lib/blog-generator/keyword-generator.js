@@ -80,6 +80,31 @@ export function generateMonthlyKeywords(month, year) {
 }
 
 /**
+ * Generate keywords for "today" (e.g., daily horoscope)
+ * @returns {Array<Object>} Array of keyword objects
+ */
+export function generateTodayKeywords() {
+  const keywords = []
+
+  // "Career for Leo today"
+  for (const sign of ZODIAC_SIGNS) {
+    for (const topic of TOPICS) {
+      keywords.push({
+        title: `${topic} for ${sign} today`,
+        slug: `${topic.toLowerCase()}-for-${sign.toLowerCase()}-today`,
+        zodiac: sign,
+        topic: topic,
+        timeType: 'today',
+        year: new Date().getFullYear(),
+        month: null,
+      })
+    }
+  }
+
+  return keywords
+}
+
+/**
  * Generate keywords for "this year" (current year)
  * @param {number} currentYear - Current year
  * @returns {Array<Object>} Array of keyword objects
@@ -135,6 +160,7 @@ export function generateUpcomingMonthlyKeywords(currentYear, monthsAhead = 3) {
  * @param {boolean} config.includeYearly - Include yearly blogs
  * @param {boolean} config.includeMonthly - Include monthly blogs
  * @param {boolean} config.includeThisYear - Include "this year" blogs
+ * @param {boolean} config.includeToday - Include "today" blogs
  * @returns {Array<Object>} Array of keyword objects
  */
 export function generateKeywords(config) {
@@ -144,22 +170,27 @@ export function generateKeywords(config) {
     includeYearly = true,
     includeMonthly = true,
     includeThisYear = true,
+    includeToday = true,
   } = config
-  
+
   let keywords = []
-  
+
   if (includeYearly) {
     keywords.push(...generateYearlyKeywords(currentYear))
   }
-  
+
   if (includeMonthly) {
     keywords.push(...generateUpcomingMonthlyKeywords(currentYear, monthsAhead))
   }
-  
+
   if (includeThisYear) {
     keywords.push(...generateThisYearKeywords(currentYear))
   }
-  
+
+  if (includeToday) {
+    keywords.push(...generateTodayKeywords())
+  }
+
   return keywords
 }
 
