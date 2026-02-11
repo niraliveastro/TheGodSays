@@ -45,6 +45,9 @@ export default function BlogGenerationPage() {
   const [generatingFromTopic, setGeneratingFromTopic] = useState(false)
   const [topicResult, setTopicResult] = useState(null)
 
+  // Dry run results for UI display
+  const [dryRunResult, setDryRunResult] = useState(null)
+
   // Stats
   const [stats, setStats] = useState({
     totalGenerated: 0,
@@ -160,7 +163,8 @@ export default function BlogGenerationPage() {
     if (generating) return
     
     setGenerating(true)
-    showSuccess('Starting blog generation...')
+    setDryRunResult(null)
+    showSuccess(config.dryRun ? 'Running dry run...' : 'Starting blog generation...')
 
     try {
       const response = await fetch('/api/cron/generate-blogs', {
@@ -185,9 +189,14 @@ export default function BlogGenerationPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        showSuccess(`Successfully generated ${result.generated} blog(s)!`)
-        saveGenerationHistory(result)
-        loadStats()
+        if (config.dryRun) {
+          setDryRunResult(result)
+          showSuccess(`Dry run complete: ${result.skipped || 0} blog(s) would be generated (no blogs created)`)
+        } else {
+          showSuccess(`Successfully generated ${result.generated} blog(s)!`)
+          saveGenerationHistory(result)
+          loadStats()
+        }
       } else {
         showError(result.error || 'Failed to generate blogs')
       }
@@ -235,20 +244,34 @@ export default function BlogGenerationPage() {
     if (generating) return
     
     setGenerating(true)
+    setDryRunResult(null)
     showSuccess('Testing blog generation (dry run)...')
 
     try {
-      const response = await fetch('/api/cron/generate-blogs?max=1&dryRun=true', {
+      const response = await fetch('/api/cron/generate-blogs', {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${ADMIN_PASSCODE}`,
         },
+        body: JSON.stringify({
+          max: 3,
+          dryRun: true,
+          filters: {
+            zodiacs: config.selectedZodiacs,
+            topics: config.selectedTopics,
+            timeTypes: config.selectedTimeTypes,
+            year: config.year,
+            monthsAhead: config.monthsAhead,
+          },
+        }),
       })
 
       const result = await response.json()
       
-      if (response.ok) {
-        showSuccess('Dry run completed successfully! Check console for details.')
-        console.log('Dry run result:', result)
+      if (response.ok && result.success) {
+        setDryRunResult(result)
+        showSuccess('Dry run completed! See results below.')
       } else {
         showError(result.error || 'Dry run failed')
       }
@@ -528,6 +551,7 @@ export default function BlogGenerationPage() {
                     { value: 'yearly', label: 'Yearly (e.g., "Career for Leo in 2026")' },
                     { value: 'monthly', label: 'Monthly (e.g., "Love for Virgo in February 2026")' },
                     { value: 'this-year', label: 'This Year (e.g., "Health for Scorpio this year")' },
+                    { value: 'today', label: 'Today (e.g., "Career for Leo today")' },
                   ].map((timeType) => (
                     <label key={timeType.value} className="multi-select-item">
                       <input
@@ -598,6 +622,39 @@ export default function BlogGenerationPage() {
                 )}
               </button>
             </div>
+
+            {/* Dry Run Results Panel */}
+            {dryRunResult && (
+              <div className="dry-run-results">
+                <h3>Dry Run Results</h3>
+                <p className="dry-run-summary">
+                  <strong>{dryRunResult.skipped || 0}</strong> blog(s) would be generated (no blogs were created).
+                </p>
+                {dryRunResult.dryRunWouldGenerate && dryRunResult.dryRunWouldGenerate.length > 0 && (
+                  <div className="dry-run-list">
+                    <strong>Sample titles that would be created:</strong>
+                    <ul>
+                      {dryRunResult.dryRunWouldGenerate.slice(0, 10).map((item, idx) => (
+                        <li key={idx}>{item.title}</li>
+                      ))}
+                      {dryRunResult.dryRunWouldGenerate.length > 10 && (
+                        <li className="dry-run-more">+{dryRunResult.dryRunWouldGenerate.length - 10} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {dryRunResult.errors && dryRunResult.errors.length > 0 && (
+                  <div className="dry-run-errors">
+                    <strong>Errors:</strong>
+                    <ul>
+                      {dryRunResult.errors.map((err, idx) => (
+                        <li key={idx}>{typeof err === 'string' ? err : err.error || JSON.stringify(err)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -661,6 +718,7 @@ export default function BlogGenerationPage() {
             <li><strong>Yearly:</strong> "Career for Leo in 2026"</li>
             <li><strong>Monthly:</strong> "Love for Virgo in February 2026"</li>
             <li><strong>This Year:</strong> "Health for Scorpio this year"</li>
+            <li><strong>Today:</strong> "Career for Leo today"</li>
           </ul>
           
           <h3>⚙️ Automated Schedule</h3>

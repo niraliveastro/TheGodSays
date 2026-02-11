@@ -220,12 +220,53 @@ export async function generateBlogs(options = {}) {
     console.log(`🔑 Generated ${allKeywords.length} keyword combinations`)
     
     // Apply user filters
-    const filteredKeywords = filterKeywords(allKeywords, filters)
+    let filteredKeywords = filterKeywords(allKeywords, filters)
     console.log(`🎯 After filters: ${filteredKeywords.length} keywords`)
-    
+
     // Filter out existing ones
-    const newKeywords = filterExistingKeywords(filteredKeywords, existingSlugs)
+    let newKeywords = filterExistingKeywords(filteredKeywords, existingSlugs)
     console.log(`✨ ${newKeywords.length} new keywords to process`)
+
+    // When fewer new keywords than requested, expand filters to reach the requested count
+    // (e.g. user selects Cancer+Love, wants 3, but only 1 new combo exists → add more signs/topics)
+    if (newKeywords.length < maxBlogs && (filters.zodiacs?.length > 0 || filters.topics?.length > 0)) {
+      const expandedZodiacs = filters.zodiacs?.length ? [...filters.zodiacs] : ZODIAC_SIGNS
+      const expandedTopics = filters.topics?.length ? [...filters.topics] : TOPICS
+
+      // Add unselected zodiac signs first
+      for (const sign of ZODIAC_SIGNS) {
+        if (newKeywords.length >= maxBlogs) break
+        if (expandedZodiacs.includes(sign)) continue
+        expandedZodiacs.push(sign)
+        const expFilters = { ...filters, zodiacs: expandedZodiacs, topics: expandedTopics }
+        const expFiltered = filterKeywords(allKeywords, expFilters)
+        const expNew = filterExistingKeywords(expFiltered, existingSlugs)
+        if (expNew.length >= maxBlogs) {
+          newKeywords = expNew
+          console.log(`📈 Expanded to ${expandedZodiacs.length} zodiac(s) → ${newKeywords.length} new keywords`)
+          break
+        }
+        newKeywords = expNew
+      }
+
+      // If still not enough, add unselected topics
+      if (newKeywords.length < maxBlogs) {
+        for (const topic of TOPICS) {
+          if (newKeywords.length >= maxBlogs) break
+          if (expandedTopics.includes(topic)) continue
+          expandedTopics.push(topic)
+          const expFilters = { ...filters, zodiacs: expandedZodiacs, topics: expandedTopics }
+          const expFiltered = filterKeywords(allKeywords, expFilters)
+          const expNew = filterExistingKeywords(expFiltered, existingSlugs)
+          if (expNew.length >= maxBlogs) {
+            newKeywords = expNew
+            console.log(`📈 Expanded to ${expandedTopics.length} topic(s) → ${newKeywords.length} new keywords`)
+            break
+          }
+          newKeywords = expNew
+        }
+      }
+    }
     
     if (newKeywords.length === 0) {
       return {
@@ -246,6 +287,7 @@ export async function generateBlogs(options = {}) {
       skipped: 0,
       errors: [],
       blogs: [],
+      dryRunWouldGenerate: [], // Titles that would be generated in dry run
     }
 
     // Process each keyword
@@ -257,6 +299,7 @@ export async function generateBlogs(options = {}) {
         if (dryRun) {
           console.log(`  [DRY RUN] Would generate blog for: ${keyword.title}`)
           results.skipped++
+          results.dryRunWouldGenerate.push({ title: keyword.title, slug: keyword.slug })
           continue
         }
 
@@ -313,13 +356,17 @@ export async function generateBlogs(options = {}) {
     console.log(`   Skipped: ${results.skipped}`)
     console.log(`   Errors: ${results.errors.length}`)
 
-    return {
+    const response = {
       success: true,
       generated: results.generated,
       skipped: results.skipped,
       errors: results.errors,
       blogs: results.blogs,
     }
+    if (dryRun && results.dryRunWouldGenerate?.length) {
+      response.dryRunWouldGenerate = results.dryRunWouldGenerate
+    }
+    return response
   } catch (error) {
     console.error('❌ Fatal error in blog generation:', error)
     return {
