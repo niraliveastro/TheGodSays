@@ -53,8 +53,8 @@ export async function POST(request) {
 
     switch (action) {
       case 'recharge':
-        if (!amount || amount <= 0) {
-          return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 })
+        if (!amount || amount < 15) {
+          return NextResponse.json({ error: 'Minimum recharge amount is ₹15' }, { status: 400 })
         }
 
         try {
