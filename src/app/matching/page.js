@@ -20,6 +20,7 @@ import {
   Star,
   PhoneCallIcon,
   PhoneIcon,
+  Loader2
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistantTab from "@/components/AstrologerAssistantTab";
@@ -118,6 +119,7 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
+  const googleLoaded = useGoogleMaps();
   // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
@@ -132,39 +134,48 @@ export default function MatchingPage() {
     place: "",
   });
   // Coordinates and suggestions state
-  const [fCoords, setFCoords] = useState(null); // Female coordinates {latitude, longitude}
-  const [mCoords, setMCoords] = useState(null); // Male coordinates {latitude, longitude}
-  const [fSuggest, setFSuggest] = useState([]); // Female place suggestions array
-  const [mSuggest, setMSuggest] = useState([]); // Male place suggestions array
-  const [fLocating, setFLocating] = useState(false); // Female location fetching state
-  const [mLocating, setMLocating] = useState(false); // Male location fetching state
-  const fTimer = useRef(null); // Debounce timer ref for female place search
-  const mTimer = useRef(null); // Debounce timer ref for male place search
-  const fDateInputRef = useRef(null); // Ref for female date input
-  const mDateInputRef = useRef(null); // Ref for male date input
-  const fTimeInputRef = useRef(null); // Ref for female time input
-  const mTimeInputRef = useRef(null); // Ref for male time input
-  const [expandedAddresses, setExpandedAddresses] = useState({}); // Track expanded addresses by itemId-field
+  const [fCoords, setFCoords] = useState(null);
+  const [mCoords, setMCoords] = useState(null);
+  const [fSuggest, setFSuggest] = useState([]);
+  const [mSuggest, setMSuggest] = useState([]);
+  const [fLocating, setFLocating] = useState(false);
+  const [mLocating, setMLocating] = useState(false);
+  const [fSuggesting, setFSuggesting] = useState(false);
+  const [mSuggesting, setMSuggesting] = useState(false);
+  const fTimer = useRef(null);
+  const mTimer = useRef(null);
+  const fDateInputRef = useRef(null);
+  const mDateInputRef = useRef(null);
+  const fTimeInputRef = useRef(null);
+  const mTimeInputRef = useRef(null);
+  const [expandedAddresses, setExpandedAddresses] = useState({});
+  const fAutocompleteService = useRef(null);
+const mAutocompleteService = useRef(null);
+const fPlacesService = useRef(null);
+const mPlacesService = useRef(null);
+
+  
   // Submission and result state
-  const [submitting, setSubmitting] = useState(false); // Loading state during submission
-  const [error, setError] = useState(""); // Error message string
-  const [result, setResult] = useState(null); // Ashtakoot result object
-  const [fDetails, setFDetails] = useState(null); // Female individual details object
-  const [mDetails, setMDetails] = useState(null); // Male individual details object
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [fDetails, setFDetails] = useState(null);
+  const [mDetails, setMDetails] = useState(null);
 
   // === Chat State ===
-  const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
-  const [chatSessionId, setChatSessionId] = useState(0); // Chat session counter for reset
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState(0);
   const [shouldResetChat, setShouldResetChat] = useState(false);
-  const [chatData, setChatData] = useState(null); // Data to pass to chat component
-  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
-  const chatRef = useRef(null); // Reference to chat section for scrolling
-  const resultsRef = useRef(null); // Reference to results section for auto-scrolling
+  const [chatData, setChatData] = useState(null);
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
+  const chatRef = useRef(null);
+  const resultsRef = useRef(null);
 
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
-  const googleLoaded = useGoogleMaps();
+
+
 
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
@@ -309,21 +320,9 @@ export default function MatchingPage() {
     });
   }, [history, historySearch]);
 
-  const resetAllFields = () => {
-    setFemale({
-      fullName: "",
-      dob: "",
-      tob: "",
-      place: "",
-    });
-
-    setMale({
-      fullName: "",
-      dob: "",
-      tob: "",
-      place: "",
-    });
-
+   const resetAllFields = () => {
+    setFemale({ fullName: "", dob: "", tob: "", place: "" });
+    setMale({ fullName: "", dob: "", tob: "", place: "" });
     setFCoords(null);
     setMCoords(null);
     setFSuggest([]);
@@ -332,8 +331,6 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-
-    // Reset chat when form is cleared
     setChatSessionId((prev) => prev + 1);
     setShouldResetChat(true);
     setChatData(null);
@@ -444,50 +441,51 @@ export default function MatchingPage() {
    * @param {string} key - The field key being changed.
    * @returns {function} Event handler for input change.
    */
-// Option 1: Make the whole onChange handler async (most common fix)
-const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key) => 
-  async (e) => {    //  ← add async here
-    const v = e.target.value;
-    setter((prev) => ({ ...prev, [key]: v }));
+  // Option 1: Make the whole onChange handler async (most common fix)
+  const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key, setSuggesting) => 
+    async (e) => {
+      const v = e.target.value;
+      setter((prev) => ({ ...prev, [key]: v }));
 
-    if (key === "place") {
-      coordsSetter(null);
+      if (key === "place") {
+        coordsSetter(null);
 
-      if (timerRef.current) clearTimeout(timerRef.current);
+        if (timerRef.current) clearTimeout(timerRef.current);
 
-      timerRef.current = setTimeout(async () => {   // ← also async
-        if (!googleLoaded || !v || v.length < 3) {
-          suggestSetter([]);
-          return;
-        }
+        timerRef.current = setTimeout(async () => {
+          if (!googleLoaded || !v || v.length < 2) {
+            suggestSetter([]);
+            return;
+          }
 
-        try {
-         const { AutocompleteSuggestion } =
-  await google.maps.importLibrary("places");
+          setSuggesting(true);
 
-const { suggestions } =
-  await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-    input: v,
-    language: "en",
-    region: "IN",
-  });
+          try {
+            const { AutocompleteSuggestion } = await window.google.maps.importLibrary("places");
 
-suggestSetter(
-  suggestions.map(s => ({
-    label: s.placePrediction.text.text,
-    placeId: s.placePrediction.placeId,
-  }))
-);
+            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+              input: v,
+              language: "en",
+              region: "IN",
+            });
 
+            suggestSetter(
+              (suggestions || []).map(s => ({
+                label: s.placePrediction.text.text,
+                placeId: s.placePrediction.placeId,
+              }))
+            );
 
-        } catch (err) {
-          console.warn("Google Places failed:", err);
-          suggestSetter([]);
-        }
-      }, 350);  // slightly longer debounce is usually better
-    }
-  };
-
+            console.log('[Matching] Got suggestions:', suggestions?.length || 0);
+          } catch (err) {
+            console.warn("Google Places autocomplete failed:", err);
+            suggestSetter([]);
+          } finally {
+            setSuggesting(false);
+          }
+        }, 300);
+      }
+    };
 
   /**
    * Parses DOB (handles both YYYY-MM-DD and DD-MM-YYYY formats) and TOB (HH:MM) into API payload format.
@@ -501,57 +499,35 @@ suggestSetter(
     const dobParts = dob.split("-").map((n) => parseInt(n, 10));
     let Y, M, D;
 
-    // Handle both YYYY-MM-DD and DD-MM-YYYY formats
     if (dobParts.length === 3) {
       if (dobParts[0] > 1900) {
-        // YYYY-MM-DD format
         [Y, M, D] = dobParts;
       } else {
-        // DD-MM-YYYY format
         [D, M, Y] = dobParts;
       }
     } else {
-      throw new Error(
-        `Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`,
-      );
+      throw new Error(`Invalid date format: ${dob}`);
     }
 
-    if (
-      !Y ||
-      !M ||
-      !D ||
-      Number.isNaN(Y) ||
-      Number.isNaN(M) ||
-      Number.isNaN(D)
-    ) {
+    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
       throw new Error(`Invalid date values: ${dob}`);
     }
 
-    // Validate date ranges
-    if (Y < 1900 || Y > 2100)
-      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12)
-      throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
-    // Parse time
     if (!tob) throw new Error("Time of birth is required");
     const timeParts = tob.split(":").map((n) => parseInt(n, 10));
     const [H, Min, S = 0] = timeParts;
 
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
-      throw new Error(
-        `Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`,
-      );
+      throw new Error(`Invalid time format: ${tob}`);
     }
 
-    // Validate time ranges
-    if (H < 0 || H > 23)
-      throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59)
-      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59)
-      throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
@@ -563,12 +539,11 @@ suggestSetter(
    */
   async function reverseGeocodeCoords(lat, lon) {
     try {
-      if (!googleLoaded) {
+      if (!googleLoaded || !window.google?.maps) {
         return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
       }
 
       const geocoder = new window.google.maps.Geocoder();
-
       const res = await new Promise((resolve, reject) => {
         geocoder.geocode({ location: { lat, lng: lon } }, (results, status) => {
           if (status === "OK" && results?.length) {
@@ -587,43 +562,39 @@ suggestSetter(
 
   // Get Place Suggestion in the form using Google places
 
+  const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
+    if (!placeId || !window.google?.maps?.importLibrary) return;
 
+    try {
+      const { Place } = await window.google.maps.importLibrary("places");
+      const place = new Place({ id: placeId });
 
-const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
-  if (!placeId || !window.google?.maps?.importLibrary) return;
+      await place.fetchFields({
+        fields: ["location", "formattedAddress"],
+      });
 
-  try {
-    const { Place } = await google.maps.importLibrary("places");
+      if (!place.location) return;
 
-    const place = new Place({ id: placeId });
+      const lat = place.location.lat();
+      const lng = place.location.lng();
+      const label = place.formattedAddress;
 
-    await place.fetchFields({
-      fields: ["location", "formattedAddress"],
-    });
+      setter((prev) => ({
+        ...prev,
+        place: label,
+      }));
 
-    if (!place.location) return;
+      coordsSetter({
+        latitude: lat,
+        longitude: lng,
+        label,
+      });
 
-    const lat = place.location.lat();
-    const lng = place.location.lng();
-    const label = place.formattedAddress;
-
-    // ✅ Update input field
-    setter((prev) => ({
-      ...prev,
-      place: label,
-    }));
-
-    // ✅ Save coordinates
-    coordsSetter({
-      latitude: lat,
-      longitude: lng,
-      label,
-    });
-  } catch (err) {
-    console.error("resolvePlaceDetails failed:", err);
-  }
-};
-
+      console.log('[Matching] Resolved coordinates:', { lat, lng, label });
+    } catch (err) {
+      console.error("resolvePlaceDetails failed:", err);
+    }
+  };
 
   /**
    * Fetches current location for female and fills place field.
@@ -633,23 +604,30 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
       setError("Geolocation is not supported by this browser.");
       return;
     }
+    
     setFLocating(true);
+    setError("");
+    
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
+          maximumAge: 0,
         });
       });
+      
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
+      
       setFemale((prev) => ({ ...prev, place: label }));
       setFCoords({ latitude, longitude, label });
       setFSuggest([]);
+      
+      console.log('[Matching] Female location:', { latitude, longitude, label });
     } catch (e) {
-      setError(
-        "Could not access your location. Please allow permission or type the city manually.",
-      );
+      console.error('[Matching] Female location error:', e);
+      setError("Could not access your location. Please allow permission or type the city manually.");
     } finally {
       setFLocating(false);
     }
@@ -663,23 +641,30 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
       setError("Geolocation is not supported by this browser.");
       return;
     }
+    
     setMLocating(true);
+    setError("");
+    
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
+          maximumAge: 0,
         });
       });
+      
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
+      
       setMale((prev) => ({ ...prev, place: label }));
       setMCoords({ latitude, longitude, label });
       setMSuggest([]);
+      
+      console.log('[Matching] Male location:', { latitude, longitude, label });
     } catch (e) {
-      setError(
-        "Could not access your location. Please allow permission or type the city manually.",
-      );
+      console.error('[Matching] Male location error:', e);
+      setError("Could not access your location. Please allow permission or type the city manually.");
     } finally {
       setMLocating(false);
     }
@@ -742,11 +727,9 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
     setFDetails(null);
     setMDetails(null);
 
-    // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-
-    // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
+
     if (
       !female.fullName ||
       !female.dob ||
@@ -757,12 +740,12 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
       !male.tob ||
       !male.place
     ) {
-      setError(
-        "Please complete all fields for both individuals, including names.",
-      );
+      setError("Please complete all fields for both individuals, including names.");
       return;
     }
+
     setSubmitting(true);
+
     try {
       const payload = await buildPayload();
       const res = await astrologyAPI.getSingleCalculation(
@@ -774,6 +757,7 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
           ? JSON.parse(res.output)
           : res?.output || res;
       setResult(out);
+
       saveToHistory({
         id: Date.now(),
         femaleName: female.fullName,
@@ -801,6 +785,7 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
         timezone: p.timezone,
         config: { observation_point: "topocentric", ayanamsha: "lahiri" },
       });
+
       const fPayload = mkSinglePayload(payload.female);
       const mPayload = mkSinglePayload(payload.male);
       const endpoints = [
@@ -809,11 +794,11 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
         "vimsottari/maha-dasas",
         "planets/extended",
       ];
+
       const [fCalc, mCalc] = await Promise.all([
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
-
       // Validate that both API calls succeeded
       if (!fCalc || !fCalc.results) {
         console.error("[Matching] Female calculation failed:", fCalc);
@@ -1454,6 +1439,29 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
     male.place,
   ]);
 
+  useEffect(() => {
+  if (!googleLoaded || !window.google?.maps?.places) return;
+
+  // Female services
+  fAutocompleteService.current =
+    new window.google.maps.places.AutocompleteService();
+  fPlacesService.current =
+    new window.google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
+  // Male services
+  mAutocompleteService.current =
+    new window.google.maps.places.AutocompleteService();
+  mPlacesService.current =
+    new window.google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
+  console.log("[Matching] Google Places services initialized");
+}, [googleLoaded]);
+
+
   // Monitor form data changes and reset chat if needed
   useEffect(() => {
     // Only check if we have some form data filled
@@ -1770,6 +1778,175 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
     "rasi_kootam",
     "nadi_kootam",
   ];
+
+
+  const fetchFemaleSuggestions = (query) => {
+  if (!query || query.length < 2) {
+    setFSuggest([]);
+    return;
+  }
+
+  if (fTimer.current) clearTimeout(fTimer.current);
+
+  fTimer.current = setTimeout(() => {
+    if (!googleLoaded || !fAutocompleteService.current) {
+      console.warn("[Matching] Female autocomplete not ready");
+      setFSuggest([]);
+      return;
+    }
+
+    setFSuggesting(true);
+
+    fAutocompleteService.current.getPlacePredictions(
+      {
+        input: query,
+        types: ["(cities)"],
+      },
+      (predictions, status) => {
+        setFSuggesting(false);
+
+        if (
+          status === window.google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
+          const suggestions = predictions.map((p) => ({
+            label: p.description,
+            placeId: p.place_id,
+          }));
+
+          setFSuggest(suggestions);
+          console.log("[Matching] Female suggestions:", suggestions.length);
+        } else {
+          setFSuggest([]);
+        }
+      }
+    );
+  }, 300);
+};
+
+
+const handleFemaleSuggestionClick = (suggestion) => {
+  if (!fPlacesService.current) {
+    setFemale((prev) => ({ ...prev, place: suggestion.label }));
+    setFSuggest([]);
+    return;
+  }
+
+  setFSuggest([]);
+  setFSuggesting(true);
+
+  fPlacesService.current.getDetails(
+    {
+      placeId: suggestion.placeId,
+      fields: ["geometry", "formatted_address", "name"],
+    },
+    (place, status) => {
+      setFSuggesting(false);
+
+      if (
+        status === window.google.maps.places.PlacesServiceStatus.OK &&
+        place
+      ) {
+        const latitude = place.geometry.location.lat();
+        const longitude = place.geometry.location.lng();
+        const label = place.formatted_address || place.name;
+
+        setFemale((prev) => ({ ...prev, place: label }));
+        setFCoords({ latitude, longitude, label });
+
+        console.log("[Matching] Female coordinates:", {
+          latitude,
+          longitude,
+        });
+      } else {
+        setFCoords(null);
+      }
+    }
+  );
+};
+const fetchMaleSuggestions = (query) => {
+  if (!query || query.length < 2) {
+    setMSuggest([]);
+    return;
+  }
+
+  if (mTimer.current) clearTimeout(mTimer.current);
+
+  mTimer.current = setTimeout(() => {
+    if (!googleLoaded || !mAutocompleteService.current) {
+      setMSuggest([]);
+      return;
+    }
+
+    setMSuggesting(true);
+
+    mAutocompleteService.current.getPlacePredictions(
+      {
+        input: query,
+        types: ["(cities)"],
+      },
+      (predictions, status) => {
+        setMSuggesting(false);
+
+        if (
+          status === window.google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
+          const suggestions = predictions.map((p) => ({
+            label: p.description,
+            placeId: p.place_id,
+          }));
+
+          setMSuggest(suggestions);
+        } else {
+          setMSuggest([]);
+        }
+      }
+    );
+  }, 300);
+};
+
+
+const handleMaleSuggestionClick = (suggestion) => {
+  if (!mPlacesService.current) {
+    setMale((prev) => ({ ...prev, place: suggestion.label }));
+    setMSuggest([]);
+    return;
+  }
+
+  setMSuggest([]);
+  setMSuggesting(true);
+
+  mPlacesService.current.getDetails(
+    {
+      placeId: suggestion.placeId,
+      fields: ["geometry", "formatted_address", "name"],
+    },
+    (place, status) => {
+      setMSuggesting(false);
+
+      if (
+        status === window.google.maps.places.PlacesServiceStatus.OK &&
+        place
+      ) {
+        const latitude = place.geometry.location.lat();
+        const longitude = place.geometry.location.lng();
+        const label = place.formatted_address || place.name;
+
+        setMale((prev) => ({ ...prev, place: label }));
+        setMCoords({ latitude, longitude, label });
+
+        console.log("[Matching] Male coordinates:", {
+          latitude,
+          longitude,
+        });
+      } else {
+        setMCoords(null);
+      }
+    }
+  );
+};
+
 
   /* -------------------------------------------------------------- */
   /* Person details component */
@@ -2262,8 +2439,7 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
                     </div>
                     <p className="form-field-helper">24-hour format</p>
                   </div>
-
-                  {/* Place */}
+                  {/* Female Place input */}
                   <div className="form-field full">
                     <label className="form-field-label" htmlFor="female-place">
                       Place
@@ -2276,13 +2452,13 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
                         className="form-field-input"
                         placeholder="e.g., Mumbai, India"
                         value={female.place}
-                        onChange={onChangePerson(
-                          setFemale,
-                          setFCoords,
-                          setFSuggest,
-                          fTimer,
-                          "place",
-                        )}
+                        onChange={(e) => {
+  const value = e.target.value;
+  setFemale((prev) => ({ ...prev, place: value }));
+  setFCoords(null);
+  fetchFemaleSuggestions(value);
+}}
+
                         autoComplete="off"
                         required
                       />
@@ -2292,33 +2468,50 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
                         className="location-icon-btn"
                         title="Use current location"
                         onClick={useMyLocationFemale}
+                        disabled={fLocating}
                       >
-                        <MapPin />
+                        {fLocating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MapPin />
+                        )}
                       </button>
                     </div>
 
+                    {/* Autocomplete dropdown for female */}
                     {fSuggest.length > 0 && (
-  <div className="suggestions">
-    {fSuggest.map((s, i) => (
-      <button
-        key={i}
-        type="button"
-        onClick={() => {
-  resolvePlaceDetails(s.placeId, setFemale, setFCoords);
-  setFSuggest([]);
-}}
-
-
-      >
-        <MapPin size={14} />
-        <span>{s.label}</span>
-      </button>
-    ))}
-  </div>
-)}
+                      <div className="suggestions">
+                        {fSuggesting && (
+                          <div className="suggestion-loading">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading suggestions...
+                          </div>
+                        )}
+                        {!fSuggesting &&
+                          fSuggest.map((s, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                resolvePlaceDetails(
+                                  s.placeId,
+                                  setFemale,
+                                  setFCoords,
+                                );
+                                setFSuggest([]);
+                              }}
+                            >
+                              <MapPin size={14} />
+                              <span>{s.label}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
 
                     <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
+                      {fCoords
+                        ? "Location coordinates saved"
+                        : "Choose the nearest city for accurate calculation"}
                     </p>
                   </div>
                 </div>
@@ -2431,91 +2624,76 @@ const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
                     <p className="form-field-helper">24-hour format</p>
                   </div>
 
-                  {/* Place */}
-                  <div className="form-field full">
-                    <label className="form-field-label" htmlFor="male-place">
-                      Place
-                    </label>
+                  {/* Male Place Input - Updated with Google Maps autocomplete */}
+        <div className="form-field full">
+          <label className="form-field-label" htmlFor="male-place">
+            Place
+          </label>
 
-                    <div className="input-with-icon">
-                      <input
-                        id="male-place"
-                        type="text"
-                        className="form-field-input"
-                        placeholder="e.g., Mumbai, India"
-                        value={male.place}
-                        onChange={onChangePerson(
-                          setMale,
-                          setMCoords,
-                          setMSuggest,
-                          mTimer,
-                          "place",
-                        )}
-                        autoComplete="off"
-                        required
-                      />
+          <div className="input-with-icon">
+            <input
+              id="male-place"
+              type="text"
+              className="form-field-input"
+              placeholder="e.g., Mumbai, India"
+              value={male.place}
+              onChange={(e) => {
+  const value = e.target.value;
+  setMale((prev) => ({ ...prev, place: value }));
+  setMCoords(null);
+  fetchMaleSuggestions(value);
+}}
 
-                      <button
-                        type="button"
-                        className="location-icon-btn"
-                        title="Use current location"
-                        onClick={useMyLocationMale}
-                      >
-                        <MapPin />
-                      </button>
-                    </div>
+              autoComplete="off"
+              required
+            />
 
-                    {mSuggest.length > 0 && (
-                      <div className="suggestions">
-                        {mSuggest.map((s, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              const service =
-                                new window.google.maps.places.PlacesService(
-                                  document.createElement("div"),
-                                );
+            <button
+              type="button"
+              className="location-icon-btn"
+              title="Use current location"
+              onClick={useMyLocationMale}
+              disabled={mLocating}
+            >
+              {mLocating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <MapPin />
+              )}
+            </button>
+          </div>
 
-                              service.getDetails(
-                                {
-                                  placeId: s.placeId,
-                                  fields: ["geometry", "formatted_address"],
-                                },
-                                (place, status) => {
-                                  if (
-                                    status ===
-                                      window.google.maps.places
-                                        .PlacesServiceStatus.OK &&
-                                    place?.geometry?.location
-                                  ) {
-                                    const lat = place.geometry.location.lat();
-                                    const lng = place.geometry.location.lng();
-                                    const label = place.formatted_address;
+          {/* Autocomplete dropdown for male */}
+          {mSuggest.length > 0 && (
+            <div className="suggestions">
+              {mSuggesting && (
+                <div className="suggestion-loading">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading suggestions...
+                </div>
+              )}
+              {!mSuggesting && mSuggest.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    resolvePlaceDetails(s.placeId, setMale, setMCoords);
+                    setMSuggest([]);
+                  }}
+                >
+                  <MapPin size={14} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
-                                    setMale((p) => ({ ...p, place: label }));
-                                    setMCoords({
-                                      latitude: lat,
-                                      longitude: lng,
-                                      label,
-                                    });
-                                    setMSuggest([]);
-                                  }
-                                },
-                              );
-                            }}
-                          >
-                            <MapPin size={14} />
-                            <span>{s.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
-                    </p>
-                  </div>
+          <p className="form-field-helper place-helper">
+            {mCoords
+              ? "Location coordinates saved"
+              : "Choose the nearest city for accurate calculation"}
+          </p>
+        </div>
                 </div>
               </div>
             </section>
