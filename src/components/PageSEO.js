@@ -23,7 +23,7 @@ export default function PageSEO({ pageType, faqs = [], serviceData = {} }) {
       "areaServed": ["IN", "US", "UK", "CA", "AU", "Worldwide"],
       "availableChannel": {
         "@type": "ServiceChannel",
-        "serviceUrl": `${SITE_URL}/talk-to-astrologer`,
+        "serviceUrl": `${SITE_URL}/talk-to-astrologer/`,
         "serviceType": "Online",
         "availableLanguage": ["English", "Hindi"]
       },

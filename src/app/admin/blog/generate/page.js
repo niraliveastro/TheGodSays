@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/Toast'
-import { Sparkles, Play, Pause, RefreshCw, Settings, CheckCircle, XCircle, Clock, FileText } from 'lucide-react'
+import { Sparkles, Play, RefreshCw, Settings, CheckCircle, XCircle, Clock, FileText, PenLine } from 'lucide-react'
 import { ZODIAC_SIGNS, TOPICS } from '@/lib/blog-generator/keyword-generator'
 import '../admin-blog.css'
 import './generate.css'
@@ -22,6 +22,7 @@ export default function BlogGenerationPage() {
   const { toasts, removeToast, success: showSuccess, error: showError } = useToast()
   const [isPasscodeVerified, setIsPasscodeVerified] = useState(false)
   const [showPasscodeModal, setShowPasscodeModal] = useState(false)
+  const [isReady, setIsReady] = useState(false) // avoid partial render before client hydration
   const [passcodeInput, setPasscodeInput] = useState('')
   const [passcodeError, setPasscodeError] = useState('')
   
@@ -39,6 +40,14 @@ export default function BlogGenerationPage() {
     monthsAhead: 3,
   })
   
+  // Topic-to-blog (admin input field)
+  const [topicInput, setTopicInput] = useState('')
+  const [generatingFromTopic, setGeneratingFromTopic] = useState(false)
+  const [topicResult, setTopicResult] = useState(null)
+
+  // Dry run results for UI display
+  const [dryRunResult, setDryRunResult] = useState(null)
+
   // Stats
   const [stats, setStats] = useState({
     totalGenerated: 0,
@@ -46,7 +55,7 @@ export default function BlogGenerationPage() {
     lastGeneration: null,
   })
 
-  // Check authentication
+  // Check authentication once on client
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const verified = sessionStorage.getItem(PASSCODE_STORAGE_KEY)
@@ -55,6 +64,7 @@ export default function BlogGenerationPage() {
       } else {
         setShowPasscodeModal(true)
       }
+      setIsReady(true)
     }
   }, [])
 
@@ -153,7 +163,8 @@ export default function BlogGenerationPage() {
     if (generating) return
     
     setGenerating(true)
-    showSuccess('Starting blog generation...')
+    setDryRunResult(null)
+    showSuccess(config.dryRun ? 'Running dry run...' : 'Starting blog generation...')
 
     try {
       const response = await fetch('/api/cron/generate-blogs', {
@@ -178,9 +189,14 @@ export default function BlogGenerationPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        showSuccess(`Successfully generated ${result.generated} blog(s)!`)
-        saveGenerationHistory(result)
-        loadStats()
+        if (config.dryRun) {
+          setDryRunResult(result)
+          showSuccess(`Dry run complete: ${result.skipped || 0} blog(s) would be generated (no blogs created)`)
+        } else {
+          showSuccess(`Successfully generated ${result.generated} blog(s)!`)
+          saveGenerationHistory(result)
+          loadStats()
+        }
       } else {
         showError(result.error || 'Failed to generate blogs')
       }
@@ -192,24 +208,70 @@ export default function BlogGenerationPage() {
     }
   }
 
+  const handleGenerateFromTopic = async () => {
+    const topic = (topicInput || '').trim()
+    if (!topic || generatingFromTopic) return
+    setGeneratingFromTopic(true)
+    setTopicResult(null)
+    showSuccess('Generating blog from topic...')
+    try {
+      const response = await fetch('/api/admin/generate-blog-from-topic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ADMIN_PASSCODE}`,
+        },
+        body: JSON.stringify({ topic, publish: true }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        setTopicResult(data)
+        showSuccess(data.saved ? `Blog published: ${data.blog.title}` : (data.error || 'Blog generated (not saved: slug exists)'))
+        if (data.saved) loadStats()
+      } else {
+        showError(data.error || 'Failed to generate blog')
+        setTopicResult({ error: data.error })
+      }
+    } catch (err) {
+      showError('Error: ' + err.message)
+      setTopicResult({ error: err.message })
+    } finally {
+      setGeneratingFromTopic(false)
+    }
+  }
+
   const handleTestGeneration = async () => {
     if (generating) return
     
     setGenerating(true)
+    setDryRunResult(null)
     showSuccess('Testing blog generation (dry run)...')
 
     try {
-      const response = await fetch('/api/cron/generate-blogs?max=1&dryRun=true', {
+      const response = await fetch('/api/cron/generate-blogs', {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${ADMIN_PASSCODE}`,
         },
+        body: JSON.stringify({
+          max: 3,
+          dryRun: true,
+          filters: {
+            zodiacs: config.selectedZodiacs,
+            topics: config.selectedTopics,
+            timeTypes: config.selectedTimeTypes,
+            year: config.year,
+            monthsAhead: config.monthsAhead,
+          },
+        }),
       })
 
       const result = await response.json()
       
-      if (response.ok) {
-        showSuccess('Dry run completed successfully! Check console for details.')
-        console.log('Dry run result:', result)
+      if (response.ok && result.success) {
+        setDryRunResult(result)
+        showSuccess('Dry run completed! See results below.')
       } else {
         showError(result.error || 'Dry run failed')
       }
@@ -219,6 +281,21 @@ export default function BlogGenerationPage() {
     } finally {
       setGenerating(false)
     }
+  }
+
+  // Avoid rendering full layout until we've checked auth on client
+  if (!isReady) {
+    return (
+      <div className="admin-container">
+        <div className="passcode-modal-overlay">
+          <div className="passcode-modal">
+            <h2>Loading admin tools…</h2>
+            <p>Please wait a moment.</p>
+          </div>
+        </div>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </div>
+    )
   }
 
   if (!isPasscodeVerified) {
@@ -307,11 +384,69 @@ export default function BlogGenerationPage() {
           </div>
         </div>
 
+        {/* Generate from topic (admin input) */}
+        <div className="generation-panel topic-panel">
+          <div className="panel-header">
+            <PenLine className="panel-icon" />
+            <h2>Generate from topic</h2>
+          </div>
+          <p className="topic-description">
+            Type any natural-language topic. The system will produce a full SEO-optimized blog (title, slug, content, images, internal links) and publish it.
+          </p>
+          <div className="topic-controls">
+            <input
+              type="text"
+              placeholder="e.g. aries career problems in 2026, top 10 astrologers of india, love marriage chances for virgo female"
+              value={topicInput}
+              onChange={(e) => setTopicInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromTopic()}
+              disabled={generatingFromTopic}
+              className="topic-input"
+            />
+            <button
+              type="button"
+              onClick={handleGenerateFromTopic}
+              disabled={!topicInput.trim() || generatingFromTopic}
+              className="btn-generate btn-topic"
+            >
+              {generatingFromTopic ? (
+                <>
+                  <RefreshCw className="spinning" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles />
+                  Generate &amp; publish
+                </>
+              )}
+            </button>
+          </div>
+          {topicResult && (
+            <div className={`topic-result ${topicResult.error ? 'topic-result-error' : 'topic-result-success'}`}>
+              {topicResult.error && <p><strong>Error:</strong> {topicResult.error}</p>}
+              {topicResult.blog && (
+                <>
+                  <p><strong>Title:</strong> {topicResult.blog.title}</p>
+                  <p><strong>Slug:</strong> {topicResult.blog.slug}</p>
+                  {topicResult.saved && (
+                    <p>
+                      <a href={`/blog/${topicResult.blog.slug}`} target="_blank" rel="noopener noreferrer">
+                        View blog →
+                      </a>
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Generation Controls */}
         <div className="generation-panel">
           <div className="panel-header">
             <Settings className="panel-icon" />
-            <h2>Generation Settings</h2>
+            <h2>Generation Settings (keyword trail)</h2>
           </div>
           
           <div className="generation-controls">
@@ -416,6 +551,7 @@ export default function BlogGenerationPage() {
                     { value: 'yearly', label: 'Yearly (e.g., "Career for Leo in 2026")' },
                     { value: 'monthly', label: 'Monthly (e.g., "Love for Virgo in February 2026")' },
                     { value: 'this-year', label: 'This Year (e.g., "Health for Scorpio this year")' },
+                    { value: 'today', label: 'Today (e.g., "Career for Leo today")' },
                   ].map((timeType) => (
                     <label key={timeType.value} className="multi-select-item">
                       <input
@@ -486,6 +622,39 @@ export default function BlogGenerationPage() {
                 )}
               </button>
             </div>
+
+            {/* Dry Run Results Panel */}
+            {dryRunResult && (
+              <div className="dry-run-results">
+                <h3>Dry Run Results</h3>
+                <p className="dry-run-summary">
+                  <strong>{dryRunResult.skipped || 0}</strong> blog(s) would be generated (no blogs were created).
+                </p>
+                {dryRunResult.dryRunWouldGenerate && dryRunResult.dryRunWouldGenerate.length > 0 && (
+                  <div className="dry-run-list">
+                    <strong>Sample titles that would be created:</strong>
+                    <ul>
+                      {dryRunResult.dryRunWouldGenerate.slice(0, 10).map((item, idx) => (
+                        <li key={idx}>{item.title}</li>
+                      ))}
+                      {dryRunResult.dryRunWouldGenerate.length > 10 && (
+                        <li className="dry-run-more">+{dryRunResult.dryRunWouldGenerate.length - 10} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {dryRunResult.errors && dryRunResult.errors.length > 0 && (
+                  <div className="dry-run-errors">
+                    <strong>Errors:</strong>
+                    <ul>
+                      {dryRunResult.errors.map((err, idx) => (
+                        <li key={idx}>{typeof err === 'string' ? err : err.error || JSON.stringify(err)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -549,6 +718,7 @@ export default function BlogGenerationPage() {
             <li><strong>Yearly:</strong> "Career for Leo in 2026"</li>
             <li><strong>Monthly:</strong> "Love for Virgo in February 2026"</li>
             <li><strong>This Year:</strong> "Health for Scorpio this year"</li>
+            <li><strong>Today:</strong> "Career for Leo today"</li>
           </ul>
           
           <h3>⚙️ Automated Schedule</h3>

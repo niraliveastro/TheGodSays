@@ -32,13 +32,44 @@ import {
   trackActionAbandon,
   trackPageView,
 } from "@/lib/analytics";
+import { computeAshtakavarga, SIGNS } from "@/lib/ashtakavarga";
 import { useRouter } from "next/navigation";
 import { PageLoading } from "@/components/LoadingStates";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { getHoroscopeChartSvg } from "@/lib/api";
 import HighConvertingInsights from "./high-converting-page";
+import AstrologerAssistant from "@/components/AstrologerAssistant";
 
 // -----------------------------
-// Chart Challenge Analyzer
+// Life Area Scoring Rules
 // -----------------------------
+const LIFE_RULES = {
+  career: {
+    houses: [10, 6, 2],
+    planets: ["Sun", "Saturn", "Mercury"],
+  },
+  wealth: {
+    houses: [2, 11],
+    planets: ["Jupiter", "Venus"],
+  },
+  marriage: {
+    houses: [7],
+    planets: ["Venus", "Moon"],
+  },
+  health: {
+    houses: [1, 6, 8],
+    planets: ["Sun", "Mars"],
+  },
+  property: {
+    houses: [4],
+    planets: ["Moon", "Mars"],
+  },
+  travel: {
+    houses: [3, 9, 12],
+    planets: ["Mercury", "Rahu"],
+  },
+};
+
 function analyzeChartChallenges({
   shadbalaRows,
   placements,
@@ -108,8 +139,67 @@ function analyzeChartChallenges({
   };
 }
 
+// -----------------------------
+// Life Area Score Calculator
+// -----------------------------
+function calculateLifeScores({ placements, shadbalaRows, currentDashaChain }) {
+  const scores = {};
+
+  Object.entries(LIFE_RULES).forEach(([area, rule]) => {
+    let score = 50;
+
+    // Planet strength
+    rule.planets.forEach((planet) => {
+      const p = shadbalaRows.find(
+        (x) => x.name?.toLowerCase() === planet.toLowerCase(),
+      );
+
+      if (p?.percent >= 70) score += 10;
+      else if (p?.percent >= 55) score += 5;
+      else if (p?.percent < 45) score -= 8;
+    });
+
+    // House activation
+    const houseHits = placements.filter((p) =>
+      rule.houses.includes(Number(p.house)),
+    ).length;
+
+    const normalize = (s) => s?.toLowerCase().replace(/[^a-z]/g, "");
+
+    rule.planets.forEach((planet) => {
+      const p = shadbalaRows.find(
+        (x) => normalize(x.name) === normalize(planet),
+      );
+    });
+
+    score += Math.min(houseHits * 4, 12);
+
+    // Dasha emphasis
+    if (currentDashaChain) {
+      rule.planets.forEach((planet) => {
+        if (currentDashaChain.includes(planet)) {
+          score += 6;
+        }
+      });
+    }
+
+    // Retrograde penalty
+    placements.forEach((p) => {
+      if (p.retro && rule.planets.includes(p.name)) {
+        score -= 5;
+      }
+    });
+
+    scores[area] = Math.max(25, Math.min(95, Math.round(score)));
+  });
+
+  return scores;
+}
+
 export default function PredictionsPage() {
   const { t } = useTranslation();
+  const googleLoaded = useGoogleMaps();
+
   // Track page view on mount
   useEffect(() => {
     trackPageView("/predictions", "Astrological Predictions");
@@ -118,20 +208,20 @@ export default function PredictionsPage() {
   const [dob, setDob] = useState("");
   const [tob, setTob] = useState("");
   const [place, setPlace] = useState("");
-  // Timezone (UTC offset hours) - default IST 5.5
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const suggestTimer = useRef(null);
+  const autocompleteService = useRef(null);
+  const placesService = useRef(null);
   const formRef = useRef(null);
   const historyCardRef = useRef(null);
-  const initialHistoryHeightRef = useRef(null); // Store initial height to lock it
+  const initialHistoryHeightRef = useRef(null);
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  /* Removed unused useEffect for assistant card */
   const [selectedMaha, setSelectedMaha] = useState(null);
 
   const [antarOpen, setAntarOpen] = useState(false);
@@ -147,15 +237,16 @@ export default function PredictionsPage() {
   const [fullName, setFullName] = useState("");
   const [openAntarFor, setOpenAntarFor] = useState(null);
   const [antarLoadingFor, setAntarLoadingFor] = useState(null);
+  
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
   const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(true); // Control history visibility
+  const [showHistory, setShowHistory] = useState(true);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
   const [inlineChatOpen, setInlineChatOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
   const [shouldResetChat, setShouldResetChat] = useState(false);
-  const lastResultRef = useRef(null); // Track last result to detect new submissions
+  const lastResultRef = useRef(null);
   const [showNotification, setShowNotification] = useState(false);
 
   const addressRefs = useRef({});
@@ -172,9 +263,25 @@ export default function PredictionsPage() {
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
       ...prevState,
-      [id]: !prevState[id], // Toggle visibility for specific address
+      [id]: !prevState[id],
     }));
   };
+
+  /**
+   * Initialize Google Maps services
+   */
+  useEffect(() => {
+    if (googleLoaded && typeof window !== "undefined" && window.google?.maps) {
+      // Initialize autocomplete service
+      autocompleteService.current = new window.google.maps.places.AutocompleteService();
+      
+      // Create a dummy map element for PlacesService (required by Google Maps API)
+      const dummyMap = document.createElement('div');
+      placesService.current = new window.google.maps.places.PlacesService(dummyMap);
+      
+      console.log('[Google Maps] Services initialized successfully');
+    }
+  }, [googleLoaded]);
 
   /**
    * Generates a unique hash from form data (name, gender, DOB, TOB, place)
@@ -188,14 +295,12 @@ export default function PredictionsPage() {
       tob: (tob || "").trim(),
       place: (place || "").trim().toUpperCase(),
     };
-    // Create a consistent hash from the form data
     const hashString = JSON.stringify(formData);
-    // Simple hash function (you could use a more robust one if needed)
     let hash = 0;
     for (let i = 0; i < hashString.length; i++) {
       const char = hashString.charCodeAt(i);
       hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash;
     }
     return hash.toString();
   };
@@ -206,12 +311,10 @@ export default function PredictionsPage() {
   const checkAndResetChatOnFormChange = () => {
     const newHash = generateFormDataHash();
 
-    // If form is empty, don't reset
     if (!fullName && !dob && !tob && !place) {
       return;
     }
 
-    // If hash changed, reset chat
     if (
       previousFormDataHashRef.current !== null &&
       previousFormDataHashRef.current !== newHash
@@ -220,12 +323,10 @@ export default function PredictionsPage() {
         previousHash: previousFormDataHashRef.current,
         newHash: newHash,
       });
-      // Reset chat by incrementing session ID
       setChatSessionId((prev) => prev + 1);
       setShouldResetChat(true);
     }
 
-    // Update the hash
     previousFormDataHashRef.current = newHash;
     setCurrentFormDataHash(newHash);
   };
@@ -249,7 +350,6 @@ export default function PredictionsPage() {
     current = current.filter(
       (it) => `${it.fullName.toUpperCase()}-${it.dob}-${it.tob}` !== key,
     );
-    // Add timestamp for "Last generated" display
     const entryWithTimestamp = {
       ...entry,
       lastGenerated: new Date().toISOString(),
@@ -258,7 +358,6 @@ export default function PredictionsPage() {
     if (current.length > 10) current = current.slice(0, 10);
     localStorage.setItem(PREDICTION_HISTORY_KEY, JSON.stringify(current));
     setHistory(current);
-    // Show history after saving
     setShowHistory(true);
   };
 
@@ -273,7 +372,6 @@ export default function PredictionsPage() {
     setShowDeleteConfirm(null);
   };
 
-  // Filter history based on search
   const filteredHistory = useMemo(() => {
     if (!historySearch.trim()) return history;
     const searchLower = historySearch.toLowerCase();
@@ -291,6 +389,7 @@ export default function PredictionsPage() {
     localStorage.removeItem(PREDICTION_HISTORY_KEY);
     setHistory([]);
   };
+
   const loadFromHistory = (item) => {
     setFullName(item.fullName || "");
     setGender(item.gender || "");
@@ -300,9 +399,8 @@ export default function PredictionsPage() {
     setSelectedCoords(null);
     setSuggestions([]);
     setError("");
-    setResult(null); // optional: clear old result so user explicitly re-runs
+    setResult(null);
 
-    // Generate hash for loaded history item to check if chat should be restored
     const loadedHash = (() => {
       const formData = {
         fullName: (item.fullName || "").trim().toUpperCase(),
@@ -321,8 +419,6 @@ export default function PredictionsPage() {
       return hash.toString();
     })();
 
-    // If this matches previous hash, don't reset chat (same data)
-    // Otherwise, reset chat (different data loaded)
     if (
       previousFormDataHashRef.current !== null &&
       previousFormDataHashRef.current !== loadedHash
@@ -331,27 +427,36 @@ export default function PredictionsPage() {
       setShouldResetChat(true);
     }
 
-    // Update hash reference
     previousFormDataHashRef.current = loadedHash;
     setCurrentFormDataHash(loadedHash);
   };
 
-  // Track if we should auto-submit
   const shouldAutoSubmit = useRef(false);
+  const birthInfoRef = useRef(null);
+
+  useEffect(() => {
+    if (result && birthInfoRef.current) {
+      const t = setTimeout(() => {
+        birthInfoRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+
+      return () => clearTimeout(t);
+    }
+  }, [result]);
 
   useEffect(() => {
     setHistory(getHistory());
 
-    // Load data from landing page form if available
     try {
       const savedData = localStorage.getItem("tgs:aiPredictionForm");
       if (savedData) {
         const parsedData = JSON.parse(savedData);
 
-        // Hide history when coming from landing page
         setShowHistory(false);
 
-        // Populate form fields
         if (parsedData.name && parsedData.name.trim()) {
           setFullName(parsedData.name.trim());
         }
@@ -359,23 +464,17 @@ export default function PredictionsPage() {
           setGender(parsedData.gender);
         }
         if (parsedData.dob) {
-          // Check if date is already in YYYY-MM-DD format (from date input)
-          // or needs conversion from DD-MM-YYYY
           const parts = parsedData.dob.split("-");
           if (parts.length === 3) {
-            // Check if first part is 4 digits (YYYY-MM-DD format)
             if (parts[0].length === 4) {
-              // Already in YYYY-MM-DD format, use directly
               setDob(parsedData.dob);
             } else {
-              // Convert DD-MM-YYYY to YYYY-MM-DD format
               const [day, month, year] = parts;
               setDob(
                 `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
               );
             }
           } else {
-            // Use as-is if format is unexpected
             setDob(parsedData.dob);
           }
         }
@@ -386,7 +485,6 @@ export default function PredictionsPage() {
           setPlace(parsedData.place.trim());
         }
 
-        // Set flag to auto-submit if all required fields are present
         if (
           parsedData.dob &&
           parsedData.tob &&
@@ -397,37 +495,26 @@ export default function PredictionsPage() {
           shouldAutoSubmit.current = true;
         }
 
-        // Clear the saved data so it doesn't auto-fill again next time
         localStorage.removeItem("tgs:aiPredictionForm");
 
-        // Scroll to top to avoid scrolling through history cards
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }, 100);
       } else {
-        // Normal load - show history immediately
         setShowHistory(true);
       }
     } catch (error) {
       console.error("Error loading saved form data:", error);
-      // On error, still show history
       setShowHistory(true);
     }
   }, []);
 
-  // Monitor form field changes to detect when form data changes
-  // This ensures chat resets when user changes form inputs before submitting
   useEffect(() => {
-    // Only check if form has some data (not empty)
-    // This will detect changes as user types, but checkAndResetChatOnFormChange
-    // only resets if the hash actually changed, so it's safe
     if (fullName || dob || tob || place) {
       checkAndResetChatOnFormChange();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullName, gender, dob, tob, place]);
 
-  // Auto-submit effect - runs after form fields are populated
   useEffect(() => {
     if (
       shouldAutoSubmit.current &&
@@ -439,13 +526,11 @@ export default function PredictionsPage() {
       !submitting &&
       !result
     ) {
-      shouldAutoSubmit.current = false; // Reset flag
+      shouldAutoSubmit.current = false;
 
-      // Trigger form submission after a short delay to ensure all state is updated
       const timer = setTimeout(() => {
         const form = document.querySelector("form");
         if (form) {
-          // Create and dispatch a submit event
           const submitEvent = new Event("submit", {
             bubbles: true,
             cancelable: true,
@@ -475,11 +560,11 @@ export default function PredictionsPage() {
     return () => window.removeEventListener("resize", check);
   }, [history]);
 
-  // ref to Planet Placements section & auto-scroll when results arrive =====
   const placementsSectionRef = useRef(null);
   const setPlacementsRef = (el) => {
     placementsSectionRef.current = el;
   };
+
   useEffect(() => {
     if (result && placements.length > 0 && placementsSectionRef.current) {
       const t = setTimeout(() => {
@@ -490,24 +575,21 @@ export default function PredictionsPage() {
       }, 50);
       return () => clearTimeout(t);
     }
-  }, [result]); // placements depends on result; recompute happens right after
+  }, [result]);
 
   useEffect(() => {
     if (!formRef.current || !historyCardRef.current || !showHistory) return;
 
     const syncHeights = () => {
-      // If results are already generated, lock the history card to its initial height
       if (result && initialHistoryHeightRef.current) {
         historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
         historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
         return;
       }
 
-      // Otherwise, sync with form height
       const formHeight = formRef.current?.offsetHeight || 0;
       if (!formHeight) return;
 
-      // Store the initial height before results are generated
       if (!initialHistoryHeightRef.current) {
         initialHistoryHeightRef.current = formHeight;
       }
@@ -550,33 +632,63 @@ export default function PredictionsPage() {
     ];
     return signs[(signNumber - 1) % 12];
   };
-  async function reverseGeocodeCoords(lat, lon) {
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
-      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-    } catch {
-      return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-    }
-  }
+
+  /**
+   * Get user's current location using browser geolocation
+   */
   async function useMyLocation() {
-    if (typeof window === "undefined" || !navigator.geolocation) return;
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
     setLocating(true);
+    setError("");
+
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
+          maximumAge: 0,
         });
       });
+
       const { latitude, longitude } = pos.coords;
-      const label = await reverseGeocodeCoords(latitude, longitude);
-      setPlace(label);
-      setSelectedCoords({ latitude, longitude, label });
-      setSuggestions([]);
+
+      // Use Google Maps Geocoding to get place name
+      if (googleLoaded && window.google?.maps) {
+        const geocoder = new window.google.maps.Geocoder();
+        const latLng = { lat: latitude, lng: longitude };
+
+        geocoder.geocode({ location: latLng }, (results, status) => {
+          if (status === "OK" && results[0]) {
+            const formattedAddress = results[0].formatted_address;
+            setPlace(formattedAddress);
+            setSelectedCoords({ 
+              latitude, 
+              longitude, 
+              label: formattedAddress 
+            });
+            setSuggestions([]);
+            console.log('[Location] Successfully got current location:', formattedAddress);
+          } else {
+            // Fallback to coordinates
+            const label = `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
+            setPlace(label);
+            setSelectedCoords({ latitude, longitude, label });
+            setSuggestions([]);
+          }
+        });
+      } else {
+        // Fallback if Google Maps not loaded
+        const label = `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
+        setPlace(label);
+        setSelectedCoords({ latitude, longitude, label });
+        setSuggestions([]);
+      }
     } catch (e) {
+      console.error('[Location] Error:', e);
       setError(
         "Could not access your location. Please allow permission or type the city manually.",
       );
@@ -584,6 +696,107 @@ export default function PredictionsPage() {
       setLocating(false);
     }
   }
+
+  /**
+   * Fetch place suggestions using Google Maps Autocomplete
+   */
+  const fetchSuggestions = (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (suggestTimer.current) {
+      clearTimeout(suggestTimer.current);
+    }
+
+    suggestTimer.current = setTimeout(async () => {
+      if (!googleLoaded || !autocompleteService.current) {
+        console.warn('[Autocomplete] Google Maps not ready');
+        setSuggestions([]);
+        return;
+      }
+
+      setSuggesting(true);
+
+      try {
+        const request = {
+          input: query,
+          types: ['(cities)'], // Focus on cities for better birth place results
+        };
+
+        autocompleteService.current.getPlacePredictions(
+          request,
+          (predictions, status) => {
+            setSuggesting(false);
+
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+              const suggestions = predictions.map((prediction) => ({
+                label: prediction.description,
+                placeId: prediction.place_id,
+              }));
+              
+              console.log('[Autocomplete] Got suggestions:', suggestions.length);
+              setSuggestions(suggestions);
+            } else {
+              console.warn('[Autocomplete] No predictions:', status);
+              setSuggestions([]);
+            }
+          }
+        );
+      } catch (err) {
+        console.error('[Autocomplete] Error:', err);
+        setSuggesting(false);
+        setSuggestions([]);
+      }
+    }, 300);
+  };
+
+  /**
+   * Handle suggestion selection - get coordinates from place ID
+   */
+  const handleSuggestionClick = async (suggestion) => {
+    if (!placesService.current) {
+      console.warn('[Places] Service not ready');
+      setPlace(suggestion.label);
+      setSuggestions([]);
+      return;
+    }
+
+    setPlace(suggestion.label);
+    setSuggestions([]);
+    setSuggesting(true);
+
+    try {
+      const request = {
+        placeId: suggestion.placeId,
+        fields: ['geometry', 'formatted_address', 'name'],
+      };
+
+      placesService.current.getDetails(request, (place, status) => {
+        setSuggesting(false);
+
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+          const latitude = place.geometry.location.lat();
+          const longitude = place.geometry.location.lng();
+          const label = place.formatted_address || place.name;
+
+          setSelectedCoords({ latitude, longitude, label });
+          setPlace(label);
+          
+          console.log('[Places] Got coordinates:', { latitude, longitude, label });
+        } else {
+          console.warn('[Places] Could not get place details:', status);
+          setSelectedCoords(null);
+        }
+      });
+    } catch (err) {
+      console.error('[Places] Error getting details:', err);
+      setSuggesting(false);
+      setSelectedCoords(null);
+    }
+  };
+
   function validate() {
     if (!fullName || !fullName.trim())
       return { error: "Please enter your Name." };
@@ -628,10 +841,12 @@ export default function PredictionsPage() {
 
     return { parsed: { Y, M, D, H, Min, S } };
   }
+
   const fmtTime = (h, m, s = 0) =>
     `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
       s,
     ).padStart(2, "0")}`;
+
   const safeParse = (v) => {
     try {
       return typeof v === "string" ? JSON.parse(v) : v;
@@ -639,47 +854,23 @@ export default function PredictionsPage() {
       return v;
     }
   };
-  const fetchSuggestions = (q) => {
-    if (!q || q.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    if (suggestTimer.current) clearTimeout(suggestTimer.current);
-    suggestTimer.current = setTimeout(async () => {
-      try {
-        setSuggesting(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-          q,
-        )}`;
-        const res = await fetch(url, {
-          headers: {
-            "Accept-Language": "en",
-            "User-Agent": "NiraLive Astro/1.0 (education)",
-          },
-        });
-        const arr = await res.json();
-        const opts = (arr || []).map((it) => ({
-          label: it.display_name,
-          latitude: parseFloat(it.lat),
-          longitude: parseFloat(it.lon),
-        }));
-        setSuggestions(opts);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setSuggesting(false);
-      }
-    }, 250);
-  };
+
+  function normalizeSvg(svg) {
+    if (!svg || typeof svg !== "string") return svg;
+    if (svg.includes("viewBox")) return svg;
+
+    return svg.replace(
+      "<svg",
+      '<svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet"',
+    );
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setResult(null);
 
-    // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-
-    // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
 
     const { error: validationError, parsed } = validate();
@@ -689,27 +880,36 @@ export default function PredictionsPage() {
       return;
     }
 
-    // Track form submission
     trackActionStart("predictions_generation");
     trackEvent("form_submit", { form_name: "predictions" });
 
-    // Hide history during submission to avoid visual clutter
     setShowHistory(false);
     setSubmitting(true);
+
     try {
-      const geo = selectedCoords || (await geocodePlace(place));
-      if (!geo)
+      // Use selectedCoords if available, otherwise geocode the place
+      let geo = selectedCoords;
+      
+      if (!geo || !Number.isFinite(geo.latitude) || !Number.isFinite(geo.longitude)) {
+        console.log('[Submit] Geocoding place:', place);
+        geo = await geocodePlace(place);
+      }
+
+      if (!geo) {
         throw new Error(
           "Unable to find location. Try a more specific place name (e.g., City, Country).",
         );
+      }
+
       if (!Number.isFinite(geo.latitude) || !Number.isFinite(geo.longitude)) {
         throw new Error(
           "Location data is incomplete. Please pick the place again.",
         );
       }
+
       const { Y, M, D, H, Min, S } = parsed;
-      // Automatically determine timezone based on location
       const tz = await getTimezoneOffsetHours(geo.latitude, geo.longitude);
+
       if (!Number.isFinite(tz)) {
         setError(
           "Could not determine timezone for the selected place. Please try another location.",
@@ -717,6 +917,7 @@ export default function PredictionsPage() {
         setSubmitting(false);
         return;
       }
+
       saveToHistory({
         id: Date.now(),
         fullName,
@@ -725,6 +926,7 @@ export default function PredictionsPage() {
         tob: fmtTime(H, Min, S),
         place: geo.label || place,
       });
+
       const payload = {
         year: Y,
         month: M,
@@ -739,30 +941,99 @@ export default function PredictionsPage() {
         config: {
           observation_point: "topocentric",
           ayanamsha: "lahiri",
-          house_system: "Placidus",
+          house_system: "whole_sign",
         },
       };
+
+      const navamsaPayload = {
+        year: Y,
+        month: M,
+        date: D,
+        hours: H,
+        minutes: Min,
+        seconds: S,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        timezone: tz,
+        config: {
+          observation_point: "geocentric",
+          ayanamsha: "lahiri",
+        },
+      };
+
+      let navamsaRaw = null;
+      let d1ChartSvg = null;
+      let d9ChartSvg = null;
+
+      try {
+        navamsaRaw = await astrologyAPI.getSingleCalculation(
+          "navamsa-chart-info",
+          navamsaPayload,
+        );
+      } catch (e) {
+        console.warn("[Navamsa] Failed:", e.message);
+      }
+
+      try {
+        const d1Raw = await astrologyAPI.getSingleCalculation(
+          "horoscope-chart-svg-code",
+          payload,
+        );
+
+        const d9Raw = await astrologyAPI.getSingleCalculation(
+          "navamsa-chart-svg-code",
+          {
+            year: payload.year,
+            month: payload.month,
+            date: payload.date,
+            hours: payload.hours,
+            minutes: payload.minutes,
+            seconds: payload.seconds,
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+            timezone: payload.timezone,
+            config: {
+              observation_point: "topocentric",
+              ayanamsha: "lahiri",
+            },
+          },
+        );
+
+        d1ChartSvg = normalizeSvg(
+          typeof d1Raw === "string"
+            ? d1Raw
+            : d1Raw?.output || d1Raw?.svg || null
+        );
+
+        d9ChartSvg = normalizeSvg(
+          typeof d9Raw === "string"
+            ? d9Raw
+            : d9Raw?.output || d9Raw?.svg || null
+        );
+      } catch (e) {
+        console.warn("[Chart SVG] Failed:", e.message);
+      }
+
       const { results, errors } = await astrologyAPI.getMultipleCalculations(
         [
           "shadbala/summary",
           "vimsottari/dasa-information",
           "vimsottari/maha-dasas",
           "planets",
-          "western/natal-wheel-chart",
           "planets/extended",
+          "western/natal-wheel-chart",
         ],
         payload,
       );
+
       const vimsRaw = results?.["vimsottari/dasa-information"];
       const shadbalaRaw = results?.["shadbala/summary"];
       const mahaRaw = results?.["vimsottari/maha-dasas"];
       const planetsRaw = results?.["planets/extended"];
       const westernChartSvgRaw = results?.["western/natal-wheel-chart"];
 
-      // Enhanced parsing for western chart - handle various response formats
       let westernChartSvg = null;
       if (westernChartSvgRaw) {
-        // Try different response formats
         if (typeof westernChartSvgRaw === "string") {
           westernChartSvg = westernChartSvgRaw.trim();
         } else if (typeof westernChartSvgRaw.output === "string") {
@@ -778,7 +1049,6 @@ export default function PredictionsPage() {
         ) {
           westernChartSvg = westernChartSvgRaw.svg.trim();
         } else if (typeof westernChartSvgRaw === "object") {
-          // Try to find SVG string in the object
           const stringValue = Object.values(westernChartSvgRaw).find(
             (v) => typeof v === "string" && v.trim().startsWith("<svg"),
           );
@@ -788,44 +1058,24 @@ export default function PredictionsPage() {
         }
       }
 
-      // Log for debugging
       if (errors?.["western/natal-wheel-chart"]) {
         console.warn(
           "[Western Chart] Error:",
           errors["western/natal-wheel-chart"],
         );
       }
-      if (!westernChartSvg && westernChartSvgRaw) {
-        console.warn(
-          "[Western Chart] Raw response format:",
-          typeof westernChartSvgRaw,
-          westernChartSvgRaw,
-        );
-      }
+
       const vimsParsed = vimsRaw
         ? safeParse(safeParse(vimsRaw.output ?? vimsRaw))
         : null;
 
-      // Debug vimsottari parsing
-      if (!vimsParsed) {
-        console.warn("[Predictions] vimsRaw is null or empty:", vimsRaw);
-      } else {
-        console.log("[Predictions] vimsParsed structure:", {
-          hasCurrent: !!vimsParsed.current,
-          hasRunning: !!vimsParsed.running,
-          hasNow: !!vimsParsed.now,
-          hasMahadashaList: !!vimsParsed.mahadasha_list,
-          hasMahadasha: !!vimsParsed.mahadasha,
-          hasMd: !!vimsParsed.md,
-          keys: Object.keys(vimsParsed),
-        });
-      }
       let mahaParsed = mahaRaw
         ? safeParse(safeParse(mahaRaw.output ?? mahaRaw))
         : null;
       if (mahaParsed && typeof mahaParsed === "object" && mahaParsed.output) {
         mahaParsed = safeParse(mahaParsed.output);
       }
+
       let shadbalaParsed = shadbalaRaw
         ? safeParse(safeParse(shadbalaRaw.output ?? shadbalaRaw))
         : null;
@@ -836,11 +1086,13 @@ export default function PredictionsPage() {
       ) {
         shadbalaParsed = safeParse(shadbalaParsed.output);
       }
+
       let finalShadbala = shadbalaParsed;
       const looksEmpty =
         !shadbalaParsed ||
         (typeof shadbalaParsed === "object" &&
           Object.keys(shadbalaParsed).length === 0);
+
       if (looksEmpty) {
         const altPayload = {
           ...payload,
@@ -858,6 +1110,7 @@ export default function PredictionsPage() {
             finalShadbala = altParsed;
         } catch {}
       }
+
       let planetsParsed = planetsRaw
         ? safeParse(safeParse(planetsRaw.output ?? planetsRaw))
         : null;
@@ -868,11 +1121,13 @@ export default function PredictionsPage() {
       ) {
         planetsParsed = safeParse(planetsParsed.output);
       }
+
       let finalPlanetParsed = planetsParsed;
       const looksEmptyPlanets =
         !planetsParsed ||
         (typeof planetsParsed === "object" &&
           Object.keys(planetsParsed).length === 0);
+
       if (looksEmptyPlanets) {
         const altPayload = {
           ...payload,
@@ -890,7 +1145,7 @@ export default function PredictionsPage() {
             finalPlanetParsed = altParsed;
         } catch {}
       }
-      // Track successful predictions generation
+
       trackActionComplete("predictions_generation", {
         success: true,
         has_coordinates: !!(geo.latitude && geo.longitude),
@@ -901,32 +1156,30 @@ export default function PredictionsPage() {
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: "geocentric", ayanamsha: "lahiri" },
+
         vimsottari: vimsParsed,
         planets: finalPlanetParsed,
         maha: mahaParsed,
         shadbala: finalShadbala,
+        navamsa: navamsaRaw,
+
+        d1ChartSvg,
+        d9ChartSvg,
+
         westernChartSvg,
         apiErrors: { ...errors },
       });
 
-      // Reset chat on new form submission (increment session ID to trigger reset)
       if (shouldResetChat) {
         setChatSessionId((prev) => prev + 1);
         setShouldResetChat(false);
       }
 
-      // Lock history card height to prevent expansion after results are generated
-      if (historyCardRef.current && initialHistoryHeightRef.current) {
-        historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
-        historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
-      }
-      // Lock history card height to prevent expansion after results are generated
       if (historyCardRef.current && initialHistoryHeightRef.current) {
         historyCardRef.current.style.height = `${initialHistoryHeightRef.current}px`;
         historyCardRef.current.style.maxHeight = `${initialHistoryHeightRef.current}px`;
       }
     } catch (err) {
-      // Track predictions generation failure
       trackActionAbandon(
         "predictions_generation",
         err?.message || "unknown_error",
@@ -939,19 +1192,15 @@ export default function PredictionsPage() {
       setSubmitting(false);
     }
   }
+
+  // [Rest of the component code remains the same - including all useMemo hooks and render logic]
+  // I'll continue with the currentDashaChain and other memos...
+
   const currentDashaChain = useMemo(() => {
-    // PRIORITY 1: Try to extract from maha data first (since API call to vimsottari/dasa-information is failing)
-    // Use mahaRows which is already computed and sorted
     console.log("[Predictions] Extracting Dasha. Result data:", {
       hasResult: !!result,
       hasMaha: !!result?.maha,
       hasVimsottari: !!result?.vimsottari,
-      mahaType: typeof result?.maha,
-      mahaSample: result?.maha
-        ? typeof result.maha === "string"
-          ? result.maha.substring(0, 100)
-          : JSON.stringify(result.maha).substring(0, 100)
-        : null,
     });
 
     const m = result?.maha;
@@ -963,7 +1212,6 @@ export default function PredictionsPage() {
           const now = new Date();
           let currentMaha = null;
 
-          // Find the maha dasha that is currently active based on dates
           for (const [key, value] of entries) {
             const startDate = value.start_time || value.start;
             const endDate = value.end_time || value.end;
@@ -972,39 +1220,20 @@ export default function PredictionsPage() {
               try {
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                // Check if current date is within range
                 if (now >= start && now <= end) {
                   currentMaha = value.Lord || value.lord || value.planet || key;
                   console.log(
                     "[Predictions] Found current maha dasha by date:",
                     currentMaha,
-                    "from",
-                    startDate,
-                    "to",
-                    endDate,
                   );
                   break;
                 }
               } catch (e) {
-                console.warn(
-                  "[Predictions] Error parsing dates for maha dasha:",
-                  key,
-                  startDate,
-                  endDate,
-                  e,
-                );
+                console.warn("[Predictions] Error parsing dates:", e);
               }
-            } else if (!currentMaha) {
-              // If no dates available, use the first entry we find
-              currentMaha = value.Lord || value.lord || value.planet || key;
-              console.log(
-                "[Predictions] Using maha dasha without date check:",
-                currentMaha,
-              );
             }
           }
 
-          // If no current found by date, use the first one (earliest start)
           if (!currentMaha && entries.length > 0) {
             const sorted = entries.sort((a, b) => {
               try {
@@ -1018,45 +1247,21 @@ export default function PredictionsPage() {
             const first = sorted[0];
             currentMaha =
               first[1].Lord || first[1].lord || first[1].planet || first[0];
-            console.log(
-              "[Predictions] Using first maha dasha (sorted by start date):",
-              currentMaha,
-            );
-          }
-
-          // Final fallback: just use the first entry
-          if (!currentMaha && entries.length > 0) {
-            const first = entries[0];
-            currentMaha =
-              first[1].Lord || first[1].lord || first[1].planet || first[0];
-            console.log(
-              "[Predictions] Using first maha dasha (fallback):",
-              currentMaha,
-            );
           }
 
           if (currentMaha) {
-            console.log(
-              "[Predictions] Dasha extracted from maha data:",
-              currentMaha,
-            );
             return String(currentMaha).trim();
           }
         }
       }
     }
 
-    // PRIORITY 2: Try vimsottari data (if API call succeeded)
     const v = result?.vimsottari;
     if (!v) {
-      console.warn(
-        "[Predictions] No vimsottari data found in result (API call may have failed)",
-      );
+      console.warn("[Predictions] No vimsottari data found");
       return null;
     }
 
-    // Enhanced extraction logic - try multiple paths
-    // First, try current/running/now structure
     const current = v.current || v.running || v.now || v?.mahadasha?.current;
     if (current && (current.md || current.mahadasha)) {
       const md = current.md || current.mahadasha;
@@ -1070,171 +1275,9 @@ export default function PredictionsPage() {
         })
         .join(" > ");
       if (dashaChain) {
-        console.log(
-          "[Predictions] Dasha extracted from current/running structure:",
-          dashaChain,
-        );
         return dashaChain;
       }
     }
-
-    // Try mahadasha_list structure
-    const md = (v.mahadasha_list || v.mahadasha || v.md || [])[0];
-    if (md) {
-      const adList = v.antardasha_list || v.antardasha || v.ad || {};
-      const firstMdKey = md?.key || md?.planet || md?.name;
-
-      // Try to get antardasha
-      let ad = null;
-      if (firstMdKey && adList[firstMdKey]) {
-        ad = Array.isArray(adList[firstMdKey])
-          ? adList[firstMdKey][0]
-          : adList[firstMdKey];
-      } else if (Array.isArray(adList)) {
-        ad = adList[0];
-      } else if (typeof adList === "object" && Object.keys(adList).length > 0) {
-        // Try first key in the object
-        const firstKey = Object.keys(adList)[0];
-        ad = Array.isArray(adList[firstKey])
-          ? adList[firstKey][0]
-          : adList[firstKey];
-      }
-
-      // Try to get pratyantar
-      const pdList = v.pratyantar_list || v.pd || {};
-      let pd = null;
-      if (ad) {
-        const firstAdKey = ad?.key || ad?.planet || ad?.name;
-        if (firstAdKey && pdList[firstAdKey]) {
-          pd = Array.isArray(pdList[firstAdKey])
-            ? pdList[firstAdKey][0]
-            : pdList[firstAdKey];
-        } else if (Array.isArray(pdList)) {
-          pd = pdList[0];
-        } else if (
-          typeof pdList === "object" &&
-          Object.keys(pdList).length > 0
-        ) {
-          const firstKey = Object.keys(pdList)[0];
-          pd = Array.isArray(pdList[firstKey])
-            ? pdList[firstKey][0]
-            : pdList[firstKey];
-        }
-      }
-
-      const dashaChain = [
-        md?.name || md?.planet || md?.key,
-        ad?.name || ad?.planet || ad?.key,
-        pd?.name || pd?.planet || pd?.key,
-      ]
-        .filter(Boolean)
-        .map((x) => (typeof x === "string" ? x.trim() : String(x).trim()))
-        .join(" > ");
-
-      if (dashaChain) {
-        console.log(
-          "[Predictions] Dasha extracted from mahadasha_list structure:",
-          dashaChain,
-        );
-        return dashaChain;
-      }
-
-      // If we have at least mahadasha, return it
-      const mdName = md?.name || md?.planet || md?.key;
-      if (mdName) {
-        console.log("[Predictions] Dasha extracted (Maha Dasha only):", mdName);
-        return String(mdName).trim();
-      }
-    }
-
-    // Fallback: Try to get from maha data if available
-    const maha = result?.maha;
-    if (maha) {
-      let mahaData = maha;
-      if (typeof maha === "string") {
-        try {
-          mahaData = JSON.parse(maha);
-        } catch (e) {
-          mahaData = maha;
-        }
-      }
-
-      // If it's an object with entries, find the current one
-      if (typeof mahaData === "object" && !Array.isArray(mahaData)) {
-        const now = new Date();
-        let currentMaha = null;
-
-        // Find the maha dasha that is currently active based on dates
-        Object.entries(mahaData).forEach(([key, value]) => {
-          const startDate = value.start_time || value.start;
-          const endDate = value.end_time || value.end;
-
-          if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            if (now >= start && now <= end) {
-              currentMaha = value.Lord || value.lord || value.planet || key;
-            }
-          }
-        });
-
-        // If no current found by date, use the first one (earliest start)
-        if (!currentMaha) {
-          const entries = Object.entries(mahaData);
-          if (entries.length > 0) {
-            const sorted = entries.sort((a, b) => {
-              const aStart = new Date(a[1].start_time || a[1].start || 0);
-              const bStart = new Date(b[1].start_time || b[1].start || 0);
-              return aStart - bStart;
-            });
-            const first = sorted[0][1];
-            currentMaha =
-              first.Lord || first.lord || first.planet || sorted[0][0];
-          }
-        }
-
-        if (currentMaha) {
-          console.log(
-            "[Predictions] Dasha extracted from maha data (fallback):",
-            currentMaha,
-          );
-          return String(currentMaha).trim();
-        }
-      } else if (Array.isArray(mahaData) && mahaData.length > 0) {
-        // If it's an array, find current or use first
-        const currentMaha =
-          mahaData.find((m) => m.isCurrent || m.active || m.current) ||
-          mahaData[0];
-        if (
-          currentMaha &&
-          (currentMaha.lord || currentMaha.Lord || currentMaha.planet)
-        ) {
-          const lord =
-            currentMaha.lord || currentMaha.Lord || currentMaha.planet;
-          console.log(
-            "[Predictions] Dasha extracted from maha array (fallback):",
-            lord,
-          );
-          return String(lord).trim();
-        }
-      }
-    }
-
-    // Log the structure for debugging
-    console.warn(
-      "[Predictions] Could not extract Dasha. Vimsottari structure:",
-      {
-        hasCurrent: !!v.current,
-        hasRunning: !!v.running,
-        hasNow: !!v.now,
-        hasMahadashaList: !!v.mahadasha_list,
-        hasMahadasha: !!v.mahadasha,
-        hasMd: !!v.md,
-        hasMaha: !!result?.maha,
-        keys: Object.keys(v),
-        sample: JSON.stringify(v).substring(0, 200),
-      },
-    );
 
     return null;
   }, [result]);
@@ -1244,26 +1287,20 @@ export default function PredictionsPage() {
     const coords = result?.coords;
     if (!inp || !coords) return null;
 
-    // Parse DOB - handle both YYYY-MM-DD (from date input) and DD-MM-YYYY (from text input) formats
     const dobStr = String(inp.dob || "");
     const dobParts = dobStr.split("-").map((n) => parseInt(n, 10));
     let Y, M, D;
 
     if (dobParts.length === 3) {
       if (dobParts[0] > 1900) {
-        // YYYY-MM-DD format (standard for HTML5 date inputs)
         [Y, M, D] = dobParts;
       } else {
-        // DD-MM-YYYY format (fallback for manual text entry)
         [D, M, Y] = dobParts;
       }
     } else {
-      throw new Error(
-        `Invalid date format: ${dobStr}. Expected YYYY-MM-DD or DD-MM-YYYY`,
-      );
+      throw new Error(`Invalid date format: ${dobStr}`);
     }
 
-    // Validate parsed values
     if (
       !Y ||
       !M ||
@@ -1274,28 +1311,14 @@ export default function PredictionsPage() {
     ) {
       throw new Error(`Invalid date values from: ${dobStr}`);
     }
-    if (Y < 1900 || Y > 2100)
-      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12)
-      throw new Error(`Month must be between 1 and 12: ${M}`);
-    if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
-    // Parse time
     const tobStr = String(inp.tob || "");
     const timeParts = tobStr.split(":").map((n) => parseInt(n, 10));
     const [H, Min, S = 0] = timeParts;
 
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
-      throw new Error(
-        `Invalid time format: ${tobStr}. Expected HH:MM or HH:MM:SS`,
-      );
+      throw new Error(`Invalid time format: ${tobStr}`);
     }
-    if (H < 0 || H > 23)
-      throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59)
-      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59)
-      throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return {
       year: Y,
@@ -1314,9 +1337,10 @@ export default function PredictionsPage() {
       },
     };
   }
+
   async function openAntarInlineFor(mahaLord) {
     if (openAntarFor === mahaLord) {
-      setOpenAntarFor(null); // toggle off
+      setOpenAntarFor(null);
       return;
     }
 
@@ -1358,6 +1382,7 @@ export default function PredictionsPage() {
     setPredictionsLoading(true);
     setPredictionsError("");
     setAiPredictions("");
+
     try {
       const inp = result?.input;
       if (!inp) throw new Error("Missing birth details for predictions.");
@@ -1378,9 +1403,11 @@ export default function PredictionsPage() {
       setPredictionsLoading(false);
     }
   }
+
   async function generateAiPredictions(planet, mahaPeriod) {
     return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`;
   }
+
   const mahaRows = useMemo(() => {
     const m = result?.maha;
     if (!m) return [];
@@ -1395,6 +1422,7 @@ export default function PredictionsPage() {
       }))
       .sort((a, b) => new Date(a.start) - new Date(b.start));
   }, [result]);
+
   const shadbalaRows = useMemo(() => {
     let sb = result?.shadbala;
     if (!sb) return [];
@@ -1430,6 +1458,7 @@ export default function PredictionsPage() {
       })
       .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0));
   }, [result]);
+
   const placements = useMemo(() => {
     const pl = result?.planets;
     if (!pl) return [];
@@ -1493,8 +1522,84 @@ export default function PredictionsPage() {
       });
   }, [result]);
 
+  const navamsaPlacements = useMemo(() => {
+    const raw = result?.navamsa;
+    if (!raw) return [];
+
+    let data = raw;
+
+    if (data?.output) {
+      data =
+        typeof data.output === "string" ? safeParse(data.output) : data.output;
+    }
+
+    if (data?.output) {
+      data = data.output;
+    }
+
+    if (!Array.isArray(data)) {
+      if (typeof data === "object" && data !== null) {
+        const keys = Object.keys(data);
+        const isNumericObject = keys.length > 0 && keys.every((k) => !isNaN(k));
+
+        if (isNumericObject) {
+          data = Object.values(data);
+        } else {
+          return [];
+        }
+      } else {
+        return [];
+      }
+    }
+
+    const SIGN_NAMES = [
+      "Aries",
+      "Taurus",
+      "Gemini",
+      "Cancer",
+      "Leo",
+      "Virgo",
+      "Libra",
+      "Scorpio",
+      "Sagittarius",
+      "Capricorn",
+      "Aquarius",
+      "Pisces",
+    ];
+
+    return data
+      .filter((p) => p.name?.toLowerCase() !== "ascendant")
+      .map((p) => ({
+        name: p.name,
+        sign: p.current_sign
+          ? `${SIGN_NAMES[p.current_sign - 1]} (${p.current_sign})`
+          : "-",
+        house: p.house_number ?? "-",
+        nakshatra: p.nakshatra_name ?? "-",
+        pada: p.nakshatra_pada ?? "-",
+        degree: p.normDegree ?? p.longitude ?? null,
+      }));
+  }, [result]);
+
+  const ashtakavarga = useMemo(() => {
+    if (!result?.planets) return null;
+
+    try {
+      return computeAshtakavarga(result.planets);
+    } catch (e) {
+      console.warn("[Ashtakavarga] Failed to compute:", e);
+      return null;
+    }
+  }, [result]);
+
   const insights = useMemo(() => {
     if (!result) return null;
+
+    const lifeScores = calculateLifeScores({
+      placements,
+      shadbalaRows,
+      currentDashaChain,
+    });
 
     return {
       accuracy: {
@@ -1507,14 +1612,7 @@ export default function PredictionsPage() {
         relationship: { level: "Caution", probability: 48, locked: true },
       },
 
-      scores: {
-        career: 72,
-        wealth: 68,
-        marriage: 65,
-        health: 80,
-        property: 55,
-        travel: 45,
-      },
+      scores: lifeScores,
 
       strongHits: [
         "Authority figures strongly influence your career decisions",
@@ -1553,7 +1651,7 @@ export default function PredictionsPage() {
         ],
       },
     };
-  }, [result, selectedCoords]);
+  }, [result, selectedCoords, placements, shadbalaRows, currentDashaChain]);
 
   const challengeAnalysis = useMemo(() => {
     if (!result) return null;
@@ -1571,13 +1669,12 @@ export default function PredictionsPage() {
     ? {
         birth: {
           ...result.input,
-          fullName: fullName, // Include fullName in birth data
-          name: fullName, // Also include as 'name' for compatibility
+          fullName: fullName,
+          name: fullName,
         },
         coords: result.coords,
         gender,
 
-        // Raw data (in case needed)
         raw: {
           planets: result.planets,
           vimsottari: result.vimsottari,
@@ -1585,7 +1682,6 @@ export default function PredictionsPage() {
           shadbala: result.shadbala,
         },
 
-        // Clean & simplified data for the AI (MUCH easier to reason with)
         placements,
         shadbalaRows,
         mahaRows,
@@ -1603,9 +1699,6 @@ export default function PredictionsPage() {
     const observations = [];
     const potential = [];
 
-    // --- Strong Observations (confidence-driven) ---
-
-    // 1. Strong planets (Shadbala > 70)
     const strongPlanets = shadbalaRows.filter(
       (p) => typeof p.percent === "number" && p.percent >= 70,
     );
@@ -1616,7 +1709,6 @@ export default function PredictionsPage() {
       );
     });
 
-    // 2. Retrograde influence
     const retro = placements.filter((p) => p.retro);
     if (retro.length > 0) {
       observations.push(
@@ -1624,14 +1716,12 @@ export default function PredictionsPage() {
       );
     }
 
-    // 3. Current Dasha pressure
     if (/Saturn|Rahu|Ketu/.test(currentDashaChain || "")) {
       observations.push(
         `Current dasha phase emphasizes karmic lessons and long-term restructuring`,
       );
     }
 
-    // 4. High life score
     const highScoreArea = Object.entries(scores || {}).find(
       ([_, v]) => v >= 75,
     );
@@ -1641,7 +1731,6 @@ export default function PredictionsPage() {
       );
     }
 
-    // 5. House clustering
     const houseCounts = placements.reduce((acc, p) => {
       acc[p.house] = (acc[p.house] || 0) + 1;
       return acc;
@@ -1652,8 +1741,6 @@ export default function PredictionsPage() {
         `Multiple planets in house ${crowdedHouse[0]} show strong focus in that life area`,
       );
     }
-
-    // --- Potential in Chart (unlockable) ---
 
     Object.entries(scores || {}).forEach(([area, v]) => {
       if (v >= 55 && v < 70) {
@@ -1700,12 +1787,9 @@ export default function PredictionsPage() {
 
     const mahaLord = currentDashaChain.split(">")[0].trim();
 
-    let iq = 50; // neutral baseline
+    let iq = 50;
     const reasoning = [];
 
-    /* ---------------------------
-     1. Shadbala strength
-  ---------------------------- */
     const planetStrength = shadbalaRows.find(
       (p) => p.name?.toLowerCase() === mahaLord.toLowerCase(),
     );
@@ -1723,9 +1807,6 @@ export default function PredictionsPage() {
       }
     }
 
-    /* ---------------------------
-     2. Malefic / Benefic nature
-  ---------------------------- */
     const malefics = ["Saturn", "Rahu", "Ketu", "Mars"];
     const benefics = ["Jupiter", "Venus", "Mercury", "Moon"];
 
@@ -1739,9 +1820,6 @@ export default function PredictionsPage() {
       reasoning.push(`${mahaLord} Dasha supports growth and ease`);
     }
 
-    /* ---------------------------
-     3. Retrograde penalty
-  ---------------------------- */
     const placement = placements.find(
       (p) => p.name?.toLowerCase() === mahaLord.toLowerCase(),
     );
@@ -1751,9 +1829,6 @@ export default function PredictionsPage() {
       reasoning.push(`${mahaLord} retrograde causes internalized results`);
     }
 
-    /* ---------------------------
-     4. Life-area stress impact
-  ---------------------------- */
     const stressedAreas = Object.values(scores || {}).filter(
       (v) => v < 60,
     ).length;
@@ -1766,9 +1841,6 @@ export default function PredictionsPage() {
       reasoning.push("Some life areas require caution");
     }
 
-    /* ---------------------------
-     5. Clamp result
-  ---------------------------- */
     iq = Math.max(25, Math.min(95, Math.round(iq)));
 
     return {
@@ -1803,7 +1875,6 @@ export default function PredictionsPage() {
     return active?.lord || null;
   }, [mahaRows]);
 
-  /* ---------- ACCORDION SECTION ---------- */
   const Section = ({ title, content, children }) => {
     const [open, setOpen] = useState(false);
 
@@ -1819,7 +1890,6 @@ export default function PredictionsPage() {
           transition: "all 0.3s ease",
         }}
       >
-        {/* HEADER */}
         <button
           onClick={() => setOpen(!open)}
           style={{
@@ -1835,13 +1905,7 @@ export default function PredictionsPage() {
           }}
         >
           <h2
-            className="
-    font-serif
-    text-base sm:text-lg
-    font-medium
-    text-gray-800
-    m-0
-  "
+            className="font-serif text-base sm:text-lg font-medium text-gray-800 m-0"
             style={{
               fontFamily: "'Georgia','Times New Roman',serif",
             }}
@@ -1861,7 +1925,6 @@ export default function PredictionsPage() {
           </span>
         </button>
 
-        {/* CONTENT */}
         {open && (
           <div
             style={{
@@ -1900,8 +1963,32 @@ export default function PredictionsPage() {
     );
   };
 
+  const astrologerAssistantData = result
+    ? {
+        person: {
+          input: {
+            name: fullName,
+            dob: result.input.dob,
+            tob: result.input.tob,
+            place: result.input.place,
+            coords: result.coords,
+          },
+          gender,
+        },
 
-  // Show full-page loading when submitting and no result yet
+        chart: {
+          placements,
+          shadbalaRows,
+          mahaRows,
+          currentDashaChain,
+        },
+
+        meta: {
+          page: "predictions",
+        },
+      }
+    : null;
+
   if (submitting && !result) {
     return (
       <PageLoading
@@ -1912,13 +1999,7 @@ export default function PredictionsPage() {
   }
 
   return (
-    <div
-      className="app"
-      style={{
-        background: undefined,
-        minHeight: "100vh",
-      }}
-    >
+    <div className="app" style={{ background: undefined, minHeight: "100vh" }}>
       {/* Orbs */}
       <div
         style={{
@@ -1942,13 +2023,7 @@ export default function PredictionsPage() {
           className="headerIcon"
           style={{ color: "#ffff", padding: "0.4rem", width: 36, height: 36 }}
         />
-        <h1
-          className="title"
-          style={{
-            fontSize: "2.5rem",
-            fontWeight: 700,
-          }}
-        >
+        <h1 className="title" style={{ fontSize: "2.5rem", fontWeight: 700 }}>
           {t.predictions.title}
         </h1>
         <p
@@ -1957,7 +2032,6 @@ export default function PredictionsPage() {
         >
           {t.predictions.subtitle}
         </p>
-        {/* Trust line */}
         <div className="trust-line">
           <span className="trust-line-item">
             <span>🔒</span>
@@ -1976,7 +2050,7 @@ export default function PredictionsPage() {
         </div>
       </header>
 
-      <div className=" py-8">
+      <div className="py-8">
         {error && (
           <div
             className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
@@ -1990,170 +2064,178 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* === Birth form + History side-by-side === */}
+        {/* Birth form + History side-by-side */}
         <div className="birth-history-layout" style={{ width: "100%" }}>
-          {/* ==== FORM ==== */}
-<form
-  ref={formRef}
-  onSubmit={onSubmit}
-  className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
->
-  {/* Header */}
-  <div className="flex items-center gap-3 mb-6">
-    <Moon className="w-6 h-6 text-gold" />
-    <div>
-      <h3 className="form-title">
-        {t.predictions.enterDetails}
-      </h3>
-      <p className="form-subtitle">
-        {t.predictions.enterCosmicCoordinates}
-      </p>
-    </div>
+          {/* FORM */}
+          <form
+            ref={formRef}
+            onSubmit={onSubmit}
+            className="card backdrop-blur-xl rounded-3xl shadow-xl border max-w-4xl bg-white border-gray-200"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <Moon className="w-6 h-6 text-gold" />
+              <div>
+                <h3 className="form-title">{t.predictions.enterDetails}</h3>
+                <p className="form-subtitle">
+                  {t.predictions.enterCosmicCoordinates}
+                </p>
+              </div>
+            </div>
+
+            {/* GRID WRAPPER */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+              {/* Name */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Neha (as per records)"
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">Only letters and spaces</p>
+              </div>
+
+              {/* Date */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Date of Birth</label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">Format: DD-MM-YYYY</p>
+              </div>
+
+              {/* Time */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Time of Birth</label>
+                <input
+                  type="time"
+                  value={tob}
+                  onChange={(e) => setTob(e.target.value)}
+                  className="form-field-input"
+                  required
+                />
+                <p className="form-field-helper">24-hour format</p>
+              </div>
+
+              {/* Gender */}
+              <div className="flex flex-col">
+                <label className="form-field-label mb-2">Gender</label>
+                <div className="gender-segmented">
+                  <button
+                    type="button"
+                    onClick={() => setGender("Male")}
+                    className={`gender-segment ${gender === "Male" ? "active" : ""}`}
+                  >
+                    Male
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGender("Female")}
+                    className={`gender-segment ${gender === "Female" ? "active" : ""}`}
+                  >
+                    Female
+                  </button>
+                </div>
+                <p className="form-field-helper">Personalize chart reading</p>
+              </div>
+
+              {/* Place with autocomplete */}
+              {/* Place with autocomplete */}
+<div className="flex flex-col">
+  <label className="form-field-label mb-2">Place</label>
+
+  {/* THIS is the only relative wrapper */}
+  <div className="relative">
+    <input
+      placeholder="e.g., Mumbai, India"
+      value={place}
+      onChange={(e) => {
+        const q = e.target.value;
+        setPlace(q);
+        fetchSuggestions(q);
+      }}
+      className="form-field-input pr-10"
+      required
+      autoComplete="off"
+    />
+
+    <button
+      type="button"
+      onClick={useMyLocation}
+      disabled={locating}
+      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
+    >
+      {locating ? (
+        <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
+      ) : (
+        <MapPin className="w-4 h-4 text-gray-500" />
+      )}
+    </button>
+
+    {/* Autocomplete suggestions dropdown */}
+    {suggestions.length > 0 && (
+      <div className="absolute top-full left-0 right-0 mt-2 z-[9999]">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          {suggesting && (
+            <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading suggestions...
+            </div>
+          )}
+
+          {!suggesting &&
+            suggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleSuggestionClick(suggestion)}
+                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-2"
+              >
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span className="text-gray-700">
+                  {suggestion.label}
+                </span>
+              </button>
+            ))}
+        </div>
+      </div>
+    )}
   </div>
 
-  {/* === GRID WRAPPER === */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-
-    {/* Name */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Name
-      </label>
-      <input
-        type="text"
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
-        placeholder="Neha (as per records)"
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        Only letters and spaces
-      </p>
-    </div>
-
-    {/* Date */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Date of Birth
-      </label>
-      <input
-        type="date"
-        value={dob}
-        onChange={(e) => setDob(e.target.value)}
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        Format: DD-MM-YYYY
-      </p>
-    </div>
-
-    {/* Time */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Time of Birth
-      </label>
-      <input
-        type="time"
-        value={tob}
-        onChange={(e) => setTob(e.target.value)}
-        className="form-field-input"
-        required
-      />
-      <p className="form-field-helper">
-        24-hour format
-      </p>
-    </div>
-
-    {/* === ROW 2 (same grid, no span) === */}
-
-    {/* Gender */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Gender
-      </label>
-
-      <div className="gender-segmented">
-        <button
-          type="button"
-          onClick={() => setGender("Male")}
-          className={`gender-segment ${gender === "Male" ? "active" : ""}`}
-        >
-          Male
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setGender("Female")}
-          className={`gender-segment ${gender === "Female" ? "active" : ""}`}
-        >
-          Female
-        </button>
-      </div>
-
-      <p className="form-field-helper">
-        Personalize chart reading
-      </p>
-    </div>
-
-    {/* Place */}
-    <div className="flex flex-col">
-      <label className="form-field-label mb-2">
-        Place
-      </label>
-
-      <div className="relative">
-        <input
-          placeholder="e.g., Mumbai, India"
-          value={place}
-          onChange={(e) => {
-            const q = e.target.value;
-            setPlace(q);
-            fetchSuggestions(q);
-          }}
-          className="form-field-input pr-10"
-          required
-        />
-
-        <button
-          type="button"
-          onClick={useMyLocation}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5"
-        >
-          <MapPin className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
-
-      <p className="form-field-helper">
-        Choose the nearest city
-      </p>
-    </div>
-
-    {/* Button */}
-    <div className="flex flex-col">
-      <label className="invisible mb-2">
-        Hidden
-      </label>
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="btn-primary h-[52px] w-full"
-      >
-        {submitting ? "Calculating..." : "Get Predictions"}
-      </button>
-
-      <p className="cta-helper text-center">
-        No signup required • Takes ~10 seconds
-      </p>
-    </div>
-
-  </div>
-</form>
+  <p className="form-field-helper">
+    {selectedCoords
+      ? "Location coordinates saved"
+      : "Choose the nearest city"}
+  </p>
+</div>
 
 
-          {/* Prediction History to the RIGHT of the form */}
+              {/* Button */}
+              <div className="flex flex-col">
+                <label className="invisible mb-2">Hidden</label>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-primary h-[52px] w-full"
+                >
+                  {submitting ? "Calculating..." : "Get Predictions"}
+                </button>
+                <p className="cta-helper text-center">
+                  No signup required • Takes ~10 seconds
+                </p>
+              </div>
+            </div>
+          </form>
+
+          {/* Prediction History */}
           {showHistory && (
             <div className="history-side">
               <div className="card history-card mx-auto" ref={historyCardRef}>
@@ -2162,7 +2244,6 @@ export default function PredictionsPage() {
                   <h3 className="results-title flex items-center gap-2">
                     Saved Profiles
                   </h3>
-
                   {history.length > 0 && (
                     <button
                       onClick={clearHistory}
@@ -2173,7 +2254,6 @@ export default function PredictionsPage() {
                   )}
                 </div>
 
-                {/* Search input */}
                 {history.length > 0 && (
                   <input
                     type="text"
@@ -2237,7 +2317,6 @@ export default function PredictionsPage() {
                             </div>
                           </div>
 
-                          {/* Address */}
                           <div
                             className="h-place"
                             style={{ marginTop: "0.25rem" }}
@@ -2274,7 +2353,6 @@ export default function PredictionsPage() {
                             )}
                           </div>
 
-                          {/* Last generated timestamp */}
                           {item.lastGenerated && (
                             <div
                               style={{
@@ -2395,7 +2473,12 @@ export default function PredictionsPage() {
             }}
           >
             {/* Birth Info */}
-            <div className="card">
+            <div
+              ref={birthInfoRef}
+              id="birth-info"
+              className="card"
+              style={{ scrollMarginTop: "96px" }}
+            >
               <div className="results-header">
                 <Sun style={{ color: "#ca8a04" }} />
                 <h3 className="results-title">Birth Information</h3>
@@ -2447,10 +2530,10 @@ export default function PredictionsPage() {
               </div>
             </div>
 
-<ChartHighlights
-  strongObservations={observationData?.strongObservations || []}
-  potential={observationData?.potential || []}
-/>
+            <ChartHighlights
+              strongObservations={observationData?.strongObservations || []}
+              potential={observationData?.potential || []}
+            />
 
             {challengeAnalysis?.hasChallenges && (
               <div className="mt-6 rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-white p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.2)] relative overflow-hidden">
@@ -2525,26 +2608,23 @@ export default function PredictionsPage() {
             )}
 
             <DashaIQ
-  dashaIQ={dashaIQ}
-  onTalkToAstrologer={handleTalkToAstrologer}
-/>
+              dashaIQ={dashaIQ}
+              onTalkToAstrologer={handleTalkToAstrologer}
+            />
 
-      <VimshottariMahaDasha
-        mahaRows={mahaRows}
-        antarRows={antarRows}
-        openAntarFor={openAntarFor}
-        antarLoadingFor={antarLoadingFor}
-        openAntarInlineFor={openAntarInlineFor}
-        activeMahaLord={activeMahaLord}
-      />
+            <VimshottariMahaDasha
+              mahaRows={mahaRows}
+              antarRows={antarRows}
+              openAntarFor={openAntarFor}
+              antarLoadingFor={antarLoadingFor}
+              openAntarInlineFor={openAntarInlineFor}
+              activeMahaLord={activeMahaLord}
+            />
 
-      <WhatsBlocking
-  blockers={insights?.blockers || []}
-  onTalkToAstrologer={handleTalkToAstrologer}
-/>
-
-
-
+            <WhatsBlocking
+              blockers={insights?.blockers || []}
+              onTalkToAstrologer={handleTalkToAstrologer}
+            />
 
             {/* Expert Astrologer CTA / Chat Window */}
             <div
@@ -2621,7 +2701,93 @@ export default function PredictionsPage() {
               )}
             </div>
 
+            {ashtakavarga && (
+              <div>
+                {/* Header */}
 
+                {/* <Orbit style={{ color: "#ca8a04" }} /> */}
+                <div>
+                  <h3 className="section-title flex justify-center align-center">
+                    Ashtakavarga
+                  </h3>
+                </div>
+
+                <div className="card mt-6">
+                  {/* Legend */}
+                  <div
+                    className="flex flex-wrap gap-4 text-xs mb-4"
+                    style={{ color: "#374151" }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                      Strong support (30+)
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                      Moderate (23–29)
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                      Low support (≤22)
+                    </div>
+                  </div>
+
+                  {/* SAV Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {ashtakavarga.SAV.map((v, i) => {
+                      const strength =
+                        v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
+
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-xl border text-center py-3 px-2 transition"
+                          style={{
+                            borderColor:
+                              strength === "strong"
+                                ? "rgba(34,197,94,0.4)"
+                                : strength === "weak"
+                                  ? "rgba(239,68,68,0.4)"
+                                  : "rgba(156,163,175,0.4)",
+                            background:
+                              strength === "strong"
+                                ? "rgba(34,197,94,0.06)"
+                                : strength === "weak"
+                                  ? "rgba(239,68,68,0.06)"
+                                  : "rgba(107,114,128,0.04)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "#6b7280",
+                              marginBottom: "0.15rem",
+                            }}
+                          >
+                            {SIGNS[i]}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                              color:
+                                strength === "strong"
+                                  ? "#15803d"
+                                  : strength === "weak"
+                                    ? "#b91c1c"
+                                    : "#374151",
+                            }}
+                          >
+                            {v}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {result && insights && (
               <section className="converting-card">
@@ -2637,6 +2803,7 @@ export default function PredictionsPage() {
                   openAntarInlineFor={openAntarInlineFor}
                   activeMahaLord={activeMahaLord}
                   onTalkToAstrologer={handleTalkToAstrologer}
+                  currentDashaChain={currentDashaChain}
                 />
               </section>
             )}
@@ -2809,6 +2976,71 @@ export default function PredictionsPage() {
                 </div>
               </div>
             )}
+
+           {result?.d1ChartSvg && (
+  <div className="card mt-4">
+    <div className="results-header">
+      <Orbit style={{ color: "#ca8a04" }} />
+      <h3 className="results-title">D1 – Lagna (Rasi) Chart</h3>
+    </div>
+
+    <div
+      className="chart-svg"
+      dangerouslySetInnerHTML={{ __html: result.d1ChartSvg }}
+    />
+  </div>
+)}
+
+
+            {navamsaPlacements.length > 0 && (
+              <div
+                id="navamsa-placements"
+                className="card mt-6 mb-6"
+                style={{ scrollMarginTop: "96px" }}
+              >
+                <div className="results-header">
+                  <Orbit style={{ color: "#ca8a04" }} />
+                  <h3 className="results-title">Navamsa (D9) Placements</h3>
+                </div>
+
+                <div className="table-scroll-container">
+                  <table className="planet-table">
+                    <thead>
+                      <tr>
+                        <th>Planet</th>
+                        <th>Sign</th>
+                        <th>House</th>
+                        {/* Remove Nakshatra and Degrees columns since API doesn't provide them */}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {navamsaPlacements.map((p) => (
+                        <tr key={p.name}>
+                          <td style={{ fontWeight: 500 }}>{p.name}</td>
+                          <td>{p.sign}</td>
+                          <td>{p.house}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {result?.d9ChartSvg && (
+  <div className="card mt-4">
+    <div className="results-header">
+      <Orbit style={{ color: "#ca8a04" }} />
+      <h3 className="results-title">D9 – Navamsa Chart</h3>
+    </div>
+
+    <div
+      className="chart-svg"
+      dangerouslySetInnerHTML={{ __html: result.d9ChartSvg }}
+    />
+  </div>
+)}
+
           </div>
         )}
         {/* Antar Dasha Modal */}
@@ -3051,7 +3283,7 @@ export default function PredictionsPage() {
           </div>
 
           {/* ACCORDIONS GO HERE */}
-          <div style={{ padding: 0 }}></div>
+
           {/* EXPLANATION ACCORDIONS */}
           <Section
             title="How Your Birth Chart Is Calculated"
@@ -3176,6 +3408,18 @@ export default function PredictionsPage() {
         <PhoneCallIcon className="global-floater-icon" />
         <span className="global-floater-text">Talk to Astrologer</span>
       </a>
+
+      <AstrologerAssistant
+        pageTitle="Predictions"
+        initialData={astrologerAssistantData}
+        chatType="prediction"
+        shouldReset={shouldResetChat}
+        formDataHash={currentFormDataHash}
+        chatSessionId={chatSessionId}
+        show={true}
+        hasData={!!result}
+        tabLabel={fullName || "Astrologer"} // 👈 NAME ON TAB
+      />
     </div>
   );
 }

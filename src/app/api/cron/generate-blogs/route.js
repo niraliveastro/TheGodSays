@@ -87,6 +87,7 @@ export async function GET(request) {
       skipped: result.skipped || 0,
       errors: result.errors || [],
       blogs: result.blogs || [],
+      dryRunWouldGenerate: result.dryRunWouldGenerate || [],
       timestamp: new Date().toISOString(),
     }, {
       status: result.success ? 200 : 500,
@@ -116,19 +117,18 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const maxBlogs = parseInt(body.max || '10')
+    const maxBlogs = Math.min(parseInt(body.max || '10', 10) || 10, 100)
     const dryRun = body.dryRun === true
     const filters = body.filters || {}
 
     console.log(`[Manual] Blog generation triggered - maxBlogs: ${maxBlogs}, dryRun: ${dryRun}`, filters)
 
-    // Get configuration
-    const config = getBlogGenerationConfig()
-    const effectiveMaxBlogs = Math.min(maxBlogs, config.maxBlogsPerRun)
+    // For manual admin runs, use the user's requested count directly (capped at 100)
+    // Do not cap with config.maxBlogsPerRun - that is for cron runs
 
     // Generate blogs
     const result = await generateBlogs({
-      maxBlogs: effectiveMaxBlogs,
+      maxBlogs,
       dryRun: dryRun,
       filters: filters,
     })
@@ -140,6 +140,7 @@ export async function POST(request) {
       skipped: result.skipped || 0,
       errors: result.errors || [],
       blogs: result.blogs || [],
+      dryRunWouldGenerate: result.dryRunWouldGenerate || [],
       timestamp: new Date().toISOString(),
     }, {
       status: result.success ? 200 : 500,

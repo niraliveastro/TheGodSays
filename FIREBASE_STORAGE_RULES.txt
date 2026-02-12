@@ -1,16 +1,47 @@
 rules_version = '2';
-
-// Production rules for NiraLiveAstro-Prod
-// Blog images are uploaded server-side via Admin SDK (bypasses rules)
-// These rules ensure public read access for blog images
 service firebase.storage {
   match /b/{bucket}/o {
     // Blog images - public read access (anyone can view)
     // Writes are handled server-side via Admin SDK, so no client write rules needed
-    match /blog/{fileName} {
+    match /blog/{allPath=**} {
       allow read: if true; // Public read access for blog images
       allow write: if false; // No client-side writes (use Admin SDK instead)
     }
+    
+    // ============================================
+    // COMPASS APP FOLDERS - Allow read/write for compass app
+    // ============================================
+    
+    match /compass_images/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /carousel/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /about_tiwari/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /images/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /videos/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /thumbnails/{allPaths=**} {
+      allow read, write: if true;
+    }
+    match /reports/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    // ============================================
+    // END COMPASS APP FOLDERS
+    // ============================================
     
     // Default: deny all other access
     match /{allPaths=**} {

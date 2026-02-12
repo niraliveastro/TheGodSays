@@ -20,10 +20,13 @@ import {
   Star,
   PhoneCallIcon,
   PhoneIcon,
+  Loader2
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistantTab from "@/components/AstrologerAssistantTab";
 import { astrologyAPI, geocodePlace, getTimezoneOffsetHours } from "@/lib/api";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+
 import PageSEO from "@/components/PageSEO";
 
 // Lazy load heavy components for better initial load
@@ -116,6 +119,7 @@ const Badge = ({ children, tone = "neutral" }) => {
  */
 export default function MatchingPage() {
   const { t } = useTranslation();
+  const googleLoaded = useGoogleMaps();
   // Form state for female and male individuals
   const [female, setFemale] = useState({
     fullName: "",
@@ -130,38 +134,48 @@ export default function MatchingPage() {
     place: "",
   });
   // Coordinates and suggestions state
-  const [fCoords, setFCoords] = useState(null); // Female coordinates {latitude, longitude}
-  const [mCoords, setMCoords] = useState(null); // Male coordinates {latitude, longitude}
-  const [fSuggest, setFSuggest] = useState([]); // Female place suggestions array
-  const [mSuggest, setMSuggest] = useState([]); // Male place suggestions array
-  const [fLocating, setFLocating] = useState(false); // Female location fetching state
-  const [mLocating, setMLocating] = useState(false); // Male location fetching state
-  const fTimer = useRef(null); // Debounce timer ref for female place search
-  const mTimer = useRef(null); // Debounce timer ref for male place search
-  const fDateInputRef = useRef(null); // Ref for female date input
-  const mDateInputRef = useRef(null); // Ref for male date input
-  const fTimeInputRef = useRef(null); // Ref for female time input
-  const mTimeInputRef = useRef(null); // Ref for male time input
-  const [expandedAddresses, setExpandedAddresses] = useState({}); // Track expanded addresses by itemId-field
+  const [fCoords, setFCoords] = useState(null);
+  const [mCoords, setMCoords] = useState(null);
+  const [fSuggest, setFSuggest] = useState([]);
+  const [mSuggest, setMSuggest] = useState([]);
+  const [fLocating, setFLocating] = useState(false);
+  const [mLocating, setMLocating] = useState(false);
+  const [fSuggesting, setFSuggesting] = useState(false);
+  const [mSuggesting, setMSuggesting] = useState(false);
+  const fTimer = useRef(null);
+  const mTimer = useRef(null);
+  const fDateInputRef = useRef(null);
+  const mDateInputRef = useRef(null);
+  const fTimeInputRef = useRef(null);
+  const mTimeInputRef = useRef(null);
+  const [expandedAddresses, setExpandedAddresses] = useState({});
+  const fAutocompleteService = useRef(null);
+const mAutocompleteService = useRef(null);
+const fPlacesService = useRef(null);
+const mPlacesService = useRef(null);
+
+  
   // Submission and result state
-  const [submitting, setSubmitting] = useState(false); // Loading state during submission
-  const [error, setError] = useState(""); // Error message string
-  const [result, setResult] = useState(null); // Ashtakoot result object
-  const [fDetails, setFDetails] = useState(null); // Female individual details object
-  const [mDetails, setMDetails] = useState(null); // Male individual details object
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [fDetails, setFDetails] = useState(null);
+  const [mDetails, setMDetails] = useState(null);
 
   // === Chat State ===
-  const [chatOpen, setChatOpen] = useState(false); // Chat modal visibility
-  const [chatSessionId, setChatSessionId] = useState(0); // Chat session counter for reset
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState(0);
   const [shouldResetChat, setShouldResetChat] = useState(false);
-  const [chatData, setChatData] = useState(null); // Data to pass to chat component
-  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false); // Minimized state for AI assistant
-  const chatRef = useRef(null); // Reference to chat section for scrolling
-  const resultsRef = useRef(null); // Reference to results section for auto-scrolling
+  const [chatData, setChatData] = useState(null);
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
+  const chatRef = useRef(null);
+  const resultsRef = useRef(null);
 
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
+
+
 
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
@@ -306,21 +320,9 @@ export default function MatchingPage() {
     });
   }, [history, historySearch]);
 
-  const resetAllFields = () => {
-    setFemale({
-      fullName: "",
-      dob: "",
-      tob: "",
-      place: "",
-    });
-
-    setMale({
-      fullName: "",
-      dob: "",
-      tob: "",
-      place: "",
-    });
-
+   const resetAllFields = () => {
+    setFemale({ fullName: "", dob: "", tob: "", place: "" });
+    setMale({ fullName: "", dob: "", tob: "", place: "" });
     setFCoords(null);
     setMCoords(null);
     setFSuggest([]);
@@ -329,8 +331,6 @@ export default function MatchingPage() {
     setResult(null);
     setFDetails(null);
     setMDetails(null);
-
-    // Reset chat when form is cleared
     setChatSessionId((prev) => prev + 1);
     setShouldResetChat(true);
     setChatData(null);
@@ -441,39 +441,52 @@ export default function MatchingPage() {
    * @param {string} key - The field key being changed.
    * @returns {function} Event handler for input change.
    */
-  const onChangePerson =
-    (setter, coordsSetter, suggestSetter, timerRef, key) => (e) => {
+  // Option 1: Make the whole onChange handler async (most common fix)
+  const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key, setSuggesting) => 
+    async (e) => {
       const v = e.target.value;
       setter((prev) => ({ ...prev, [key]: v }));
+
       if (key === "place") {
         coordsSetter(null);
+
         if (timerRef.current) clearTimeout(timerRef.current);
+
         timerRef.current = setTimeout(async () => {
-          if (!v || v.length < 2) {
+          if (!googleLoaded || !v || v.length < 2) {
             suggestSetter([]);
             return;
           }
+
+          setSuggesting(true);
+
           try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&q=${encodeURIComponent(
-              v,
-            )}`;
-            const res = await fetch(url, {
-              headers: { "Accept-Language": "en" },
+            const { AutocompleteSuggestion } = await window.google.maps.importLibrary("places");
+
+            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+              input: v,
+              language: "en",
+              region: "IN",
             });
-            const arr = await res.json();
+
             suggestSetter(
-              (arr || []).map((it) => ({
-                label: it.display_name,
-                latitude: parseFloat(it.lat),
-                longitude: parseFloat(it.lon),
-              })),
+              (suggestions || []).map(s => ({
+                label: s.placePrediction.text.text,
+                placeId: s.placePrediction.placeId,
+              }))
             );
-          } catch {
+
+            console.log('[Matching] Got suggestions:', suggestions?.length || 0);
+          } catch (err) {
+            console.warn("Google Places autocomplete failed:", err);
             suggestSetter([]);
+          } finally {
+            setSuggesting(false);
           }
-        }, 250);
+        }, 300);
       }
     };
+
   /**
    * Parses DOB (handles both YYYY-MM-DD and DD-MM-YYYY formats) and TOB (HH:MM) into API payload format.
    * @param {string} dob - Date of birth string (YYYY-MM-DD or DD-MM-YYYY).
@@ -486,57 +499,35 @@ export default function MatchingPage() {
     const dobParts = dob.split("-").map((n) => parseInt(n, 10));
     let Y, M, D;
 
-    // Handle both YYYY-MM-DD and DD-MM-YYYY formats
     if (dobParts.length === 3) {
       if (dobParts[0] > 1900) {
-        // YYYY-MM-DD format
         [Y, M, D] = dobParts;
       } else {
-        // DD-MM-YYYY format
         [D, M, Y] = dobParts;
       }
     } else {
-      throw new Error(
-        `Invalid date format: ${dob}. Expected YYYY-MM-DD or DD-MM-YYYY`,
-      );
+      throw new Error(`Invalid date format: ${dob}`);
     }
 
-    if (
-      !Y ||
-      !M ||
-      !D ||
-      Number.isNaN(Y) ||
-      Number.isNaN(M) ||
-      Number.isNaN(D)
-    ) {
+    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
       throw new Error(`Invalid date values: ${dob}`);
     }
 
-    // Validate date ranges
-    if (Y < 1900 || Y > 2100)
-      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12)
-      throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
-    // Parse time
     if (!tob) throw new Error("Time of birth is required");
     const timeParts = tob.split(":").map((n) => parseInt(n, 10));
     const [H, Min, S = 0] = timeParts;
 
     if (Number.isNaN(H) || Number.isNaN(Min) || Number.isNaN(S)) {
-      throw new Error(
-        `Invalid time format: ${tob}. Expected HH:MM or HH:MM:SS`,
-      );
+      throw new Error(`Invalid time format: ${tob}`);
     }
 
-    // Validate time ranges
-    if (H < 0 || H > 23)
-      throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59)
-      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59)
-      throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
@@ -548,15 +539,62 @@ export default function MatchingPage() {
    */
   async function reverseGeocodeCoords(lat, lon) {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
-      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      if (!googleLoaded || !window.google?.maps) {
+        return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      const res = await new Promise((resolve, reject) => {
+        geocoder.geocode({ location: { lat, lng: lon } }, (results, status) => {
+          if (status === "OK" && results?.length) {
+            resolve(results[0]);
+          } else {
+            reject(status);
+          }
+        });
+      });
+
+      return res.formatted_address || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     } catch {
       return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     }
   }
+
+  // Get Place Suggestion in the form using Google places
+
+  const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
+    if (!placeId || !window.google?.maps?.importLibrary) return;
+
+    try {
+      const { Place } = await window.google.maps.importLibrary("places");
+      const place = new Place({ id: placeId });
+
+      await place.fetchFields({
+        fields: ["location", "formattedAddress"],
+      });
+
+      if (!place.location) return;
+
+      const lat = place.location.lat();
+      const lng = place.location.lng();
+      const label = place.formattedAddress;
+
+      setter((prev) => ({
+        ...prev,
+        place: label,
+      }));
+
+      coordsSetter({
+        latitude: lat,
+        longitude: lng,
+        label,
+      });
+
+      console.log('[Matching] Resolved coordinates:', { lat, lng, label });
+    } catch (err) {
+      console.error("resolvePlaceDetails failed:", err);
+    }
+  };
 
   /**
    * Fetches current location for female and fills place field.
@@ -566,23 +604,30 @@ export default function MatchingPage() {
       setError("Geolocation is not supported by this browser.");
       return;
     }
+    
     setFLocating(true);
+    setError("");
+    
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
+          maximumAge: 0,
         });
       });
+      
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
+      
       setFemale((prev) => ({ ...prev, place: label }));
       setFCoords({ latitude, longitude, label });
       setFSuggest([]);
+      
+      console.log('[Matching] Female location:', { latitude, longitude, label });
     } catch (e) {
-      setError(
-        "Could not access your location. Please allow permission or type the city manually.",
-      );
+      console.error('[Matching] Female location error:', e);
+      setError("Could not access your location. Please allow permission or type the city manually.");
     } finally {
       setFLocating(false);
     }
@@ -596,23 +641,30 @@ export default function MatchingPage() {
       setError("Geolocation is not supported by this browser.");
       return;
     }
+    
     setMLocating(true);
+    setError("");
+    
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 15000,
+          maximumAge: 0,
         });
       });
+      
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
+      
       setMale((prev) => ({ ...prev, place: label }));
       setMCoords({ latitude, longitude, label });
       setMSuggest([]);
+      
+      console.log('[Matching] Male location:', { latitude, longitude, label });
     } catch (e) {
-      setError(
-        "Could not access your location. Please allow permission or type the city manually.",
-      );
+      console.error('[Matching] Male location error:', e);
+      setError("Could not access your location. Please allow permission or type the city manually.");
     } finally {
       setMLocating(false);
     }
@@ -675,11 +727,9 @@ export default function MatchingPage() {
     setFDetails(null);
     setMDetails(null);
 
-    // Check if form data has changed and reset chat if needed
     checkAndResetChatOnFormChange();
-
-    // Mark that chat should reset on next result (new form submission)
     setShouldResetChat(true);
+
     if (
       !female.fullName ||
       !female.dob ||
@@ -690,12 +740,12 @@ export default function MatchingPage() {
       !male.tob ||
       !male.place
     ) {
-      setError(
-        "Please complete all fields for both individuals, including names.",
-      );
+      setError("Please complete all fields for both individuals, including names.");
       return;
     }
+
     setSubmitting(true);
+
     try {
       const payload = await buildPayload();
       const res = await astrologyAPI.getSingleCalculation(
@@ -707,6 +757,7 @@ export default function MatchingPage() {
           ? JSON.parse(res.output)
           : res?.output || res;
       setResult(out);
+
       saveToHistory({
         id: Date.now(),
         femaleName: female.fullName,
@@ -717,10 +768,9 @@ export default function MatchingPage() {
         maleDob: male.dob,
         maleTob: male.tob,
         malePlace: male.place,
-         compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
+        compatibility: `${out?.total_score ?? 0}/${out?.out_of ?? 36}`,
         lastGenerated: new Date().toISOString(),
       });
-
 
       /* ---- Individual calculations ---- */
       const mkSinglePayload = (p) => ({
@@ -735,6 +785,7 @@ export default function MatchingPage() {
         timezone: p.timezone,
         config: { observation_point: "topocentric", ayanamsha: "lahiri" },
       });
+
       const fPayload = mkSinglePayload(payload.female);
       const mPayload = mkSinglePayload(payload.male);
       const endpoints = [
@@ -743,11 +794,11 @@ export default function MatchingPage() {
         "vimsottari/maha-dasas",
         "planets/extended",
       ];
+
       const [fCalc, mCalc] = await Promise.all([
         astrologyAPI.getMultipleCalculations(endpoints, fPayload),
         astrologyAPI.getMultipleCalculations(endpoints, mPayload),
       ]);
-
       // Validate that both API calls succeeded
       if (!fCalc || !fCalc.results) {
         console.error("[Matching] Female calculation failed:", fCalc);
@@ -1170,7 +1221,6 @@ export default function MatchingPage() {
     }
   };
 
-
   /* -------------------------------------------------------------- */
   /* Chat functionality */
   /* -------------------------------------------------------------- */
@@ -1389,6 +1439,29 @@ export default function MatchingPage() {
     male.place,
   ]);
 
+  useEffect(() => {
+  if (!googleLoaded || !window.google?.maps?.places) return;
+
+  // Female services
+  fAutocompleteService.current =
+    new window.google.maps.places.AutocompleteService();
+  fPlacesService.current =
+    new window.google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
+  // Male services
+  mAutocompleteService.current =
+    new window.google.maps.places.AutocompleteService();
+  mPlacesService.current =
+    new window.google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
+  console.log("[Matching] Google Places services initialized");
+}, [googleLoaded]);
+
+
   // Monitor form data changes and reset chat if needed
   useEffect(() => {
     // Only check if we have some form data filled
@@ -1486,165 +1559,165 @@ export default function MatchingPage() {
       setError("No result to download.");
       return;
     }
-    
+
     try {
       // Dynamically import PDF libraries only when needed (saves ~80KB initial bundle)
       const [{ default: jsPDF }, autoTable] = await Promise.all([
         import("jspdf"),
-        import("jspdf-autotable")
+        import("jspdf-autotable"),
       ]);
-      
+
       const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
-    let yPos = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      let yPos = 20;
 
-    // Title
-    doc.setFontSize(20);
-    doc.setFont(undefined, "bold");
-    doc.text("Vedic Astrology Match Report", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += 15;
-
-    // Birth Info
-    doc.setFontSize(12);
-    doc.setFont(undefined, "normal");
-    doc.text("Birth Details:", margin, yPos);
-    yPos += 10;
-    const femaleName = female.fullName || "Female";
-    const maleName = male.fullName || "Male";
-    doc.text(
-      `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
-        female.place
-      }`,
-      margin,
-      yPos,
-    );
-    yPos += 7;
-    doc.text(
-      `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
-      margin,
-      yPos,
-    );
-    yPos += 15;
-
-    // Score Summary
-    doc.setFont(undefined, "bold");
-    doc.text("Ashtakoot Compatibility Score:", margin, yPos);
-    yPos += 7;
-    doc.setFont(undefined, "normal");
-    const totalScore = Number(result?.total_score ?? 0);
-    const outOf = Number(result?.out_of ?? 36);
-    doc.text(`${totalScore}/${outOf}`, margin, yPos);
-    yPos += 15;
-
-    // Koot Table
-    doc.setFont(undefined, "bold");
-    doc.text("Koot Breakdown:", margin, yPos);
-    yPos += 10;
-    const kootTableData = KOOTS.map((k) => {
-      const sec = result?.[k];
-      const name = k
-        .replace(/_/g, " ")
-        .replace(/kootam/i, "")
-        .trim();
-      const score = typeof sec?.score === "number" ? sec.score : 0;
-      const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
-      const area =
-        {
-          varna: "Spiritual Compatibility",
-          vasya: "Mutual Affection / Control",
-          tara: "Health & Longevity",
-          yoni: "Sexual Compatibility",
-          "graha maitri": "Mental Harmony",
-          gana: "Temperament",
-          rasi: "Love & Emotion",
-          nadi: "Health & Genes",
-        }[name.toLowerCase()] || "—";
-      return [name, `${score}/${outOfK}`, area];
-    });
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Kootam", "Points", "Area of Life"]],
-      body: kootTableData,
-      theme: "striped",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [218, 165, 32] },
-      margin: { left: margin, right: margin },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 100 },
-      },
-    });
-    yPos = doc.lastAutoTable.finalY + 15;
-
-    // Female Details
-    if (fDetails) {
+      // Title
+      doc.setFontSize(20);
       doc.setFont(undefined, "bold");
-      doc.text("Female Details:", margin, yPos);
+      doc.text("Vedic Astrology Match Report", pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += 15;
+
+      // Birth Info
+      doc.setFontSize(12);
+      doc.setFont(undefined, "normal");
+      doc.text("Birth Details:", margin, yPos);
       yPos += 10;
-      if (fDetails.currentDasha) {
-        doc.setFont(undefined, "normal");
-        doc.text(`Current Dasha: ${fDetails.currentDasha}`, margin, yPos);
-        yPos += 7;
-      }
-      // Shadbala Table
-      const fShadData = (fDetails.shadbalaRows || []).map((p) => [
-        p.name,
-        p.percent ? `${p.percent.toFixed(1)}%` : "—",
-        p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
-        p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
-      ]);
+      const femaleName = female.fullName || "Female";
+      const maleName = male.fullName || "Male";
+      doc.text(
+        `${femaleName}: ${fmtDate(female.dob)} ${fmtTime(female.tob)}, ${
+          female.place
+        }`,
+        margin,
+        yPos,
+      );
+      yPos += 7;
+      doc.text(
+        `${maleName}: ${fmtDate(male.dob)} ${fmtTime(male.tob)}, ${male.place}`,
+        margin,
+        yPos,
+      );
+      yPos += 15;
+
+      // Score Summary
+      doc.setFont(undefined, "bold");
+      doc.text("Ashtakoot Compatibility Score:", margin, yPos);
+      yPos += 7;
+      doc.setFont(undefined, "normal");
+      const totalScore = Number(result?.total_score ?? 0);
+      const outOf = Number(result?.out_of ?? 36);
+      doc.text(`${totalScore}/${outOf}`, margin, yPos);
+      yPos += 15;
+
+      // Koot Table
+      doc.setFont(undefined, "bold");
+      doc.text("Koot Breakdown:", margin, yPos);
+      yPos += 10;
+      const kootTableData = KOOTS.map((k) => {
+        const sec = result?.[k];
+        const name = k
+          .replace(/_/g, " ")
+          .replace(/kootam/i, "")
+          .trim();
+        const score = typeof sec?.score === "number" ? sec.score : 0;
+        const outOfK = typeof sec?.out_of === "number" ? sec.out_of : 0;
+        const area =
+          {
+            varna: "Spiritual Compatibility",
+            vasya: "Mutual Affection / Control",
+            tara: "Health & Longevity",
+            yoni: "Sexual Compatibility",
+            "graha maitri": "Mental Harmony",
+            gana: "Temperament",
+            rasi: "Love & Emotion",
+            nadi: "Health & Genes",
+          }[name.toLowerCase()] || "—";
+        return [name, `${score}/${outOfK}`, area];
+      });
       autoTable(doc, {
         startY: yPos,
-        head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
-        body: fShadData,
-        theme: "grid",
-        styles: { fontSize: 8 },
+        head: [["Kootam", "Points", "Area of Life"]],
+        body: kootTableData,
+        theme: "striped",
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [218, 165, 32] },
         margin: { left: margin, right: margin },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 100 },
+        },
       });
-      yPos = doc.lastAutoTable.finalY + 10;
-    }
+      yPos = doc.lastAutoTable.finalY + 15;
 
-    // Male Details
-    if (mDetails) {
-      doc.setFont(undefined, "bold");
-      doc.text("Male Details:", margin, yPos);
-      yPos += 10;
-      if (mDetails.currentDasha) {
-        doc.setFont(undefined, "normal");
-        doc.text(`Current Dasha: ${mDetails.currentDasha}`, margin, yPos);
-        yPos += 7;
+      // Female Details
+      if (fDetails) {
+        doc.setFont(undefined, "bold");
+        doc.text("Female Details:", margin, yPos);
+        yPos += 10;
+        if (fDetails.currentDasha) {
+          doc.setFont(undefined, "normal");
+          doc.text(`Current Dasha: ${fDetails.currentDasha}`, margin, yPos);
+          yPos += 7;
+        }
+        // Shadbala Table
+        const fShadData = (fDetails.shadbalaRows || []).map((p) => [
+          p.name,
+          p.percent ? `${p.percent.toFixed(1)}%` : "—",
+          p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
+          p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
+        ]);
+        autoTable(doc, {
+          startY: yPos,
+          head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
+          body: fShadData,
+          theme: "grid",
+          styles: { fontSize: 8 },
+          margin: { left: margin, right: margin },
+        });
+        yPos = doc.lastAutoTable.finalY + 10;
       }
-      // Shadbala Table
-      const mShadData = (mDetails.shadbalaRows || []).map((p) => [
-        p.name,
-        p.percent ? `${p.percent.toFixed(1)}%` : "—",
-        p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
-        p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
-      ]);
-      autoTable(doc, {
-        startY: yPos,
-        head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
-        body: mShadData,
-        theme: "grid",
-        styles: { fontSize: 8 },
-        margin: { left: margin, right: margin },
-      });
-      yPos = doc.lastAutoTable.finalY + 10;
-    }
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setFont(undefined, "italic");
-    doc.text(
-      "Generated on " + new Date().toLocaleDateString(),
-      pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: "center" },
-    );
+      // Male Details
+      if (mDetails) {
+        doc.setFont(undefined, "bold");
+        doc.text("Male Details:", margin, yPos);
+        yPos += 10;
+        if (mDetails.currentDasha) {
+          doc.setFont(undefined, "normal");
+          doc.text(`Current Dasha: ${mDetails.currentDasha}`, margin, yPos);
+          yPos += 7;
+        }
+        // Shadbala Table
+        const mShadData = (mDetails.shadbalaRows || []).map((p) => [
+          p.name,
+          p.percent ? `${p.percent.toFixed(1)}%` : "—",
+          p.ishta ? `${p.ishta.toFixed(1)}%` : "—",
+          p.kashta ? `${p.kashta.toFixed(1)}%` : "—",
+        ]);
+        autoTable(doc, {
+          startY: yPos,
+          head: [["Planet", "Strength %", "Ishta %", "Kashta %"]],
+          body: mShadData,
+          theme: "grid",
+          styles: { fontSize: 8 },
+          margin: { left: margin, right: margin },
+        });
+        yPos = doc.lastAutoTable.finalY + 10;
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setFont(undefined, "italic");
+      doc.text(
+        "Generated on " + new Date().toLocaleDateString(),
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" },
+      );
 
       // Download
       doc.save(`astrology-match-${femaleName}-${maleName}-${Date.now()}.pdf`);
@@ -1705,6 +1778,175 @@ export default function MatchingPage() {
     "rasi_kootam",
     "nadi_kootam",
   ];
+
+
+  const fetchFemaleSuggestions = (query) => {
+  if (!query || query.length < 2) {
+    setFSuggest([]);
+    return;
+  }
+
+  if (fTimer.current) clearTimeout(fTimer.current);
+
+  fTimer.current = setTimeout(() => {
+    if (!googleLoaded || !fAutocompleteService.current) {
+      console.warn("[Matching] Female autocomplete not ready");
+      setFSuggest([]);
+      return;
+    }
+
+    setFSuggesting(true);
+
+    fAutocompleteService.current.getPlacePredictions(
+      {
+        input: query,
+        types: ["(cities)"],
+      },
+      (predictions, status) => {
+        setFSuggesting(false);
+
+        if (
+          status === window.google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
+          const suggestions = predictions.map((p) => ({
+            label: p.description,
+            placeId: p.place_id,
+          }));
+
+          setFSuggest(suggestions);
+          console.log("[Matching] Female suggestions:", suggestions.length);
+        } else {
+          setFSuggest([]);
+        }
+      }
+    );
+  }, 300);
+};
+
+
+const handleFemaleSuggestionClick = (suggestion) => {
+  if (!fPlacesService.current) {
+    setFemale((prev) => ({ ...prev, place: suggestion.label }));
+    setFSuggest([]);
+    return;
+  }
+
+  setFSuggest([]);
+  setFSuggesting(true);
+
+  fPlacesService.current.getDetails(
+    {
+      placeId: suggestion.placeId,
+      fields: ["geometry", "formatted_address", "name"],
+    },
+    (place, status) => {
+      setFSuggesting(false);
+
+      if (
+        status === window.google.maps.places.PlacesServiceStatus.OK &&
+        place
+      ) {
+        const latitude = place.geometry.location.lat();
+        const longitude = place.geometry.location.lng();
+        const label = place.formatted_address || place.name;
+
+        setFemale((prev) => ({ ...prev, place: label }));
+        setFCoords({ latitude, longitude, label });
+
+        console.log("[Matching] Female coordinates:", {
+          latitude,
+          longitude,
+        });
+      } else {
+        setFCoords(null);
+      }
+    }
+  );
+};
+const fetchMaleSuggestions = (query) => {
+  if (!query || query.length < 2) {
+    setMSuggest([]);
+    return;
+  }
+
+  if (mTimer.current) clearTimeout(mTimer.current);
+
+  mTimer.current = setTimeout(() => {
+    if (!googleLoaded || !mAutocompleteService.current) {
+      setMSuggest([]);
+      return;
+    }
+
+    setMSuggesting(true);
+
+    mAutocompleteService.current.getPlacePredictions(
+      {
+        input: query,
+        types: ["(cities)"],
+      },
+      (predictions, status) => {
+        setMSuggesting(false);
+
+        if (
+          status === window.google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
+          const suggestions = predictions.map((p) => ({
+            label: p.description,
+            placeId: p.place_id,
+          }));
+
+          setMSuggest(suggestions);
+        } else {
+          setMSuggest([]);
+        }
+      }
+    );
+  }, 300);
+};
+
+
+const handleMaleSuggestionClick = (suggestion) => {
+  if (!mPlacesService.current) {
+    setMale((prev) => ({ ...prev, place: suggestion.label }));
+    setMSuggest([]);
+    return;
+  }
+
+  setMSuggest([]);
+  setMSuggesting(true);
+
+  mPlacesService.current.getDetails(
+    {
+      placeId: suggestion.placeId,
+      fields: ["geometry", "formatted_address", "name"],
+    },
+    (place, status) => {
+      setMSuggesting(false);
+
+      if (
+        status === window.google.maps.places.PlacesServiceStatus.OK &&
+        place
+      ) {
+        const latitude = place.geometry.location.lat();
+        const longitude = place.geometry.location.lng();
+        const label = place.formatted_address || place.name;
+
+        setMale((prev) => ({ ...prev, place: label }));
+        setMCoords({ latitude, longitude, label });
+
+        console.log("[Matching] Male coordinates:", {
+          latitude,
+          longitude,
+        });
+      } else {
+        setMCoords(null);
+      }
+    }
+  );
+};
+
 
   /* -------------------------------------------------------------- */
   /* Person details component */
@@ -2197,8 +2439,7 @@ export default function MatchingPage() {
                     </div>
                     <p className="form-field-helper">24-hour format</p>
                   </div>
-
-                  {/* Place */}
+                  {/* Female Place input */}
                   <div className="form-field full">
                     <label className="form-field-label" htmlFor="female-place">
                       Place
@@ -2211,13 +2452,13 @@ export default function MatchingPage() {
                         className="form-field-input"
                         placeholder="e.g., Mumbai, India"
                         value={female.place}
-                        onChange={onChangePerson(
-                          setFemale,
-                          setFCoords,
-                          setFSuggest,
-                          fTimer,
-                          "place",
-                        )}
+                        onChange={(e) => {
+  const value = e.target.value;
+  setFemale((prev) => ({ ...prev, place: value }));
+  setFCoords(null);
+  fetchFemaleSuggestions(value);
+}}
+
                         autoComplete="off"
                         required
                       />
@@ -2227,32 +2468,50 @@ export default function MatchingPage() {
                         className="location-icon-btn"
                         title="Use current location"
                         onClick={useMyLocationFemale}
+                        disabled={fLocating}
                       >
-                        <MapPin />
+                        {fLocating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MapPin />
+                        )}
                       </button>
                     </div>
 
+                    {/* Autocomplete dropdown for female */}
                     {fSuggest.length > 0 && (
                       <div className="suggestions">
-                        {fSuggest.map((s, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setFemale((p) => ({ ...p, place: s.label }));
-                              setFCoords(s);
-                              setFSuggest([]);
-                            }}
-                          >
-                            <MapPin size={14} />
-                            <span>{s.label}</span>
-                          </button>
-                        ))}
+                        {fSuggesting && (
+                          <div className="suggestion-loading">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading suggestions...
+                          </div>
+                        )}
+                        {!fSuggesting &&
+                          fSuggest.map((s, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                resolvePlaceDetails(
+                                  s.placeId,
+                                  setFemale,
+                                  setFCoords,
+                                );
+                                setFSuggest([]);
+                              }}
+                            >
+                              <MapPin size={14} />
+                              <span>{s.label}</span>
+                            </button>
+                          ))}
                       </div>
                     )}
 
                     <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
+                      {fCoords
+                        ? "Location coordinates saved"
+                        : "Choose the nearest city for accurate calculation"}
                     </p>
                   </div>
                 </div>
@@ -2365,62 +2624,76 @@ export default function MatchingPage() {
                     <p className="form-field-helper">24-hour format</p>
                   </div>
 
-                  {/* Place */}
-                  <div className="form-field full">
-                    <label className="form-field-label" htmlFor="male-place">
-                      Place
-                    </label>
+                  {/* Male Place Input - Updated with Google Maps autocomplete */}
+        <div className="form-field full">
+          <label className="form-field-label" htmlFor="male-place">
+            Place
+          </label>
 
-                    <div className="input-with-icon">
-                      <input
-                        id="male-place"
-                        type="text"
-                        className="form-field-input"
-                        placeholder="e.g., Mumbai, India"
-                        value={male.place}
-                        onChange={onChangePerson(
-                          setMale,
-                          setMCoords,
-                          setMSuggest,
-                          mTimer,
-                          "place",
-                        )}
-                        autoComplete="off"
-                        required
-                      />
+          <div className="input-with-icon">
+            <input
+              id="male-place"
+              type="text"
+              className="form-field-input"
+              placeholder="e.g., Mumbai, India"
+              value={male.place}
+              onChange={(e) => {
+  const value = e.target.value;
+  setMale((prev) => ({ ...prev, place: value }));
+  setMCoords(null);
+  fetchMaleSuggestions(value);
+}}
 
-                      <button
-                        type="button"
-                        className="location-icon-btn"
-                        title="Use current location"
-                        onClick={useMyLocationMale}
-                      >
-                        <MapPin />
-                      </button>
-                    </div>
+              autoComplete="off"
+              required
+            />
 
-                    {mSuggest.length > 0 && (
-                      <div className="suggestions">
-                        {fSuggest.map((s, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setMale((p) => ({ ...p, place: s.label }));
-                              setMCoords(s);
-                              setMSuggest([]);
-                            }}
-                          >
-                            <MapPin size={14} />
-                            <span>{s.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <p className="form-field-helper place-helper">
-                      Choose the nearest city for accurate calculation
-                    </p>
-                  </div>
+            <button
+              type="button"
+              className="location-icon-btn"
+              title="Use current location"
+              onClick={useMyLocationMale}
+              disabled={mLocating}
+            >
+              {mLocating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <MapPin />
+              )}
+            </button>
+          </div>
+
+          {/* Autocomplete dropdown for male */}
+          {mSuggest.length > 0 && (
+            <div className="suggestions">
+              {mSuggesting && (
+                <div className="suggestion-loading">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading suggestions...
+                </div>
+              )}
+              {!mSuggesting && mSuggest.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    resolvePlaceDetails(s.placeId, setMale, setMCoords);
+                    setMSuggest([]);
+                  }}
+                >
+                  <MapPin size={14} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="form-field-helper place-helper">
+            {mCoords
+              ? "Location coordinates saved"
+              : "Choose the nearest city for accurate calculation"}
+          </p>
+        </div>
                 </div>
               </div>
             </section>
@@ -2860,8 +3133,6 @@ export default function MatchingPage() {
                         </div>
                       </div>
 
-
-
                       {/* SHADBALA */}
                       <table className="planet-table shadbala-table">
                         <thead>
@@ -2894,17 +3165,15 @@ export default function MatchingPage() {
 
                       {/* FOOTER */}
                       <div className="analysis-footer">
-                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                        <button
+                          className="outline-btn"
+                          onClick={onTalkToAstrologer}
+                        >
                           Understand what this means →
                         </button>
                       </div>
-                      
                     </div>
-
-                    
                   )}
-
-                  
 
                   {/* Female Planet Placements Card */}
                   {fDetails && (
@@ -3019,8 +3288,6 @@ export default function MatchingPage() {
                         </div>
                       </div>
 
-
-
                       <table className="planet-table shadbala-table">
                         <thead>
                           <tr>
@@ -3051,7 +3318,10 @@ export default function MatchingPage() {
                       </table>
 
                       <div className="analysis-footer">
-                        <button className="outline-btn" onClick={onTalkToAstrologer}>
+                        <button
+                          className="outline-btn"
+                          onClick={onTalkToAstrologer}
+                        >
                           Understand what this means →
                         </button>
                       </div>
@@ -3129,37 +3399,37 @@ export default function MatchingPage() {
                   )}
                 </div>
 
-{/* ✅ PREMIUM – full width guidance banner */}
-<div
-  className="guidance-banner premium-full matchmaking-banner"
-  onClick={() => router.push("/talk-to-astrologer")}
->
-  <div className="guidance-content">
-    <h3 className="guidance-title">
-      Wondering how strong this match really is?
-    </h3>
+                {/* ✅ PREMIUM – full width guidance banner */}
+                <div
+                  className="guidance-banner premium-full matchmaking-banner"
+                  onClick={() => router.push("/talk-to-astrologer")}
+                >
+                  <div className="guidance-content">
+                    <h3 className="guidance-title">
+                      Wondering how strong this match really is?
+                    </h3>
 
-    <p className="guidance-subtitle">
-      Talk to an experienced astrologer to understand compatibility, future
-      harmony, and the right steps forward for this relationship.
-    </p>
+                    <p className="guidance-subtitle">
+                      Talk to an experienced astrologer to understand
+                      compatibility, future harmony, and the right steps forward
+                      for this relationship.
+                    </p>
 
-    <button className="guidance-btn" onClick={onTalkToAstrologer}>
-      <PhoneIcon size={18} />
-      Talk to an astrologer
-    </button>
-  </div>
+                    <button
+                      className="guidance-btn"
+                      onClick={onTalkToAstrologer}
+                    >
+                      <PhoneIcon size={18} />
+                      Talk to an astrologer
+                    </button>
+                  </div>
 
-  <div className="guidance-illustration" aria-hidden>
-    {/* matchmaking illustration / knot / couple sketch via CSS */}
-  </div>
-</div>
-
-
+                  <div className="guidance-illustration" aria-hidden>
+                    {/* matchmaking illustration / knot / couple sketch via CSS */}
+                  </div>
+                </div>
               </div>
             )}
-
-            
 
             {/* Footer */}
             <div className="actionBar mt-8">
@@ -3423,82 +3693,91 @@ export default function MatchingPage() {
         </a>
 
         <AstrologerAssistantTab
-  pageTitle="Matching"
-  initialData={(() => {
-    const data = chatData || {
-      female: {
-        input: {
-          name: female.fullName,
-          dob: female.dob,
-          tob: female.tob,
-          place: female.place,
-          coords: fCoords,
-        },
-        details: fDetails,
-      },
-      male: {
-        input: {
-          name: male.fullName,
-          dob: male.dob,
-          tob: male.tob,
-          place: male.place,
-          coords: mCoords,
-        },
-        details: mDetails,
-      },
-      match: result || null,
-    };
-    return data;
-  })()}
-  chatType="matchmaking"
-  shouldReset={shouldResetChat}
-  formDataHash={currentFormDataHash}
-  chatSessionId={chatSessionId}
-  show={true}
-  hasData={!!result}
-/>
+          pageTitle="Matching"
+          initialData={(() => {
+            const data = chatData || {
+              female: {
+                input: {
+                  name: female.fullName,
+                  dob: female.dob,
+                  tob: female.tob,
+                  place: female.place,
+                  coords: fCoords,
+                },
+                details: fDetails,
+              },
+              male: {
+                input: {
+                  name: male.fullName,
+                  dob: male.dob,
+                  tob: male.tob,
+                  place: male.place,
+                  coords: mCoords,
+                },
+                details: mDetails,
+              },
+              match: result || null,
+            };
+            return data;
+          })()}
+          chatType="matchmaking"
+          shouldReset={shouldResetChat}
+          formDataHash={currentFormDataHash}
+          chatSessionId={chatSessionId}
+          show={true}
+          hasData={!!result}
+        />
       </div>
-      
+
       {/* SEO: FAQ Schema - Invisible to users */}
-      <PageSEO 
+      <PageSEO
         pageType="matching"
         faqs={[
           {
             question: "What Is Kundli Matching & Why It Matters for Marriage",
-            answer: "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage."
+            answer:
+              "Kundli matching is a Vedic astrology method used to assess marriage compatibility between two individuals. It compares planetary positions, Moon signs, and Nakshatras of both partners to understand how their energies interact over time. Rather than predicting fixed outcomes, kundli matching highlights strengths, challenges, and adjustment areas so couples can make informed, realistic, and prepared decisions about marriage.",
           },
           {
             question: "What Ashtakoot (Guna Milan) Actually Measures",
-            answer: "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number."
+            answer:
+              "Ashtakoot matching evaluates compatibility using eight factors derived from Moon signs and Nakshatras. Each koot represents a specific area of married life, such as emotional bonding, attraction, health, and temperament. While the total score provides an overview, understanding individual koot results is far more important than focusing only on the final number.",
           },
           {
             question: "Why Guna Milan Alone Is Not Enough",
-            answer: "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring."
+            answer:
+              "Guna milan is a basic compatibility filter, not a complete marriage analysis. Many successful marriages have low guna scores, while high scores can still face difficulties if planetary conditions are unfavorable. That's why serious marriage analysis must include planetary aspects, dashas, and dosha evaluation alongside Ashtakoot scoring.",
           },
           {
             question: "Planetary Compatibility Between Partners",
-            answer: "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies."
+            answer:
+              "Planetary compatibility examines how key planets like Venus, Mars, Moon, Jupiter, and Saturn interact between both charts. These interactions directly influence attraction, emotional bonding, patience, and long-term stability. Favorable planetary aspects can compensate for low guna scores, while challenging interactions may require conscious effort and remedies.",
           },
           {
             question: "Manglik Dosha & Other Important Doshas",
-            answer: "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions."
+            answer:
+              "Doshas indicate areas where planetary energies may cause imbalance. Manglik dosha relates to Mars placement and its impact on harmony and conflict. Nadi and Bhakoot doshas relate to health, emotional bonding, and longevity. Not all doshas are harmful. Proper analysis checks cancellations, planetary strength, and overall chart balance before drawing conclusions.",
           },
           {
             question: "Dasha & Timing Compatibility After Marriage",
-            answer: "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching."
+            answer:
+              "Dashas determine when certain planetary influences become active. Even a compatible match can feel challenging if both partners enter difficult dashas simultaneously. Dasha analysis helps identify supportive periods for marriage, relocation, career growth, and family planning — making timing as important as matching.",
           },
           {
             question: "AI-Based Kundli Matching vs Manual Analysis",
-            answer: "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed."
+            answer:
+              "AI enhances kundli matching by analyzing large combinations quickly and consistently. It calculates planetary positions, dashas, and compatibility layers with precision. However, interpretation still follows classical Vedic rules, and astrologers provide human judgment, context, and remedies where needed.",
           },
           {
             question: "What Your Compatibility Score Really Means",
-            answer: "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers."
+            answer:
+              "A compatibility score summarizes multiple factors into a single number, but it should never be viewed in isolation. The real value lies in understanding why the score is high or low and which areas need attention. Marriage success depends on awareness, communication, and preparedness — not just numbers.",
           },
           {
             question: "Can Remedies Improve Marriage Compatibility?",
-            answer: "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners."
-          }
+            answer:
+              "Remedies aim to balance planetary influences, not override destiny. They may include lifestyle adjustments, rituals, gemstones, or timing guidance. Remedies work best when combined with understanding, effort, and realistic expectations from both partners.",
+          },
         ]}
       />
     </>

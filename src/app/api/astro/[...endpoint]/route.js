@@ -65,6 +65,10 @@ const ALLOWED_ENDPOINTS = [
   "rituinfo",
   "samvatinfo",
   "aayanam",
+  "navamsa-chart-info",
+  "navamsa-chart-svg-code",
+
+
 ];
 
 export async function POST(request, { params }) {
