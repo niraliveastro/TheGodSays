@@ -24,7 +24,8 @@ export function useGoogleMaps() {
     // Load the script (New API - no libraries parameter needed)
     const script = document.createElement("script");
 script.src =
-  `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&v=weekly&loading=async`;
+  `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&v=weekly&libraries=places`;
+
     script.async = true;
     script.defer = true;
     script.onload = () => setLoaded(true);
