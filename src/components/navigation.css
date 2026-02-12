@@ -755,7 +755,7 @@ body {
 .nav-bottom-row .nav-button {
   color: #000000; /* Black text on golden background */
   font-weight: 300 !important; /* Normal weight - removed bold */
-  padding: 0.5rem 1rem; /* Original padding */
+  padding: 0.5rem 0.85rem; /* Slightly tighter spacing between bottom items */
   font-size: 0.9375rem; /* Original font size */
   white-space: nowrap;
   border-radius: 12px; /* Rounded corners */

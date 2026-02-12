@@ -4,7 +4,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 
-export default function BlogFilters({ blogs = [] }) {
+// Shared filters for blog listing pages.
+// basePath controls which page handles the filters: '/blog' or '/zodiac-today'.
+export default function BlogFilters({ blogs = [], basePath = '/blog' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [activeFilter, setActiveFilter] = useState('all')
@@ -148,10 +150,10 @@ export default function BlogFilters({ blogs = [] }) {
     const params = new URLSearchParams(searchParams.toString())
     if (filterValue === 'all') {
       params.delete('category')
-      router.push('/blog', { scroll: false })
+      router.push(basePath, { scroll: false })
     } else {
       params.set('category', encodeURIComponent(filterValue))
-      router.push(`/blog?${params.toString()}`, { scroll: false })
+      router.push(`${basePath}?${params.toString()}`, { scroll: false })
     }
   }
 

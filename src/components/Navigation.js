@@ -151,6 +151,8 @@ const Navigation = () => {
         icon: Sparkles, // Changed to Sparkles for cosmic events
       },
       { href: "/blog", label: t.nav.blog, icon: Rss },
+      // Zodiac News - AI-generated blogs
+      { href: "/zodiac-today/", label: "Zodiac News", icon: Orbit },
     ];
 
     return desktopItems;
@@ -394,6 +396,24 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
                     </Link>
                   );
                 })}
+
+                {/* Language selector row inside My Account dropdown */}
+                {item.dropdownId === "account" && (
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      // Simple toggle between English and Hindi
+                      changeLanguage(language === "en" ? "hi" : "en");
+                    }}
+                  >
+                    <Globe className="mr-2" />
+                    <span>
+                      Language ({language === "en" ? "English" : "हिन्दी"})
+                    </span>
+                    <ChevronDown className="dropdown-icon ml-auto" />
+                  </button>
+                )}
               </div>
             </div>
           </>
@@ -454,7 +474,7 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
     <nav className="enhanced-nav">
       <div className="nav-container">
         {/* TOP NAVBAR */}
-        <div className="nav-content">
+            <div className="nav-content">
           {/* Logo on left with text */}
           <Link href="/" className="nav-logo-wrapper nav-logo-left">
             <div className="nav-logo-icon">
@@ -496,69 +516,9 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
               {/* Desktop: Show all bottom nav items */}
               {!isMobile ? (
                 <>
-                  {userBottomNavItems.map((item, index) => {
-                    const navItem = renderNavItem(item);
-                    // Insert language dropdown right after Blog
-                    if (item.href === "/blog") {
-                      return (
-                        <Fragment key={item.href || index}>
-                          {navItem}
-                          <div
-                            className="nav-language-bottom"
-                            onMouseEnter={() => setLanguageDropdownOpen(true)}
-                            onMouseLeave={() => setLanguageDropdownOpen(false)}
-                          >
-                            <button
-                              className="nav-language-dropdown-button"
-                              onClick={() =>
-                                setLanguageDropdownOpen(!languageDropdownOpen)
-                              }
-                            >
-                              <Globe style={{ width: 18, height: 18 }} />
-                              <span>{language === "en" ? "ENG" : "HIN"}</span>
-                              <ChevronDown
-                                className="dropdown-icon"
-                                style={{
-                                  width: 16,
-                                  height: 16,
-                                  transform: languageDropdownOpen
-                                    ? "rotate(180deg)"
-                                    : "rotate(0deg)",
-                                  transition: "transform 0.3s ease",
-                                }}
-                              />
-                            </button>
-                            {languageDropdownOpen && (
-                              <>
-                                <div className="nav-dropdown-bridge"></div>
-                                <div className="nav-language-dropdown-menu">
-                                  <button
-                                    className={`nav-language-dropdown-item ${language === "en" ? "active" : ""}`}
-                                    onClick={() => {
-                                      changeLanguage("en");
-                                      setLanguageDropdownOpen(false);
-                                    }}
-                                  >
-                                    ENG
-                                  </button>
-                                  <button
-                                    className={`nav-language-dropdown-item ${language === "hi" ? "active" : ""}`}
-                                    onClick={() => {
-                                      changeLanguage("hi");
-                                      setLanguageDropdownOpen(false);
-                                    }}
-                                  >
-                                    हिंदी
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </Fragment>
-                      );
-                    }
-                    return navItem;
-                  })}
+                  {userBottomNavItems.map((item, index) =>
+                    renderNavItem(item, "desktop_bottom_nav"),
+                  )}
                 </>
               ) : (
                 /* Mobile: Show simplified bottom nav items with normal icon + text */
