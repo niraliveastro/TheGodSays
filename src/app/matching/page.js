@@ -2592,7 +2592,7 @@ export default function MatchingPage() {
               width: "100%",
               padding: "0.75rem",
               textAlign: "left",
-              background: "transparent",
+              background: "var(--color-cream)",
               border: "none",
               cursor: "pointer",
               display: "flex",
@@ -2727,7 +2727,8 @@ export default function MatchingPage() {
                   </div>
 
                   {/* Male Place Input - Updated with Google Maps autocomplete */}
-                  <div className="form-field full">
+                  <div className="form-field full"
+                  style={{position: "relative"}}>
                     <label className="form-field-label" htmlFor="male-place">
                       Place
                     </label>
@@ -2766,8 +2767,9 @@ export default function MatchingPage() {
 
                     {/* Autocomplete dropdown for male */}
                     {mSuggest.length > 0 && (
-                      <div className="suggestions"
-                      style={{
+                       <div
+    className="suggestions"
+    style={{
     position: "absolute",
     top: "100%",
     left: 0,
@@ -2779,7 +2781,8 @@ export default function MatchingPage() {
     boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
     maxHeight: "220px",
     overflowY: "auto"
-  }}>
+  }}
+  >
                         {mSuggesting && (
                           <div className="suggestion-loading">
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -2789,13 +2792,26 @@ export default function MatchingPage() {
                         {!mSuggesting &&
                           mSuggest.map((s, i) => (
                             <button
-                              key={i}
-                              type="button"
-                              onClick={() => handleMaleSuggestionClick(s)} // ✅ Use the handler
-                            >
-                              <MapPin size={14} />
-                              <span>{s.label}</span>
-                            </button>
+            key={i}
+            type="button"
+            onClick={() => handleMaleSuggestionClick(s)}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              textAlign: "left",
+              background: "var(--color-cream)",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <MapPin size={14} />
+            <span>{s.label}</span>
+          </button>
                           ))}
                       </div>
                     )}
