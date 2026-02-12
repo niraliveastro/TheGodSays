@@ -1,8 +1,10 @@
 /**
  * Blog Image Service
  * Generates topic-relevant images for blogs using AI image models.
- * No local project images are used; everything is generated from prompts.
+ * Images are uploaded to Firebase Storage (blog/ai/) so they persist like manual blog images.
  */
+
+import { uploadRemoteImageToStorage } from '@/lib/upload-remote-image-to-storage'
 
 // Strong default; can be overridden with BLOG_IMAGE_MODEL in env
 const OPENAI_IMAGE_MODEL = process.env.BLOG_IMAGE_MODEL || 'dall-e-3'
@@ -41,7 +43,11 @@ async function generateImageUrl(prompt) {
 
     const data = await res.json()
     const url = data?.data?.[0]?.url
-    return typeof url === 'string' ? url : null
+    const tempUrl = typeof url === 'string' ? url : null
+    if (!tempUrl) return null
+    // OpenAI URLs are temporary; persist to Firebase Storage (same as manual blog images)
+    const storageUrl = await uploadRemoteImageToStorage(tempUrl, { prefix: 'blog/ai' })
+    return storageUrl || tempUrl
   } catch (e) {
     console.error('[blog-image-service] Error generating image:', e)
     return null

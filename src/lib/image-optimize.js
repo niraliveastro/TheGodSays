@@ -39,28 +39,8 @@ export function getOptimizedImageUrl(imageUrl, size = 'desktop') {
       return imageUrl.replace(regex, `${suffix}.$2`)
     }
     
-    // If no variant suffix exists, try to insert it before file extension
-    if (!existingSuffix && suffix) {
-      try {
-        const urlObj = new URL(imageUrl)
-        const pathParts = urlObj.pathname.split('/')
-        const fileName = pathParts[pathParts.length - 1]
-        
-        // Match filename with extension
-        const fileMatch = fileName.match(/^(.+)(\.(webp|jpg|jpeg|png|gif|svg))$/i)
-        if (fileMatch) {
-          const nameWithoutExt = fileMatch[1]
-          const extension = fileMatch[2]
-          const newFileName = `${nameWithoutExt}${suffix}${extension}`
-          pathParts[pathParts.length - 1] = newFileName
-          urlObj.pathname = pathParts.join('/')
-          return urlObj.toString()
-        }
-      } catch (e) {
-        // If URL parsing fails, fall through to optimization API
-        console.warn('Failed to parse image URL for variant insertion:', e)
-      }
-    }
+    // No variant suffix (e.g. AI-generated single file: blog/ai/123.webp).
+    // Do NOT invent -mobile/-desktop URLs — those files don't exist. Use optimization API instead.
     
     // Fallback: Use optimization API for Firebase Storage images without variants
     const widths = {

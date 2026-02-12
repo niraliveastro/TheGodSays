@@ -3,6 +3,7 @@ import admin from 'firebase-admin'
 let adminApp = null
 let dbInstance = null
 let authInstance = null
+let storageInstance = null
 let initializationAttempted = false
 
 // Lazy initialization function - called when db/auth is accessed
@@ -25,6 +26,7 @@ function initializeFirebaseAdmin() {
       adminApp = admin.app()
       dbInstance = adminApp.firestore()
       authInstance = adminApp.auth()
+      storageInstance = typeof adminApp.storage === 'function' ? adminApp.storage() : null
       return adminApp
     }
 
@@ -70,10 +72,12 @@ function initializeFirebaseAdmin() {
       adminApp = admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: projectId,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || undefined,
       })
       
       dbInstance = adminApp.firestore()
       authInstance = adminApp.auth()
+      storageInstance = adminApp.storage()
       
       console.log('[Firebase Admin] Initialized successfully')
       return adminApp
@@ -138,3 +142,27 @@ export function getAuth() {
 // Use getFirestore() and getAuthInstance() instead for better clarity
 export const db = null // Will be initialized lazily via getFirestore()
 export const auth = null // Will be initialized lazily via getAuthInstance()
+
+/**
+ * Get Firebase Storage instance (for server-side uploads e.g. blog images).
+ * Requires NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET for bucket name.
+ */
+export function getStorage() {
+  if (!storageInstance) {
+    initializeFirebaseAdmin()
+    if (adminApp && adminApp.storage) {
+      storageInstance = adminApp.storage()
+    }
+  }
+  return storageInstance
+}
+
+/**
+ * Get Firebase Storage bucket for blog/images. Returns null if bucket not configured.
+ */
+export function getStorageBucket() {
+  const storage = getStorage()
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  if (!storage || !bucketName) return null
+  return storage.bucket(bucketName)
+}
