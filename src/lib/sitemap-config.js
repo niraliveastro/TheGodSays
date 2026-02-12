@@ -43,6 +43,8 @@ export const STATIC_PATHS = [
   
   // Blog (High Priority)
   { path: 'blog', changeFrequency: 'daily', priority: 0.9 },
+  // Zodiac News (AI blog listing)
+  { path: 'zodiac-today', changeFrequency: 'daily', priority: 0.9 },
   
   // Other Important Pages - NEW URLs
   { path: 'kundli', changeFrequency: 'weekly', priority: 0.8 },
