@@ -37,8 +37,8 @@ export default function Footer() {
             <ul className="footer-links">
               <li><Link href="/panchang">Panchang</Link></li>
               <li><Link href="/numerology">Numerology</Link></li>
-              <li><Link href="/talk-to-astrologer">Talk to Astrologer</Link></li>
-              <li><Link href="/blog">Blog</Link></li>
+              <li><Link href="/blog">Astrology Articles</Link></li>
+              <li><Link href="/zodiac-today">Zodiac News</Link></li>
             </ul>
           </div>
 
@@ -48,8 +48,8 @@ export default function Footer() {
             <ul className="footer-links">
               <li><Link href="/kundli-prediction/">Personalized Readings</Link></li>
               <li><Link href="/kundli-matching/">Kundali Matching</Link></li>
-              <li><Link href="/blog">Astrology Articles</Link></li>
-              <li><Link href="/account/astrologer">Astrologer Profiles</Link></li>
+              <li><Link href="/talk-to-astrologer">Talk to Astrologer</Link></li>
+              <li><Link href="/talk-to-astrologer">Astrologer Profiles</Link></li>
             </ul>
           </div>
 
