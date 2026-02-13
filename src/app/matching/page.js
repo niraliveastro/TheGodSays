@@ -2347,7 +2347,7 @@ export default function MatchingPage() {
             {/* Header */}
             <header
               className="header"
-              style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+            
             >
               <IoHeartCircle
                 className="headerIcon"

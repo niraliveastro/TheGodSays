@@ -2568,3 +2568,11 @@ input[type="time"]::-webkit-datetime-edit {
   margin: 0 auto;
 }
 
+.charts-wrapper .card {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-svg {
+  flex: 1;
+}

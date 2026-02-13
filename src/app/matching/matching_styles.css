@@ -1530,3 +1530,25 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     height: 140px;
   }
 }
+
+/* Trust Line */
+.trust-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.trust-line-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.trust-line-separator {
+  color: #d1d5db;
+}
