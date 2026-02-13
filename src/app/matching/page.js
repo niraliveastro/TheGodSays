@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
+import MatchInsights from "./components/MatchInsights";
+
 import {
   Sparkles,
   Sun,
@@ -3203,6 +3205,8 @@ const d9ChartSvg = normalizeSvg(
               </div>
             </div>
 
+             <MatchInsights result={result} />
+
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
               <div className="grid md:grid-cols-2 gap-8 mt-8">
@@ -3553,6 +3557,9 @@ const d9ChartSvg = normalizeSvg(
                       </div>
                     </div>
                   )}
+
+                 
+
 
                   {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
   <div
