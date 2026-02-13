@@ -1376,33 +1376,6 @@ export default function PredictionsPage() {
     }
   }
 
-  async function openAiPredictionsFor(planetLord) {
-    setSelectedPlanetForPredictions(planetLord);
-    setPredictionsOpen(true);
-    setPredictionsLoading(true);
-    setPredictionsError("");
-    setAiPredictions("");
-
-    try {
-      const inp = result?.input;
-      if (!inp) throw new Error("Missing birth details for predictions.");
-      const mahaPeriod = mahaRows.find((row) => row.lord === planetLord);
-      if (!mahaPeriod) throw new Error("Maha Dasha period not found.");
-      const predictions = await generateAiPredictions(
-        planetLord,
-        mahaPeriod,
-        inp,
-      );
-      setAiPredictions(predictions);
-    } catch (e) {
-      setPredictionsError(
-        e?.message ||
-          "Failed to generate personalized astrological predictions.",
-      );
-    } finally {
-      setPredictionsLoading(false);
-    }
-  }
 
   async function generateAiPredictions(planet, mahaPeriod) {
     return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`;

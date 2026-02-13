@@ -202,7 +202,7 @@ export const en = {
   // Matching Page
   matching: {
     title: "Match Making",
-    subtitle: "Enter birth details for both to get Ashtakoot score",
+    subtitle: "Discover compatibility with your partner, issues and remedies",
     description: "Check compatibility between two people based on Vedic astrology",
     birthDetails: "Birth Details",
     enterBothDetails: "Enter birth details for both individuals",
@@ -237,7 +237,7 @@ export const en = {
   // Predictions Page
   predictions: {
     title: "Cosmic Insights",
-    subtitle: "Discover your birth chart, planetary positions and life predictions",
+    subtitle: "Discover your birth chart, perfect predictions, events timeline and more.",
     description: "Get detailed predictions based on your birth chart",
     enterDetails: "Birth Details",
     enterCosmicCoordinates: "Enter your cosmic coordinates",

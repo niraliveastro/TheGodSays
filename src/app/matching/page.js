@@ -575,42 +575,6 @@ export default function MatchingPage() {
     }
   }
 
-  // Get Place Suggestion in the form using Google places
-
-  const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
-    if (!placeId || !window.google?.maps?.importLibrary) return;
-
-    try {
-      const { Place } = await window.google.maps.importLibrary("places");
-      const place = new Place({ id: placeId });
-
-      await place.fetchFields({
-        fields: ["location", "formattedAddress"],
-      });
-
-      if (!place.location) return;
-
-      const lat = place.location.lat();
-      const lng = place.location.lng();
-      const label = place.formattedAddress;
-
-      setter((prev) => ({
-        ...prev,
-        place: label,
-      }));
-
-      coordsSetter({
-        latitude: lat,
-        longitude: lng,
-        label,
-      });
-
-      console.log("[Matching] Resolved coordinates:", { lat, lng, label });
-    } catch (err) {
-      console.error("resolvePlaceDetails failed:", err);
-    }
-  };
-
   /**
    * Fetches current location for female and fills place field.
    */
@@ -818,6 +782,9 @@ export default function MatchingPage() {
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
         "planets/extended",
+        "horoscope-chart-svg-code",
+"navamsa-chart-svg-code"
+
       ];
 
       const [fCalc, mCalc] = await Promise.all([
@@ -1143,26 +1110,50 @@ export default function MatchingPage() {
       };
 
       const buildUserDetails = (calc) => {
-        const r = calc?.results || {};
-        const shadbala = parseShadbala(r["shadbala/summary"]);
-        const vims = r["vimsottari/dasa-information"]
-          ? safeParse(
-              safeParse(
-                r["vimsottari/dasa-information"].output ??
-                  r["vimsottari/dasa-information"],
-              ),
-            )
-          : null;
-        const maha = parseMaha(r["vimsottari/maha-dasas"]);
-        const planets = parsePlanets(r["planets/extended"]);
-        return {
-          currentDasha: currentDashaChain(vims) || null,
-          shadbalaRows: toShadbalaRows(shadbala),
-          placements: toPlacements(planets),
-          vimsottari: vims, // Include raw vimsottari data for Chat component
-          mahaDasas: maha, // Include maha dasas data for Chat component
-        };
-      };
+  const r = calc?.results || {};
+
+  const shadbala = parseShadbala(r["shadbala/summary"]);
+  const vims = r["vimsottari/dasa-information"]
+    ? safeParse(
+        safeParse(
+          r["vimsottari/dasa-information"].output ??
+            r["vimsottari/dasa-information"],
+        ),
+      )
+    : null;
+
+  const maha = parseMaha(r["vimsottari/maha-dasas"]);
+  const planets = parsePlanets(r["planets/extended"]);
+
+ 
+ const normalizeSvg = (v) => {
+  if (!v) return null;
+  const raw = typeof v === "string" ? v : v?.output || v?.svg || null;
+  return typeof raw === "string" && raw.includes("<svg") ? raw : null;
+};
+
+const d1ChartSvg = normalizeSvg(
+  r["horoscope-chart-svg-code"]
+);
+
+const d9ChartSvg = normalizeSvg(
+  r["navamsa-chart-svg-code"]
+);
+
+
+  return {
+    currentDasha: currentDashaChain(vims) || null,
+    shadbalaRows: toShadbalaRows(shadbala),
+    placements: toPlacements(planets),
+    vimsottari: vims,
+    mahaDasas: maha,
+
+    
+    d1ChartSvg,
+    d9ChartSvg,
+  };
+};
+
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
 
@@ -3371,6 +3362,44 @@ export default function MatchingPage() {
                       </div>
                     </div>
                   )}
+
+                  {(fDetails?.d1ChartSvg || fDetails?.d9ChartSvg) && (
+  <div
+    className="charts-wrapper mt-6"
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+      gap: "1.5rem",
+    }}
+  >
+    {fDetails?.d1ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#a855f7" }} />
+          <h3 className="results-title">Female D1 – Lagna Chart</h3>
+        </div>
+        <div
+          className="chart-svg"
+          dangerouslySetInnerHTML={{ __html: fDetails.d1ChartSvg }}
+        />
+      </div>
+    )}
+
+    {fDetails?.d9ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#a855f7" }} />
+          <h3 className="results-title">Female D9 – Navamsa Chart</h3>
+        </div>
+        <div
+          className="chart-svg"
+          dangerouslySetInnerHTML={{ __html: fDetails.d9ChartSvg }}
+        />
+      </div>
+    )}
+  </div>
+)}
+
                 </div>
 
                 {/* Male Details */}
@@ -3524,6 +3553,44 @@ export default function MatchingPage() {
                       </div>
                     </div>
                   )}
+
+                  {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
+  <div
+    className="charts-wrapper mt-6"
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+      gap: "1.5rem",
+    }}
+  >
+    {mDetails?.d1ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#f59e0b" }} />
+          <h3 className="results-title">Male D1 – Lagna Chart</h3>
+        </div>
+        <div
+          className="chart-svg"
+          dangerouslySetInnerHTML={{ __html: mDetails.d1ChartSvg }}
+        />
+      </div>
+    )}
+
+    {mDetails?.d9ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#f59e0b" }} />
+          <h3 className="results-title">Male D9 – Navamsa Chart</h3>
+        </div>
+        <div
+          className="chart-svg flex justify-center align-center mx-auto"
+          dangerouslySetInnerHTML={{ __html: mDetails.d9ChartSvg }}
+        />
+      </div>
+    )}
+  </div>
+)}
+
                 </div>
 
                 {/* ✅ PREMIUM – full width guidance banner */}
