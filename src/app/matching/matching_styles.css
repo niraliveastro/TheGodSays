@@ -559,7 +559,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .results-title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 500;
   color: #1f2937;
 }
@@ -1563,3 +1563,27 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   letter-spacing: -0.02em;
   font-family: "Cormoran Garamond", serif;
 }
+.details-grid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .details-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* Keep each column vertical */
+.details-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Charts always stretch full width of their column */
+.charts-wrapper {
+  width: 100%;
+}
+

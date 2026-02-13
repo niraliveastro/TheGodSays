@@ -143,14 +143,14 @@ export default function AdvancedMatchGuidance({
   /* ====================================================== */
 
   return (
-    <div className="mt-12 rounded-2xl border border-indigo-200 bg-gradient-to-br from-white to-indigo-50 p-8 shadow-xl">
+    <div className="mt-12 rounded-2xl border border-indigo-200 bg-gradient-to-br from-white to-amber-50 p-8 shadow-xl">
       
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 rounded-xl bg-indigo-100">
-          <Sparkles className="w-5 h-5 text-indigo-600" />
+          <Sparkles className="w-4 h-4 text-indigo-600" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-800">
+        <h3 className="results-title">
           Advanced Compatibility Guidance
         </h3>
       </div>
@@ -167,7 +167,7 @@ export default function AdvancedMatchGuidance({
         {[{ name: femaleName, planets: femaleWeak },
           { name: maleName, planets: maleWeak }].map((person, i) => (
           <div key={i}>
-            <h4 className="font-semibold text-gray-700 mb-4">
+            <h4 className="font-medium text-gray-700 mb-4">
               Strengthen Planets for {person.name || "Partner"}
             </h4>
 
@@ -217,7 +217,7 @@ export default function AdvancedMatchGuidance({
             <div className="p-6 rounded-xl border border-rose-200 bg-rose-50">
               <div className="flex items-center gap-2 mb-2">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
-                <h4 className="font-semibold text-rose-700">
+                <h4 className="font-medium text-rose-700">
                   Manglik Influence Detected
                 </h4>
               </div>
@@ -235,7 +235,7 @@ export default function AdvancedMatchGuidance({
 
           {nadiDosha && (
             <div className="p-6 rounded-xl border border-amber-200 bg-amber-50">
-              <h4 className="font-semibold text-amber-700 mb-2">
+              <h4 className="font-medium text-amber-700 mb-2">
                 Nadi Dosha Observed
               </h4>
               <p className="text-xs text-amber-700">
@@ -251,7 +251,7 @@ export default function AdvancedMatchGuidance({
       <div className="p-6 rounded-xl border border-indigo-200 bg-indigo-100">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="w-4 h-4 text-indigo-700" />
-          <h4 className="font-semibold text-indigo-800">
+          <h4 className="font-medium text-indigo-800">
             Marriage Timing Outlook
           </h4>
         </div>

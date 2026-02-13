@@ -49,14 +49,14 @@ export default function MatchRemedies({ result, femaleName, maleName }) {
   if (weakAreas.length === 0) return null;
 
   return (
-    <div className="mt-10 rounded-2xl border border-purple-200 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg">
+    <div className="mt-10 rounded-2xl border border-purple-200 bg-gradient-to-br from-white to-amber-50 p-6 shadow-lg">
       
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 rounded-xl bg-purple-100">
-          <Sparkles className="w-5 h-5 text-purple-600" />
+          <Sparkles className="w-4 h-4 text-purple-600" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-800">
+        <h3 className="results-title">
           Suggested Remedies & Balance Guidance
         </h3>
       </div>
@@ -76,7 +76,7 @@ export default function MatchRemedies({ result, femaleName, maleName }) {
               key={key}
               className="rounded-xl border border-purple-200 bg-white p-5 shadow-sm"
             >
-              <h4 className="text-sm font-semibold text-purple-700 mb-4 uppercase tracking-wide">
+              <h4 className="text-sm font-medium text-purple-700 mb-4 uppercase tracking-wide">
                 {data.title}
               </h4>
 

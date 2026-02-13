@@ -61,7 +61,7 @@ export default function MatchInsights({ result }) {
         <div className="mb-8">
           <div className="flex justify-center items-center gap-2 mb-3">
             <TrendingUp className="w-5 h-5 text-gray-600 mb-2" />
-            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex justify-center align-center">
+            <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide flex justify-center align-center">
               Overall Relationship Potential
             </h4>
           </div>
