@@ -6,7 +6,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
 import MatchInsights from "./components/MatchInsights";
-
+import MatchRemedies from "./components/MatchRemedies";
+import AdvancedMatchGuidance from "./components/AdvancedMatchRemedies";
 import {
   Sparkles,
   Sun,
@@ -3206,6 +3207,21 @@ const d9ChartSvg = normalizeSvg(
             </div>
 
              <MatchInsights result={result} />
+             <MatchRemedies
+  result={result}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+/>
+
+<AdvancedMatchGuidance
+  femaleDetails={fDetails}
+  maleDetails={mDetails}
+  result={result}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+/>
+
+
 
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
@@ -3383,7 +3399,7 @@ const d9ChartSvg = normalizeSvg(
           <h3 className="results-title">Female D1 – Lagna Chart</h3>
         </div>
         <div
-          className="chart-svg"
+          className="chart-svg flex justify-center align-center mx-auto"
           dangerouslySetInnerHTML={{ __html: fDetails.d1ChartSvg }}
         />
       </div>
@@ -3396,7 +3412,7 @@ const d9ChartSvg = normalizeSvg(
           <h3 className="results-title">Female D9 – Navamsa Chart</h3>
         </div>
         <div
-          className="chart-svg"
+          className="chart-svg flex justify-center align-center mx-auto"
           dangerouslySetInnerHTML={{ __html: fDetails.d9ChartSvg }}
         />
       </div>
@@ -3577,7 +3593,7 @@ const d9ChartSvg = normalizeSvg(
           <h3 className="results-title">Male D1 – Lagna Chart</h3>
         </div>
         <div
-          className="chart-svg"
+          className="chart-svg flex justify-center align-center mx-auto"
           dangerouslySetInnerHTML={{ __html: mDetails.d1ChartSvg }}
         />
       </div>
