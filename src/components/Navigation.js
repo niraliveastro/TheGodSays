@@ -193,8 +193,9 @@ const Navigation = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (openDropdown && !event.target.closest("[data-dropdown-container]")) {
+      if (!event.target.closest("[data-dropdown-container]")) {
         setOpenDropdown(null);
+        setLanguageDropdownOpen(false);
       }
     };
 
@@ -205,7 +206,7 @@ const Navigation = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [openDropdown]);
+  }, [openDropdown, languageDropdownOpen]);
 
   const navItems = isAstrologer ? astrologerNavItems : userMobileNavItems;
 
@@ -396,24 +397,6 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
                     </Link>
                   );
                 })}
-
-                {/* Language selector row inside My Account dropdown */}
-                {item.dropdownId === "account" && (
-                  <button
-                    type="button"
-                    className="nav-dropdown-item"
-                    onClick={() => {
-                      // Simple toggle between English and Hindi
-                      changeLanguage(language === "en" ? "hi" : "en");
-                    }}
-                  >
-                    <Globe className="mr-2" />
-                    <span>
-                      Language ({language === "en" ? "English" : "हिन्दी"})
-                    </span>
-                    <ChevronDown className="dropdown-icon ml-auto" />
-                  </button>
-                )}
               </div>
             </div>
           </>
@@ -488,16 +471,20 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
           {isAstrologer && (
             <div className="nav-desktop">
               {astrologerNavItems.map((item) => renderNavItem(item))}
-              <div className="ml-4">
+              <div className="ml-1.5">
                 <LanguageSwitcher />
               </div>
             </div>
           )}
 
-          {/* USER: My Account dropdown in top navbar */}
+          {/* USER: My Account dropdown + small ENG/HIN toggle to the right */}
           {!isAstrologer && (
             <div className="nav-desktop">
               {userTopNavItems.map((item) => renderNavItem(item))}
+              {/* Compact language toggle (ENG/HIN) to the right of My Account */}
+              <div className="ml-1.5">
+                <LanguageSwitcher />
+              </div>
             </div>
           )}
 

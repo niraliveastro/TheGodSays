@@ -79,7 +79,19 @@ body {
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2rem 0 2rem;
+}
+/* Tighter right margin so My Account + language toggle sit further right */
+@media (min-width: 768px) {
+  .nav-container {
+    padding-right: 0;
+  }
+}
+
+/* Distinctive font for top-bar My Account + language toggle (Outfit) */
+.enhanced-nav .nav-content > .nav-desktop .nav-dropdown-button,
+.enhanced-nav .lang-toggle-label {
+  font-family: 'Geom', sans-serif !important;
 }
 
 /* Full width wrapper for bottom nav bar - exact match to Talk to Astrologer button */

@@ -14,14 +14,11 @@ export default function LanguageSwitcher() {
   return (
     <div className="relative inline-flex items-center">
       {/* Toggle Button Container */}
-      <div className="relative group">
-        {/* Hover glow effect */}
-        <div className="absolute -inset-px bg-gradient-to-r from-amber-400 via-gold to-amber-500 rounded-full opacity-0 group-hover:opacity-75 blur-sm transition-all duration-300"></div>
-        
+      <div className="relative">
         {/* Toggle Button - Single clickable area */}
         <button
           onClick={handleToggle}
-          className="relative flex items-center bg-gradient-to-br from-white to-amber-50/50 border border-gold/20 rounded-full p-0.5 hover:border-gold/40 hover:shadow-lg hover:shadow-gold/10 transition-all duration-200 cursor-pointer"
+          className="relative flex items-center bg-gradient-to-br from-white to-amber-50/50 border border-amber-200/60 rounded-full p-0.5 transition-all duration-200 cursor-pointer hover:border-amber-400 active:scale-[0.98]"
           aria-label={`Switch to ${language === 'en' ? 'Hindi' : 'English'}`}
         >
           {/* Sliding indicator background */}
@@ -34,24 +31,24 @@ export default function LanguageSwitcher() {
           
           {/* ENG Label */}
           <span
-            className={`relative z-10 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-300 pointer-events-none ${
+            className={`lang-toggle-label relative z-10 px-3 py-1.5 text-sm font-bold uppercase tracking-wide rounded-full transition-all duration-300 pointer-events-none antialiased ${
               language === 'en'
-                ? 'text-white'
-                : 'text-gray-600'
+                ? 'text-white drop-shadow-sm'
+                : 'text-gray-800'
             }`}
           >
             ENG
           </span>
           
-          {/* HIN Label */}
+          {/* Hindi (हिंदी) Label */}
           <span
-            className={`relative z-10 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-300 pointer-events-none ${
+            className={`lang-toggle-label relative z-10 px-3 py-1.5 text-sm font-bold rounded-full transition-all duration-300 pointer-events-none antialiased ${
               language === 'hi'
-                ? 'text-white'
-                : 'text-gray-600'
+                ? 'text-white drop-shadow-sm'
+                : 'text-gray-800'
             }`}
           >
-            HIN
+            हिंदी
           </span>
         </button>
       </div>
