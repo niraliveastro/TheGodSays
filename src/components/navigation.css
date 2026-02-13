@@ -79,7 +79,19 @@ body {
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2rem 0 2rem;
+}
+/* Tighter right margin so My Account + language toggle sit further right */
+@media (min-width: 768px) {
+  .nav-container {
+    padding-right: 0;
+  }
+}
+
+/* Distinctive font for top-bar My Account + language toggle (Outfit) */
+.enhanced-nav .nav-content > .nav-desktop .nav-dropdown-button,
+.enhanced-nav .lang-toggle-label {
+  font-family: 'Geom', sans-serif !important;
 }
 
 /* Full width wrapper for bottom nav bar - exact match to Talk to Astrologer button */
@@ -167,7 +179,7 @@ body {
   position: relative !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  overflow-x: auto !important; /* Allow scroll on zoom if needed */
+  overflow-x: auto !important; /* Allow horizontal scroll on zoom if needed */
   scrollbar-width: none !important; /* Hide scrollbar */
   -ms-overflow-style: none !important; /* Hide scrollbar IE/Edge */
 }
@@ -755,7 +767,7 @@ body {
 .nav-bottom-row .nav-button {
   color: #000000; /* Black text on golden background */
   font-weight: 300 !important; /* Normal weight - removed bold */
-  padding: 0.5rem 1rem; /* Original padding */
+  padding: 0.5rem 0.85rem; /* Slightly tighter spacing between bottom items */
   font-size: 0.9375rem; /* Original font size */
   white-space: nowrap;
   border-radius: 12px; /* Rounded corners */

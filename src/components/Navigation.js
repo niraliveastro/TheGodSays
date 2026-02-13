@@ -112,6 +112,11 @@ const Navigation = () => {
         icon: Phone,
       },
       {
+        href: "/talk-to-ai-astrologer",
+        label: t.nav?.talkToAiAstrologer || "Talk to AI Astrologer",
+        icon: MessageCircle,
+      },
+      {
         href: "https://vastu-ai.niraliveastro.com",
         label: "Vastu AI",
         icon: Home,
@@ -151,6 +156,8 @@ const Navigation = () => {
         icon: Sparkles, // Changed to Sparkles for cosmic events
       },
       { href: "/blog", label: t.nav.blog, icon: Rss },
+      // Zodiac News - AI-generated blogs
+      { href: "/zodiac-today/", label: "Zodiac News", icon: Orbit },
     ];
 
     return desktopItems;
@@ -163,6 +170,11 @@ const Navigation = () => {
         href: "/talk-to-astrologer/",
         label: t.nav.talkToAstrologer,
         icon: Phone,
+      },
+      {
+        href: "/talk-to-ai-astrologer",
+        label: t.nav?.talkToAiAstrologer || "AI Astrologer",
+        icon: MessageCircle,
       },
       { href: "/kundli-prediction/", label: t.nav.aiPredictions, icon: Star },
       { href: "/blog", label: t.nav.blog, icon: Rss },
@@ -191,8 +203,9 @@ const Navigation = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (openDropdown && !event.target.closest("[data-dropdown-container]")) {
+      if (!event.target.closest("[data-dropdown-container]")) {
         setOpenDropdown(null);
+        setLanguageDropdownOpen(false);
       }
     };
 
@@ -203,7 +216,7 @@ const Navigation = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [openDropdown]);
+  }, [openDropdown, languageDropdownOpen]);
 
   const navItems = isAstrologer ? astrologerNavItems : userMobileNavItems;
 
@@ -454,7 +467,7 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
     <nav className="enhanced-nav">
       <div className="nav-container">
         {/* TOP NAVBAR */}
-        <div className="nav-content">
+            <div className="nav-content">
           {/* Logo on left with text */}
           <Link href="/" className="nav-logo-wrapper nav-logo-left">
             <div className="nav-logo-icon">
@@ -468,16 +481,20 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
           {isAstrologer && (
             <div className="nav-desktop">
               {astrologerNavItems.map((item) => renderNavItem(item))}
-              <div className="ml-4">
+              <div className="ml-1.5">
                 <LanguageSwitcher />
               </div>
             </div>
           )}
 
-          {/* USER: My Account dropdown in top navbar */}
+          {/* USER: My Account dropdown + small ENG/HIN toggle to the right */}
           {!isAstrologer && (
             <div className="nav-desktop">
               {userTopNavItems.map((item) => renderNavItem(item))}
+              {/* Compact language toggle (ENG/HIN) to the right of My Account */}
+              <div className="ml-1.5">
+                <LanguageSwitcher />
+              </div>
             </div>
           )}
 
@@ -496,69 +513,9 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
               {/* Desktop: Show all bottom nav items */}
               {!isMobile ? (
                 <>
-                  {userBottomNavItems.map((item, index) => {
-                    const navItem = renderNavItem(item);
-                    // Insert language dropdown right after Blog
-                    if (item.href === "/blog") {
-                      return (
-                        <Fragment key={item.href || index}>
-                          {navItem}
-                          <div
-                            className="nav-language-bottom"
-                            onMouseEnter={() => setLanguageDropdownOpen(true)}
-                            onMouseLeave={() => setLanguageDropdownOpen(false)}
-                          >
-                            <button
-                              className="nav-language-dropdown-button"
-                              onClick={() =>
-                                setLanguageDropdownOpen(!languageDropdownOpen)
-                              }
-                            >
-                              <Globe style={{ width: 18, height: 18 }} />
-                              <span>{language === "en" ? "ENG" : "HIN"}</span>
-                              <ChevronDown
-                                className="dropdown-icon"
-                                style={{
-                                  width: 16,
-                                  height: 16,
-                                  transform: languageDropdownOpen
-                                    ? "rotate(180deg)"
-                                    : "rotate(0deg)",
-                                  transition: "transform 0.3s ease",
-                                }}
-                              />
-                            </button>
-                            {languageDropdownOpen && (
-                              <>
-                                <div className="nav-dropdown-bridge"></div>
-                                <div className="nav-language-dropdown-menu">
-                                  <button
-                                    className={`nav-language-dropdown-item ${language === "en" ? "active" : ""}`}
-                                    onClick={() => {
-                                      changeLanguage("en");
-                                      setLanguageDropdownOpen(false);
-                                    }}
-                                  >
-                                    ENG
-                                  </button>
-                                  <button
-                                    className={`nav-language-dropdown-item ${language === "hi" ? "active" : ""}`}
-                                    onClick={() => {
-                                      changeLanguage("hi");
-                                      setLanguageDropdownOpen(false);
-                                    }}
-                                  >
-                                    हिंदी
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </Fragment>
-                      );
-                    }
-                    return navItem;
-                  })}
+                  {userBottomNavItems.map((item, index) =>
+                    renderNavItem(item, "desktop_bottom_nav"),
+                  )}
                 </>
               ) : (
                 /* Mobile: Show simplified bottom nav items with normal icon + text */

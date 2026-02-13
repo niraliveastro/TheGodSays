@@ -1522,9 +1522,9 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* NEW: Primary CTAs (two main flows only) */}
+                {/* NEW: Primary CTAs (main flows) */}
                 <div className="hero-actions">
-                  {/* The two new primary CTAs requested */}
+                  {/* Instant Call with Human Astrologer */}
                   <button
                     onClick={() => fastNavigate(router, "/talk-to-astrologer")}
                     className="hero-btn hero-btn-primary"
@@ -1533,8 +1533,11 @@ export default function Home() {
                     {t.hero.talkToAstrologer}
                   </button>
 
+                  {/* AI Predictions flow → Talk to AI Astrologer */}
                   <button
-                    onClick={() => fastNavigate(router, "/kundli-prediction/")}
+                    onClick={() =>
+                      fastNavigate(router, "/talk-to-ai-astrologer")
+                    }
                     className="hero-btn hero-btn-secondary-gold"
                     type="button"
                   >
@@ -1799,14 +1802,10 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Service Card 2: AI Predictions */}
+              {/* Service Card 2: AI Predictions → Talk to AI Astrologer */}
               <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                onClick={() =>
-                  document
-                    .getElementById("ai-prediction-section")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
+                onClick={() => fastNavigate(router, "/talk-to-ai-astrologer")}
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">

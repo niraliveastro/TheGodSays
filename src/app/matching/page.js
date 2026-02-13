@@ -20,7 +20,7 @@ import {
   Star,
   PhoneCallIcon,
   PhoneIcon,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { IoHeartCircle } from "react-icons/io5";
 import AstrologerAssistantTab from "@/components/AstrologerAssistantTab";
@@ -150,11 +150,10 @@ export default function MatchingPage() {
   const mTimeInputRef = useRef(null);
   const [expandedAddresses, setExpandedAddresses] = useState({});
   const fAutocompleteService = useRef(null);
-const mAutocompleteService = useRef(null);
-const fPlacesService = useRef(null);
-const mPlacesService = useRef(null);
+  const mAutocompleteService = useRef(null);
+  const fPlacesService = useRef(null);
+  const mPlacesService = useRef(null);
 
-  
   // Submission and result state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -174,8 +173,6 @@ const mPlacesService = useRef(null);
   // Track current form data hash to detect changes
   const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
   const previousFormDataHashRef = useRef(null);
-
-
 
   /**
    * Generates a unique hash from form data (names, DOB, TOB, place)
@@ -320,7 +317,7 @@ const mPlacesService = useRef(null);
     });
   }, [history, historySearch]);
 
-   const resetAllFields = () => {
+  const resetAllFields = () => {
     setFemale({ fullName: "", dob: "", tob: "", place: "" });
     setMale({ fullName: "", dob: "", tob: "", place: "" });
     setFCoords(null);
@@ -442,7 +439,8 @@ const mPlacesService = useRef(null);
    * @returns {function} Event handler for input change.
    */
   // Option 1: Make the whole onChange handler async (most common fix)
-  const onChangePerson = (setter, coordsSetter, suggestSetter, timerRef, key, setSuggesting) => 
+  const onChangePerson =
+    (setter, coordsSetter, suggestSetter, timerRef, key, setSuggesting) =>
     async (e) => {
       const v = e.target.value;
       setter((prev) => ({ ...prev, [key]: v }));
@@ -461,22 +459,27 @@ const mPlacesService = useRef(null);
           setSuggesting(true);
 
           try {
-            const { AutocompleteSuggestion } = await window.google.maps.importLibrary("places");
+            const { AutocompleteSuggestion } =
+              await window.google.maps.importLibrary("places");
 
-            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-              input: v,
-              language: "en",
-              region: "IN",
-            });
+            const { suggestions } =
+              await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+                input: v,
+                language: "en",
+                region: "IN",
+              });
 
             suggestSetter(
-              (suggestions || []).map(s => ({
+              (suggestions || []).map((s) => ({
                 label: s.placePrediction.text.text,
                 placeId: s.placePrediction.placeId,
-              }))
+              })),
             );
 
-            console.log('[Matching] Got suggestions:', suggestions?.length || 0);
+            console.log(
+              "[Matching] Got suggestions:",
+              suggestions?.length || 0,
+            );
           } catch (err) {
             console.warn("Google Places autocomplete failed:", err);
             suggestSetter([]);
@@ -509,12 +512,21 @@ const mPlacesService = useRef(null);
       throw new Error(`Invalid date format: ${dob}`);
     }
 
-    if (!Y || !M || !D || Number.isNaN(Y) || Number.isNaN(M) || Number.isNaN(D)) {
+    if (
+      !Y ||
+      !M ||
+      !D ||
+      Number.isNaN(Y) ||
+      Number.isNaN(M) ||
+      Number.isNaN(D)
+    ) {
       throw new Error(`Invalid date values: ${dob}`);
     }
 
-    if (Y < 1900 || Y > 2100) throw new Error(`Year must be between 1900 and 2100: ${Y}`);
-    if (M < 1 || M > 12) throw new Error(`Month must be between 1 and 12: ${M}`);
+    if (Y < 1900 || Y > 2100)
+      throw new Error(`Year must be between 1900 and 2100: ${Y}`);
+    if (M < 1 || M > 12)
+      throw new Error(`Month must be between 1 and 12: ${M}`);
     if (D < 1 || D > 31) throw new Error(`Date must be between 1 and 31: ${D}`);
 
     if (!tob) throw new Error("Time of birth is required");
@@ -525,9 +537,12 @@ const mPlacesService = useRef(null);
       throw new Error(`Invalid time format: ${tob}`);
     }
 
-    if (H < 0 || H > 23) throw new Error(`Hours must be between 0 and 23: ${H}`);
-    if (Min < 0 || Min > 59) throw new Error(`Minutes must be between 0 and 59: ${Min}`);
-    if (S < 0 || S > 59) throw new Error(`Seconds must be between 0 and 59: ${S}`);
+    if (H < 0 || H > 23)
+      throw new Error(`Hours must be between 0 and 23: ${H}`);
+    if (Min < 0 || Min > 59)
+      throw new Error(`Minutes must be between 0 and 59: ${Min}`);
+    if (S < 0 || S > 59)
+      throw new Error(`Seconds must be between 0 and 59: ${S}`);
 
     return { year: Y, month: M, date: D, hours: H, minutes: Min, seconds: S };
   };
@@ -590,7 +605,7 @@ const mPlacesService = useRef(null);
         label,
       });
 
-      console.log('[Matching] Resolved coordinates:', { lat, lng, label });
+      console.log("[Matching] Resolved coordinates:", { lat, lng, label });
     } catch (err) {
       console.error("resolvePlaceDetails failed:", err);
     }
@@ -604,10 +619,10 @@ const mPlacesService = useRef(null);
       setError("Geolocation is not supported by this browser.");
       return;
     }
-    
+
     setFLocating(true);
     setError("");
-    
+
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -616,18 +631,24 @@ const mPlacesService = useRef(null);
           maximumAge: 0,
         });
       });
-      
+
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
-      
+
       setFemale((prev) => ({ ...prev, place: label }));
       setFCoords({ latitude, longitude, label });
       setFSuggest([]);
-      
-      console.log('[Matching] Female location:', { latitude, longitude, label });
+
+      console.log("[Matching] Female location:", {
+        latitude,
+        longitude,
+        label,
+      });
     } catch (e) {
-      console.error('[Matching] Female location error:', e);
-      setError("Could not access your location. Please allow permission or type the city manually.");
+      console.error("[Matching] Female location error:", e);
+      setError(
+        "Could not access your location. Please allow permission or type the city manually.",
+      );
     } finally {
       setFLocating(false);
     }
@@ -641,10 +662,10 @@ const mPlacesService = useRef(null);
       setError("Geolocation is not supported by this browser.");
       return;
     }
-    
+
     setMLocating(true);
     setError("");
-    
+
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -653,18 +674,20 @@ const mPlacesService = useRef(null);
           maximumAge: 0,
         });
       });
-      
+
       const { latitude, longitude } = pos.coords;
       const label = await reverseGeocodeCoords(latitude, longitude);
-      
+
       setMale((prev) => ({ ...prev, place: label }));
       setMCoords({ latitude, longitude, label });
       setMSuggest([]);
-      
-      console.log('[Matching] Male location:', { latitude, longitude, label });
+
+      console.log("[Matching] Male location:", { latitude, longitude, label });
     } catch (e) {
-      console.error('[Matching] Male location error:', e);
-      setError("Could not access your location. Please allow permission or type the city manually.");
+      console.error("[Matching] Male location error:", e);
+      setError(
+        "Could not access your location. Please allow permission or type the city manually.",
+      );
     } finally {
       setMLocating(false);
     }
@@ -740,7 +763,9 @@ const mPlacesService = useRef(null);
       !male.tob ||
       !male.place
     ) {
-      setError("Please complete all fields for both individuals, including names.");
+      setError(
+        "Please complete all fields for both individuals, including names.",
+      );
       return;
     }
 
@@ -1363,6 +1388,25 @@ const mPlacesService = useRef(null);
     return data;
   };
 
+  // Add useEffect to monitor suggestion state changes
+  useEffect(() => {
+    console.log("[Female Debug] fSuggest state changed:", fSuggest);
+    console.log("[Female Debug] fSuggest.length:", fSuggest.length);
+  }, [fSuggest]);
+
+  useEffect(() => {
+    console.log("[Male Debug] mSuggest state changed:", mSuggest);
+    console.log("[Male Debug] mSuggest.length:", mSuggest.length);
+  }, [mSuggest]);
+
+  useEffect(() => {
+    console.log("[Female Debug] fSuggesting state changed:", fSuggesting);
+  }, [fSuggesting]);
+
+  useEffect(() => {
+    console.log("[Male Debug] mSuggesting state changed:", mSuggesting);
+  }, [mSuggesting]);
+
   // Auto-update chatData when results/details change
   useEffect(() => {
     if (result && fDetails && mDetails) {
@@ -1440,27 +1484,24 @@ const mPlacesService = useRef(null);
   ]);
 
   useEffect(() => {
-  if (!googleLoaded || !window.google?.maps?.places) return;
+    if (!googleLoaded || !window.google?.maps?.places) return;
 
-  // Female services
-  fAutocompleteService.current =
-    new window.google.maps.places.AutocompleteService();
-  fPlacesService.current =
-    new window.google.maps.places.PlacesService(
-      document.createElement("div")
+    // Female services
+    fAutocompleteService.current =
+      new window.google.maps.places.AutocompleteService();
+    fPlacesService.current = new window.google.maps.places.PlacesService(
+      document.createElement("div"),
     );
 
-  // Male services
-  mAutocompleteService.current =
-    new window.google.maps.places.AutocompleteService();
-  mPlacesService.current =
-    new window.google.maps.places.PlacesService(
-      document.createElement("div")
+    // Male services
+    mAutocompleteService.current =
+      new window.google.maps.places.AutocompleteService();
+    mPlacesService.current = new window.google.maps.places.PlacesService(
+      document.createElement("div"),
     );
 
-  console.log("[Matching] Google Places services initialized");
-}, [googleLoaded]);
-
+    console.log("[Matching] Google Places services initialized");
+  }, [googleLoaded]);
 
   // Monitor form data changes and reset chat if needed
   useEffect(() => {
@@ -1779,174 +1820,197 @@ const mPlacesService = useRef(null);
     "nadi_kootam",
   ];
 
-
   const fetchFemaleSuggestions = (query) => {
-  if (!query || query.length < 2) {
-    setFSuggest([]);
-    return;
-  }
+    console.log(
+      "[Female Debug] fetchFemaleSuggestions called with query:",
+      query,
+    );
 
-  if (fTimer.current) clearTimeout(fTimer.current);
-
-  fTimer.current = setTimeout(() => {
-    if (!googleLoaded || !fAutocompleteService.current) {
-      console.warn("[Matching] Female autocomplete not ready");
+    if (!query || query.length < 2) {
+      console.log("[Female Debug] Query too short, clearing suggestions");
       setFSuggest([]);
       return;
     }
 
+    if (fTimer.current) {
+      console.log("[Female Debug] Clearing existing timer");
+      clearTimeout(fTimer.current);
+    }
+
+    fTimer.current = setTimeout(() => {
+      console.log("[Female Debug] Timer fired, checking service availability");
+      console.log("[Female Debug] googleLoaded:", googleLoaded);
+      console.log(
+        "[Female Debug] fAutocompleteService.current:",
+        !!fAutocompleteService.current,
+      );
+
+      if (!googleLoaded || !fAutocompleteService.current) {
+        console.log("[Female Debug] Service not ready, clearing suggestions");
+        setFSuggest([]);
+        return;
+      }
+
+      console.log("[Female Debug] Starting autocomplete request...");
+      setFSuggesting(true);
+
+      fAutocompleteService.current.getPlacePredictions(
+        {
+          input: query,
+          types: ["(cities)"],
+        },
+        (predictions, status) => {
+          console.log("[Female Debug] Autocomplete callback fired");
+          console.log("[Female Debug] Status:", status);
+          console.log("[Female Debug] Predictions:", predictions);
+
+          setFSuggesting(false);
+
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
+            const suggestions = predictions.map((p) => ({
+              label: p.description,
+              placeId: p.place_id,
+            }));
+
+            console.log("[Female Debug] Setting suggestions:", suggestions);
+            setFSuggest(suggestions);
+          } else {
+            console.log(
+              "[Female Debug] No valid predictions, clearing suggestions",
+            );
+            setFSuggest([]);
+          }
+        },
+      );
+    }, 300);
+  };
+
+  const handleFemaleSuggestionClick = (suggestion) => {
+    if (!fPlacesService.current) {
+      setFemale((prev) => ({ ...prev, place: suggestion.label }));
+      setFSuggest([]);
+      return;
+    }
+
+    setFSuggest([]);
     setFSuggesting(true);
 
-    fAutocompleteService.current.getPlacePredictions(
+    fPlacesService.current.getDetails(
       {
-        input: query,
-        types: ["(cities)"],
+        placeId: suggestion.placeId,
+        fields: ["geometry", "formatted_address", "name"],
       },
-      (predictions, status) => {
+      (place, status) => {
         setFSuggesting(false);
 
         if (
           status === window.google.maps.places.PlacesServiceStatus.OK &&
-          predictions
+          place
         ) {
-          const suggestions = predictions.map((p) => ({
-            label: p.description,
-            placeId: p.place_id,
-          }));
+          const latitude = place.geometry.location.lat();
+          const longitude = place.geometry.location.lng();
+          const label = place.formatted_address || place.name;
 
-          setFSuggest(suggestions);
-          console.log("[Matching] Female suggestions:", suggestions.length);
+          setFemale((prev) => ({ ...prev, place: label }));
+          setFCoords({ latitude, longitude, label });
+
+          console.log("[Matching] Female coordinates:", {
+            latitude,
+            longitude,
+          });
         } else {
-          setFSuggest([]);
+          setFCoords(null);
         }
-      }
+      },
     );
-  }, 300);
-};
-
-
-const handleFemaleSuggestionClick = (suggestion) => {
-  if (!fPlacesService.current) {
-    setFemale((prev) => ({ ...prev, place: suggestion.label }));
-    setFSuggest([]);
-    return;
-  }
-
-  setFSuggest([]);
-  setFSuggesting(true);
-
-  fPlacesService.current.getDetails(
-    {
-      placeId: suggestion.placeId,
-      fields: ["geometry", "formatted_address", "name"],
-    },
-    (place, status) => {
-      setFSuggesting(false);
-
-      if (
-        status === window.google.maps.places.PlacesServiceStatus.OK &&
-        place
-      ) {
-        const latitude = place.geometry.location.lat();
-        const longitude = place.geometry.location.lng();
-        const label = place.formatted_address || place.name;
-
-        setFemale((prev) => ({ ...prev, place: label }));
-        setFCoords({ latitude, longitude, label });
-
-        console.log("[Matching] Female coordinates:", {
-          latitude,
-          longitude,
-        });
-      } else {
-        setFCoords(null);
-      }
+  };
+  const fetchMaleSuggestions = (query) => {
+    if (!query || query.length < 2) {
+      setMSuggest([]); // ✅ Fixed
+      return;
     }
-  );
-};
-const fetchMaleSuggestions = (query) => {
-  if (!query || query.length < 2) {
-    setMSuggest([]);
-    return;
-  }
 
-  if (mTimer.current) clearTimeout(mTimer.current);
+    if (mTimer.current) clearTimeout(mTimer.current); // ✅ Fixed
 
-  mTimer.current = setTimeout(() => {
-    if (!googleLoaded || !mAutocompleteService.current) {
+    mTimer.current = setTimeout(() => {
+      // ✅ Fixed
+      if (!googleLoaded || !mAutocompleteService.current) {
+        // ✅ Fixed
+        setMSuggest([]); // ✅ Fixed
+        return;
+      }
+
+      setMSuggesting(true); // ✅ Fixed
+
+      mAutocompleteService.current.getPlacePredictions(
+        // ✅ Fixed
+        {
+          input: query,
+          types: ["(cities)"],
+        },
+        (predictions, status) => {
+          setMSuggesting(false); // ✅ Fixed
+
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
+            const suggestions = predictions.map((p) => ({
+              label: p.description,
+              placeId: p.place_id,
+            }));
+
+            setMSuggest(suggestions); // ✅ Fixed
+          } else {
+            setMSuggest([]); // ✅ Fixed
+          }
+        },
+      );
+    }, 300);
+  };
+
+  const handleMaleSuggestionClick = (suggestion) => {
+    if (!mPlacesService.current) {
+      setMale((prev) => ({ ...prev, place: suggestion.label }));
       setMSuggest([]);
       return;
     }
 
+    setMSuggest([]);
     setMSuggesting(true);
 
-    mAutocompleteService.current.getPlacePredictions(
+    mPlacesService.current.getDetails(
       {
-        input: query,
-        types: ["(cities)"],
+        placeId: suggestion.placeId,
+        fields: ["geometry", "formatted_address", "name"],
       },
-      (predictions, status) => {
+      (place, status) => {
         setMSuggesting(false);
 
         if (
           status === window.google.maps.places.PlacesServiceStatus.OK &&
-          predictions
+          place
         ) {
-          const suggestions = predictions.map((p) => ({
-            label: p.description,
-            placeId: p.place_id,
-          }));
+          const latitude = place.geometry.location.lat();
+          const longitude = place.geometry.location.lng();
+          const label = place.formatted_address || place.name;
 
-          setMSuggest(suggestions);
+          setMale((prev) => ({ ...prev, place: label }));
+          setMCoords({ latitude, longitude, label });
+
+          console.log("[Matching] Male coordinates:", {
+            latitude,
+            longitude,
+          });
         } else {
-          setMSuggest([]);
+          setMCoords(null);
         }
-      }
+      },
     );
-  }, 300);
-};
-
-
-const handleMaleSuggestionClick = (suggestion) => {
-  if (!mPlacesService.current) {
-    setMale((prev) => ({ ...prev, place: suggestion.label }));
-    setMSuggest([]);
-    return;
-  }
-
-  setMSuggest([]);
-  setMSuggesting(true);
-
-  mPlacesService.current.getDetails(
-    {
-      placeId: suggestion.placeId,
-      fields: ["geometry", "formatted_address", "name"],
-    },
-    (place, status) => {
-      setMSuggesting(false);
-
-      if (
-        status === window.google.maps.places.PlacesServiceStatus.OK &&
-        place
-      ) {
-        const latitude = place.geometry.location.lat();
-        const longitude = place.geometry.location.lng();
-        const label = place.formatted_address || place.name;
-
-        setMale((prev) => ({ ...prev, place: label }));
-        setMCoords({ latitude, longitude, label });
-
-        console.log("[Matching] Male coordinates:", {
-          latitude,
-          longitude,
-        });
-      } else {
-        setMCoords(null);
-      }
-    }
-  );
-};
-
+  };
 
   /* -------------------------------------------------------------- */
   /* Person details component */
@@ -2440,7 +2504,8 @@ const handleMaleSuggestionClick = (suggestion) => {
                     <p className="form-field-helper">24-hour format</p>
                   </div>
                   {/* Female Place input */}
-                  <div className="form-field full">
+                  <div className="form-field full"
+                  style={{ position: "relative" }}>
                     <label className="form-field-label" htmlFor="female-place">
                       Place
                     </label>
@@ -2453,12 +2518,11 @@ const handleMaleSuggestionClick = (suggestion) => {
                         placeholder="e.g., Mumbai, India"
                         value={female.place}
                         onChange={(e) => {
-  const value = e.target.value;
-  setFemale((prev) => ({ ...prev, place: value }));
-  setFCoords(null);
-  fetchFemaleSuggestions(value);
-}}
-
+                          const value = e.target.value;
+                          setFemale((prev) => ({ ...prev, place: value }));
+                          setFCoords(null);
+                          fetchFemaleSuggestions(value); // ← Call the new function
+                        }}
                         autoComplete="off"
                         required
                       />
@@ -2479,34 +2543,72 @@ const handleMaleSuggestionClick = (suggestion) => {
                     </div>
 
                     {/* Autocomplete dropdown for female */}
-                    {fSuggest.length > 0 && (
-                      <div className="suggestions">
-                        {fSuggesting && (
-                          <div className="suggestion-loading">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading suggestions...
-                          </div>
-                        )}
-                        {!fSuggesting &&
-                          fSuggest.map((s, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => {
-                                resolvePlaceDetails(
-                                  s.placeId,
-                                  setFemale,
-                                  setFCoords,
-                                );
-                                setFSuggest([]);
-                              }}
-                            >
-                              <MapPin size={14} />
-                              <span>{s.label}</span>
-                            </button>
-                          ))}
-                      </div>
+                    {/* Female autocomplete dropdown - ADD DEBUG */}
+                    {console.log(
+                      "[Female Render] About to check dropdown render. fSuggest.length:",
+                      fSuggest.length,
                     )}
+                    {/* Autocomplete dropdown for female */}
+{console.log(
+  "[Female Render] About to check dropdown render. fSuggest.length:",
+  fSuggest.length,
+)}
+{fSuggest.length > 0 && (
+  <div
+    className="suggestions"
+    style={{
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    zIndex: 99999,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+    maxHeight: "220px",
+    overflowY: "auto"
+  }}
+  >
+    {console.log("[Female Render] RENDERING DROPDOWN")}
+    {fSuggesting && (
+      <div className="suggestion-loading">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading suggestions...
+      </div>
+    )}
+    {!fSuggesting &&
+      fSuggest.map((s, i) => {
+        console.log(
+          "[Female Render] Rendering suggestion:",
+          s.label,
+        );
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => handleFemaleSuggestionClick(s)}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              textAlign: "left",
+              background: "var(--color-cream)",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <MapPin size={14} />
+            <span>{s.label}</span>
+          </button>
+        );
+      })}
+  </div>
+)}
 
                     <p className="form-field-helper place-helper">
                       {fCoords
@@ -2625,75 +2727,100 @@ const handleMaleSuggestionClick = (suggestion) => {
                   </div>
 
                   {/* Male Place Input - Updated with Google Maps autocomplete */}
-        <div className="form-field full">
-          <label className="form-field-label" htmlFor="male-place">
-            Place
-          </label>
+                  <div className="form-field full"
+                  style={{position: "relative"}}>
+                    <label className="form-field-label" htmlFor="male-place">
+                      Place
+                    </label>
 
-          <div className="input-with-icon">
-            <input
-              id="male-place"
-              type="text"
-              className="form-field-input"
-              placeholder="e.g., Mumbai, India"
-              value={male.place}
-              onChange={(e) => {
-  const value = e.target.value;
-  setMale((prev) => ({ ...prev, place: value }));
-  setMCoords(null);
-  fetchMaleSuggestions(value);
-}}
+                    <div className="input-with-icon">
+                      <input
+                        id="male-place"
+                        type="text"
+                        className="form-field-input"
+                        placeholder="e.g., Mumbai, India"
+                        value={male.place}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setMale((prev) => ({ ...prev, place: value }));
+                          setMCoords(null);
+                          fetchMaleSuggestions(value);
+                        }}
+                        autoComplete="off"
+                        required
+                      />
 
-              autoComplete="off"
-              required
-            />
+                      <button
+                        type="button"
+                        className="location-icon-btn"
+                        title="Use current location"
+                        onClick={useMyLocationMale}
+                        disabled={mLocating}
+                      >
+                        {mLocating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MapPin />
+                        )}
+                      </button>
+                    </div>
 
-            <button
-              type="button"
-              className="location-icon-btn"
-              title="Use current location"
-              onClick={useMyLocationMale}
-              disabled={mLocating}
-            >
-              {mLocating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <MapPin />
-              )}
-            </button>
-          </div>
-
-          {/* Autocomplete dropdown for male */}
-          {mSuggest.length > 0 && (
-            <div className="suggestions">
-              {mSuggesting && (
-                <div className="suggestion-loading">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading suggestions...
-                </div>
-              )}
-              {!mSuggesting && mSuggest.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    resolvePlaceDetails(s.placeId, setMale, setMCoords);
-                    setMSuggest([]);
-                  }}
-                >
-                  <MapPin size={14} />
-                  <span>{s.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <p className="form-field-helper place-helper">
-            {mCoords
-              ? "Location coordinates saved"
-              : "Choose the nearest city for accurate calculation"}
-          </p>
-        </div>
+                    {/* Autocomplete dropdown for male */}
+                    {mSuggest.length > 0 && (
+                       <div
+    className="suggestions"
+    style={{
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    zIndex: 99999,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+    maxHeight: "220px",
+    overflowY: "auto"
+  }}
+  >
+                        {mSuggesting && (
+                          <div className="suggestion-loading">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading suggestions...
+                          </div>
+                        )}
+                        {!mSuggesting &&
+                          mSuggest.map((s, i) => (
+                            <button
+            key={i}
+            type="button"
+            onClick={() => handleMaleSuggestionClick(s)}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              textAlign: "left",
+              background: "var(--color-cream)",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <MapPin size={14} />
+            <span>{s.label}</span>
+          </button>
+                          ))}
+                      </div>
+                    )}
+                    <p className="form-field-helper place-helper">
+                      {mCoords
+                        ? "Location coordinates saved"
+                        : "Choose the nearest city for accurate calculation"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>
