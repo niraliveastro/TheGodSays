@@ -1533,21 +1533,11 @@ export default function Home() {
                     {t.hero.talkToAstrologer}
                   </button>
 
-                  {/* New: Talk to AI Astrologer (full-screen chat) */}
+                  {/* AI Predictions flow → Talk to AI Astrologer */}
                   <button
                     onClick={() =>
                       fastNavigate(router, "/talk-to-ai-astrologer")
                     }
-                    className="hero-btn hero-btn-secondary-gold"
-                    type="button"
-                  >
-                    <Sparkles className="hero-btn-icon" />
-                    {t.hero?.talkToAiAstrologer || "Talk to AI Astrologer"}
-                  </button>
-
-                  {/* AI Predictions flow */}
-                  <button
-                    onClick={() => fastNavigate(router, "/kundli-prediction/")}
                     className="hero-btn hero-btn-secondary-gold"
                     type="button"
                   >
@@ -1812,14 +1802,10 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Service Card 2: AI Predictions */}
+              {/* Service Card 2: AI Predictions → Talk to AI Astrologer */}
               <div
                 className="card service-card-gold service-card-content rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group"
-                onClick={() =>
-                  document
-                    .getElementById("ai-prediction-section")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
+                onClick={() => fastNavigate(router, "/talk-to-ai-astrologer")}
               >
                 <div className="service-card-icon-wrapper">
                   <div className="service-icon-gold group-hover:scale-110 transition-transform">

@@ -48,7 +48,8 @@ export default function Footer() {
             <ul className="footer-links">
               <li><Link href="/kundli-prediction/">Personalized Readings</Link></li>
               <li><Link href="/kundli-matching/">Kundali Matching</Link></li>
-              <li><Link href="/talk-to-astrologer">Talk to Astrologer</Link></li>
+              <li><Link href="/talk-to-astrologer">Talk to Astrologers</Link></li>
+              <li><Link href="/talk-to-ai-astrologer">Talk to AI Astrologer</Link></li>
               <li><Link href="/talk-to-astrologer">Astrologer Profiles</Link></li>
             </ul>
           </div>

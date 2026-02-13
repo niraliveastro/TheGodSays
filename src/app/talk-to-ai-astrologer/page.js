@@ -1001,15 +1001,8 @@ export default function TalkToAIAstrologerPage() {
             <h2 className="page-hero-title">Talk To AI Astrologer</h2>
           </div>
           <p className="page-hero-subtitle">
-            Share your birth details and we’ll build your Vedic chart in the background. Then chat with our AI astrologer—same engine as the predictions page.
+            Mr. Astro answers from your chart, so every insight is personal to you.
           </p>
-          <div className="trust-line">
-            <span className="trust-line-item"><span>🔒</span><span>Private</span></span>
-            <span className="trust-line-separator">•</span>
-            <span className="trust-line-item"><span>📍</span><span>Accurate location</span></span>
-            <span className="trust-line-separator">•</span>
-            <span className="trust-line-item"><span>💾</span><span>Same engine as predictions</span></span>
-          </div>
         </header>
 
         {error && (

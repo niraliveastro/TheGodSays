@@ -33,6 +33,7 @@ export const STATIC_PATHS = [
   // Core SEO Pages (High Priority) - NEW URLs
   { path: '', changeFrequency: 'daily', priority: 1.0 },
   { path: 'talk-to-astrologer', changeFrequency: 'daily', priority: 0.9 },
+  { path: 'talk-to-ai-astrologer', changeFrequency: 'daily', priority: 0.9 },
   { path: 'kundli-matching', changeFrequency: 'weekly', priority: 0.9 },
   { path: 'kundli-prediction', changeFrequency: 'daily', priority: 0.9 },
   { path: 'kundli-prediction/ai', changeFrequency: 'daily', priority: 0.8 },

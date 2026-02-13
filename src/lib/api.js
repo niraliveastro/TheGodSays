@@ -370,11 +370,19 @@ export async function getRealtimeSamvatInfo(options = {}) {
 }
 
 // --- Geocoding & Timezone helpers for Predictions ---
-// OpenStreetMap Nominatim geocoding (no key needed). Returns { lat, lon, display_name } or null
+// Returns { latitude, longitude, label } or null. In browser uses /api/geocode to avoid CORS.
 export async function geocodePlace(query) {
   try {
+    if (typeof window !== 'undefined') {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`)
+      if (!res.ok) throw new Error(`Geocode HTTP ${res.status}`)
+      const arr = await res.json()
+      if (!Array.isArray(arr) || arr.length === 0) return null
+      const first = arr[0]
+      return { latitude: parseFloat(first.lat), longitude: parseFloat(first.lon), label: first.display_name }
+    }
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'TheGodSays-Astrology-App/1.0' } })
     if (!res.ok) throw new Error(`Geocode HTTP ${res.status}`)
     const arr = await res.json()
     if (!Array.isArray(arr) || arr.length === 0) return null
