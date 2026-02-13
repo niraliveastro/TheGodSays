@@ -1479,7 +1479,7 @@ ${language === 'hi' ? `\n\n**CRITICAL LANGUAGE INSTRUCTION**: The user has selec
 }
 
 
-const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null, embedded = false, onMessageSent = null }) => {
+const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, shouldReset = false, formDataHash = null, initialConversationId = null, onConversationIdChange = null, embedded = false, onMessageSent = null, fullHeight = false, welcomeMessage = null, suggestedQuestionsVertical = false, bubbleBgOpacity = null, suggestedQuestionIcon = null }) => {
   const { t, language } = useTranslation();
   const { user, getUserId } = useAuth();
   const router = useRouter();
@@ -1487,8 +1487,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
   
   // Determine chatType from pageTitle if not provided
   const determinedChatType = chatType || (pageTitle?.toLowerCase().includes('match') ? 'matchmaking' : 'prediction');
+
+  const whiteBubbleBg = bubbleBgOpacity != null ? `rgba(255,255,255,${Number(bubbleBgOpacity)})` : "rgba(255, 255, 255, 0.9)";
   
-  // Use chat state hook for conversation management (pass formDataHash to track unique form submissions)
+  // Use chat state hook for conversation management (pass formDataHash or initialConversationId for /chat/[chatId])
   const {
     messages: persistedMessages,
     setMessages: setPersistedMessages,
@@ -1502,7 +1504,14 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     getBlockedReason,
     saveConversation,
     loadWalletBalance
-  } = useChatState(determinedChatType, shouldReset, formDataHash);
+  } = useChatState(determinedChatType, shouldReset, formDataHash, initialConversationId);
+
+  // Notify parent when conversationId is set (e.g. for URL update to /talk-to-ai-astrologer/chat/[id])
+  useEffect(() => {
+    if (conversationId && typeof onConversationIdChange === 'function') {
+      onConversationIdChange(conversationId);
+    }
+  }, [conversationId, onConversationIdChange]);
 
   // Local state (merged with persisted messages)
   const [messages, setMessages] = useState([]);
@@ -1545,9 +1554,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       formDataHashRef.current = formDataHash;
       
       // Add welcome message for new conversation
-      const welcomeMsg = language === 'hi'
+      const welcomeMsg = welcomeMessage != null ? welcomeMessage : (language === 'hi'
         ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
-        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`);
       const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
       const defaultQuestions = language === 'hi'
         ? [
@@ -1583,9 +1592,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       } else {
         // Form data changed, start fresh (this shouldn't happen as useChatState filters, but safety check)
         console.log('[Chat] Form data hash mismatch in persisted messages, starting fresh');
-        const welcomeMsg = language === 'hi'
+        const welcomeMsg = welcomeMessage != null ? welcomeMessage : (language === 'hi'
           ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
-          : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+          : `Welcome to the ${pageTitle} AI chat! How can I help you today?`);
         const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
         const defaultQuestions = language === 'hi'
           ? [
@@ -1606,9 +1615,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       }
     } else {
       // Add a default message when the component mounts (only if no persisted messages)
-      const welcomeMsg = language === 'hi'
+      const welcomeMsg = welcomeMessage != null ? welcomeMessage : (language === 'hi'
         ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
-        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`;
+        : `Welcome to the ${pageTitle} AI chat! How can I help you today?`);
       const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
       const defaultQuestions = language === 'hi'
         ? [
@@ -1899,12 +1908,13 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
     <div
       ref={chatContainerRef}
       style={{
-        borderRadius: "20px",
+        borderRadius: fullHeight ? "0" : "20px",
         padding: "0",
         display: "flex",
         flexDirection: "column",
-        height: isExpanded ? "80vh" : "420px",
-        maxHeight: isExpanded ? "80vh" : "420px",
+        height: fullHeight ? "100%" : (isExpanded ? "80vh" : "420px"),
+        maxHeight: fullHeight ? "100%" : (isExpanded ? "80vh" : "420px"),
+        minHeight: fullHeight ? 0 : undefined,
         background: "#fdfbf7",
         backdropFilter: "blur(12px)",
         border: "1px solid rgba(212, 175, 55, 0.3)",
@@ -2241,7 +2251,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                 style={{
                   background: msg.isUser
                     ? "linear-gradient(135deg, #d4af37, #b8972e)"
-                    : "rgba(255, 255, 255, 0.9)",
+                    : whiteBubbleBg,
                   color: msg.isUser 
                     ? "white" 
                     : "#111827",
@@ -2269,7 +2279,17 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
             </div>
             {/* Show predefined questions only for Predictions page and only on first message */}
             {msg.showQuestions && determinedChatType === 'prediction' && index === 0 && (
-              <div style={{ marginTop: 12, marginBottom: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+              <div
+                className={`chat-suggested-questions-grid ${suggestedQuestionsVertical ? "chat-suggested-questions-cards" : ""}`}
+                style={{
+                  marginTop: 12,
+                  marginBottom: 12,
+                  display: suggestedQuestionsVertical ? "flex" : "grid",
+                  flexDirection: suggestedQuestionsVertical ? "column" : undefined,
+                  gridTemplateColumns: suggestedQuestionsVertical ? undefined : "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: suggestedQuestionsVertical ? 12 : 8,
+                }}
+              >
                 {[
                   "What are my planetary strengths and weaknesses?",
                   "When is the best time for marriage according to my chart?",
@@ -2277,6 +2297,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                 ].map((question, qIndex) => (
                   <button
                     key={qIndex}
+                    type="button"
+                    className="chat-suggested-question-btn"
                     onClick={() => {
                       setInput(question);
                       handleSendMessage(question);
@@ -2284,8 +2306,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                     disabled={isLoading || !canSendMessage()}
                     style={{
                       textAlign: "left",
-                      padding: "10px 14px",
-                      background: "rgba(255, 255, 255, 0.95)",
+                      padding: suggestedQuestionsVertical ? "12px 16px" : "10px 14px",
+                      background: whiteBubbleBg,
                       border: "1px solid rgba(212, 175, 55, 0.3)",
                       borderRadius: 12,
                       fontSize: 13,
@@ -2293,6 +2315,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                       cursor: isLoading || !canSendMessage() ? "not-allowed" : "pointer",
                       transition: "all 0.2s ease",
                       opacity: isLoading || !canSendMessage() ? 0.6 : 1,
+                      display: suggestedQuestionsVertical ? "flex" : undefined,
+                      alignItems: suggestedQuestionsVertical ? "center" : undefined,
+                      gap: suggestedQuestionsVertical ? 10 : undefined,
+                      width: suggestedQuestionsVertical ? "100%" : undefined,
                     }}
                     onMouseEnter={(e) => {
                       if (!isLoading && canSendMessage()) {
@@ -2302,26 +2328,45 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                      e.currentTarget.style.background = whiteBubbleBg;
                       e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.3)";
                       e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
-                    💫 {question}
+                    {suggestedQuestionIcon === "arrow" ? (
+                      <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translateY(1px)" }}>
+                          <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span>💫</span>
+                    )}
+                    <span>{question}</span>
                   </button>
                 ))}
               </div>
             )}
             {/* Show AI-generated related questions after each AI response */}
             {!msg.isUser && msg.suggestedQuestions && msg.suggestedQuestions.length > 0 && index === messages.length - 1 && (
-              <div style={{ marginTop: 12, marginBottom: 12 }}>
+              <div className="chat-related-questions-wrap" style={{ marginTop: 12, marginBottom: 12 }}>
                 { !((pageTitle === 'Matching' || determinedChatType === 'matchmaking') && index === 0) && (
                   <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontWeight: 600 }}>Related Questions:</div>
                 ) }
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+                <div
+                  className={`chat-suggested-questions-grid ${suggestedQuestionsVertical ? "chat-suggested-questions-cards" : ""}`}
+                  style={{
+                    display: suggestedQuestionsVertical ? "flex" : "grid",
+                    flexDirection: suggestedQuestionsVertical ? "column" : undefined,
+                    gridTemplateColumns: suggestedQuestionsVertical ? undefined : "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: suggestedQuestionsVertical ? 12 : 8,
+                  }}
+                >
                   {msg.suggestedQuestions.map((question, qIndex) => (
                     <button
                       key={qIndex}
+                      type="button"
+                      className="chat-suggested-question-btn"
                       onClick={() => {
                         setInput(question);
                         handleSendMessage(question);
@@ -2329,8 +2374,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                       disabled={isLoading || !canSendMessage()}
                       style={{
                         textAlign: "left",
-                        padding: "10px 14px",
-                        background: "rgba(255, 255, 255, 0.95)",
+                        padding: "12px 16px",
+                        background: whiteBubbleBg,
                         border: "1px solid rgba(212, 175, 55, 0.3)",
                         borderRadius: 12,
                         fontSize: 13,
@@ -2338,6 +2383,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                         cursor: isLoading || !canSendMessage() ? "not-allowed" : "pointer",
                         transition: "all 0.2s ease",
                         opacity: isLoading || !canSendMessage() ? 0.6 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        width: suggestedQuestionsVertical ? "100%" : undefined,
                       }}
                       onMouseEnter={(e) => {
                         if (!isLoading && canSendMessage()) {
@@ -2347,12 +2396,21 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                         }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                        e.currentTarget.style.background = whiteBubbleBg;
                         e.currentTarget.style.borderColor = "rgba(212, 175, 55, 0.3)";
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
                     >
-                      💫 {question}
+                      {suggestedQuestionIcon === "arrow" ? (
+                        <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translateY(1px)" }}>
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span>💫</span>
+                      )}
+                      <span>{question}</span>
                     </button>
                   ))}
                 </div>
@@ -2371,7 +2429,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           >
             <span
               style={{
-                background: "rgba(255, 255, 255, 0.9)",
+                background: whiteBubbleBg,
                 color: "#111827",
                 padding: "10px 12px",
                 borderRadius: 14,

@@ -112,6 +112,11 @@ const Navigation = () => {
         icon: Phone,
       },
       {
+        href: "/talk-to-ai-astrologer",
+        label: t.nav?.talkToAiAstrologer || "Talk to AI Astrologer",
+        icon: MessageCircle,
+      },
+      {
         href: "https://vastu-ai.niraliveastro.com",
         label: "Vastu AI",
         icon: Home,
@@ -165,6 +170,11 @@ const Navigation = () => {
         href: "/talk-to-astrologer/",
         label: t.nav.talkToAstrologer,
         icon: Phone,
+      },
+      {
+        href: "/talk-to-ai-astrologer",
+        label: t.nav?.talkToAiAstrologer || "AI Astrologer",
+        icon: MessageCircle,
       },
       { href: "/kundli-prediction/", label: t.nav.aiPredictions, icon: Star },
       { href: "/blog", label: t.nav.blog, icon: Rss },

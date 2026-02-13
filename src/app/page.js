@@ -1522,9 +1522,9 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* NEW: Primary CTAs (two main flows only) */}
+                {/* NEW: Primary CTAs (main flows) */}
                 <div className="hero-actions">
-                  {/* The two new primary CTAs requested */}
+                  {/* Instant Call with Human Astrologer */}
                   <button
                     onClick={() => fastNavigate(router, "/talk-to-astrologer")}
                     className="hero-btn hero-btn-primary"
@@ -1533,6 +1533,19 @@ export default function Home() {
                     {t.hero.talkToAstrologer}
                   </button>
 
+                  {/* New: Talk to AI Astrologer (full-screen chat) */}
+                  <button
+                    onClick={() =>
+                      fastNavigate(router, "/talk-to-ai-astrologer")
+                    }
+                    className="hero-btn hero-btn-secondary-gold"
+                    type="button"
+                  >
+                    <Sparkles className="hero-btn-icon" />
+                    {t.hero?.talkToAiAstrologer || "Talk to AI Astrologer"}
+                  </button>
+
+                  {/* AI Predictions flow */}
                   <button
                     onClick={() => fastNavigate(router, "/kundli-prediction/")}
                     className="hero-btn hero-btn-secondary-gold"
