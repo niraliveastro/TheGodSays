@@ -277,37 +277,36 @@ export default function AstrologerAssistant({
         } : undefined}
       >
         {isMinimized ? (
-          // Minimized state - compact button
-          <button
-            onClick={handleToggle}
-            className="astrologer-minimized-button"
-          >
-            <div className="astrologer-icon">
-              <img 
-                src="/infinity-symbol.svg" 
-                alt="Infinity" 
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  filter: "brightness(0) invert(1)",
-                  transform: "rotate(-45deg)"
-                }}
-              />
-            </div>
-            <div className="astrologer-info">
-              <div className="astrologer-title">Astrologer Assistant</div>
-              <div className="astrologer-status">
-                <span className="status-dot"></span>
-                <span className="status-text">Online</span>
-              </div>
-            </div>
-            <div className="expand-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 15l-6-6-6 6" />
-              </svg>
-            </div>
-          </button>
-        ) : (
+  <button
+    onClick={handleToggle}
+    className="astrologer-tab-minimized"
+  >
+    <div className="astrologer-tab-avatar">
+      <img
+        src="/infinity-symbol.svg"
+        alt="AI Assistant"
+        className="astrologer-tab-avatar-img"
+      />
+      <span className="astrologer-tab-status-dot"></span>
+    </div>
+
+    <div className="astrologer-tab-info">
+      <div className="astrologer-tab-name">
+        Astrologer Assistant
+      </div>
+      <div className="astrologer-tab-subtitle">
+        AI Astrologer • Online
+      </div>
+    </div>
+
+    <div className="astrologer-tab-toggle-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 15l-6-6-6 6" />
+      </svg>
+    </div>
+  </button>
+) : (
+
           // Expanded state - full chat interface
           <div className="astrologer-expanded-card">
             {/* Header */}
