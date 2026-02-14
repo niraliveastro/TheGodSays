@@ -196,21 +196,22 @@ function calculateLifeScores({ placements, shadbalaRows, currentDashaChain }) {
   return scores;
 }
 
-export default function PredictionsPage() {
+export default function PredictionsPage({ initialCache = null, showOnlyResult = false }) {
   const { t } = useTranslation();
   const googleLoaded = useGoogleMaps();
+  const router = useRouter();
 
   // Track page view on mount
   useEffect(() => {
     trackPageView("/predictions", "Astrological Predictions");
   }, []);
 
-  const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("");
-  const [place, setPlace] = useState("");
+  const [dob, setDob] = useState(() => initialCache?.dob ?? "");
+  const [tob, setTob] = useState(() => initialCache?.tob ?? "");
+  const [place, setPlace] = useState(() => initialCache?.place ?? "");
   const [suggestions, setSuggestions] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
-  const [selectedCoords, setSelectedCoords] = useState(null);
+  const [selectedCoords, setSelectedCoords] = useState(() => initialCache?.selectedCoords ?? null);
   const suggestTimer = useRef(null);
   const autocompleteService = useRef(null);
   const placesService = useRef(null);
@@ -220,7 +221,7 @@ export default function PredictionsPage() {
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(() => initialCache?.result ?? null);
 
   const [selectedMaha, setSelectedMaha] = useState(null);
 
@@ -234,12 +235,13 @@ export default function PredictionsPage() {
   const [aiPredictions, setAiPredictions] = useState("");
   const [selectedPlanetForPredictions, setSelectedPlanetForPredictions] =
     useState(null);
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(() => initialCache?.fullName ?? "");
   const [openAntarFor, setOpenAntarFor] = useState(null);
   const [antarLoadingFor, setAntarLoadingFor] = useState(null);
   
   // === Prediction History ===
   const PREDICTION_HISTORY_KEY = "prediction_history_v1";
+  const PREDICTIONS_PAGE_CACHE_KEY = "tgs:predictions_page_cache"; // sessionStorage: restore result when user returns (e.g. back from talk-to-astrologer)
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(true);
   const [isAddressExpanded, setIsAddressExpanded] = useState({});
@@ -251,14 +253,13 @@ export default function PredictionsPage() {
 
   const addressRefs = useRef({});
   const [isOverflowing, setIsOverflowing] = useState({});
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState(() => initialCache?.gender ?? "");
   const [historySearch, setHistorySearch] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Form data hash for chat conversation management
-  const [currentFormDataHash, setCurrentFormDataHash] = useState(null);
+  const [currentFormDataHash, setCurrentFormDataHash] = useState(() => initialCache?.currentFormDataHash ?? null);
   const previousFormDataHashRef = useRef(null);
-  const router = useRouter();
 
   const toggleAddressVisibility = (id) => {
     setIsAddressExpanded((prevState) => ({
@@ -450,7 +451,10 @@ export default function PredictionsPage() {
   useEffect(() => {
     setHistory(getHistory());
 
+    if (initialCache) return;
+
     try {
+      // Do NOT restore from sessionStorage on the form page — results live only on /kundli-prediction/result
       const savedData = localStorage.getItem("tgs:aiPredictionForm");
       if (savedData) {
         const parsedData = JSON.parse(savedData);
@@ -508,6 +512,36 @@ export default function PredictionsPage() {
       setShowHistory(true);
     }
   }, []);
+
+  // Hydrate form-data hash from initialCache when showing result-only view
+  useEffect(() => {
+    if (initialCache?.currentFormDataHash != null) {
+      previousFormDataHashRef.current = initialCache.currentFormDataHash;
+    }
+  }, [initialCache]);
+
+  // Persist predictions result + form to sessionStorage for the result page. Do NOT clear when form has no result — so result page keeps showing data when user goes form → back.
+  useEffect(() => {
+    if (result) {
+      try {
+        const payload = {
+          fullName,
+          gender,
+          dob,
+          tob,
+          place,
+          selectedCoords: selectedCoords || null,
+          result,
+          currentFormDataHash: previousFormDataHashRef.current ?? currentFormDataHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(PREDICTIONS_PAGE_CACHE_KEY, JSON.stringify(payload));
+        }
+      } catch (e) {
+        console.warn("[Predictions] Persist to sessionStorage failed:", e);
+      }
+    }
+  }, [result, fullName, gender, dob, tob, place, selectedCoords, currentFormDataHash]);
 
   useEffect(() => {
     if (fullName || dob || tob || place) {
@@ -1152,7 +1186,7 @@ export default function PredictionsPage() {
       });
       trackEvent("predictions_generated", { success: true });
 
-      setResult({
+      const resultPayload = {
         input: { dob, tob: fmtTime(H, Min, S), place: geo.label || place, tz },
         coords: { latitude: geo.latitude, longitude: geo.longitude },
         configUsed: { observation_point: "geocentric", ayanamsha: "lahiri" },
@@ -1168,7 +1202,31 @@ export default function PredictionsPage() {
 
         westernChartSvg,
         apiErrors: { ...errors },
-      });
+      };
+      setResult(resultPayload);
+
+      // Persist and navigate to result page so back button shows data without re-submit
+      try {
+        const newHash = generateFormDataHash();
+        previousFormDataHashRef.current = newHash;
+        const cachePayload = {
+          fullName,
+          gender,
+          dob,
+          tob,
+          place,
+          selectedCoords: selectedCoords || null,
+          result: resultPayload,
+          currentFormDataHash: newHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(PREDICTIONS_PAGE_CACHE_KEY, JSON.stringify(cachePayload));
+        }
+        router.push("/kundli-prediction/result");
+      } catch (e) {
+        console.warn("[Predictions] Persist before navigate failed:", e);
+        router.push("/kundli-prediction/result");
+      }
 
       if (shouldResetChat) {
         setChatSessionId((prev) => prev + 1);
@@ -1941,9 +1999,9 @@ export default function PredictionsPage() {
         person: {
           input: {
             name: fullName,
-            dob: result.input.dob,
-            tob: result.input.tob,
-            place: result.input.place,
+            dob: result.input?.dob,
+            tob: result.input?.tob,
+            place: result.input?.place,
             coords: result.coords,
           },
           gender,
@@ -1954,6 +2012,11 @@ export default function PredictionsPage() {
           shadbalaRows,
           mahaRows,
           currentDashaChain,
+        },
+
+        raw: {
+          maha: result.maha ?? null,
+          vimsottari: result.vimsottari ?? null,
         },
 
         meta: {
@@ -1987,7 +2050,22 @@ export default function PredictionsPage() {
         <div className="orb orb3" />
       </div>
 
-      {/* Header */}
+      {showOnlyResult && (
+        <div style={{ maxWidth: "90rem", margin: "1rem auto", padding: "0 2rem" }}>
+          <button
+            type="button"
+            onClick={() => router.push("/kundli-prediction")}
+            className="use-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+          >
+            <RotateCcw size={18} />
+            New prediction
+          </button>
+        </div>
+      )}
+
+      {/* Header - hide on result-only view */}
+      {!showOnlyResult && (
       <header
         className="header"
         
@@ -2022,9 +2100,10 @@ export default function PredictionsPage() {
           </span>
         </div>
       </header>
+      )}
 
       <div className="py-8">
-        {error && (
+        {!showOnlyResult && error && (
           <div
             className="mb-6 p-4 rounded-lg border text-sm flex items-center gap-2"
             style={{
@@ -2037,7 +2116,8 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* Birth form + History side-by-side */}
+        {/* Birth form + History side-by-side - hide on result-only view */}
+        {!showOnlyResult && (
         <div className="birth-history-layout" style={{ width: "100%" }}>
           {/* FORM */}
           <form
@@ -2434,6 +2514,7 @@ export default function PredictionsPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Results */}
         {result && (

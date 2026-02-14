@@ -889,12 +889,33 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
 - Any mention of "extracting", "retrieving", "not provided", "missing", or "unavailable" ❌ - Process internally and provide results directly`;
   }
   // Otherwise it's a PERSONAL reading (Predictions page)
-  const birth = initialData.birth || {};
+  // Normalize: predictions page may pass { person: { input }, chart: {} } instead of { birth, placements, ... }
+  let data = initialData || {};
+  if (data.person && data.chart) {
+    const p = data.person;
+    const c = data.chart;
+    data = {
+      birth: {
+        fullName: p.input?.name,
+        name: p.input?.name,
+        dob: p.input?.dob,
+        tob: p.input?.tob,
+        place: p.input?.place,
+      },
+      gender: p.gender ?? "",
+      placements: c.placements ?? [],
+      shadbalaRows: c.shadbalaRows ?? [],
+      mahaRows: c.mahaRows ?? [],
+      currentDashaChain: c.currentDashaChain ?? "",
+      raw: data.raw ?? {},
+    };
+  }
+  const birth = data.birth || {};
   const name = birth.fullName || birth.name || "The individual";
   const dob = birth.dob || "";
   const tob = birth.tob || birth.time || "";
   const place = birth.place || "";
-  const gender = initialData.gender || "";
+  const gender = data.gender || "";
   
   // Calculate age and birth year from DOB
   let age = null;
@@ -943,14 +964,14 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
   }
   
   // Extract Dasha information and process dates
-  // Try multiple possible data structures
-  let mahaRows = initialData.mahaRows || [];
-  let currentDasha = initialData.currentDashaChain || "";
+  // Try multiple possible data structures (data is normalized above for predictions page)
+  let mahaRows = data.mahaRows || data.chart?.mahaRows || initialData?.mahaRows || [];
+  let currentDasha = data.currentDashaChain || data.chart?.currentDashaChain || initialData?.currentDashaChain || "";
   
   // If mahaRows is empty, try to get from raw data
   if (!mahaRows || mahaRows.length === 0) {
     // Try raw.maha structure
-    const rawMaha = initialData.raw?.maha;
+    const rawMaha = data.raw?.maha || initialData?.raw?.maha;
     if (rawMaha) {
       try {
         // Parse if it's a string
@@ -1010,9 +1031,10 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
   }
   
   // Try to get current Dasha from raw vimsottari if not available
-  if (!currentDasha && initialData.raw?.vimsottari) {
+  const rawVims = data.raw?.vimsottari || initialData?.raw?.vimsottari;
+  if (!currentDasha && rawVims) {
     try {
-      const vims = initialData.raw.vimsottari;
+      const vims = rawVims;
       const current = vims.current || vims.running || vims.now || vims?.mahadasha?.current;
       if (current) {
         const md = current.md || current.mahadasha || current.mahadasha_name;
@@ -1181,11 +1203,11 @@ ${gender ? `- **Gender:** ${gender}` : ""}
 
 ## PLANETARY PLACEMENTS (D1 Chart)
 
-${JSON.stringify(initialData.placements || [], null, 2)}
+${JSON.stringify(data.placements || initialData?.placements || [], null, 2)}
 
 ## SHADBALA STRENGTHS & WEAKNESSES
 
-${JSON.stringify(initialData.shadbalaRows || [], null, 2)}
+${JSON.stringify(data.shadbalaRows || initialData?.shadbalaRows || [], null, 2)}
 
 ## MAHA DASHA TIMELINE
 
@@ -1198,8 +1220,8 @@ ${JSON.stringify(processedDashaRows, null, 2)}
 ` : `
 ${mahaRows.length > 0 ? `**Dasha Rows (calculate dates from birth year ${birthYear || "provided"}):** ${JSON.stringify(mahaRows, null, 2)}` : ""}
 
-${initialData.raw?.maha ? `**Maha Dasha Data:** ${JSON.stringify(initialData.raw.maha, null, 2)}` : ""}
-${initialData.raw?.vimsottari ? `**Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(initialData.raw.vimsottari, null, 2)}` : ""}
+${(data.raw?.maha || initialData?.raw?.maha) ? `**Maha Dasha Data:** ${JSON.stringify(data.raw?.maha || initialData.raw.maha, null, 2)}` : ""}
+${(data.raw?.vimsottari || initialData?.raw?.vimsottari) ? `**Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(data.raw?.vimsottari || initialData.raw.vimsottari, null, 2)}` : ""}
 
 **Standard Vimsottari Dasha sequence from birth (use if dates need calculation):**
 - Ketu: 0-7 years (${birthYear ? `${birthYear}-${birthYear + 7}` : "birth to age 7"})
@@ -1224,9 +1246,9 @@ ${initialData.raw?.vimsottari ? `**Vimsottari Dasha Data (extract current Dasha 
 
 ${currentDasha || `**Current Dasha Period:** Based on the Vimsottari Dasha system, the current planetary period is determined by the birth chart. The standard sequence begins with Ketu Dasha (0-7 years), followed by Venus (7-27 years), Sun (27-33 years), Moon (33-43 years), Mars (43-50 years), Rahu (50-68 years), Jupiter (68-84 years), Saturn (84-103 years), and Mercury (103-120 years). For ${name}, born in ${birthYear || "the provided year"}, calculate the current Dasha based on their age (${age !== null ? `${age} years` : "from birth date"}) and provide the specific period directly.`}
 
-${initialData.raw?.vimsottari ? `
+${rawVims ? `
 **Vimsottari Dasha Data (extract current Dasha from this - process internally and provide directly):**
-${JSON.stringify(initialData.raw.vimsottari.current || initialData.raw.vimsottari.mahadasha || initialData.raw.vimsottari, null, 2)}
+${JSON.stringify(rawVims.current || rawVims.mahadasha || rawVims, null, 2)}
 ` : ""}
 
 ## YOUR PROFESSIONAL CAPABILITIES AS A VEDIC ASTROLOGER
