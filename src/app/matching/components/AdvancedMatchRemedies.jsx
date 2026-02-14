@@ -250,7 +250,7 @@ export default function AdvancedMatchGuidance({
       {/* Marriage Timing */}
       <div className="p-6 rounded-xl border border-indigo-200 bg-indigo-100">
         <div className="flex items-center gap-2 mb-3">
-          <Calendar className="w-4 h-4 text-indigo-700" />
+          <Calendar className="w-4 h-4 text-indigo-700 mb-2" />
           <h4 className="font-medium text-indigo-800">
             Marriage Timing Outlook
           </h4>
