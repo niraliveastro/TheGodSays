@@ -138,7 +138,7 @@ export async function POST(req) {
         const questionPrompt = [
           {
             role: 'system',
-            content: 'Generate exactly 3 short follow-up questions based on the conversation. Return ONLY a JSON array of 3 strings. Each question must be under 12 words and directly related to the astrology topic discussed.'
+            content: 'Generate exactly 3 short follow-up questions that the USER would ask the AI assistant next. Phrase each as the user asking (e.g. "Can you explain...", "What is...", "How do I...", "Why does..."). Do NOT phrase as the AI prompting the user. Return ONLY a JSON array of 3 strings. Each question must be under 12 words and directly related to the astrology topic discussed.'
           },
           {
             role: 'user',
@@ -146,7 +146,7 @@ export async function POST(req) {
 
 AI answered: "${aiResponse.substring(0, 500)}"
 
-Generate 3 relevant follow-up questions as JSON array.`
+Generate 3 follow-up questions that the user might ask next, phrased as the user asking the AI. Return as JSON array of strings.`
           }
         ]
 

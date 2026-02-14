@@ -1,0 +1,337 @@
+/* Talk to AI Astrologer – full viewport, chat background, hero-style headers */
+
+.talk-to-ai-astrologer-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #fdfbf7 0%, #fefce8 30%, #fdfbf7 100%);
+}
+
+/* Hero header: center everything in view */
+.talk-to-ai-astrologer-page .talk-to-ai-hero-header {
+  width: 100%;
+  text-align: center !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.talk-to-ai-astrologer-page .page-hero-title-wrap {
+  width: 100%;
+  text-align: center !important;
+  margin-bottom: 0.5rem;
+}
+
+/* Hero title – no .title class, so no global flex; block + center */
+.talk-to-ai-astrologer-page .page-hero-title {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 auto;
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
+  text-align: center !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .talk-to-ai-astrologer-page .page-hero-title {
+    font-size: 1.875rem;
+  }
+}
+
+.talk-to-ai-astrologer-page .page-hero-subtitle {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #6b7280;
+  margin: 0 auto 1rem;
+  max-width: 36rem;
+  text-align: center !important;
+}
+
+/* Center heading block and trust-line (when using mb-6 only) */
+.talk-to-ai-astrologer-page header.mb-6 {
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100%;
+}
+
+.talk-to-ai-astrologer-page .form-title,
+.talk-to-ai-astrologer-page .results-title {
+  text-align: center !important;
+}
+.talk-to-ai-astrologer-page .trust-line {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+}
+
+/* Full-screen chat wrapper: 100% width/height, no bg here (bg is on chat panel only) */
+.talk-to-ai-chat-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Chat interface (the panel) = full screen by %, no outer scroll */
+.talk-to-ai-chat-viewport .chat-container-responsive {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1 1 auto !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background-color: rgba(253, 251, 247, 0.97) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* PNG watermark ON THE CHAT INTERFACE – exact center */
+.talk-to-ai-chat-viewport .chat-container-responsive::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/images/astrologer2.png");
+  background-size: 40% auto;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Astrology patterns ON THE CHAT INTERFACE only */
+.talk-to-ai-chat-viewport .chat-container-responsive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 35%),
+    radial-gradient(2px 2px at 15% 30%, rgba(212, 175, 55, 0.15), transparent),
+    radial-gradient(2px 2px at 85% 70%, rgba(212, 175, 55, 0.12), transparent),
+    url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='24' cy='24' r='1.5' fill='%23d4af37' opacity='0.35'/%3E%3Cpath d='M24 4v8M24 36v8M4 24h8M36 24h8M10 10l5.66 5.66M32.34 32.34L38 38M10 38l5.66-5.66M32.34 15.66L38 10' stroke='%23d4af37' stroke-width='0.25' fill='none' opacity='0.3'/%3E%3C/svg%3E");
+  background-size: auto, auto, auto, auto, 64px 64px;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Chat content above watermark (pseudo-elements are z-index 0) */
+.talk-to-ai-chat-viewport .chat-container-responsive > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mr. Astro header: avatar + title + subtitle (reference UI style) */
+.mr-astro-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.talk-to-ai-chat-header .mr-astro-title {
+  font-family: "Geom", sans-serif !important;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111 !important;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.talk-to-ai-chat-header .mr-astro-subtitle {
+  font-family: "Geom", sans-serif !important;
+  font-size: 0.8rem;
+  color: #111 !important;
+  margin-top: 0.15rem;
+}
+
+/* Chat full-screen header: legacy title class if used elsewhere */
+.talk-to-ai-chat-header h2.title {
+  font-family: "Geom", sans-serif !important;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111 !important;
+  margin: 0;
+}
+
+/* Wallet and credits text in black */
+.talk-to-ai-chat-header .talk-to-ai-credits-pill,
+.talk-to-ai-chat-header .talk-to-ai-wallet-pill {
+  color: #111 !important;
+}
+.talk-to-ai-chat-header .talk-to-ai-credits-pill span,
+.talk-to-ai-chat-header .talk-to-ai-wallet-pill span {
+  color: #111 !important;
+}
+.talk-to-ai-chat-header .talk-to-ai-wallet-pill svg {
+  color: #111 !important;
+}
+
+/* Full-screen: fixed below nav, chat header on top (in front). No margin/padding that could cause gap. */
+.talk-to-ai-fullscreen,
+main.talk-to-ai-fullscreen,
+main.talk-to-ai-chat-fullscreen.talk-to-ai-fullscreen {
+  position: fixed !important;
+  top: 128px !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 40;
+  background: #fdfbf7;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Desktop: move chat up so it overlaps bottom nav and fully covers the white gap (~20–30px) */
+@media (min-width: 768px) {
+  .talk-to-ai-fullscreen,
+  main.talk-to-ai-fullscreen,
+  main.talk-to-ai-chat-fullscreen.talk-to-ai-fullscreen {
+    top: 108px !important;
+    margin-top: 0 !important;
+  }
+}
+
+.talk-to-ai-fullscreen .talk-to-ai-chat-header {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  margin: 0 !important;
+  margin-top: 0 !important;
+}
+
+.talk-to-ai-fullscreen .talk-to-ai-chat-viewport {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Mobile: one nav bar only */
+@media (max-width: 767px) {
+  .talk-to-ai-fullscreen,
+  main.talk-to-ai-fullscreen,
+  main.talk-to-ai-chat-fullscreen.talk-to-ai-fullscreen {
+    top: 64px !important;
+  }
+}
+
+/* Lock body scroll and remove bottom gap when fullscreen chat is open */
+body.talk-to-ai-chat-fullscreen-active {
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+.talk-to-ai-chat-viewport .chat-messages-container {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Follow-up questions: border fits question length, not full width */
+.talk-to-ai-chat-viewport .chat-suggested-questions-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.talk-to-ai-chat-viewport .chat-suggested-questions-cards .chat-suggested-question-btn {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: rgba(248, 242, 231, 0.95) !important;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.talk-to-ai-chat-viewport .chat-suggested-questions-cards .chat-suggested-question-btn:hover {
+  background: rgba(253, 251, 247, 0.98) !important;
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+/* Chat route loading state – single full-screen experience (same top as chat main) */
+.talk-to-ai-chat-loading {
+  position: fixed;
+  inset: 0;
+  top: 128px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fdfbf7;
+  z-index: 40;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .talk-to-ai-chat-loading {
+    top: 108px;
+  }
+}
+
+@media (max-width: 767px) {
+  .talk-to-ai-chat-loading {
+    top: 64px;
+  }
+}
+
+.talk-to-ai-chat-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(212, 175, 55, 0.25);
+  border-top-color: #b8972e;
+  border-radius: 50%;
+  animation: talk-to-ai-chat-spin 0.8s linear infinite;
+}
+
+.talk-to-ai-chat-loading-text {
+  font-family: "Geom", sans-serif;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+@keyframes talk-to-ai-chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

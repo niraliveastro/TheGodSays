@@ -12,8 +12,9 @@ import {
  * @param {string} chatType - 'prediction' or 'matchmaking'
  * @param {boolean} shouldReset - Flag to reset conversation (e.g., on new form submission)
  * @param {string} formDataHash - Hash of form data to identify unique form submissions
+ * @param {string} initialConversationId - When set, load this conversation by ID (e.g. from /talk-to-ai-astrologer/chat/[chatId])
  */
-export function useChatState(chatType, shouldReset = false, formDataHash = null) {
+export function useChatState(chatType, shouldReset = false, formDataHash = null, initialConversationId = null) {
   const { user, getUserId } = useAuth()
   const userId = getUserId()
   const [messages, setMessages] = useState([])
@@ -31,6 +32,35 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
   const guestUsage = isGuest ? getGuestUsage(chatType) : 0
   const canAsk = isGuest ? canGuestAskQuestion(chatType) : true
   const remainingGuestQuestions = isGuest ? getRemainingGuestQuestions(chatType) : null
+
+  // Load a single conversation by ID (for /talk-to-ai-astrologer/chat/[chatId])
+  const loadConversationById = async (convId) => {
+    if (!convId) return
+    try {
+      setLoading(true)
+      const url = `/api/conversations/${convId}?userId=${userId || ''}`
+      const response = await fetch(url)
+      const data = await response.json()
+      if (response.status === 404 || !data.conversation) {
+        setMessages([])
+        setConversationId(null)
+        return
+      }
+      if (data.conversation.messages) {
+        setMessages(data.conversation.messages)
+        setConversationId(data.conversation.id)
+      } else {
+        setMessages([])
+        setConversationId(data.conversation.id)
+      }
+    } catch (error) {
+      console.error('Error loading conversation by id:', error)
+      setMessages([])
+      setConversationId(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Define loadConversation function before useEffects that use it
   const loadConversation = async (forceNew = false, hashToUse = formDataHash) => {
@@ -82,6 +112,7 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
 
   // Load conversation from Firestore on mount or when userId changes
   useEffect(() => {
+    if (initialConversationId) return // Loading by ID, skip reset logic
     if (shouldReset && !resetTriggerRef.current) {
       // Reset conversation on new form submission
       resetTriggerRef.current = true
@@ -92,10 +123,11 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
       // Reset the trigger when shouldReset becomes false
       resetTriggerRef.current = false
     }
-  }, [shouldReset])
+  }, [shouldReset, initialConversationId])
   
   // Detect formDataHash changes and reset conversation
   useEffect(() => {
+    if (initialConversationId) return
     if (formDataHash && previousFormDataHashRef.current !== null && previousFormDataHashRef.current !== formDataHash) {
       // Form data hash changed, reset conversation
       console.log('[useChatState] Form data hash changed, resetting conversation:', {
@@ -107,18 +139,22 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
       loadConversation(true, formDataHash) // Force new conversation with new hash
     }
     previousFormDataHashRef.current = formDataHash
-  }, [formDataHash])
+  }, [formDataHash, initialConversationId])
 
   // Load conversation and pricing
   useEffect(() => {
-    loadConversation()
+    if (initialConversationId) {
+      loadConversationById(initialConversationId)
+    } else {
+      loadConversation()
+    }
     loadPricing()
     if (userId) {
       loadWalletBalance()
     } else {
       setWalletBalance(null)
     }
-  }, [userId, chatType, formDataHash])
+  }, [userId, chatType, formDataHash, initialConversationId])
 
   const loadPricing = async () => {
     try {
@@ -178,7 +214,8 @@ export function useChatState(chatType, shouldReset = false, formDataHash = null)
           userId,
           chatType,
           messages: updatedMessages,
-          formDataHash: formDataHash || null
+          formDataHash: formDataHash || null,
+          ...(conversationId && { conversationId })
         })
       })
 

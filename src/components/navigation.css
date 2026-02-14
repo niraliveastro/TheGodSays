@@ -179,7 +179,7 @@ body {
   position: relative !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  overflow-x: auto !important; /* Allow scroll on zoom if needed */
+  overflow-x: auto !important; /* Allow horizontal scroll on zoom if needed */
   scrollbar-width: none !important; /* Hide scrollbar */
   -ms-overflow-style: none !important; /* Hide scrollbar IE/Edge */
 }

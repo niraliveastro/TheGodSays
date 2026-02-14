@@ -8,9 +8,13 @@ import {
   staticMonth as staticSep,
 } from "@/lib/staticCalendarSep2025";
 import astrologyAPI from "@/lib/api";
-import { postSamvatInfo, getRealtimeSamvatInfo } from "@/lib/api";
+import { postSamvatInfo, getRealtimeSamvatInfo, geocodePlace } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import PageSEO from "@/components/PageSEO";
+import PlaceInputWithSuggestions from "@/components/PlaceInputWithSuggestions";
+
+// Default location: Ujjain (no geolocation permission asked)
+const UJJAIN_COORDS = { lat: 23.1765, lon: 75.7885 };
 
 // --- Caching Logic (Unchanged) ---
 const monthDataCache = new Map();
@@ -139,13 +143,13 @@ function buildMonthGrid(viewDate) {
   return { monthLabel: monthLabelFrom(viewDate), weekStart: 0, rows };
 }
 
-function buildHeader(viewDate) {
+function buildHeader(viewDate, placeLabel = "Ujjain") {
   return {
     selectedBanner: {
       leftTitle: monthLabelFrom(viewDate),
       leftSubtitle: "Hindu Calendar",
       era: "Vikrama Samvat • Kaliyuga",
-      location: "Your Location",
+      location: placeLabel,
     },
     rightTitle: String(viewDate.getDate()),
     rightSubtitle1: monthLabelFrom(viewDate),
@@ -156,6 +160,11 @@ function buildHeader(viewDate) {
 
 export default function CalendarPage() {
   const [viewDate, setViewDate] = useState(new Date());
+  const [coords, setCoords] = useState(UJJAIN_COORDS);
+  const [placeLabel, setPlaceLabel] = useState("Ujjain");
+  const [placeInput, setPlaceInput] = useState("");
+  const [placeError, setPlaceError] = useState(null);
+  const [placeLoading, setPlaceLoading] = useState(false);
   const [nakshatraMap, setNakshatraMap] = useState({});
   const [sunMap, setSunMap] = useState({});
   const [tithiMap, setTithiMap] = useState({});
@@ -164,7 +173,7 @@ export default function CalendarPage() {
   const [samvatError, setSamvatError] = useState(null);
   const [samvatRaw, setSamvatRaw] = useState("");
 
-  const header = useMemo(() => buildHeader(viewDate), [viewDate]);
+  const header = useMemo(() => buildHeader(viewDate, placeLabel), [viewDate, placeLabel]);
   const headerWithSamvat = useMemo(() => {
     const era = samvat
       ? `Vikrama Samvat ${samvat.number} • ${samvat.yearName}`
@@ -188,28 +197,13 @@ export default function CalendarPage() {
 
   const month = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
 
-  // --- All useEffect logic unchanged (caching, API, Samvat) ---
+  // --- Fetch month data using current coords (default Ujjain; no geolocation) ---
   useEffect(() => {
     let cancelled = false;
-    async function getGeo() {
-      try {
-        const pos = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation)
-            return reject(new Error("Geolocation unavailable"));
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 60000,
-          });
-        });
-        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      } catch (_) {
-        return { lat: 28.6139, lon: 77.209 };
-      }
-    }
+    const lat = coords.lat;
+    const lon = coords.lon;
 
     async function fetchAll() {
-      const { lat, lon } = await getGeo();
       const tz = -new Date().getTimezoneOffset() / 60;
       const y = viewDate.getFullYear();
       const m = viewDate.getMonth();
@@ -521,29 +515,14 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, [viewDate]);
+  }, [viewDate, coords.lat, coords.lon]);
 
   useEffect(() => {
     let cancelled = false;
     setSamvatLoading(true);
     setSamvatError(null);
-
-    async function getGeo() {
-      try {
-        const pos = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation)
-            return reject(new Error("Geolocation unavailable"));
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 60000,
-          });
-        });
-        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      } catch (_) {
-        return { lat: 28.6139, lon: 77.209 };
-      }
-    }
+    const lat = coords.lat;
+    const lon = coords.lon;
 
     async function parseSamvat(outLike) {
       let out = outLike;
@@ -599,7 +578,6 @@ export default function CalendarPage() {
     }
 
     async function fetchSamvat() {
-      const { lat, lon } = await getGeo();
       const tz = -new Date().getTimezoneOffset() / 60;
       const d = viewDate;
       const payload = {
@@ -694,7 +672,33 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, [viewDate]);
+  }, [viewDate, coords.lat, coords.lon]);
+
+  const handlePlaceSubmit = async () => {
+    const q = (placeInput || "").trim();
+    if (!q) return;
+    setPlaceLoading(true);
+    setPlaceError(null);
+    try {
+      const result = await geocodePlace(q);
+      if (result) {
+        setCoords({ lat: result.latitude, lon: result.longitude });
+        setPlaceLabel(result.label || q);
+      } else {
+        setPlaceError("Location not found. Try a different place name.");
+      }
+    } catch (e) {
+      setPlaceError("Could not find location. Try again.");
+    } finally {
+      setPlaceLoading(false);
+    }
+  };
+
+  const handlePlaceSelect = (result) => {
+    setCoords({ lat: result.latitude, lon: result.longitude });
+    setPlaceLabel(result.label || placeInput);
+    setPlaceError(null);
+  };
 
   const handlePrev = () => {
     const d = new Date(viewDate);
@@ -882,6 +886,53 @@ export default function CalendarPage() {
       <div className="pageContainer">
         <div className="innerWrapper">
           <div className="calendarWrapper mb-16">
+            <div
+              className="panchang-place-wrapper"
+              style={{
+                marginBottom: "1rem",
+                width: "100%",
+                maxWidth: "min(320px, 100%)",
+                marginLeft: "auto",
+                marginRight: "auto",
+                paddingLeft: "0.5rem",
+                paddingRight: "0.5rem",
+                boxSizing: "border-box",
+              }}
+            >
+              <PlaceInputWithSuggestions
+                id="panchang-place"
+                value={placeInput}
+                onChange={(v) => { setPlaceInput(v); setPlaceError(null); }}
+                onPlaceSelect={handlePlaceSelect}
+                placeholder="e.g. Ujjain, Mumbai, Delhi"
+                ariaLabel="Location for Panchang"
+                inputStyle={{
+                  width: "100%",
+                  padding: "0.5rem 0.75rem",
+                  border: "1px solid rgba(212, 175, 55, 0.4)",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.875rem",
+                  boxSizing: "border-box",
+                }}
+              />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  onClick={handlePlaceSubmit}
+                  disabled={placeLoading}
+                  className="btn-primary"
+                  style={{ padding: "0.375rem 0.75rem", whiteSpace: "nowrap", fontSize: "0.875rem" }}
+                >
+                  {placeLoading ? "…" : "Update"}
+                </button>
+              </div>
+              {placeError && (
+                <p style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "#b91c1c", textAlign: "center" }}>{placeError}</p>
+              )}
+              <p style={{ marginTop: "0.25rem", fontSize: "0.6875rem", color: "#6b7280", textAlign: "center" }}>
+                Default: Ujjain. Type a city and pick from suggestions.
+              </p>
+            </div>
             <div className="navContainer">
               <button
                 className="navButton"

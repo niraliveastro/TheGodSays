@@ -48,7 +48,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { userId, chatType, messages, formDataHash } = body
+    const { userId, chatType, messages, formDataHash, conversationId: existingConversationId } = body
 
     if (!chatType || !['prediction', 'matchmaking'].includes(chatType)) {
       return NextResponse.json(
@@ -71,19 +71,26 @@ export async function POST(request) {
       )
     }
 
-    // Get or create active conversation (with formDataHash if provided)
-    let conversation = await ConversationService.getActiveConversation(userId, chatType, formDataHash || null)
-    
-    if (conversation) {
-      // Update existing conversation (only if formDataHash matches)
-      await ConversationService.updateConversation(conversation.id, messages)
-      conversation = {
-        ...conversation,
-        messages
+    let conversation
+
+    // If conversationId provided (e.g. from /talk-to-ai-astrologer/chat/[chatId]), update that conversation
+    if (existingConversationId) {
+      const existing = await ConversationService.getConversationById(existingConversationId)
+      if (existing && existing.userId === userId) {
+        await ConversationService.updateConversation(existingConversationId, messages)
+        conversation = { ...existing, messages }
+      } else {
+        conversation = await ConversationService.createConversation(userId, chatType, messages, formDataHash || null)
       }
     } else {
-      // Create new conversation (with formDataHash if provided)
-      conversation = await ConversationService.createConversation(userId, chatType, messages, formDataHash || null)
+      // Get or create active conversation (with formDataHash if provided)
+      conversation = await ConversationService.getActiveConversation(userId, chatType, formDataHash || null)
+      if (conversation) {
+        await ConversationService.updateConversation(conversation.id, messages)
+        conversation = { ...conversation, messages }
+      } else {
+        conversation = await ConversationService.createConversation(userId, chatType, messages, formDataHash || null)
+      }
     }
 
     return NextResponse.json({ conversation })
