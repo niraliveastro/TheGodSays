@@ -5,6 +5,12 @@ import { useEffect, useRef, useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
+import MatchInsights from "./components/MatchInsights";
+import MatchRemedies from "./components/MatchRemedies";
+import AdvancedMatchGuidance from "./components/AdvancedMatchRemedies";
+import ChartStrengthComparison from "./components/ChartStrength";
+import LifeTogetherInsight from "./components/LifeTogether";
+import AshtakavargaSection from "./components/AshtakavargaSection";
 import {
   Sparkles,
   Sun,
@@ -117,22 +123,16 @@ const Badge = ({ children, tone = "neutral" }) => {
  *
  * @returns {JSX.Element} The rendered match-making page.
  */
-export default function MatchingPage() {
+const DEFAULT_FEMALE = { fullName: "", dob: "", tob: "", place: "" };
+const DEFAULT_MALE = { fullName: "", dob: "", tob: "", place: "" };
+
+export default function MatchingPage({ initialCache = null, showOnlyResult = false }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const googleLoaded = useGoogleMaps();
-  // Form state for female and male individuals
-  const [female, setFemale] = useState({
-    fullName: "",
-    dob: "",
-    tob: "",
-    place: "",
-  });
-  const [male, setMale] = useState({
-    fullName: "",
-    dob: "",
-    tob: "",
-    place: "",
-  });
+  // Form state for female and male individuals (hydrate from initialCache when on result page)
+  const [female, setFemale] = useState(() => initialCache?.female ?? DEFAULT_FEMALE);
+  const [male, setMale] = useState(() => initialCache?.male ?? DEFAULT_MALE);
   // Coordinates and suggestions state
   const [fCoords, setFCoords] = useState(null);
   const [mCoords, setMCoords] = useState(null);
@@ -154,12 +154,12 @@ export default function MatchingPage() {
   const fPlacesService = useRef(null);
   const mPlacesService = useRef(null);
 
-  // Submission and result state
+  // Submission and result state (hydrate from initialCache when on result page)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
-  const [fDetails, setFDetails] = useState(null);
-  const [mDetails, setMDetails] = useState(null);
+  const [result, setResult] = useState(() => initialCache?.result ?? null);
+  const [fDetails, setFDetails] = useState(() => initialCache?.fDetails ?? null);
+  const [mDetails, setMDetails] = useState(() => initialCache?.mDetails ?? null);
 
   // === Chat State ===
   const [chatOpen, setChatOpen] = useState(false);
@@ -235,6 +235,7 @@ export default function MatchingPage() {
 
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
+  const MATCHING_PAGE_CACHE_KEY = "tgs:matching_page_cache"; // sessionStorage: restore result when user returns (e.g. back from talk-to-astrologer)
   const [history, setHistory] = useState([]); // Array of history entries
   const [historySearch, setHistorySearch] = useState(""); // Search filter for history
   /**
@@ -333,6 +334,9 @@ export default function MatchingPage() {
     setChatData(null);
     previousFormDataHashRef.current = null;
     setCurrentFormDataHash(null);
+    try {
+      if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(MATCHING_PAGE_CACHE_KEY);
+    } catch (_) {}
   };
 
   const loadHistoryIntoForm = (item) => {
@@ -403,6 +407,60 @@ export default function MatchingPage() {
   useEffect(() => {
     setHistory(getHistory());
   }, []);
+
+  // Hydrate form-data hash from initialCache when showing result-only view
+  useEffect(() => {
+    if (initialCache?.currentFormDataHash != null) {
+      previousFormDataHashRef.current = initialCache.currentFormDataHash;
+      setCurrentFormDataHash(initialCache.currentFormDataHash);
+    }
+  }, [initialCache]);
+
+  // Restore matching result + form from sessionStorage when user returns (e.g. back from talk-to-astrologer) — skip when we have initialCache (result page)
+  useEffect(() => {
+    if (initialCache != null) return;
+    try {
+      const raw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(MATCHING_PAGE_CACHE_KEY) : null;
+      if (!raw) return;
+      const cached = JSON.parse(raw);
+      if (cached?.result && cached?.fDetails != null && cached?.mDetails != null) {
+        if (cached.female && typeof cached.female === "object") setFemale(cached.female);
+        if (cached.male && typeof cached.male === "object") setMale(cached.male);
+        setResult(cached.result);
+        setFDetails(cached.fDetails);
+        setMDetails(cached.mDetails);
+        if (cached.currentFormDataHash != null) {
+          previousFormDataHashRef.current = cached.currentFormDataHash;
+          setCurrentFormDataHash(cached.currentFormDataHash);
+        }
+      }
+    } catch (e) {
+      console.warn("[Matching] Restore from sessionStorage failed:", e);
+    }
+  }, [initialCache]);
+
+  // Persist matching result + form to sessionStorage so it survives navigation (e.g. talk-to-astrologer → back)
+  useEffect(() => {
+    if (result && fDetails != null && mDetails != null) {
+      try {
+        const payload = {
+          female: { fullName: female.fullName, dob: female.dob, tob: female.tob, place: female.place },
+          male: { fullName: male.fullName, dob: male.dob, tob: male.tob, place: male.place },
+          result,
+          fDetails,
+          mDetails,
+          currentFormDataHash: previousFormDataHashRef.current ?? currentFormDataHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(MATCHING_PAGE_CACHE_KEY, JSON.stringify(payload));
+        }
+      } catch (e) {
+        console.warn("[Matching] Persist to sessionStorage failed:", e);
+      }
+    } else if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(MATCHING_PAGE_CACHE_KEY);
+    }
+  }, [result, fDetails, mDetails, female, male, currentFormDataHash]);
 
   // Automatically show full assistant card when results are generated
   useEffect(() => {
@@ -574,42 +632,6 @@ export default function MatchingPage() {
       return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
     }
   }
-
-  // Get Place Suggestion in the form using Google places
-
-  const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
-    if (!placeId || !window.google?.maps?.importLibrary) return;
-
-    try {
-      const { Place } = await window.google.maps.importLibrary("places");
-      const place = new Place({ id: placeId });
-
-      await place.fetchFields({
-        fields: ["location", "formattedAddress"],
-      });
-
-      if (!place.location) return;
-
-      const lat = place.location.lat();
-      const lng = place.location.lng();
-      const label = place.formattedAddress;
-
-      setter((prev) => ({
-        ...prev,
-        place: label,
-      }));
-
-      coordsSetter({
-        latitude: lat,
-        longitude: lng,
-        label,
-      });
-
-      console.log("[Matching] Resolved coordinates:", { lat, lng, label });
-    } catch (err) {
-      console.error("resolvePlaceDetails failed:", err);
-    }
-  };
 
   /**
    * Fetches current location for female and fills place field.
@@ -818,6 +840,8 @@ export default function MatchingPage() {
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
         "planets/extended",
+        "horoscope-chart-svg-code",
+        "navamsa-chart-svg-code",
       ];
 
       const [fCalc, mCalc] = await Promise.all([
@@ -1144,6 +1168,7 @@ export default function MatchingPage() {
 
       const buildUserDetails = (calc) => {
         const r = calc?.results || {};
+
         const shadbala = parseShadbala(r["shadbala/summary"]);
         const vims = r["vimsottari/dasa-information"]
           ? safeParse(
@@ -1153,16 +1178,34 @@ export default function MatchingPage() {
               ),
             )
           : null;
+
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
         const planets = parsePlanets(r["planets/extended"]);
+
+        const normalizeSvg = (v) => {
+          if (!v) return null;
+          const raw = typeof v === "string" ? v : v?.output || v?.svg || null;
+          return typeof raw === "string" && raw.includes("<svg") ? raw : null;
+        };
+
+        const d1ChartSvg = normalizeSvg(r["horoscope-chart-svg-code"]);
+
+        const d9ChartSvg = normalizeSvg(r["navamsa-chart-svg-code"]);
+
         return {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
           placements: toPlacements(planets),
-          vimsottari: vims, // Include raw vimsottari data for Chat component
-          mahaDasas: maha, // Include maha dasas data for Chat component
+          vimsottari: vims,
+          mahaDasas: maha,
+
+          d1ChartSvg,
+          d9ChartSvg,
+          rawPlanetsExtended: planets,
+
         };
       };
+
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
 
@@ -1226,15 +1269,24 @@ export default function MatchingPage() {
       // Update hash reference after successful submission
       previousFormDataHashRef.current = newHash;
 
-      // Auto-scroll to results after successful calculation
-      setTimeout(() => {
-        if (resultsRef.current) {
-          resultsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+      // Persist to sessionStorage and navigate to result page so back button shows data without re-submit
+      try {
+        const payload = {
+          female: { fullName: female.fullName, dob: female.dob, tob: female.tob, place: female.place },
+          male: { fullName: male.fullName, dob: male.dob, tob: male.tob, place: male.place },
+          result: out,
+          fDetails: fDetailsBuilt,
+          mDetails: mDetailsBuilt,
+          currentFormDataHash: newHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(MATCHING_PAGE_CACHE_KEY, JSON.stringify(payload));
         }
-      }, 100);
+        router.push("/kundli-matching/result");
+      } catch (e) {
+        console.warn("[Matching] Persist before navigate failed:", e);
+        router.push("/kundli-matching/result");
+      }
 
       // Return the computed result for callers that await onSubmit
       return out;
@@ -1301,8 +1353,6 @@ export default function MatchingPage() {
       scrollToChat();
     }
   };
-
-  const router = useRouter();
 
   const onTalkToAstrologer = () => {
     router.push("/talk-to-astrologer");
@@ -2342,13 +2392,25 @@ export default function MatchingPage() {
           </div>
         )}
 
+        {showOnlyResult && (
+          <div style={{ maxWidth: "1600px", margin: "1rem auto", padding: "0 2rem" }}>
+            <button
+              type="button"
+              onClick={() => router.push("/kundli-matching")}
+              className="use-btn"
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+            >
+              <RotateCcw size={18} />
+              New match
+            </button>
+          </div>
+        )}
+
+        {!showOnlyResult && (
         <div className="matching-page">
           <form onSubmit={onSubmit} className="match-form">
             {/* Header */}
-            <header
-              className="header"
-              style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
-            >
+            <header className="header">
               <IoHeartCircle
                 className="headerIcon"
                 style={{
@@ -2504,8 +2566,10 @@ export default function MatchingPage() {
                     <p className="form-field-helper">24-hour format</p>
                   </div>
                   {/* Female Place input */}
-                  <div className="form-field full"
-                  style={{ position: "relative" }}>
+                  <div
+                    className="form-field full"
+                    style={{ position: "relative" }}
+                  >
                     <label className="form-field-label" htmlFor="female-place">
                       Place
                     </label>
@@ -2549,66 +2613,71 @@ export default function MatchingPage() {
                       fSuggest.length,
                     )}
                     {/* Autocomplete dropdown for female */}
-{console.log(
-  "[Female Render] About to check dropdown render. fSuggest.length:",
-  fSuggest.length,
-)}
-{fSuggest.length > 0 && (
-  <div
-    className="suggestions"
-    style={{
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    zIndex: 99999,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-    maxHeight: "220px",
-    overflowY: "auto"
-  }}
-  >
-    {console.log("[Female Render] RENDERING DROPDOWN")}
-    {fSuggesting && (
-      <div className="suggestion-loading">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        Loading suggestions...
-      </div>
-    )}
-    {!fSuggesting &&
-      fSuggest.map((s, i) => {
-        console.log(
-          "[Female Render] Rendering suggestion:",
-          s.label,
-        );
-        return (
-          <button
-            key={i}
-            type="button"
-            onClick={() => handleFemaleSuggestionClick(s)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              textAlign: "left",
-              background: "var(--color-cream)",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
-            <MapPin size={14} />
-            <span>{s.label}</span>
-          </button>
-        );
-      })}
-  </div>
-)}
+                    {console.log(
+                      "[Female Render] About to check dropdown render. fSuggest.length:",
+                      fSuggest.length,
+                    )}
+                    {fSuggest.length > 0 && (
+                      <div
+                        className="suggestions"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          zIndex: 99999,
+                          background: "#ffffff",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                          maxHeight: "220px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {console.log("[Female Render] RENDERING DROPDOWN")}
+                        {fSuggesting && (
+                          <div className="suggestion-loading">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading suggestions...
+                          </div>
+                        )}
+                        {!fSuggesting &&
+                          fSuggest.map((s, i) => {
+                            console.log(
+                              "[Female Render] Rendering suggestion:",
+                              s.label,
+                            );
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => handleFemaleSuggestionClick(s)}
+                                style={{
+                                  width: "100%",
+                                  padding: "0.75rem",
+                                  textAlign: "left",
+                                  background: "var(--color-cream)",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.5rem",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.background = "#f3f4f6")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.background =
+                                    "transparent")
+                                }
+                              >
+                                <MapPin size={14} />
+                                <span>{s.label}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
 
                     <p className="form-field-helper place-helper">
                       {fCoords
@@ -2727,8 +2796,10 @@ export default function MatchingPage() {
                   </div>
 
                   {/* Male Place Input - Updated with Google Maps autocomplete */}
-                  <div className="form-field full"
-                  style={{position: "relative"}}>
+                  <div
+                    className="form-field full"
+                    style={{ position: "relative" }}
+                  >
                     <label className="form-field-label" htmlFor="male-place">
                       Place
                     </label>
@@ -2767,22 +2838,22 @@ export default function MatchingPage() {
 
                     {/* Autocomplete dropdown for male */}
                     {mSuggest.length > 0 && (
-                       <div
-    className="suggestions"
-    style={{
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    zIndex: 99999,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-    maxHeight: "220px",
-    overflowY: "auto"
-  }}
-  >
+                      <div
+                        className="suggestions"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          zIndex: 99999,
+                          background: "#ffffff",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                          maxHeight: "220px",
+                          overflowY: "auto",
+                        }}
+                      >
                         {mSuggesting && (
                           <div className="suggestion-loading">
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -2792,26 +2863,31 @@ export default function MatchingPage() {
                         {!mSuggesting &&
                           mSuggest.map((s, i) => (
                             <button
-            key={i}
-            type="button"
-            onClick={() => handleMaleSuggestionClick(s)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              textAlign: "left",
-              background: "var(--color-cream)",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
-            <MapPin size={14} />
-            <span>{s.label}</span>
-          </button>
+                              key={i}
+                              type="button"
+                              onClick={() => handleMaleSuggestionClick(s)}
+                              style={{
+                                width: "100%",
+                                padding: "0.75rem",
+                                textAlign: "left",
+                                background: "var(--color-cream)",
+                                border: "none",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.background = "#f3f4f6")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.background =
+                                  "transparent")
+                              }
+                            >
+                              <MapPin size={14} />
+                              <span>{s.label}</span>
+                            </button>
                           ))}
                       </div>
                     )}
@@ -3023,6 +3099,7 @@ export default function MatchingPage() {
             </div>
           </section>
         </div>
+        )}
 
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
@@ -3212,9 +3289,44 @@ export default function MatchingPage() {
               </div>
             </div>
 
+            <MatchInsights result={result} />
+            <LifeTogetherInsight
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+            <MatchRemedies
+              result={result}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+
+            <AdvancedMatchGuidance
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              result={result}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+
+            <ChartStrengthComparison
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+
+            <AshtakavargaSection
+  femaleDetails={fDetails}
+  maleDetails={mDetails}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+/>
+
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
-              <div className="grid md:grid-cols-2 gap-8 mt-8">
+              <div className="details-grid mt-8">
                 {/* Female Details */}
                 <div className="flex flex-col gap-6">
                   {/* Female Shadbala Card */}
@@ -3230,7 +3342,7 @@ export default function MatchingPage() {
                       {/* SUMMARY */}
                       <div className="analysis-summary">
                         <div className="summary-text">
-                          <h4 className="summary-question">
+                          <h4 className="summary-question font-medium">
                             How strong is her chart overall?
                           </h4>
 
@@ -3371,6 +3483,52 @@ export default function MatchingPage() {
                       </div>
                     </div>
                   )}
+
+                  {(fDetails?.d1ChartSvg || fDetails?.d9ChartSvg) && (
+                    <div
+                      className="charts-wrapper mt-6"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "1.5rem",
+                      }}
+                    >
+                      {fDetails?.d1ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#a855f7" }} />
+                            <h3 className="results-title">
+                              Female D1 – Lagna Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: fDetails.d1ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {fDetails?.d9ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#a855f7" }} />
+                            <h3 className="results-title">
+                              Female D9 – Navamsa Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: fDetails.d9ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Male Details */}
@@ -3385,7 +3543,7 @@ export default function MatchingPage() {
 
                       <div className="analysis-summary">
                         <div className="summary-text">
-                          <h4 className="summary-question">
+                          <h4 className="summary-question font-medium">
                             How strong is his chart overall?
                           </h4>
 
@@ -3522,6 +3680,52 @@ export default function MatchingPage() {
                           </tbody>
                         </table>
                       </div>
+                    </div>
+                  )}
+
+                  {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
+                    <div
+                      className="charts-wrapper mt-6"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "1.5rem",
+                      }}
+                    >
+                      {mDetails?.d1ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#f59e0b" }} />
+                            <h3 className="results-title">
+                              Male D1 – Lagna Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: mDetails.d1ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {mDetails?.d9ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#f59e0b" }} />
+                            <h3 className="results-title">
+                              Male D9 – Navamsa Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: mDetails.d9ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
