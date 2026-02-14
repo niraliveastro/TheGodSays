@@ -679,8 +679,7 @@ a:hover {
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  /* improved space between label, input, helper */
+  gap: 0.375rem;
 }
 
 .form-field-label {
@@ -709,20 +708,16 @@ a:hover {
 
 .form-field-input {
   width: 100%;
-  padding: 1rem 1.25rem;
-  /* increased padding for better touch targets */
+  padding: 0.75rem 1rem;
   border: 2px solid var(--color-gray-300);
-  /* stronger border */
   border-radius: var(--radius-lg);
-  /* consistent with card radius */
   background: var(--color-white);
   color: var(--color-gray-900);
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-family: var(--font-body);
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm);
-  /* subtle shadow for depth */
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .form-field-input:hover {
@@ -2042,48 +2037,66 @@ select {
 /* ================================================================== */
 /* AUTH METHOD TOGGLE - Email / Phone (Gold Theme) */
 /* ================================================================== */
+/* Hard rule: Email/Phone buttons centered in form panel */
 .auth-method-toggle {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  padding: 0.25rem;
-  background: rgba(212, 175, 55, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 0.75rem;
-  width: 100%;
+  justify-content: center !important;
+  gap: 0.625rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  width: 100% !important;
+  max-width: 100%;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex-shrink: 0;
 }
 
 .auth-toggle-btn {
-  flex: 1;
-  padding: 0.625rem 1.25rem;
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  font-size: 0.9375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   cursor: pointer;
   transition: all 0.25s ease;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  min-width: 0;
+}
+
+.auth-toggle-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .auth-toggle-btn:hover {
   color: #374151;
-  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.06);
 }
 
 .auth-toggle-btn-active {
   background: linear-gradient(135deg, #d4af37, #b8972e) !important;
   color: white !important;
+  border-color: #b8972e !important;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+.auth-toggle-btn-active .auth-toggle-icon {
+  color: white;
 }
 
 .auth-toggle-btn-active:hover {
   background: linear-gradient(135deg, #e6c04a, #c7a33a) !important;
   color: white !important;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 3px 10px rgba(212, 175, 55, 0.4);
 }
 
 .auth-resend-otp-btn {
@@ -2141,7 +2154,7 @@ select {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  gap: 0.75rem;
   width: 100%;
 }
 
@@ -2380,17 +2393,29 @@ select {
 }
 
 /* ================================================================== */
-/* PROMO PANEL (LEFT SIDE) */
+/* PROMO PANEL (LEFT SIDE) – content hard-aligned to top              */
 /* ================================================================== */
 .astrologer-promo-panel {
   background: linear-gradient(135deg, #d4af37 0%, #b8972e 100%);
-  padding: 3rem;
+  padding: 3.25rem 3rem 3rem 3rem; /* content shifted down a bit */
   color: white;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start !important;
+  align-items: flex-start;
   position: relative;
   overflow: hidden;
+}
+
+/* Hard rule: no extra space above first element */
+.astrologer-promo-panel > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.astrologer-promo-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Decorative pattern overlay */
@@ -2406,9 +2431,36 @@ select {
   pointer-events: none;
 }
 
-.astrologer-promo-panel>* {
-  position: relative;
-  z-index: 1;
+/* Title row: icon left, title right – no overlap */
+.promo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.promo-title-row .promo-icon-badge {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 12px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.promo-title-row .promo-icon-badge svg {
+  width: 24px;
+  height: 24px;
+}
+
+.promo-title-row .promo-title {
+  margin-bottom: 0;
+  margin-left: 0;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .promo-icon-badge {
@@ -2420,6 +2472,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 0 !important;
   margin-bottom: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -2444,6 +2497,9 @@ select {
   opacity: 0.95;
   line-height: 1.6;
   margin-bottom: 2.5rem;
+  /* Align with title: start at icon's horizontal center (same as title in image 2) */
+  margin-left: 24px;
+  white-space: nowrap;
 }
 
 /* Promo Features */
@@ -2463,6 +2519,10 @@ select {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
   backdrop-filter: blur(5px);
+}
+
+.promo-feature span {
+  white-space: nowrap;
 }
 
 .promo-feature-icon {
@@ -2492,21 +2552,39 @@ select {
 }
 
 /* ================================================================== */
-/* FORM PANEL (RIGHT SIDE) */
+/* FORM PANEL (RIGHT SIDE) – HARD CENTERING RULES */
 /* ================================================================== */
 .astrologer-form-panel {
-  padding: 3rem;
+  padding: 2rem 3rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
+/* Hard rule: header block centered */
 .form-panel-header {
-  margin-bottom: 2rem;
+  text-align: center !important;
+  margin-bottom: 1rem;
+  width: 100% !important;
+  max-width: 100%;
+  display: block;
+}
+
+/* Hard rule: title and subtitle centered */
+.form-panel-title,
+.form-panel-subtitle {
+  text-align: center !important;
+  width: 100% !important;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .form-panel-title {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
   font-family: var(--font-heading);
 }
 
@@ -2519,7 +2597,7 @@ select {
 .astrologer-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
 /* ================================================================== */
@@ -2533,7 +2611,7 @@ select {
   }
 
   .astrologer-form-panel {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1.5rem 2rem;
   }
 
   .form-panel-title {
@@ -2551,7 +2629,7 @@ select {
   }
 
   .astrologer-form-panel {
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
   }
 
   .form-panel-title {
