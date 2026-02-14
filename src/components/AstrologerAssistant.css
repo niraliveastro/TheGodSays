@@ -577,3 +577,822 @@
     overflow: hidden;
   }
 }
+
+
+/* LinkedIn-Style Chat Tab Styles */
+
+/* Toast notification */
+.astrologer-tab-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 16px 24px;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+  z-index: 10000;
+  animation: slideDownTab 0.3s ease;
+  max-width: 90%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #991b1b;
+}
+
+@keyframes slideDownTab {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Backdrop overlay for mobile */
+.astrologer-tab-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: none;
+  animation: fadeInTab 0.2s ease;
+}
+
+@keyframes fadeInTab {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Main container - positioned at bottom right like LinkedIn */
+.astrologer-tab-container {
+  position: fixed;
+  bottom: 0;
+  right: 24px;
+  z-index: 9999;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Minimized tab state - LinkedIn style */
+.astrologer-tab-container.minimized {
+  width: 320px;
+  height: auto;
+}
+
+.astrologer-tab-minimized {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  cursor: pointer;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  font-family: "Georgia", serif;
+  width: 100%;
+  position: relative;
+}
+
+.astrologer-tab-minimized:hover {
+  background: #f9fafb;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.astrologer-tab-minimized::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d4af37, #c9a846);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Avatar with status indicator */
+.astrologer-tab-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #d4af37, #c9a846);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.astrologer-tab-avatar-img {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
+  transform: rotate(-45deg);
+}
+
+.astrologer-tab-status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: #10b981;
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulse-tab-dot 2s infinite;
+}
+
+@keyframes pulse-tab-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.astrologer-tab-info {
+  flex: 1;
+  text-align: left;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+.astrologer-tab-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.astrologer-tab-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.astrologer-tab-toggle-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.astrologer-tab-minimized:hover .astrologer-tab-toggle-icon {
+  color: #1f2937;
+  transform: translateY(-2px);
+}
+
+/* Expanded state */
+.astrologer-tab-container.expanded {
+  width: 380px;
+  height: 580px;
+}
+
+.astrologer-tab-expanded {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: expand-tab 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+}
+
+@keyframes expand-tab {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.astrologer-tab-header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+}
+
+.astrologer-tab-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d4af37, #c9a846);
+}
+
+.astrologer-tab-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.astrologer-tab-avatar-large {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #d4af37, #c9a846);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid #f3f4f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.astrologer-tab-avatar-img-large {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
+  transform: rotate(-45deg);
+}
+
+.astrologer-tab-status-dot-large {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: #10b981;
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulse-tab-dot 2s infinite;
+}
+
+.astrologer-tab-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.astrologer-tab-header-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.astrologer-tab-header-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.astrologer-tab-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Credits Display */
+.astrologer-tab-credits {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.astrologer-tab-credits .credits-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.astrologer-tab-credits .credits-value {
+  font-weight: 700;
+  color: #d4af37;
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.astrologer-tab-minimize-btn,
+.astrologer-tab-close-btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.astrologer-tab-minimize-btn:hover,
+.astrologer-tab-close-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.astrologer-tab-close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Chat content area */
+.astrologer-tab-chat-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+  position: relative;
+}
+
+/* Override Chat component styles when embedded */
+.astrologer-tab-chat-content .chat-container-responsive {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Hide the Chat component's header since we have our own */
+.astrologer-tab-chat-content .chat-container-responsive > div:first-child {
+  display: none;
+}
+
+/* Adjust chat messages container */
+.astrologer-tab-chat-content .chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+/* Adjust chat input area */
+.astrologer-tab-chat-content .chat-input-container {
+  background: white;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .astrologer-tab-backdrop {
+    display: block;
+  }
+
+  .astrologer-tab-container {
+    right: 0;
+    left: 0;
+    width: 100% !important;
+  }
+
+  .astrologer-tab-container.minimized {
+    width: 100% !important;
+  }
+
+  .astrologer-tab-minimized {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .astrologer-tab-container.expanded {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  .astrologer-tab-expanded {
+    border-radius: 0;
+    border: none;
+  }
+
+  .astrologer-tab-header::before {
+    border-radius: 0;
+  }
+
+  .astrologer-tab-minimized::before {
+    border-radius: 0;
+  }
+
+  .astrologer-tab-name {
+    font-size: 14px;
+  }
+
+  .astrologer-tab-subtitle {
+    font-size: 11px;
+  }
+
+  .astrologer-tab-header-name {
+    font-size: 15px;
+  }
+
+  .astrologer-tab-header-subtitle {
+    font-size: 11px;
+  }
+
+  .astrologer-tab-credits {
+    display: none; /* Hide credits on very small screens to save space */
+  }
+}
+
+@media (max-width: 480px) {
+  .astrologer-tab-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .astrologer-tab-avatar-img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .astrologer-tab-status-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .astrologer-tab-avatar-large {
+    width: 40px;
+    height: 40px;
+  }
+
+  .astrologer-tab-avatar-img-large {
+    width: 24px;
+    height: 24px;
+  }
+
+  .astrologer-tab-status-dot-large {
+    width: 12px;
+    height: 12px;
+  }
+
+  .astrologer-tab-name {
+    font-size: 13px;
+  }
+
+  .astrologer-tab-header-name {
+    font-size: 14px;
+  }
+
+  .astrologer-tab-minimize-btn,
+  .astrologer-tab-close-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Tablet responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .astrologer-tab-container.expanded {
+    width: 400px;
+    height: 600px;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1440px) {
+  .astrologer-tab-container.expanded {
+    width: 420px;
+    height: 650px;
+  }
+}
+
+/* Smooth transitions */
+.astrologer-tab-container * {
+  box-sizing: border-box;
+}
+
+/* Touch interactions for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .astrologer-tab-minimized:active {
+    transform: scale(0.98);
+  }
+
+  .astrologer-tab-minimize-btn:active,
+  .astrologer-tab-close-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Ensure tap targets are at least 44x44px on mobile */
+@media (max-width: 768px) {
+  .astrologer-tab-minimize-btn,
+  .astrologer-tab-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Accessibility */
+.astrologer-tab-minimized:focus,
+.astrologer-tab-minimize-btn:focus,
+.astrologer-tab-close-btn:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.astrologer-tab-minimized:focus:not(:focus-visible),
+.astrologer-tab-minimize-btn:focus:not(:focus-visible),
+.astrologer-tab-close-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Print styles - hide the tab when printing */
+@media print {
+  .astrologer-tab-container,
+  .astrologer-tab-backdrop {
+    display: none !important;
+  }
+}
+
+/* Ensure smooth scrolling in chat content */
+.astrologer-tab-chat-content {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent body scroll when chat is open on mobile */
+@media (max-width: 768px) {
+  body:has(.astrologer-tab-container.expanded) {
+    overflow: hidden;
+  }
+}
+
+/* Animation for unread indicator (future enhancement) */
+@keyframes bounce-tab {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Hover effect for the entire minimized tab */
+.astrologer-tab-minimized:hover .astrologer-tab-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth color transitions */
+.astrologer-tab-minimized,
+.astrologer-tab-minimize-btn,
+.astrologer-tab-close-btn {
+  transition: all 0.2s ease;
+}
+
+
+/* =========================================
+   MINIMIZED ASTROLOGER TAB – PREMIUM UI
+   DROP-IN REPLACEMENT
+========================================= */
+
+.astrologer-tab-container.minimized {
+  width: 340px;
+}
+
+/* Main tab body */
+.astrologer-tab-minimized {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  cursor: pointer;
+  position: relative;
+
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fffdf5 100%
+  );
+
+  border: 1px solid #e8e5da;
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+
+  box-shadow:
+    0 -6px 20px rgba(0,0,0,0.12),
+    0 0 0 rgba(212,175,55,0);
+
+  transition: all 0.28s ease;
+  overflow: hidden;
+}
+
+/* Gold shimmer strip */
+.astrologer-tab-minimized::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  width: 40%;
+  height: 100%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(212,175,55,0.35),
+    transparent
+  );
+
+  transform: skewX(-20deg);
+  animation: shimmerPass 4.5s infinite;
+}
+
+@keyframes shimmerPass {
+  0% { left: -40%; }
+  100% { left: 140%; }
+}
+
+/* Hover = monetisation lift */
+.astrologer-tab-minimized:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 -10px 26px rgba(0,0,0,0.18),
+    0 0 16px rgba(212,175,55,0.35);
+}
+
+/* =========================================
+   AVATAR WITH PREMIUM RING
+========================================= */
+
+.astrologer-tab-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    #f6e27a,
+    #d4af37,
+    #c9a846
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.18),
+    0 0 12px rgba(212,175,55,0.55);
+}
+
+/* Outer aura ring */
+.astrologer-tab-avatar::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    rgba(212,175,55,0.6),
+    rgba(212,175,55,0.15)
+  );
+
+  filter: blur(6px);
+  opacity: 0.7;
+  z-index: -1;
+}
+
+/* Avatar icon */
+.astrologer-tab-avatar-img {
+  width: 26px;
+  height: 26px;
+  filter: brightness(0) invert(1);
+  transform: rotate(-45deg);
+}
+
+/* =========================================
+   STATUS DOT – TRUST SIGNAL
+========================================= */
+
+.astrologer-tab-status-dot {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+
+  background: #10b981;
+  border: 2px solid white;
+
+  box-shadow:
+    0 0 8px rgba(16,185,129,0.9);
+
+  animation: onlinePulse 2s infinite;
+}
+
+@keyframes onlinePulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+
+/* =========================================
+   TEXT BLOCK
+========================================= */
+
+.astrologer-tab-info {
+  flex: 1;
+  line-height: 1.3;
+}
+
+/* Name */
+.astrologer-tab-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  letter-spacing: 0.2px;
+}
+
+/* Subtitle = conversion line */
+.astrologer-tab-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* =========================================
+   TOGGLE ICON BUTTON
+========================================= */
+
+.astrologer-tab-toggle-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+
+  transition: all 0.2s ease;
+}
+
+.astrologer-tab-minimized:hover
+.astrologer-tab-toggle-icon {
+  background: #fff7d6;
+  border-color: #f4d03f;
+  color: #b8962e;
+  transform: translateY(-2px);
+}
