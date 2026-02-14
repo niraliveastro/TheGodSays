@@ -860,6 +860,43 @@ export default function CalendarPage() {
           align-items: center;
           justify-content: center;
         }
+        @media (max-width: 480px) {
+          .navContainer {
+            padding: 0.75rem 1rem;
+          }
+          .panchang-place-row {
+            flex-direction: column !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .panchang-place-row > div:first-child {
+            width: 100% !important;
+            min-width: 100% !important;
+          }
+          .panchang-place-row input,
+          .panchang-place-row .btn-primary {
+            width: 100% !important;
+            min-height: 2.5rem !important;
+            height: 2.5rem !important;
+            box-sizing: border-box !important;
+          }
+          .panchang-place-row input {
+            padding: 0 0.75rem !important;
+            line-height: 1.25 !important;
+          }
+          .panchang-place-row .btn-primary {
+            margin-top: 0.25rem;
+            padding: 0 0.75rem !important;
+          }
+          .navContainer > div:last-child {
+            max-width: 100%;
+          }
+        }
+        @media (min-width: 481px) and (max-width: 640px) {
+          .panchang-place-row {
+            max-width: 100% !important;
+          }
+        }
         .navButton {
           display: flex;
           align-items: center;
