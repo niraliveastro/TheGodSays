@@ -9,7 +9,6 @@ import {
 } from "@/lib/staticCalendarSep2025";
 import astrologyAPI from "@/lib/api";
 import { postSamvatInfo, getRealtimeSamvatInfo, geocodePlace } from "@/lib/api";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import PageSEO from "@/components/PageSEO";
 import PlaceInputWithSuggestions from "@/components/PlaceInputWithSuggestions";
 
@@ -840,11 +839,26 @@ export default function CalendarPage() {
         }
         .navContainer {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
+          justify-content: center;
           align-items: center;
           padding: 1rem 1.5rem;
           background: #fefce8;
           border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .panchang-place-row input,
+        .panchang-place-row .btn-primary {
+          height: 2.25rem !important;
+          min-height: 2.25rem !important;
+          box-sizing: border-box;
+          line-height: 1.25;
+        }
+        .panchang-place-row .btn-primary {
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
         .navButton {
           display: flex;
@@ -886,69 +900,45 @@ export default function CalendarPage() {
       <div className="pageContainer">
         <div className="innerWrapper">
           <div className="calendarWrapper mb-16">
-            <div
-              className="panchang-place-wrapper"
-              style={{
-                marginBottom: "1rem",
-                width: "100%",
-                maxWidth: "min(320px, 100%)",
-                marginLeft: "auto",
-                marginRight: "auto",
-                paddingLeft: "0.5rem",
-                paddingRight: "0.5rem",
-                boxSizing: "border-box",
-              }}
-            >
-              <PlaceInputWithSuggestions
-                id="panchang-place"
-                value={placeInput}
-                onChange={(v) => { setPlaceInput(v); setPlaceError(null); }}
-                onPlaceSelect={handlePlaceSelect}
-                placeholder="e.g. Ujjain, Mumbai, Delhi"
-                ariaLabel="Location for Panchang"
-                inputStyle={{
-                  width: "100%",
-                  padding: "0.5rem 0.75rem",
-                  border: "1px solid rgba(212, 175, 55, 0.4)",
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                  boxSizing: "border-box",
-                }}
-              />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center", marginTop: "0.5rem", justifyContent: "center" }}>
+            <div className="navContainer">
+              <div className="panchang-place-row" style={{ display: "flex", alignItems: "center", gap: "0.5rem", maxWidth: "min(360px, 100%)", minWidth: 0, flex: "0 1 auto" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <PlaceInputWithSuggestions
+                    id="panchang-place"
+                    value={placeInput}
+                    onChange={(v) => { setPlaceInput(v); setPlaceError(null); }}
+                    onPlaceSelect={handlePlaceSelect}
+                    placeholder="e.g. Mumbai, Delhi"
+                    ariaLabel="Location for Panchang"
+                    inputStyle={{
+                      width: "100%",
+                      height: "2.25rem",
+                      padding: "0 0.75rem",
+                      border: "1px solid rgba(212, 175, 55, 0.4)",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handlePlaceSubmit}
                   disabled={placeLoading}
                   className="btn-primary"
-                  style={{ padding: "0.375rem 0.75rem", whiteSpace: "nowrap", fontSize: "0.875rem" }}
+                  style={{ height: "2.25rem", padding: "0 0.75rem", whiteSpace: "nowrap", fontSize: "0.875rem", flexShrink: 0, boxSizing: "border-box" }}
                 >
                   {placeLoading ? "…" : "Update"}
                 </button>
               </div>
-              {placeError && (
-                <p style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "#b91c1c", textAlign: "center" }}>{placeError}</p>
-              )}
-              <p style={{ marginTop: "0.25rem", fontSize: "0.6875rem", color: "#6b7280", textAlign: "center" }}>
-                Default: Ujjain. Type a city and pick from suggestions.
-              </p>
-            </div>
-            <div className="navContainer">
-              <button
-                className="navButton"
-                onClick={handlePrev}
-                aria-label="Previous month"
-              >
-                <ChevronLeft style={{ width: 20, height: 20 }} />
-              </button>
-              <div className="monthTitle">{monthLabelFrom(viewDate)}</div>
-              <button
-                className="navButton"
-                onClick={handleNext}
-                aria-label="Next month"
-              >
-                <ChevronRight style={{ width: 20, height: 20 }} />
-              </button>
+              <div style={{ width: "100%", maxWidth: "min(360px, 100%)", marginTop: "0.5rem", textAlign: "center" }}>
+                {placeError && (
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#b91c1c" }}>{placeError}</p>
+                )}
+                <p style={{ margin: 0, marginTop: placeError ? "0.25rem" : 0, fontSize: "0.6875rem", color: "#6b7280" }}>
+                  Default: Ujjain. Type a city and pick from suggestions.
+                </p>
+              </div>
             </div>
             <MonthlyCalendar
               header={headerWithSamvat}
