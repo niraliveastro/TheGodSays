@@ -231,23 +231,15 @@ export default function AstrologerAuth() {
           <div className="astrologer-auth-grid">
             {/* LEFT – Promo Panel – Marketing content to engage users */}
             <div className="astrologer-promo-panel">
-              <div className="promo-icon-badge">
-                <Sparkles /> {/* Icon badge for visual appeal */}
+              <div className="promo-title-row">
+                <div className="promo-icon-badge">
+                  <Sparkles />
+                </div>
+                <h2 className="promo-title">
+                  {isLogin ? "Welcome Back" : "Join Our Network"}
+                </h2>
               </div>
 
-              <h2 className="promo-title">
-                {isLogin ? "Welcome Back" : "Join Our Network"}{" "}
-                {/* Dynamic title based on mode */}
-              </h2>
-
-              <p className="promo-subtitle">
-                {isLogin
-                  ? "Continue guiding seekers on their cosmic journey"
-                  : "Share your wisdom and connect with seekers worldwide"}{" "}
-                {/* Dynamic subtitle */}
-              </p>
-
-              {/* Feature highlights */}
               <div className="promo-features">
                 <div className="promo-feature">
                   <Star className="promo-feature-icon" />
@@ -261,12 +253,6 @@ export default function AstrologerAuth() {
                   <Star className="promo-feature-icon" />
                   <span>Connect with seekers</span>
                 </div>
-              </div>
-
-              {/* Trust badge */}
-              <div className="promo-badge">
-                <Sparkles className="promo-badge-icon" />
-                <span>{t.auth.trustedByThousands}</span>
               </div>
             </div>
 

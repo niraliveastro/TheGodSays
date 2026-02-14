@@ -232,7 +232,7 @@ const Navigation = () => {
         console.error("Failed to navigate to profile page:", e);
       }
     } else {
-      router.push("/auth");
+      router.push("/auth/user");
     }
   }
 
@@ -369,6 +369,7 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
   if (item.children) {
     const isActive = item.children.some((child) => pathname === child.href);
     const isOpen = openDropdown === item.dropdownId;
+    const isAccountDropdown = item.dropdownId === "account";
 
     return (
       <div
@@ -380,7 +381,13 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
       >
         <button
           className={`nav-dropdown-button ${isActive ? "active" : ""}`}
-          onClick={() => setOpenDropdown(isOpen ? null : item.dropdownId)}
+          onClick={() => {
+            if (isAccountDropdown) {
+              handleAccountClick();
+            } else {
+              setOpenDropdown(isOpen ? null : item.dropdownId);
+            }
+          }}
         >
           {Icon && <Icon />}
           <span>{item.label}</span>

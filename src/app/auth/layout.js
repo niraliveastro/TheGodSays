@@ -7,6 +7,9 @@ export const metadata = {
       follow: false,
     },
   },
+  icons: {
+    icon: [{ url: "/favicon.png", sizes: "any", type: "image/png" }],
+  },
 };
 
 export default function AuthLayout({ children }) {
