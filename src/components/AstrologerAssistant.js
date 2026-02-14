@@ -266,7 +266,7 @@ export default function AstrologerAssistant({
       {/* Floating card */}
       <div 
         ref={containerRef}
-        className={`astrologer-assistant-container ${isMinimized ? 'minimized' : 'expanded'} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
+        className={`astrologer-tab-container ${isMinimized ? 'minimized' : 'expanded'} ${isDragging ? 'dragging' : ''} ${isResizing ? 'resizing' : ''}`}
         style={!isMinimized && !isMobile ? {
           right: 'auto',
           bottom: 'auto',

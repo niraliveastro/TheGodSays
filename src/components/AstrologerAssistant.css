@@ -3,7 +3,7 @@
 /* Toast notification */
 .astrologer-toast {
   position: fixed;
-  top: 24px;
+  /* top: 24px; */
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, #fee2e2, #fecaca);
