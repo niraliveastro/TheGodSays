@@ -1376,33 +1376,6 @@ export default function PredictionsPage() {
     }
   }
 
-  async function openAiPredictionsFor(planetLord) {
-    setSelectedPlanetForPredictions(planetLord);
-    setPredictionsOpen(true);
-    setPredictionsLoading(true);
-    setPredictionsError("");
-    setAiPredictions("");
-
-    try {
-      const inp = result?.input;
-      if (!inp) throw new Error("Missing birth details for predictions.");
-      const mahaPeriod = mahaRows.find((row) => row.lord === planetLord);
-      if (!mahaPeriod) throw new Error("Maha Dasha period not found.");
-      const predictions = await generateAiPredictions(
-        planetLord,
-        mahaPeriod,
-        inp,
-      );
-      setAiPredictions(predictions);
-    } catch (e) {
-      setPredictionsError(
-        e?.message ||
-          "Failed to generate personalized astrological predictions.",
-      );
-    } finally {
-      setPredictionsLoading(false);
-    }
-  }
 
   async function generateAiPredictions(planet, mahaPeriod) {
     return `Predictions for ${planet} during the period from ${mahaPeriod.start} to ${mahaPeriod.end} based on your data.`;
@@ -2017,7 +1990,7 @@ export default function PredictionsPage() {
       {/* Header */}
       <header
         className="header"
-        style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
+        
       >
         <Sparkles
           className="headerIcon"
@@ -2977,19 +2950,48 @@ export default function PredictionsPage() {
               </div>
             )}
 
-           {result?.d1ChartSvg && (
-  <div className="card mt-4">
-    <div className="results-header">
-      <Orbit style={{ color: "#ca8a04" }} />
-      <h3 className="results-title">D1 – Lagna (Rasi) Chart</h3>
-    </div>
+           {/* D1 & D9 Charts Together */}
+{(result?.d1ChartSvg || result?.d9ChartSvg) && (
+  <div
+    className="charts-wrapper mt-6"
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      gap: "1.5rem",
+    }}
+  >
+    {/* D1 Chart */}
+    {result?.d1ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#ca8a04" }} />
+          <h3 className="results-title">D1 – Lagna (Rasi) Chart</h3>
+        </div>
 
-    <div
-      className="chart-svg"
-      dangerouslySetInnerHTML={{ __html: result.d1ChartSvg }}
-    />
+        <div
+          className="chart-svg"
+          dangerouslySetInnerHTML={{ __html: result.d1ChartSvg }}
+        />
+      </div>
+    )}
+
+    {/* D9 Chart */}
+    {result?.d9ChartSvg && (
+      <div className="card">
+        <div className="results-header">
+          <Orbit style={{ color: "#ca8a04" }} />
+          <h3 className="results-title">D9 – Navamsa Chart</h3>
+        </div>
+
+        <div
+          className="chart-svg"
+          dangerouslySetInnerHTML={{ __html: result.d9ChartSvg }}
+        />
+      </div>
+    )}
   </div>
 )}
+
 
 
             {navamsaPlacements.length > 0 && (
@@ -3027,19 +3029,7 @@ export default function PredictionsPage() {
               </div>
             )}
 
-            {result?.d9ChartSvg && (
-  <div className="card mt-4">
-    <div className="results-header">
-      <Orbit style={{ color: "#ca8a04" }} />
-      <h3 className="results-title">D9 – Navamsa Chart</h3>
-    </div>
-
-    <div
-      className="chart-svg"
-      dangerouslySetInnerHTML={{ __html: result.d9ChartSvg }}
-    />
-  </div>
-)}
+            
 
           </div>
         )}

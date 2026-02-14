@@ -5,6 +5,11 @@ import { useEffect, useRef, useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLoading } from "@/components/LoadingStates";
 import "./matching_styles.css";
+import MatchInsights from "./components/MatchInsights";
+import MatchRemedies from "./components/MatchRemedies";
+import AdvancedMatchGuidance from "./components/AdvancedMatchRemedies";
+import ChartStrengthComparison from "./components/ChartStrength";
+import LifeTogetherInsight from "./components/LifeTogether"
 import {
   Sparkles,
   Sun,
@@ -575,42 +580,6 @@ export default function MatchingPage() {
     }
   }
 
-  // Get Place Suggestion in the form using Google places
-
-  const resolvePlaceDetails = async (placeId, setter, coordsSetter) => {
-    if (!placeId || !window.google?.maps?.importLibrary) return;
-
-    try {
-      const { Place } = await window.google.maps.importLibrary("places");
-      const place = new Place({ id: placeId });
-
-      await place.fetchFields({
-        fields: ["location", "formattedAddress"],
-      });
-
-      if (!place.location) return;
-
-      const lat = place.location.lat();
-      const lng = place.location.lng();
-      const label = place.formattedAddress;
-
-      setter((prev) => ({
-        ...prev,
-        place: label,
-      }));
-
-      coordsSetter({
-        latitude: lat,
-        longitude: lng,
-        label,
-      });
-
-      console.log("[Matching] Resolved coordinates:", { lat, lng, label });
-    } catch (err) {
-      console.error("resolvePlaceDetails failed:", err);
-    }
-  };
-
   /**
    * Fetches current location for female and fills place field.
    */
@@ -818,6 +787,8 @@ export default function MatchingPage() {
         "vimsottari/dasa-information",
         "vimsottari/maha-dasas",
         "planets/extended",
+        "horoscope-chart-svg-code",
+        "navamsa-chart-svg-code",
       ];
 
       const [fCalc, mCalc] = await Promise.all([
@@ -1144,6 +1115,7 @@ export default function MatchingPage() {
 
       const buildUserDetails = (calc) => {
         const r = calc?.results || {};
+
         const shadbala = parseShadbala(r["shadbala/summary"]);
         const vims = r["vimsottari/dasa-information"]
           ? safeParse(
@@ -1153,16 +1125,32 @@ export default function MatchingPage() {
               ),
             )
           : null;
+
         const maha = parseMaha(r["vimsottari/maha-dasas"]);
         const planets = parsePlanets(r["planets/extended"]);
+
+        const normalizeSvg = (v) => {
+          if (!v) return null;
+          const raw = typeof v === "string" ? v : v?.output || v?.svg || null;
+          return typeof raw === "string" && raw.includes("<svg") ? raw : null;
+        };
+
+        const d1ChartSvg = normalizeSvg(r["horoscope-chart-svg-code"]);
+
+        const d9ChartSvg = normalizeSvg(r["navamsa-chart-svg-code"]);
+
         return {
           currentDasha: currentDashaChain(vims) || null,
           shadbalaRows: toShadbalaRows(shadbala),
           placements: toPlacements(planets),
-          vimsottari: vims, // Include raw vimsottari data for Chat component
-          mahaDasas: maha, // Include maha dasas data for Chat component
+          vimsottari: vims,
+          mahaDasas: maha,
+
+          d1ChartSvg,
+          d9ChartSvg,
         };
       };
+
       const fDetailsBuilt = buildUserDetails(fCalc);
       const mDetailsBuilt = buildUserDetails(mCalc);
 
@@ -2345,10 +2333,7 @@ export default function MatchingPage() {
         <div className="matching-page">
           <form onSubmit={onSubmit} className="match-form">
             {/* Header */}
-            <header
-              className="header"
-              style={{ paddingTop: "0.01rem", marginTop: "0.01rem" }}
-            >
+            <header className="header">
               <IoHeartCircle
                 className="headerIcon"
                 style={{
@@ -2504,8 +2489,10 @@ export default function MatchingPage() {
                     <p className="form-field-helper">24-hour format</p>
                   </div>
                   {/* Female Place input */}
-                  <div className="form-field full"
-                  style={{ position: "relative" }}>
+                  <div
+                    className="form-field full"
+                    style={{ position: "relative" }}
+                  >
                     <label className="form-field-label" htmlFor="female-place">
                       Place
                     </label>
@@ -2549,66 +2536,71 @@ export default function MatchingPage() {
                       fSuggest.length,
                     )}
                     {/* Autocomplete dropdown for female */}
-{console.log(
-  "[Female Render] About to check dropdown render. fSuggest.length:",
-  fSuggest.length,
-)}
-{fSuggest.length > 0 && (
-  <div
-    className="suggestions"
-    style={{
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    zIndex: 99999,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-    maxHeight: "220px",
-    overflowY: "auto"
-  }}
-  >
-    {console.log("[Female Render] RENDERING DROPDOWN")}
-    {fSuggesting && (
-      <div className="suggestion-loading">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        Loading suggestions...
-      </div>
-    )}
-    {!fSuggesting &&
-      fSuggest.map((s, i) => {
-        console.log(
-          "[Female Render] Rendering suggestion:",
-          s.label,
-        );
-        return (
-          <button
-            key={i}
-            type="button"
-            onClick={() => handleFemaleSuggestionClick(s)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              textAlign: "left",
-              background: "var(--color-cream)",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
-            <MapPin size={14} />
-            <span>{s.label}</span>
-          </button>
-        );
-      })}
-  </div>
-)}
+                    {console.log(
+                      "[Female Render] About to check dropdown render. fSuggest.length:",
+                      fSuggest.length,
+                    )}
+                    {fSuggest.length > 0 && (
+                      <div
+                        className="suggestions"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          zIndex: 99999,
+                          background: "#ffffff",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                          maxHeight: "220px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {console.log("[Female Render] RENDERING DROPDOWN")}
+                        {fSuggesting && (
+                          <div className="suggestion-loading">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading suggestions...
+                          </div>
+                        )}
+                        {!fSuggesting &&
+                          fSuggest.map((s, i) => {
+                            console.log(
+                              "[Female Render] Rendering suggestion:",
+                              s.label,
+                            );
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => handleFemaleSuggestionClick(s)}
+                                style={{
+                                  width: "100%",
+                                  padding: "0.75rem",
+                                  textAlign: "left",
+                                  background: "var(--color-cream)",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.5rem",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.background = "#f3f4f6")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.background =
+                                    "transparent")
+                                }
+                              >
+                                <MapPin size={14} />
+                                <span>{s.label}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
 
                     <p className="form-field-helper place-helper">
                       {fCoords
@@ -2727,8 +2719,10 @@ export default function MatchingPage() {
                   </div>
 
                   {/* Male Place Input - Updated with Google Maps autocomplete */}
-                  <div className="form-field full"
-                  style={{position: "relative"}}>
+                  <div
+                    className="form-field full"
+                    style={{ position: "relative" }}
+                  >
                     <label className="form-field-label" htmlFor="male-place">
                       Place
                     </label>
@@ -2767,22 +2761,22 @@ export default function MatchingPage() {
 
                     {/* Autocomplete dropdown for male */}
                     {mSuggest.length > 0 && (
-                       <div
-    className="suggestions"
-    style={{
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    zIndex: 99999,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-    maxHeight: "220px",
-    overflowY: "auto"
-  }}
-  >
+                      <div
+                        className="suggestions"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          zIndex: 99999,
+                          background: "#ffffff",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                          maxHeight: "220px",
+                          overflowY: "auto",
+                        }}
+                      >
                         {mSuggesting && (
                           <div className="suggestion-loading">
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -2792,26 +2786,31 @@ export default function MatchingPage() {
                         {!mSuggesting &&
                           mSuggest.map((s, i) => (
                             <button
-            key={i}
-            type="button"
-            onClick={() => handleMaleSuggestionClick(s)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              textAlign: "left",
-              background: "var(--color-cream)",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-          >
-            <MapPin size={14} />
-            <span>{s.label}</span>
-          </button>
+                              key={i}
+                              type="button"
+                              onClick={() => handleMaleSuggestionClick(s)}
+                              style={{
+                                width: "100%",
+                                padding: "0.75rem",
+                                textAlign: "left",
+                                background: "var(--color-cream)",
+                                border: "none",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.background = "#f3f4f6")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.background =
+                                  "transparent")
+                              }
+                            >
+                              <MapPin size={14} />
+                              <span>{s.label}</span>
+                            </button>
                           ))}
                       </div>
                     )}
@@ -3212,9 +3211,41 @@ export default function MatchingPage() {
               </div>
             </div>
 
+            <MatchInsights result={result} />
+            <LifeTogetherInsight
+femaleDetails={fDetails}
+  maleDetails={mDetails}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+  />
+            <MatchRemedies
+              result={result}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+
+            <AdvancedMatchGuidance
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              result={result}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
+
+
+            <ChartStrengthComparison
+  femaleDetails={fDetails}
+  maleDetails={mDetails}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+/>
+
+
+
+
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
-              <div className="grid md:grid-cols-2 gap-8 mt-8">
+              <div className="details-grid mt-8">
                 {/* Female Details */}
                 <div className="flex flex-col gap-6">
                   {/* Female Shadbala Card */}
@@ -3371,6 +3402,52 @@ export default function MatchingPage() {
                       </div>
                     </div>
                   )}
+
+                  {(fDetails?.d1ChartSvg || fDetails?.d9ChartSvg) && (
+                    <div
+                      className="charts-wrapper mt-6"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "1.5rem",
+                      }}
+                    >
+                      {fDetails?.d1ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#a855f7" }} />
+                            <h3 className="results-title">
+                              Female D1 – Lagna Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: fDetails.d1ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {fDetails?.d9ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#a855f7" }} />
+                            <h3 className="results-title">
+                              Female D9 – Navamsa Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: fDetails.d9ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Male Details */}
@@ -3524,7 +3601,56 @@ export default function MatchingPage() {
                       </div>
                     </div>
                   )}
+
+                   {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
+                    <div
+                      className="charts-wrapper mt-6"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "1.5rem",
+                      }}
+                    >
+                      {mDetails?.d1ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#f59e0b" }} />
+                            <h3 className="results-title">
+                              Male D1 – Lagna Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: mDetails.d1ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {mDetails?.d9ChartSvg && (
+                        <div className="card">
+                          <div className="results-header">
+                            <Orbit style={{ color: "#f59e0b" }} />
+                            <h3 className="results-title">
+                              Male D9 – Navamsa Chart
+                            </h3>
+                          </div>
+                          <div
+                            className="chart-svg flex justify-center align-center mx-auto"
+                            dangerouslySetInnerHTML={{
+                              __html: mDetails.d9ChartSvg,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                
                 </div>
+
+              
 
                 {/* ✅ PREMIUM – full width guidance banner */}
                 <div
