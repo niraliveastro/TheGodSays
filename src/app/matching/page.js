@@ -10,6 +10,7 @@ import MatchRemedies from "./components/MatchRemedies";
 import AdvancedMatchGuidance from "./components/AdvancedMatchRemedies";
 import ChartStrengthComparison from "./components/ChartStrength";
 import LifeTogetherInsight from "./components/LifeTogether";
+import AshtakavargaSection from "./components/AshtakavargaSection";
 import {
   Sparkles,
   Sun,
@@ -1148,6 +1149,7 @@ export default function MatchingPage() {
 
           d1ChartSvg,
           d9ChartSvg,
+           rawPlanetsExtended: planetsExtended?.output || planetsExtended,
         };
       };
 
@@ -3238,6 +3240,13 @@ export default function MatchingPage() {
               femaleName={female.fullName}
               maleName={male.fullName}
             />
+
+            <AshtakavargaSection
+  femaleDetails={fDetails}
+  maleDetails={mDetails}
+  femaleName={female.fullName}
+  maleName={male.fullName}
+/>
 
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (

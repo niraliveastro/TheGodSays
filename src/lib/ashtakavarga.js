@@ -1,6 +1,6 @@
 // lib/astrology/ashtakavarga.js
 // Parāśari Ashtakavarga (BAV + SAV)
-// Contributors: Sun..Saturn + Lagna
+// Contributors: Lagna + Sun..Saturn
 // Targets: Sun..Saturn
 // Sign indexing: input 1..12 → internal 0..11
 
@@ -29,6 +29,8 @@ export const SIGNS = [
   "Pisces",
 ];
 
+// Contributors include Lagna
+const CONTRIBUTORS = ["Lagna", ...PLANETS];
 
 /**
  * RULES[target][contributor] = offsets (0..11)
@@ -107,17 +109,14 @@ export const RULES = {
   },
 };
 
-const CONTRIBUTORS = ["Lagna", ...PLANETS];
-
 /**
- * Compute Ashtakavarga from /planets-extended output
+ * Compute Ashtakavarga
  */
 export function computeAshtakavarga(planetsExtended) {
   if (!planetsExtended?.Ascendant?.current_sign) {
     throw new Error("Ascendant.current_sign missing");
   }
 
-  // --- Sign positions (0..11)
   const S = {
     Lagna: planetsExtended.Ascendant.current_sign - 1,
   };
@@ -130,36 +129,39 @@ export function computeAshtakavarga(planetsExtended) {
     S[p] = v - 1;
   }
 
-  // --- BAV init
   const BAV = {};
-  for (const t of PLANETS) BAV[t] = Array(12).fill(0);
-
-  // --- Fill BAV
   for (const t of PLANETS) {
-    const St = S[t];
+    BAV[t] = Array(12).fill(0);
+  }
+
+  // ✅ Correct contributor-based logic
+  for (const t of PLANETS) {
     for (const c of CONTRIBUTORS) {
       const offsets = RULES[t][c];
+      if (!offsets) continue;
+
+      const Sc = S[c];
+
       for (const k of offsets) {
-        const r = (St + k) % 12;
+        const r = (Sc + k) % 12;
         BAV[t][r]++;
       }
     }
   }
 
-  // --- SAV
   const SAV = Array(12).fill(0);
   for (let i = 0; i < 12; i++) {
-    for (const t of PLANETS) SAV[i] += BAV[t][i];
+    for (const t of PLANETS) {
+      SAV[i] += BAV[t][i];
+    }
   }
 
-  // --- House-wise SAV (whole sign)
   const SAV_house = {};
   for (let h = 1; h <= 12; h++) {
     const r = (S.Lagna + (h - 1)) % 12;
     SAV_house[h] = SAV[r];
   }
 
-  // --- Totals (sanity)
   const BAV_totals = {};
   for (const t of PLANETS) {
     BAV_totals[t] = BAV[t].reduce((a, b) => a + b, 0);
