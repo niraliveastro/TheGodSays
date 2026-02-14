@@ -59,7 +59,7 @@ export default function AshtakavargaSection({
 
   const renderTable = (data, title, tone = "female") => (
     <div className={`analysis-card ${tone}`}>
-      <h4 className="font-semibold mb-4">
+      <h4 className="font-medium mb-4">
         {title} — Sarvashtakavarga
       </h4>
 
@@ -95,10 +95,10 @@ export default function AshtakavargaSection({
         </tbody>
       </table>
 
-      <div className="mt-3 text-sm text-gray-600">
+      {/* <div className="mt-3 text-sm text-gray-600">
         Total SAV:{" "}
         <strong>{data.totals.SAV_total}</strong>
-      </div>
+      </div> */}
     </div>
   );
 

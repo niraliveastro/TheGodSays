@@ -1149,7 +1149,8 @@ export default function MatchingPage() {
 
           d1ChartSvg,
           d9ChartSvg,
-           rawPlanetsExtended: planetsExtended?.output || planetsExtended,
+          rawPlanetsExtended: planets,
+
         };
       };
 
