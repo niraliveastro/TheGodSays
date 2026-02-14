@@ -9,7 +9,7 @@ import MatchInsights from "./components/MatchInsights";
 import MatchRemedies from "./components/MatchRemedies";
 import AdvancedMatchGuidance from "./components/AdvancedMatchRemedies";
 import ChartStrengthComparison from "./components/ChartStrength";
-import LifeTogetherInsight from "./components/LifeTogether"
+import LifeTogetherInsight from "./components/LifeTogether";
 import {
   Sparkles,
   Sun,
@@ -3213,11 +3213,11 @@ export default function MatchingPage() {
 
             <MatchInsights result={result} />
             <LifeTogetherInsight
-femaleDetails={fDetails}
-  maleDetails={mDetails}
-  femaleName={female.fullName}
-  maleName={male.fullName}
-  />
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
             <MatchRemedies
               result={result}
               femaleName={female.fullName}
@@ -3232,16 +3232,12 @@ femaleDetails={fDetails}
               maleName={male.fullName}
             />
 
-
             <ChartStrengthComparison
-  femaleDetails={fDetails}
-  maleDetails={mDetails}
-  femaleName={female.fullName}
-  maleName={male.fullName}
-/>
-
-
-
+              femaleDetails={fDetails}
+              maleDetails={mDetails}
+              femaleName={female.fullName}
+              maleName={male.fullName}
+            />
 
             {/* Female and Male Details */}
             {(fDetails || mDetails) && (
@@ -3261,7 +3257,7 @@ femaleDetails={fDetails}
                       {/* SUMMARY */}
                       <div className="analysis-summary">
                         <div className="summary-text">
-                          <h4 className="summary-question">
+                          <h4 className="summary-question font-medium">
                             How strong is her chart overall?
                           </h4>
 
@@ -3462,7 +3458,7 @@ femaleDetails={fDetails}
 
                       <div className="analysis-summary">
                         <div className="summary-text">
-                          <h4 className="summary-question">
+                          <h4 className="summary-question font-medium">
                             How strong is his chart overall?
                           </h4>
 
@@ -3602,7 +3598,7 @@ femaleDetails={fDetails}
                     </div>
                   )}
 
-                   {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
+                  {(mDetails?.d1ChartSvg || mDetails?.d9ChartSvg) && (
                     <div
                       className="charts-wrapper mt-6"
                       style={{
@@ -3647,10 +3643,7 @@ femaleDetails={fDetails}
                       )}
                     </div>
                   )}
-                
                 </div>
-
-              
 
                 {/* ✅ PREMIUM – full width guidance banner */}
                 <div
