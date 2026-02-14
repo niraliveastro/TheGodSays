@@ -508,7 +508,7 @@ export default function UserAuth() {
                   type="button"
                   onClick={() => toggleAuthMethod("email")}
                   className={`auth-toggle-btn ${authMethod === "email" ? "auth-toggle-btn-active" : ""}`}
-                  aria-pressed={authMethod === "email"}
+                  aria-pressed={authMethod === "email" ? "true" : "false"}
                 >
                   <Mail className="auth-toggle-icon" />
                   <span>Email</span>
@@ -517,7 +517,7 @@ export default function UserAuth() {
                   type="button"
                   onClick={() => toggleAuthMethod("phone")}
                   className={`auth-toggle-btn ${authMethod === "phone" ? "auth-toggle-btn-active" : ""}`}
-                  aria-pressed={authMethod === "phone"}
+                  aria-pressed={authMethod === "phone" ? "true" : "false"}
                 >
                   <Phone className="auth-toggle-icon" />
                   <span>Phone</span>
