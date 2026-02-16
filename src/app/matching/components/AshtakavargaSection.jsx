@@ -57,50 +57,55 @@ export default function AshtakavargaSection({
   /* Helper Renderer */
   /* ---------------------------------------------------------- */
 
-  const renderTable = (data, title, tone = "female") => (
+ const renderTable = (data, title, tone = "female") => {
+  const houses = data.SAV_house;
+
+  const getStrengthClass = (value) => {
+    if (value >= 35) return "strong";
+    if (value >= 28) return "average";
+    return "weak";
+  };
+
+  return (
     <div className={`analysis-card ${tone}`}>
-      <h4 className="font-medium mb-4">
+      <h4 className="font-medium mb-6">
         {title} — Sarvashtakavarga
       </h4>
 
-      <table className="planet-table">
-        <thead>
-          <tr>
-            <th>House</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-
+      <table className="sav-table">
         <tbody>
-          {Object.entries(data.SAV_house).map(
-            ([house, value]) => (
-              <tr key={house}>
-                <td>House {house}</td>
-                <td>
-                  <span
-                    className={`sav-pill ${
-                      value >= 35
-                        ? "strong"
-                        : value >= 28
-                        ? "average"
-                        : "weak"
-                    }`}
-                  >
-                    {value}
-                  </span>
-                </td>
-              </tr>
-            )
-          )}
+          {[1, 2, 3, 4, 5, 6].map((h) => (
+            <tr key={h}>
+              <td className="house-label">House {h}</td>
+              <td>
+                <span
+                  className={`sav-pill ${getStrengthClass(
+                    houses[h]
+                  )}`}
+                >
+                  {houses[h]}
+                </span>
+              </td>
+
+              <td className="house-label">House {h + 6}</td>
+              <td>
+                <span
+                  className={`sav-pill ${getStrengthClass(
+                    houses[h + 6]
+                  )}`}
+                >
+                  {houses[h + 6]}
+                </span>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
-
-      {/* <div className="mt-3 text-sm text-gray-600">
-        Total SAV:{" "}
-        <strong>{data.totals.SAV_total}</strong>
-      </div> */}
     </div>
   );
+};
+
+
 
   /* ---------------------------------------------------------- */
   /* Render */

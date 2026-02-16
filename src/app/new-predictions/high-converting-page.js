@@ -56,36 +56,39 @@ export default function HighConvertingInsights({
     timeline = { future: [] },
   } = insights || {};
 
+  const testData = [
+  { name: "Saturn", percent: 45 },
+  { name: "Mars", percent: 55 },
+  { name: "Venus", percent: 72 },
+  { name: "Sun", percent: 81 },
+];
 
-  // --- Planet classification ---
-  const potentialPlanets = (shadbalaRows || [])
-    .filter((p) => typeof p.percent === "number" && p.percent >= 65)
-    .slice(0, 4);
 
-  const problematicPlanets = (shadbalaRows || [])
-    .filter((p) => typeof p.percent === "number" && p.percent < 50)
-    .slice(0, 4);
+// --- Normalize Shadbala Strength ---
+const normalizedPlanets = (shadbalaRows || [])
+  .map((p) => ({
+    ...p,
+    percent:
+      typeof p.percent === "number"
+        ? p.percent
+        : Number(p.percent),
+  }))
+  .filter((p) => !isNaN(p.percent)); // remove invalid values
+  console.log(shadbalaRows)
 
-  // helper → find Maha Dasha duration for planet
-  const getMahaDuration = (planet) => {
-    const row = mahaRows?.find(
-      (m) => m.lord?.toLowerCase() === planet.toLowerCase(),
-    );
-    if (!row) return null;
 
-    return {
-      start: new Date(row.start).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-      end: new Date(row.end).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-    };
-  };
+
+// --- Planet classification ---
+const potentialPlanets = [...normalizedPlanets]
+  .filter((p) => p.percent >= 100)
+  .sort((a, b) => a.percent - b.percent);
+
+
+const problematicPlanets = normalizedPlanets
+  .filter((p) => p.percent < 100)
+  .sort((a, b) => a.percent - b.percent);
+
+  
 
   // check if planet is current Maha Dasha
   const isActivePlanet = (planetName) =>
@@ -283,26 +286,9 @@ return (
         )}
       </div>
 
-      {/* Next 30 Days */}
-      {/* <h2 className="section-title">Your Next 30 Days</h2>
-      <div className="snapshot-grid">
-        <Snapshot label="Career" icon={Briefcase} data={next30Days.career} />
-        <Snapshot label="Money" icon={DollarSign} data={next30Days.money} />
-        <Snapshot
-          label="Relationship"
-          icon={Heart}
-          data={next30Days.relationship}
-        />
-      </div> */}
-
       <LifeAreaInsights scores={scores} 
        currentDashaChain={currentDashaChain}
       handleUnlockClick={handleUnlockClick} />
-
-
-
-
-
 
       <LockedDeepPredictions
         title="Advanced Career & Marriage Timings"
@@ -350,26 +336,4 @@ return (
   );
 }
 
-function Snapshot({ label, icon: Icon, data }) {
-  return (
-    <div className="snapshot-tile">
-      <div className="tile-header">
-        <Icon className="tile-icon" />
-        <span className="tile-label">{label}</span>
-      </div>
 
-      <div className="tile-content">
-        <div className="tile-main">
-          <div className="tile-level">{data.level}</div>
-          <div className="tile-days">{data.probability}% probability</div>
-        </div>
-      </div>
-
-      {data.locked && (
-        <div className="tile-lock">
-          <Lock size={14} /> Locked
-        </div>
-      )}
-    </div>
-  );
-}
