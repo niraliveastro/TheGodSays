@@ -123,22 +123,16 @@ const Badge = ({ children, tone = "neutral" }) => {
  *
  * @returns {JSX.Element} The rendered match-making page.
  */
-export default function MatchingPage() {
+const DEFAULT_FEMALE = { fullName: "", dob: "", tob: "", place: "" };
+const DEFAULT_MALE = { fullName: "", dob: "", tob: "", place: "" };
+
+export default function MatchingPage({ initialCache = null, showOnlyResult = false }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const googleLoaded = useGoogleMaps();
-  // Form state for female and male individuals
-  const [female, setFemale] = useState({
-    fullName: "",
-    dob: "",
-    tob: "",
-    place: "",
-  });
-  const [male, setMale] = useState({
-    fullName: "",
-    dob: "",
-    tob: "",
-    place: "",
-  });
+  // Form state for female and male individuals (hydrate from initialCache when on result page)
+  const [female, setFemale] = useState(() => initialCache?.female ?? DEFAULT_FEMALE);
+  const [male, setMale] = useState(() => initialCache?.male ?? DEFAULT_MALE);
   // Coordinates and suggestions state
   const [fCoords, setFCoords] = useState(null);
   const [mCoords, setMCoords] = useState(null);
@@ -160,12 +154,12 @@ export default function MatchingPage() {
   const fPlacesService = useRef(null);
   const mPlacesService = useRef(null);
 
-  // Submission and result state
+  // Submission and result state (hydrate from initialCache when on result page)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
-  const [fDetails, setFDetails] = useState(null);
-  const [mDetails, setMDetails] = useState(null);
+  const [result, setResult] = useState(() => initialCache?.result ?? null);
+  const [fDetails, setFDetails] = useState(() => initialCache?.fDetails ?? null);
+  const [mDetails, setMDetails] = useState(() => initialCache?.mDetails ?? null);
 
   // === Chat State ===
   const [chatOpen, setChatOpen] = useState(false);
@@ -241,6 +235,7 @@ export default function MatchingPage() {
 
   // === Matching History ===
   const MATCHING_HISTORY_KEY = "matching_history_v1"; // localStorage key for history
+  const MATCHING_PAGE_CACHE_KEY = "tgs:matching_page_cache"; // sessionStorage: restore result when user returns (e.g. back from talk-to-astrologer)
   const [history, setHistory] = useState([]); // Array of history entries
   const [historySearch, setHistorySearch] = useState(""); // Search filter for history
   /**
@@ -339,6 +334,9 @@ export default function MatchingPage() {
     setChatData(null);
     previousFormDataHashRef.current = null;
     setCurrentFormDataHash(null);
+    try {
+      if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(MATCHING_PAGE_CACHE_KEY);
+    } catch (_) {}
   };
 
   const loadHistoryIntoForm = (item) => {
@@ -409,6 +407,60 @@ export default function MatchingPage() {
   useEffect(() => {
     setHistory(getHistory());
   }, []);
+
+  // Hydrate form-data hash from initialCache when showing result-only view
+  useEffect(() => {
+    if (initialCache?.currentFormDataHash != null) {
+      previousFormDataHashRef.current = initialCache.currentFormDataHash;
+      setCurrentFormDataHash(initialCache.currentFormDataHash);
+    }
+  }, [initialCache]);
+
+  // Restore matching result + form from sessionStorage when user returns (e.g. back from talk-to-astrologer) — skip when we have initialCache (result page)
+  useEffect(() => {
+    if (initialCache != null) return;
+    try {
+      const raw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(MATCHING_PAGE_CACHE_KEY) : null;
+      if (!raw) return;
+      const cached = JSON.parse(raw);
+      if (cached?.result && cached?.fDetails != null && cached?.mDetails != null) {
+        if (cached.female && typeof cached.female === "object") setFemale(cached.female);
+        if (cached.male && typeof cached.male === "object") setMale(cached.male);
+        setResult(cached.result);
+        setFDetails(cached.fDetails);
+        setMDetails(cached.mDetails);
+        if (cached.currentFormDataHash != null) {
+          previousFormDataHashRef.current = cached.currentFormDataHash;
+          setCurrentFormDataHash(cached.currentFormDataHash);
+        }
+      }
+    } catch (e) {
+      console.warn("[Matching] Restore from sessionStorage failed:", e);
+    }
+  }, [initialCache]);
+
+  // Persist matching result + form to sessionStorage so it survives navigation (e.g. talk-to-astrologer → back)
+  useEffect(() => {
+    if (result && fDetails != null && mDetails != null) {
+      try {
+        const payload = {
+          female: { fullName: female.fullName, dob: female.dob, tob: female.tob, place: female.place },
+          male: { fullName: male.fullName, dob: male.dob, tob: male.tob, place: male.place },
+          result,
+          fDetails,
+          mDetails,
+          currentFormDataHash: previousFormDataHashRef.current ?? currentFormDataHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(MATCHING_PAGE_CACHE_KEY, JSON.stringify(payload));
+        }
+      } catch (e) {
+        console.warn("[Matching] Persist to sessionStorage failed:", e);
+      }
+    } else if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(MATCHING_PAGE_CACHE_KEY);
+    }
+  }, [result, fDetails, mDetails, female, male, currentFormDataHash]);
 
   // Automatically show full assistant card when results are generated
   useEffect(() => {
@@ -1217,15 +1269,24 @@ export default function MatchingPage() {
       // Update hash reference after successful submission
       previousFormDataHashRef.current = newHash;
 
-      // Auto-scroll to results after successful calculation
-      setTimeout(() => {
-        if (resultsRef.current) {
-          resultsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+      // Persist to sessionStorage and navigate to result page so back button shows data without re-submit
+      try {
+        const payload = {
+          female: { fullName: female.fullName, dob: female.dob, tob: female.tob, place: female.place },
+          male: { fullName: male.fullName, dob: male.dob, tob: male.tob, place: male.place },
+          result: out,
+          fDetails: fDetailsBuilt,
+          mDetails: mDetailsBuilt,
+          currentFormDataHash: newHash,
+        };
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(MATCHING_PAGE_CACHE_KEY, JSON.stringify(payload));
         }
-      }, 100);
+        router.push("/kundli-matching/result");
+      } catch (e) {
+        console.warn("[Matching] Persist before navigate failed:", e);
+        router.push("/kundli-matching/result");
+      }
 
       // Return the computed result for callers that await onSubmit
       return out;
@@ -1292,8 +1353,6 @@ export default function MatchingPage() {
       scrollToChat();
     }
   };
-
-  const router = useRouter();
 
   const onTalkToAstrologer = () => {
     router.push("/talk-to-astrologer");
@@ -2333,6 +2392,21 @@ export default function MatchingPage() {
           </div>
         )}
 
+        {showOnlyResult && (
+          <div style={{ maxWidth: "1600px", margin: "1rem auto", padding: "0 2rem" }}>
+            <button
+              type="button"
+              onClick={() => router.push("/kundli-matching")}
+              className="use-btn"
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+            >
+              <RotateCcw size={18} />
+              New match
+            </button>
+          </div>
+        )}
+
+        {!showOnlyResult && (
         <div className="matching-page">
           <form onSubmit={onSubmit} className="match-form">
             {/* Header */}
@@ -3025,6 +3099,7 @@ export default function MatchingPage() {
             </div>
           </section>
         </div>
+        )}
 
         {/* ---------------------------------------------------------- */}
         {/* RESULT SECTION */}
