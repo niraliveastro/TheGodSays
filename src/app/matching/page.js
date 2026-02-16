@@ -2625,7 +2625,7 @@ export default function MatchingPage() {
                   {/* Female Name */}
                   <div className="form-field">
                     <label className="form-field-label" htmlFor="female-name">
-                      {t.matching.femaleName}
+                      {t.matching.maleName}
                     </label>
 
                     <input
