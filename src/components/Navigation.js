@@ -494,7 +494,7 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
             </div>
           )}
 
-          {/* USER: My Account dropdown + small ENG/HIN toggle to the right */}
+          {/* USER: My Account dropdown + small ENG/HIN toggle to the right (desktop only) */}
           {!isAstrologer && (
             <div className="nav-desktop">
               {userTopNavItems.map((item) => renderNavItem(item))}
@@ -503,6 +503,26 @@ const renderNavItem = (item, trackSource = "desktop_nav") => {
                 <LanguageSwitcher />
               </div>
             </div>
+          )}
+
+          {/* Mobile CTA: Talk to Astrologer – visible only on mobile top nav */}
+          {!isAstrologer && (
+            <button
+              type="button"
+              className="nav-mobile-cta"
+              onClick={() => {
+                router.push("/talk-to-astrologer/");
+                typeof trackEvent !== "undefined" &&
+                  trackEvent("navigation_click", {
+                    destination: "/talk-to-astrologer/",
+                    label: "Talk to Astrologer",
+                    source: "mobile_top_nav_cta",
+                  });
+              }}
+            >
+              <Phone className="nav-mobile-cta-icon" />
+              <span>Talk to Astrologer</span>
+            </button>
           )}
 
           {/* Hamburger menu on right */}

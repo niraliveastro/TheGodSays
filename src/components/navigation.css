@@ -247,6 +247,36 @@ body {
   font-family: 'Geom', sans-serif;
 }
 
+/* Mobile top-nav CTA: Talk to Astrologer (right side) */
+.nav-mobile-cta {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  margin-right: 0.5rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: linear-gradient(135deg, #d4af37, #b8972e);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.35);
+  white-space: nowrap;
+}
+
+.nav-mobile-cta-icon {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 767px) {
+  .nav-mobile-cta {
+    display: inline-flex;
+  }
+}
+
 /* Hide center text on desktop */
 .nav-logo-text-center {
   display: none;

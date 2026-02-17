@@ -129,25 +129,49 @@ export async function POST(req) {
       ? data.choices[0].message.content 
       : "I don't have a response for that."
 
-    // Generate 3 related follow-up questions based on the conversation
+    // Generate 3 intriguing, personalized follow-up questions (user's voice, from their data)
     let suggestedQuestions = []
     if (aiResponse) {
       try {
         console.log('[Chat API] Generating suggested questions for chatType:', chatType)
         const lastUserMessage = conversationHistory.filter(msg => msg.role === 'user').pop()
+        const systemContext = conversationHistory.find(m => m.role === 'system')?.content || ''
+        const systemContextSnippet = systemContext ? systemContext.substring(0, 1400) : ''
+        const aiAnswerSnippet = aiResponse.substring(0, 900)
+
+        const questionSystemPrompt = language === 'hi'
+          ? `You generate follow-up questions that the USER would ask next, in Hindi. Rules:
+- Write exactly 3 questions. Return ONLY a JSON array of 3 strings, no other text.
+- Phrase every question in first person from the user's point of view (e.g. "मेरे लिए क्या...", "मुझे कैसे...", "मेरी कुंडली में..."). The user is asking about THEIR life/chart/relationship.
+- Make each question intriguing and relatable: curious, personal, something a real person would wonder after reading the answer. Reference specific things from the AI's answer or the user's context (e.g. a planet, remedy, date, or situation mentioned).
+- Base questions on the actual data provided (user's chart, couple details, or what the AI just said) so they feel personalized, not generic.
+- Keep each question under 12 words (Hindi or English mixed as per context).`
+          : `You generate follow-up questions that the USER would ask next. Rules:
+- Write exactly 3 questions. Return ONLY a JSON array of 3 strings, no other text.
+- Phrase every question in first person from the user's point of view (e.g. "What about my...", "How can I...", "Why is my...", "Should I..."). The user is asking about THEIR life, chart, or situation.
+- Make each question intriguing and relatable: curious, personal, something a real person would wonder after reading the answer. Reference specific things from the AI's answer or the user's context (e.g. a planet, remedy, date, or situation mentioned).
+- Base questions on the actual data provided (user's chart, couple details, or what the AI just said) so they feel personalized, not generic.
+- Keep each question under 12 words.`
+
+        const questionUserContent = systemContextSnippet
+          ? `Context about this user (chart/couple/data the AI has):
+${systemContextSnippet}
+
+---
+User just asked: "${(lastUserMessage?.content || '').substring(0, 280)}"
+
+AI just answered: "${aiAnswerSnippet}"
+
+Generate 3 follow-up questions the user would ask next: first-person, curious, and personalized using the context and the answer above. Return only a JSON array of 3 strings.`
+          : `User just asked: "${(lastUserMessage?.content || '').substring(0, 280)}"
+
+AI just answered: "${aiAnswerSnippet}"
+
+Generate 3 follow-up questions the user would ask next: first-person, curious, and personalized using details from the answer. Return only a JSON array of 3 strings.`
+
         const questionPrompt = [
-          {
-            role: 'system',
-            content: 'Generate exactly 3 short follow-up questions that the USER would ask the AI assistant next. Phrase each as the user asking (e.g. "Can you explain...", "What is...", "How do I...", "Why does..."). Do NOT phrase as the AI prompting the user. Return ONLY a JSON array of 3 strings. Each question must be under 12 words and directly related to the astrology topic discussed.'
-          },
-          {
-            role: 'user',
-            content: `User asked: "${lastUserMessage?.content?.substring(0, 200)}"
-
-AI answered: "${aiResponse.substring(0, 500)}"
-
-Generate 3 follow-up questions that the user might ask next, phrased as the user asking the AI. Return as JSON array of strings.`
-          }
+          { role: 'system', content: questionSystemPrompt },
+          { role: 'user', content: questionUserContent }
         ]
 
         const questionsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -159,8 +183,8 @@ Generate 3 follow-up questions that the user might ask next, phrased as the user
           body: JSON.stringify({
             model: 'gpt-3.5-turbo',
             messages: questionPrompt,
-            temperature: 0.7,
-            max_tokens: 150,
+            temperature: 0.75,
+            max_tokens: 200,
           }),
         })
 
