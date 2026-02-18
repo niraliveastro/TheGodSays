@@ -117,6 +117,7 @@ export default function NumerologyPage() {
    * Master numbers that are not reduced further.
    */
   const MASTER_NUMBERS = [11, 22, 33];
+  
 
   /**
    * localStorage key for persisting history.
@@ -617,6 +618,13 @@ export default function NumerologyPage() {
       );
     };  
 
+    const getMetricColor = (value) => {
+  if (value >= 70) return "bg-green-100 text-green-700";
+  if (value >= 40) return "bg-amber-100 text-amber-700";
+  return "bg-red-100 text-red-700";
+};
+
+
   return (
     <div
       className="numerology-container"
@@ -1079,146 +1087,213 @@ export default function NumerologyPage() {
             )}
           </div>
 
-          <div className="history-card">
-            {history.length === 0 ? (
-              <p className="history-empty">No calculation history yet.</p>
-            ) : (
-              <div className="history-table-container">
-                <table className="history-table">
-                  <thead>
-                    <tr>
-                      <th>Name / DOB</th>
-                      <th className="text-blue-600">#1</th>
-                      <th className="text-green-600">#2</th>
-                      <th className="text-teal-600">#3</th>
-                      <th className="text-red-600">#4</th>
-                      <th className="text-orange-600">#5</th>
-                      <th className="text-purple-600">#6</th>
-                      <th className="text-yellow-600">#7</th>
-                      <th className="text-red-700">Fame</th>
-                      <th className="text-yellow-700">Wealth</th>
-                      <th className="text-blue-700">Luck</th>
-                      <th className="text-green-700">Health</th>
-                      <th className="text-indigo-700">Speed</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((item) => {
-                      const displayName =
-                        item.name.length > 20
-                          ? item.name.slice(0, 17) + "..."
-                          : item.name;
-                      const displayDob = item.dob ? item.dob.slice(5) : "N/A";
-                      const metrics = item.composite || {
-                        fame: { percent: 0 },
-                        wealth: { percent: 0 },
-                        luck: { percent: 0 },
-                        health: { percent: 0 },
-                        speed: { percent: 0 },
-                      };
+        <div className="history-card">
+  {history.length === 0 ? (
+    <p className="history-empty">No calculation history yet.</p>
+  ) : (
+    <div className="w-full">
 
-                      return (
-                        <tr key={item.id}>
-                          <td title={`${item.name} (${item.dob || "N/A"})`}>
-                            <span className="history-name">{displayName}</span>
-                            <span className="history-dob">{displayDob}</span>
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.destiny)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.destiny || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.soulUrge)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.soulUrge || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.dream)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.dream || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.powerNumber)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.powerNumber || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.lifePath)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.lifePath || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.mulank)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.mulank || "-"}
-                          </td>
-                          <td
-                            className={
-                              MASTER_NUMBERS.includes(item.chaldeanReduced)
-                                ? "font-bold text-red-600"
-                                : ""
-                            }
-                          >
-                            {item.chaldeanReduced || "-"}
-                          </td>
-                          <td className="font-semibold">
-                            {metrics.fame.percent.toFixed(0)}%
-                          </td>
-                          <td className="font-semibold">
-                            {metrics.wealth.percent.toFixed(0)}%
-                          </td>
-                          <td className="font-semibold">
-                            {metrics.luck.percent.toFixed(0)}%
-                          </td>
-                          <td className="font-semibold">
-                            {metrics.health.percent.toFixed(0)}%
-                          </td>
-                          <td className="font-semibold">
-                            {metrics.speed.percent.toFixed(0)}%
-                          </td>
-                          <td>
-                            <button
-                              onClick={() => deleteHistoryItem(item.id)}
-                              className="delete-btn"
-                              aria-label={`Delete ${item.name}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+      {/* Desktop Table */}
+      <div className="hidden lg:block overflow-x-auto">
+        <table className="min-w-full text-sm text-center">
+          <thead className="bg-gray-100 uppercase text-xs">
+            <tr>
+              <th className="text-left p-3">Name / DOB</th>
+              <th className="p-3">#1</th>
+              <th className="p-3">#2</th>
+              <th className="p-3">#3</th>
+              <th className="p-3">#4</th>
+              <th className="p-3">#5</th>
+              <th className="p-3">#6</th>
+              <th className="p-3">#7</th>
+              <th className="p-3">Fame</th>
+              <th className="p-3">Wealth</th>
+              <th className="p-3">Luck</th>
+              <th className="p-3">Health</th>
+              <th className="p-3">Speed</th>
+              <th className="p-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item) => {
+              const metrics = item.composite || {
+                fame: { percent: 0 },
+                wealth: { percent: 0 },
+                luck: { percent: 0 },
+                health: { percent: 0 },
+                speed: { percent: 0 },
+              };
+
+              const renderPill = (value) => (
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${getMetricColor(
+                    value
+                  )}`}
+                >
+                  {value.toFixed(0)}%
+                </span>
+              );
+
+              return (
+                <tr key={item.id} className="border-b hover:bg-gray-50 transition">
+                  <td className="text-left p-3 font-semibold">
+                    <div>{item.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {item.dob || "N/A"}
+                    </div>
+                  </td>
+
+                  <td className="p-3">{item.destiny || "-"}</td>
+                  <td className="p-3">{item.soulUrge || "-"}</td>
+                  <td className="p-3">{item.dream || "-"}</td>
+                  <td className="p-3">{item.powerNumber || "-"}</td>
+                  <td className="p-3">{item.lifePath || "-"}</td>
+                  <td className="p-3">{item.mulank || "-"}</td>
+                  <td className="p-3">{item.chaldeanReduced || "-"}</td>
+
+                  <td className="p-3">{renderPill(metrics.fame.percent)}</td>
+                  <td className="p-3">{renderPill(metrics.wealth.percent)}</td>
+                  <td className="p-3">{renderPill(metrics.luck.percent)}</td>
+                  <td className="p-3">{renderPill(metrics.health.percent)}</td>
+                  <td className="p-3">{renderPill(metrics.speed.percent)}</td>
+
+                  <td className="p-3">
+                    <button
+                      onClick={() => deleteHistoryItem(item.id)}
+                      className="text-red-400 hover:text-red-600 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="lg:hidden space-y-4">
+        {history.map((item) => {
+          const metrics = item.composite || {
+            fame: { percent: 0 },
+            wealth: { percent: 0 },
+            luck: { percent: 0 },
+            health: { percent: 0 },
+            speed: { percent: 0 },
+          };
+
+          const renderPill = (value) => (
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-semibold ${getMetricColor(
+                value
+              )}`}
+            >
+              {value.toFixed(0)}%
+            </span>
+          );
+
+          return (
+            <div
+              key={item.id}
+              className="bg-white border rounded-xl shadow-sm p-4 space-y-4"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-semibold">{item.name}</div>
+                  <div className="text-xs text-gray-500">
+                    {item.dob || "N/A"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => deleteHistoryItem(item.id)}
+                  className="text-red-400 hover:text-red-600 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-            )}
+
+              <div className="space-y-4">
+  {[
+    { label: "#1", value: item.destiny },
+    { label: "#2", value: item.soulUrge },
+    { label: "#3", value: item.dream },
+    { label: "#4", value: item.powerNumber },
+    { label: "#5", value: item.lifePath },
+    { label: "#6", value: item.mulank },
+    { label: "#7", value: item.chaldeanReduced },
+  ].map((num, index) => {
+    const isMaster = MASTER_NUMBERS.includes(Number(num.value));
+
+    return (
+      <div
+        key={index}
+        className={`rounded-2xl border px-6 py-5 text-center transition-all duration-300
+        bg-gradient-to-b from-white to-gray-50
+        border-gray-200 shadow-sm
+        ${isMaster ? "ring-2 ring-red-300 shadow-md" : ""}
+        `}
+      >
+        <div
+          className={`text-2xl font-semibold tracking-wide
+          ${isMaster ? "text-red-600" : "text-gray-800"}
+          `}
+        >
+          {num.value || "-"}
+        </div>
+
+        <div
+          className={`text-xs mt-2 tracking-wider uppercase
+          ${isMaster ? "text-red-400 font-semibold" : "text-gray-500"}
+          `}
+        >
+          {num.label}
+        </div>
+
+        {isMaster && (
+          <div className="mt-2 text-[10px] tracking-widest text-red-500 font-semibold">
+            MASTER
           </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+
+
+
+              <div className="space-y-2 pt-3 border-t text-sm">
+                <div className="flex justify-between">
+                  <span>Fame</span>
+                  {renderPill(metrics.fame.percent)}
+                </div>
+                <div className="flex justify-between">
+                  <span>Wealth</span>
+                  {renderPill(metrics.wealth.percent)}
+                </div>
+                <div className="flex justify-between">
+                  <span>Luck</span>
+                  {renderPill(metrics.luck.percent)}
+                </div>
+                <div className="flex justify-between">
+                  <span>Health</span>
+                  {renderPill(metrics.health.percent)}
+                </div>
+                <div className="flex justify-between">
+                  <span>Speed</span>
+                  {renderPill(metrics.speed.percent)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+    </div>
+  )}
+</div>
+
+
         </section>
 
         {/* System Charts */}
