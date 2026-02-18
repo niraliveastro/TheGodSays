@@ -2607,16 +2607,7 @@ export default function MatchingPage({ initialCache = null, showOnlyResult = fal
                     </div>
 
                     {/* Autocomplete dropdown for female */}
-                    {/* Female autocomplete dropdown - ADD DEBUG */}
-                    {console.log(
-                      "[Female Render] About to check dropdown render. fSuggest.length:",
-                      fSuggest.length,
-                    )}
-                    {/* Autocomplete dropdown for female */}
-                    {console.log(
-                      "[Female Render] About to check dropdown render. fSuggest.length:",
-                      fSuggest.length,
-                    )}
+                    
                     {fSuggest.length > 0 && (
                       <div
                         className="suggestions"
@@ -2634,7 +2625,7 @@ export default function MatchingPage({ initialCache = null, showOnlyResult = fal
                           overflowY: "auto",
                         }}
                       >
-                        {console.log("[Female Render] RENDERING DROPDOWN")}
+                       
                         {fSuggesting && (
                           <div className="suggestion-loading">
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -2643,10 +2634,7 @@ export default function MatchingPage({ initialCache = null, showOnlyResult = fal
                         )}
                         {!fSuggesting &&
                           fSuggest.map((s, i) => {
-                            console.log(
-                              "[Female Render] Rendering suggestion:",
-                              s.label,
-                            );
+                            
                             return (
                               <button
                                 key={i}
@@ -2699,7 +2687,7 @@ export default function MatchingPage({ initialCache = null, showOnlyResult = fal
                   {/* Female Name */}
                   <div className="form-field">
                     <label className="form-field-label" htmlFor="female-name">
-                      {t.matching.femaleName}
+                      {t.matching.maleName}
                     </label>
 
                     <input

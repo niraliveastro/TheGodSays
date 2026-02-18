@@ -2756,92 +2756,149 @@ export default function PredictionsPage({ initialCache = null, showOnlyResult = 
             </div>
 
             {ashtakavarga && (
-              <div>
-                {/* Header */}
+  <div>
+    <div>
+      <h3 className="section-title flex justify-center align-center">
+        Ashtakavarga – House Strength
+      </h3>
+    </div>
 
-                {/* <Orbit style={{ color: "#ca8a04" }} /> */}
-                <div>
-                  <h3 className="section-title flex justify-center align-center">
-                    Ashtakavarga
-                  </h3>
-                </div>
+    <div className="card mt-6">
+      {/* Legend */}
+      <div
+        className="flex flex-wrap gap-4 text-xs mb-6"
+        style={{ color: "#374151" }}
+      >
+        <div className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+          Strong support (30+)
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+          Moderate (23–29)
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+          Low support (≤22)
+        </div>
+      </div>
 
-                <div className="card mt-6">
-                  {/* Legend */}
+      {/* House Meanings */}
+      {(() => {
+        const HOUSE_MEANINGS = {
+          1: "Self, Personality, Health",
+          2: "Wealth, Family, Speech",
+          3: "Courage, Siblings, Effort",
+          4: "Home, Mother, Comfort",
+          5: "Creativity, Children, Romance",
+          6: "Health, Enemies, Service",
+          7: "Marriage, Partnerships",
+          8: "Transformation, Secrets",
+          9: "Luck, Dharma, Higher Learning",
+          10: "Career, Status, Authority",
+          11: "Gains, Friends, Ambitions",
+          12: "Losses, Spirituality, Foreign",
+        };
+
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(ashtakavarga.SAV_house).map(
+              ([house, value]) => {
+                const v = Number(value);
+
+                const strength =
+                  v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
+
+                const color =
+                  strength === "strong"
+                    ? "#16a34a"
+                    : strength === "weak"
+                      ? "#dc2626"
+                      : "#d97706";
+
+                const bg =
+                  strength === "strong"
+                    ? "rgba(34,197,94,0.06)"
+                    : strength === "weak"
+                      ? "rgba(239,68,68,0.06)"
+                      : "rgba(217,119,6,0.06)";
+
+                const percentage = Math.min((v / 40) * 100, 100);
+
+                return (
                   <div
-                    className="flex flex-wrap gap-4 text-xs mb-4"
-                    style={{ color: "#374151" }}
+                    key={house}
+                    className="rounded-2xl border p-4 transition-all duration-300"
+                    style={{
+                      borderColor: `${color}33`,
+                      background: bg,
+                    }}
                   >
-                    <div className="flex items-center gap-1">
-                      <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                      Strong support (30+)
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-2">
+                      <div
+                        style={{
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          color: "#1f2937",
+                        }}
+                      >
+                        House {house}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 700,
+                          color,
+                        }}
+                      >
+                        {v}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                      Moderate (23–29)
+
+                    {/* Meaning */}
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#6b7280",
+                        marginBottom: "0.75rem",
+                      }}
+                    >
+                      {HOUSE_MEANINGS[house]}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                      Low support (≤22)
+
+                    {/* Animated Strength Bar */}
+                    <div
+                      style={{
+                        height: "6px",
+                        background: "#e5e7eb",
+                        borderRadius: "999px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${percentage}%`,
+                          background: color,
+                          borderRadius: "999px",
+                          transition: "width 0.9s ease-in-out",
+                        }}
+                      />
                     </div>
                   </div>
-
-                  {/* SAV Grid */}
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {ashtakavarga.SAV.map((v, i) => {
-                      const strength =
-                        v >= 30 ? "strong" : v <= 22 ? "weak" : "medium";
-
-                      return (
-                        <div
-                          key={i}
-                          className="rounded-xl border text-center py-3 px-2 transition"
-                          style={{
-                            borderColor:
-                              strength === "strong"
-                                ? "rgba(34,197,94,0.4)"
-                                : strength === "weak"
-                                  ? "rgba(239,68,68,0.4)"
-                                  : "rgba(156,163,175,0.4)",
-                            background:
-                              strength === "strong"
-                                ? "rgba(34,197,94,0.06)"
-                                : strength === "weak"
-                                  ? "rgba(239,68,68,0.06)"
-                                  : "rgba(107,114,128,0.04)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#6b7280",
-                              marginBottom: "0.15rem",
-                            }}
-                          >
-                            {SIGNS[i]}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "1.1rem",
-                              fontWeight: 600,
-                              color:
-                                strength === "strong"
-                                  ? "#15803d"
-                                  : strength === "weak"
-                                    ? "#b91c1c"
-                                    : "#374151",
-                            }}
-                          >
-                            {v}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                );
+              },
             )}
+          </div>
+        );
+      })()}
+    </div>
+  </div>
+)}
+
+
 
             {result && insights && (
               <section className="converting-card">
