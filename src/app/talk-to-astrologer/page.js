@@ -1456,7 +1456,7 @@ export default function TalkToAstrologer() {
             </div>
 
             {/* Astrologers Card Container */}
-            <div style={{ marginTop: "1.5rem", padding: "1.5rem" }}>
+            <div style={{ marginTop: "1.5rem" }} className="lg:p-6">
               {/* Call History + My Appointments Buttons */}
               <div
                 className="action-buttons-container"
