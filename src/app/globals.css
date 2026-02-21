@@ -2396,9 +2396,9 @@ select {
 /* PROMO PANEL (LEFT SIDE) – content hard-aligned to top              */
 /* ================================================================== */
 .astrologer-promo-panel {
-  background: linear-gradient(135deg, #d4af37 0%, #b8972e 100%);
+  background: #d4af37;
   padding: 3.25rem 3rem 3rem 3rem; /* content shifted down a bit */
-  color: white;
+  color: #000;
   display: flex;
   flex-direction: column;
   justify-content: flex-start !important;
@@ -2466,7 +2466,7 @@ select {
 .promo-icon-badge {
   width: 64px;
   height: 64px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   display: flex;
@@ -2474,14 +2474,14 @@ select {
   justify-content: center;
   margin-top: 0 !important;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .promo-icon-badge svg {
   width: 32px;
   height: 32px;
-  color: white;
+  color: #000;
 }
 
 .promo-title {
@@ -2516,7 +2516,7 @@ select {
   gap: 0.75rem;
   font-size: 0.95rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 0.75rem;
   backdrop-filter: blur(5px);
 }
@@ -2537,9 +2537,9 @@ select {
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1rem;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 500;

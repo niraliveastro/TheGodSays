@@ -7,13 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useChatState } from '@/hooks/useChatState';
 import { incrementGuestUsage } from '@/lib/guest-usage';
 import { useRouter } from 'next/navigation';
+import { computeAshtakavarga } from '@/lib/ashtakavarga';
+
 function buildContextPrompt(initialData, pageTitle, language = 'en') {
   // If Matching page AND both charts exist
   if (pageTitle === "Matching" && initialData?.female && initialData?.male) {
     const female = initialData.female;
     const male = initialData.male;
     const match = initialData.match || {};
-    
+
     // Extract key information - handle both input.details structure and direct structure
     const femaleName = female?.input?.name || female?.details?.name || "Female";
     const maleName = male?.input?.name || male?.details?.name || "Male";
@@ -23,7 +25,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
     const maleTob = male?.input?.tob || "";
     const femalePlace = female?.input?.place || "";
     const malePlace = male?.input?.place || "";
-    
+
     // Calculate birth years for realistic date validation
     const getBirthYear = (dob) => {
       if (!dob) return null;
@@ -44,29 +46,29 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       }
       return null;
     };
-    
+
     const femaleBirthYear = getBirthYear(femaleDob);
     const maleBirthYear = getBirthYear(maleDob);
     const currentYear = new Date().getFullYear();
-    
+
     // Calculate realistic age ranges
     const femaleAge = femaleBirthYear ? currentYear - femaleBirthYear : null;
     const maleAge = maleBirthYear ? currentYear - maleBirthYear : null;
-    
+
     // Extract planetary data - handle both structures
     const femalePlacements = female?.details?.placements || female?.placements || [];
     const malePlacements = male?.details?.placements || male?.placements || [];
     const femaleShadbala = female?.details?.shadbalaRows || female?.shadbalaRows || [];
     const maleShadbala = male?.details?.shadbalaRows || male?.shadbalaRows || [];
-    
+
     // Extract Dasha data - try multiple paths and also check raw vimsottari data
     let femaleDasha = female?.details?.currentDasha || female?.currentDasha || null;
     let maleDasha = male?.details?.currentDasha || male?.currentDasha || null;
-    
+
     // Helper function to extract Dasha from vimsottari data
     const extractDashaFromVims = (vims) => {
       if (!vims) return null;
-      
+
       // Try current/running/now structure
       const cur = vims.current || vims.running || vims.now || vims?.mahadasha?.current;
       if (cur && (cur.md || cur.mahadasha)) {
@@ -78,7 +80,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
           .map((x) => (x.name || x.planet || x).toString().trim())
           .join(" > ");
       }
-      
+
       // Try mahadasha_list structure
       const md = (vims.mahadasha_list || vims.mahadasha || vims.md || [])[0];
       if (md) {
@@ -99,25 +101,25 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
         return md?.name || md?.planet || null;
       }
-      
+
       return null;
     };
-    
+
     // If Dasha is not found, try to extract from raw vimsottari data
     if (!femaleDasha && female?.details?.vimsottari) {
       femaleDasha = extractDashaFromVims(female.details.vimsottari);
     }
-    
+
     if (!maleDasha && male?.details?.vimsottari) {
       maleDasha = extractDashaFromVims(male.details.vimsottari);
     }
-    
+
     // Also include full vimsottari data in the prompt for reference
     const femaleVimsottari = female?.details?.vimsottari || null;
     const maleVimsottari = male?.details?.vimsottari || null;
     const femaleMahaDasas = female?.details?.mahaDasas || null;
     const maleMahaDasas = male?.details?.mahaDasas || null;
-    
+
     // Validate that both have data (only warn in development or if critical)
     if (!femaleVimsottari && !femaleDasha) {
       if (process.env.NODE_ENV === 'development') {
@@ -137,7 +139,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         });
       }
     }
-    
+
     // Debug logging
     console.log('[Chat] Dasha extraction:', {
       femaleDasha,
@@ -153,16 +155,16 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       femaleBirthYear,
       maleBirthYear,
     });
-    
+
     // Extract Ashtakoot scores - handle various possible structures
     // Try multiple paths to extract the match data
     let matchData = match || initialData?.match || {};
-    
+
     // Handle case where match data might be nested in output field
     if (matchData && typeof matchData === 'object' && matchData.output) {
       try {
-        const parsedOutput = typeof matchData.output === 'string' 
-          ? JSON.parse(matchData.output) 
+        const parsedOutput = typeof matchData.output === 'string'
+          ? JSON.parse(matchData.output)
           : matchData.output;
         if (parsedOutput && typeof parsedOutput === 'object') {
           // Merge parsed output into matchData, prioritizing parsed output values
@@ -172,18 +174,18 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         console.warn('[Chat] Failed to parse matchData.output:', e);
       }
     }
-    
+
     // Also check if matchData itself is the output (sometimes API returns just the output object)
     if (matchData && typeof matchData === 'object' && !matchData.total_score && !matchData.totalScore) {
       // Try to find nested structures
       const findNestedScore = (obj, depth = 0) => {
         if (depth > 5 || !obj || typeof obj !== 'object') return null;
-        
+
         // Check for score fields at current level
         if (obj.total_score !== undefined || obj.totalScore !== undefined) {
           return obj;
         }
-        
+
         // Recursively search nested objects
         for (const key in obj) {
           if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
@@ -193,14 +195,14 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
         return null;
       };
-      
+
       const nestedMatch = findNestedScore(matchData);
       if (nestedMatch) {
         matchData = { ...matchData, ...nestedMatch };
         console.log('[Chat] Found nested match data structure, merged:', Object.keys(nestedMatch));
       }
     }
-    
+
     // Log the raw match data structure for debugging
     console.log('[Chat] Raw match data structure:', {
       hasMatch: !!match,
@@ -214,18 +216,18 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       initialDataMatchKeys: initialData?.match && typeof initialData.match === 'object' ? Object.keys(initialData.match) : [],
       initialDataMatchSample: initialData?.match ? JSON.stringify(initialData.match).substring(0, 500) : 'N/A',
     });
-    
+
     // CRITICAL: If matchData is empty but we have initialData.match, use it directly
     if ((!matchData || Object.keys(matchData).length === 0) && initialData?.match) {
       matchData = initialData.match;
       console.log('[Chat] Using initialData.match directly as matchData');
     }
-    
+
     // Comprehensive extraction with multiple fallback paths
     // Handle nested structures, different naming conventions, etc.
     let totalScore = 0;
     let outOf = 36;
-    
+
     // Try multiple paths for total_score - be very thorough
     const scorePaths = [
       'total_score',
@@ -241,7 +243,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       'guna_milan_score',
       'gunaMilanScore'
     ];
-    
+
     for (const path of scorePaths) {
       if (matchData?.[path] !== undefined && matchData?.[path] !== null) {
         const value = Number(matchData[path]);
@@ -253,7 +255,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
       }
     }
-    
+
     // Also check if matchData has the score directly (sometimes the result object itself has the score)
     if (totalScore === 0 && matchData && typeof matchData === 'object') {
       // Check all numeric values that might be the score
@@ -273,7 +275,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
       }
     }
-    
+
     // If still 0, try accessing nested properties with dot notation simulation
     if (totalScore === 0 && matchData && typeof matchData === 'object') {
       const tryNestedPaths = (obj, paths) => {
@@ -298,7 +300,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
         return null;
       };
-      
+
       const nestedPaths = [
         'output.total_score',
         'output.totalScore',
@@ -309,14 +311,14 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         'match.total_score',
         'match.totalScore'
       ];
-      
+
       const nestedScore = tryNestedPaths(matchData, nestedPaths);
       if (nestedScore !== null && nestedScore > 0) {
         totalScore = nestedScore;
         console.log(`[Chat] Found totalScore via nested path: ${totalScore}`);
       }
     }
-    
+
     // Try multiple paths for out_of
     const outOfPaths = [
       'out_of',
@@ -328,7 +330,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       'totalOutOf',
       'maximum'
     ];
-    
+
     for (const path of outOfPaths) {
       if (matchData?.[path] !== undefined && matchData?.[path] !== null) {
         const value = Number(matchData[path]);
@@ -339,7 +341,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
       }
     }
-    
+
     // Before calculating from kootams, try one more time to extract from the raw result object
     if (totalScore === 0 && initialData?.match) {
       const rawMatch = initialData.match;
@@ -367,13 +369,13 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
       }
     }
-    
+
     // If still 0, try to calculate from individual kootams
     if (totalScore === 0) {
       console.warn('[Chat] Total score is 0, attempting to calculate from individual kootams...');
       // This will be calculated below from individual kootams
     }
-    
+
     // Extract individual kootam scores with comprehensive fallback paths
     const extractKootamScore = (kootamName) => {
       const variations = [
@@ -383,7 +385,7 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         `${kootamName}Koot`,
         kootamName
       ];
-      
+
       for (const variant of variations) {
         const data = matchData[variant];
         if (data !== undefined && data !== null) {
@@ -406,49 +408,49 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       }
       return { score: 0, outOf: kootamName === 'rasi' ? 7 : kootamName === 'graha_maitri' ? 5 : kootamName === 'yoni' ? 4 : kootamName === 'gana' ? 6 : 8 };
     };
-    
+
     const rasi = extractKootamScore('rasi');
     const rasiScore = rasi.score;
     const rasiOutOf = rasi.outOf;
-    
+
     const grahaMaitri = extractKootamScore('graha_maitri');
     const grahaMaitriScore = grahaMaitri.score;
     const grahaMaitriOutOf = grahaMaitri.outOf;
-    
+
     const yoni = extractKootamScore('yoni');
     const yoniScore = yoni.score;
     const yoniOutOf = yoni.outOf;
-    
+
     const gana = extractKootamScore('gana');
     const ganaScore = gana.score;
     const ganaOutOf = gana.outOf;
-    
+
     const nadi = extractKootamScore('nadi');
     const nadiScore = nadi.score;
     const nadiOutOf = nadi.outOf;
-    
+
     // Deep search for total_score in nested structures if still 0
     if (totalScore === 0 && matchData && typeof matchData === 'object') {
       const deepSearch = (obj, depth = 0) => {
         if (depth > 5) return null; // Increased depth limit
         if (!obj || typeof obj !== 'object') return null;
-        
+
         // Check current level for all score variations
         for (const key of Object.keys(obj)) {
           const value = obj[key];
           const keyLower = key.toLowerCase();
-          
+
           // Check for score fields
-          if ((keyLower.includes('total') && keyLower.includes('score')) || 
-              key === 'total_score' || key === 'totalScore' || 
-              key === 'score' || key === 'compatibility_score') {
+          if ((keyLower.includes('total') && keyLower.includes('score')) ||
+            key === 'total_score' || key === 'totalScore' ||
+            key === 'score' || key === 'compatibility_score') {
             const num = Number(value);
             if (!isNaN(num) && num > 0) {
               console.log(`[Chat] Found totalScore via deep search at depth ${depth}, key: ${key}, value: ${num}`);
               return num;
             }
           }
-          
+
           // Recursively search nested objects and arrays
           if (value && typeof value === 'object') {
             if (Array.isArray(value)) {
@@ -467,14 +469,14 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
         return null;
       };
-      
+
       const foundScore = deepSearch(matchData);
       if (foundScore !== null && foundScore > 0) {
         totalScore = foundScore;
         console.log('[Chat] Found totalScore via deep search:', totalScore);
       }
     }
-    
+
     // If totalScore is still 0, try to calculate it from individual kootams
     if (totalScore === 0) {
       const calculatedTotal = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
@@ -483,14 +485,14 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         console.log('[Chat] Calculated totalScore from individual kootams:', totalScore);
       }
     }
-    
+
     // Validate that we have a valid score
     if (totalScore === 0 && (rasiScore > 0 || grahaMaitriScore > 0 || yoniScore > 0 || ganaScore > 0 || nadiScore > 0)) {
       // Recalculate if we have individual scores but total is 0
       totalScore = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
       console.log('[Chat] Recalculated totalScore from individual kootams:', totalScore);
     }
-    
+
     // Final fallback: if we have match data but score is 0, try to extract from JSON string
     if (totalScore === 0 && matchData) {
       try {
@@ -517,12 +519,12 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         console.warn('[Chat] Failed to extract score from JSON string:', e);
       }
     }
-    
+
     // Debug logging to verify data extraction
     console.log('[Chat] Ashtakoot score extraction FINAL:', {
       totalScore,
       outOf,
-      percentage: Math.round((totalScore/outOf)*100),
+      percentage: Math.round((totalScore / outOf) * 100),
       matchDataKeys: matchData && typeof matchData === 'object' ? Object.keys(matchData) : [],
       hasMatch: !!match,
       hasInitialDataMatch: !!initialData?.match,
@@ -534,35 +536,35 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
       sumOfIndividual: rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore,
       matchDataSample: matchData && typeof matchData === 'object' ? JSON.stringify(matchData).substring(0, 1000) : 'N/A',
     });
-    
+
     // If score is still 0 but we have individual scores, use the sum
     if (totalScore === 0 && (rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore) > 0) {
       totalScore = rasiScore + grahaMaitriScore + yoniScore + ganaScore + nadiScore;
       console.log('[Chat] Using sum of individual kootams as totalScore:', totalScore);
     }
-    
+
     // Final check: if we still have 0, try to find any numeric value in the entire matchData structure
     if (totalScore === 0 && matchData && typeof matchData === 'object') {
       const findAllNumericScores = (obj, depth = 0) => {
         if (depth > 6) return [];
         if (!obj || typeof obj !== 'object') return [];
-        
+
         const scores = [];
         for (const key in obj) {
           if (obj.hasOwnProperty(key)) {
             const value = obj[key];
             const keyLower = key.toLowerCase();
-            
+
             // If it's a number between 0.5 and 36, it might be the score
             if (typeof value === 'number' && value >= 0.5 && value <= 36) {
               // Check if key suggests it's a score or if it's near other score-related keys
-              if (keyLower.includes('score') || keyLower.includes('total') || 
-                  keyLower.includes('guna') || keyLower.includes('milan') ||
-                  keyLower.includes('compatibility') || keyLower.includes('ashtakoot')) {
+              if (keyLower.includes('score') || keyLower.includes('total') ||
+                keyLower.includes('guna') || keyLower.includes('milan') ||
+                keyLower.includes('compatibility') || keyLower.includes('ashtakoot')) {
                 scores.push({ key, value, depth });
               }
             }
-            
+
             // Recursively search nested objects
             if (value && typeof value === 'object' && !Array.isArray(value)) {
               scores.push(...findAllNumericScores(value, depth + 1));
@@ -571,25 +573,25 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         }
         return scores;
       };
-      
+
       const allScores = findAllNumericScores(matchData);
       if (allScores.length > 0) {
         // Use the score with the most relevant key name or the highest value
         const bestScore = allScores.sort((a, b) => {
           // Prefer scores with "total" or "score" in the key
-          const aRelevance = (a.key.toLowerCase().includes('total') ? 2 : 0) + 
-                            (a.key.toLowerCase().includes('score') ? 1 : 0);
-          const bRelevance = (b.key.toLowerCase().includes('total') ? 2 : 0) + 
-                            (b.key.toLowerCase().includes('score') ? 1 : 0);
+          const aRelevance = (a.key.toLowerCase().includes('total') ? 2 : 0) +
+            (a.key.toLowerCase().includes('score') ? 1 : 0);
+          const bRelevance = (b.key.toLowerCase().includes('total') ? 2 : 0) +
+            (b.key.toLowerCase().includes('score') ? 1 : 0);
           if (aRelevance !== bRelevance) return bRelevance - aRelevance;
           return b.value - a.value; // Prefer higher values
         })[0];
-        
+
         totalScore = bestScore.value;
         console.log(`[Chat] Found totalScore via comprehensive search: ${bestScore.key} = ${totalScore} (depth ${bestScore.depth})`);
       }
     }
-    
+
     // Final validation - if score is 0 but we have match data, log warning
     if (totalScore === 0 && matchData && Object.keys(matchData).length > 0) {
       console.error('[Chat] ⚠️ WARNING: Total score is 0 but match data exists!', {
@@ -597,7 +599,26 @@ function buildContextPrompt(initialData, pageTitle, language = 'en') {
         matchDataFull: JSON.stringify(matchData).substring(0, 1000),
       });
     }
-    
+
+    // Extract Ashtakavarga capabilities
+    let femaleAshtakavarga = null;
+    let maleAshtakavarga = null;
+    try {
+      if (female?.details?.rawPlanetsExtended) {
+        femaleAshtakavarga = computeAshtakavarga(female.details.rawPlanetsExtended);
+      }
+    } catch (e) {
+      console.warn('[Chat] Failed to compute female ashtakavarga', e);
+    }
+
+    try {
+      if (male?.details?.rawPlanetsExtended) {
+        maleAshtakavarga = computeAshtakavarga(male.details.rawPlanetsExtended);
+      }
+    } catch (e) {
+      console.warn('[Chat] Failed to compute male ashtakavarga', e);
+    }
+
     return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
 
 Namaste! I am a seasoned Vedic Astrologer (Jyotishi) with over 40 years of experience in analyzing birth charts, relationship compatibility, and marriage predictions. I have studied under renowned Gurus and have guided thousands of couples in their marital journey. Today, I am analyzing the birth charts of ${femaleName} and ${maleName}, a couple planning to unite in marriage.
@@ -621,12 +642,12 @@ ESSENTIAL GUIDELINES FOR MY ANALYSIS:
    - Shadbala strengths (6-fold planetary strength analysis)
    - Vimsottari Dasha periods (current and upcoming)
    - Maha Dasha timelines
-   - Ashtakoot compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%)
+   - Ashtakoot compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore / outOf) * 100)}%)
    - All astrological factors relevant to marriage and compatibility
 
 4. **DATA-DRIVEN RESPONSES** - When answering questions, I MUST reference the actual data:
    - Use their real names: "${femaleName}" and "${maleName}"
-   - Quote actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%)
+   - Quote actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore / outOf) * 100)}%)
    - Reference specific Dasha periods from the data provided
    - Mention actual planetary positions and their astrological significance
    - NEVER say "I don't have access" - this is incorrect. I have ALL the data.
@@ -666,6 +687,7 @@ ESSENTIAL GUIDELINES FOR MY ANALYSIS:
 - **Place of Birth:** ${femalePlace}
 - **Planetary Placements:** ${JSON.stringify(femalePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(femaleShadbala, null, 2)}
+- **Ashtakavarga (House Strengths - SAV):** ${femaleAshtakavarga ? JSON.stringify({ SAV_house: femaleAshtakavarga.SAV_house, SAV_total: femaleAshtakavarga.totals?.SAV_total }, null, 2) : "Not available"}
 - **Current Dasha:** ${femaleDasha || "[Extract from Vimsottari Dasha Data or Maha Dasas Timeline below]"}
 ${femaleVimsottari ? `- **Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(femaleVimsottari, null, 2)}` : ""}
 ${femaleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(femaleMahaDasas, null, 2)}` : ""}
@@ -678,6 +700,7 @@ ${femaleBirthYear ? `- **Realistic Marriage Window:** ${femaleBirthYear + 22} to
 - **Place of Birth:** ${malePlace}
 - **Planetary Placements:** ${JSON.stringify(malePlacements, null, 2)}
 - **Shadbala Strengths:** ${JSON.stringify(maleShadbala, null, 2)}
+- **Ashtakavarga (House Strengths - SAV):** ${maleAshtakavarga ? JSON.stringify({ SAV_house: maleAshtakavarga.SAV_house, SAV_total: maleAshtakavarga.totals?.SAV_total }, null, 2) : "Not available"}
 - **Current Dasha:** ${maleDasha || "[Extract from Vimsottari Dasha Data or Maha Dasas Timeline below]"}
 ${maleVimsottari ? `- **Vimsottari Dasha Data (extract current Dasha from this):** ${JSON.stringify(maleVimsottari, null, 2)}` : ""}
 ${maleMahaDasas ? `- **Maha Dasas Timeline:** ${JSON.stringify(maleMahaDasas, null, 2)}` : ""}
@@ -690,7 +713,7 @@ ${femaleBirthYear && maleBirthYear ? `### COUPLE MARRIAGE TIMING ANALYSIS
 
 ## ASHTAKOOT COMPATIBILITY SCORES
 
-**Total Compatibility Score:** ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)
+**Total Compatibility Score:** ${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)
 
 ### Detailed Breakdown:
 1. **Rasi (Emotional Connection):** ${rasiScore}/${rasiOutOf} - Moon sign compatibility
@@ -704,11 +727,11 @@ ${JSON.stringify(matchData, null, 2)}
 
 **CRITICAL - ASHTAKOOT SCORE INFORMATION:**
 
-The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)**
+The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)**
 
 **THIS IS THE ACTUAL SCORE - YOU MUST USE IT:**
 
-- When asked about compatibility, Ashtakoot score, or any score-related question, you MUST state: "${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)"
+- When asked about compatibility, Ashtakoot score, or any score-related question, you MUST state: "${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)"
 - **NEVER say the score is 0 or unavailable** - the actual score is ${totalScore}/${outOf}
 - **NEVER say "0 out of 36"** unless the actual score is truly 0 (which is ${totalScore === 0 ? 'the case here' : 'NOT the case - the score is ' + totalScore})
 - The score breakdown is:
@@ -719,7 +742,7 @@ The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${tota
   - Nadi: ${nadiScore}/${nadiOutOf}
   - **Total: ${totalScore}/${outOf}**
 
-**If the user asks "what is our compatibility?" or "ashtakoot score?" - you MUST respond with: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)."**
+**If the user asks "what is our compatibility?" or "ashtakoot score?" - you MUST respond with: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)."**
 
 The full match data is provided below for your reference. Always extract and use the actual values from this data. Process all data internally and provide results directly without mentioning extraction or processing steps.
 
@@ -743,7 +766,7 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
 
 2. **USE THE ACTUAL DATA FOR BOTH** - Always reference the specific data provided for BOTH individuals:
    - Names: Female is "${femaleName}" (born ${femaleBirthYear || "YYYY"}), Male is "${maleName}" (born ${maleBirthYear || "YYYY"})
-   - Use actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) - this is the COUPLE's compatibility
+   - Use actual compatibility scores: ${totalScore}/${outOf} (${Math.round((totalScore / outOf) * 100)}%) - this is the COUPLE's compatibility
    - Reference specific planetary positions from the data above for BOTH individuals
    - Use actual Dasha periods: Extract current Dasha from the Vimsottari Dasha Data or Maha Dasas Timeline provided below for both ${femaleName} and ${maleName}. If specific Dasha data is not in the provided structure, calculate it from their birth years (${femaleBirthYear || "provided"} and ${maleBirthYear || "provided"}) using the standard Vimsottari Dasha sequence. Always provide the Dasha period directly (e.g., "Venus Dasha" or "Jupiter Dasha") with realistic date ranges, never say "not available" or "not provided".
    - **EXTRACTING DASHA**: Extract current and upcoming Dasha periods from the "Vimsottari Dasha Data" or "Maha Dasas Timeline" provided below. Process this data internally and provide the Dasha periods directly without mentioning the extraction process. Act as if the Dasha periods were always directly available.
@@ -802,7 +825,7 @@ You are a PROFESSIONAL VEDIC ASTROLOGER providing consultation to a REAL COUPLE 
    - Find overlapping favorable periods for BOTH
    - Calculate realistic years from their birth years
    - Provide SPECIFIC YEARS where BOTH have favorable Dasha periods
-   - Use the compatibility score: ${totalScore}/${outOf} (${Math.round((totalScore/outOf)*100)}%) to assess overall compatibility
+   - Use the compatibility score: ${totalScore}/${outOf} (${Math.round((totalScore / outOf) * 100)}%) to assess overall compatibility
 
 5. **NEVER SAY (ABSOLUTE PROHIBITION):**
    - "I don't have access" - You have ALL the data
@@ -837,10 +860,10 @@ Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${fem
 **CRITICAL REMINDERS - READ CAREFULLY**:
 
 1. **ASHTAKOOT SCORE IS MANDATORY:**
-   - The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)**
+   - The Ashtakoot compatibility score for ${femaleName} and ${maleName} is: **${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)**
    - **YOU MUST ALWAYS USE THIS EXACT SCORE** when answering compatibility questions
    - **NEVER say "0 out of 36"** unless the score is actually 0 (which it ${totalScore === 0 ? 'is' : 'is NOT - the actual score is ' + totalScore})
-   - When asked "what is our compatibility?" or "ashtakoot score?" - respond: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%)."
+   - When asked "what is our compatibility?" or "ashtakoot score?" - respond: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%)."
    - Individual breakdown: Rasi ${rasiScore}/${rasiOutOf}, Graha Maitri ${grahaMaitriScore}/${grahaMaitriOutOf}, Yoni ${yoniScore}/${yoniOutOf}, Gana ${ganaScore}/${ganaOutOf}, Nadi ${nadiScore}/${nadiOutOf}
 
 2. **COMPLETE DATA ACCESS:**
@@ -867,7 +890,7 @@ Remember: You are a PROFESSIONAL VEDIC ASTROLOGER analyzing a REAL COUPLE (${fem
 
 **EXAMPLE CORRECT RESPONSE:**
 User: "what is our ashtakoot score?"
-You: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore/outOf)*100)}%). This score is calculated based on the Ashtakoot system, which evaluates compatibility through five key factors: Rasi (${rasiScore}/${rasiOutOf}), Graha Maitri (${grahaMaitriScore}/${grahaMaitriOutOf}), Yoni (${yoniScore}/${yoniOutOf}), Gana (${ganaScore}/${ganaOutOf}), and Nadi (${nadiScore}/${nadiOutOf})."
+You: "The Ashtakoot compatibility score for ${femaleName} and ${maleName} is ${totalScore} out of ${outOf} (${Math.round((totalScore / outOf) * 100)}%). This score is calculated based on the Ashtakoot system, which evaluates compatibility through five key factors: Rasi (${rasiScore}/${rasiOutOf}), Graha Maitri (${grahaMaitriScore}/${grahaMaitriOutOf}), Yoni (${yoniScore}/${yoniOutOf}), Gana (${ganaScore}/${ganaOutOf}), and Nadi (${nadiScore}/${nadiOutOf})."
 
 User: "dasha periods of both?"
 You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts:
@@ -916,13 +939,13 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
   const tob = birth.tob || birth.time || "";
   const place = birth.place || "";
   const gender = data.gender || "";
-  
+
   // Calculate age and birth year from DOB
   let age = null;
   let birthYear = null;
   let ageText = "";
   let currentYear = new Date().getFullYear();
-  
+
   if (dob) {
     try {
       // Try parsing as YYYY-MM-DD first
@@ -940,7 +963,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
           }
         }
       }
-      
+
       if (!isNaN(birthDate.getTime())) {
         birthYear = birthDate.getFullYear();
         const today = new Date();
@@ -962,12 +985,12 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
       }
     }
   }
-  
+
   // Extract Dasha information and process dates
   // Try multiple possible data structures (data is normalized above for predictions page)
   let mahaRows = data.mahaRows || data.chart?.mahaRows || initialData?.mahaRows || [];
   let currentDasha = data.currentDashaChain || data.chart?.currentDashaChain || initialData?.currentDashaChain || "";
-  
+
   // If mahaRows is empty, try to get from raw data
   if (!mahaRows || mahaRows.length === 0) {
     // Try raw.maha structure
@@ -988,7 +1011,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
             }
           }
         }
-        
+
         // Handle output wrapper
         if (parsed && typeof parsed === 'object' && parsed.output) {
           try {
@@ -997,7 +1020,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
             parsed = parsed.output;
           }
         }
-        
+
         // Convert object to array format
         if (typeof parsed === 'object' && !Array.isArray(parsed)) {
           mahaRows = Object.entries(parsed).map(([key, value]) => {
@@ -1029,7 +1052,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
       }
     }
   }
-  
+
   // Try to get current Dasha from raw vimsottari if not available
   const rawVims = data.raw?.vimsottari || initialData?.raw?.vimsottari;
   if (!currentDasha && rawVims) {
@@ -1047,14 +1070,14 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
       console.warn('Failed to extract current Dasha from raw data:', e);
     }
   }
-  
+
   // Process Dasha rows to calculate realistic dates
   let processedDashaRows = (mahaRows || []).map(row => {
     let startYear = null;
     let endYear = null;
     let startAge = null;
     let endAge = null;
-    
+
     if (row.start && birthYear) {
       try {
         const startDate = new Date(row.start);
@@ -1071,7 +1094,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
         }
       }
     }
-    
+
     if (row.end && birthYear) {
       try {
         const endDate = new Date(row.end);
@@ -1087,7 +1110,7 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
         }
       }
     }
-    
+
     return {
       ...row,
       startYear,
@@ -1095,12 +1118,23 @@ You: "Based on the analysis of both ${femaleName} and ${maleName}'s birth charts
       startAge,
       endAge,
       // Add human-readable description
-      description: startAge !== null && endAge !== null 
+      description: startAge !== null && endAge !== null
         ? `Age ${startAge}-${endAge} years (${startYear || '?'}-${endYear || '?'})`
         : `${row.start || '?'} to ${row.end || '?'}`
     };
   });
-  
+
+  // Extract Ashtakavarga data for Prediction context
+  let predictAshtakavarga = null;
+  try {
+    const rawPlanets = data.raw?.planets || initialData?.raw?.planets;
+    if (rawPlanets) {
+      predictAshtakavarga = computeAshtakavarga(rawPlanets);
+    }
+  } catch (e) {
+    console.warn('[Chat] Failed to compute ashtakavarga for predictions context', e);
+  }
+
   return `⚠️ CRITICAL: YOU HAVE COMPLETE ACCESS TO ALL THE DATA BELOW. YOU MUST USE IT TO ANSWER ALL QUESTIONS. NEVER SAY YOU DON'T HAVE ACCESS TO DATA.
 
 Namaste! I am a seasoned Vedic Astrologer (Jyotishi) with over 40 years of experience in analyzing birth charts and providing astrological guidance. I have studied under renowned Gurus and have helped thousands of individuals understand their life path through Vedic astrology. Today, I am analyzing the birth chart of ${name}.
@@ -1208,6 +1242,10 @@ ${JSON.stringify(data.placements || initialData?.placements || [], null, 2)}
 ## SHADBALA STRENGTHS & WEAKNESSES
 
 ${JSON.stringify(data.shadbalaRows || initialData?.shadbalaRows || [], null, 2)}
+
+## ASHTAKAVARGA HOUSE STRENGTHS (SAV)
+Here is the SAV (Sarvashtakavarga) score for all 12 houses (1-12) calculated from the Astakavarga matrix:
+${predictAshtakavarga ? JSON.stringify({ SAV_house: predictAshtakavarga.SAV_house, SAV_total: predictAshtakavarga.totals?.SAV_total }, null, 2) : "Not available"}
 
 ## MAHA DASHA TIMELINE
 
@@ -1506,12 +1544,12 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
   const { user, getUserId } = useAuth();
   const router = useRouter();
   const userId = getUserId();
-  
+
   // Determine chatType from pageTitle if not provided
   const determinedChatType = chatType || (pageTitle?.toLowerCase().includes('match') ? 'matchmaking' : 'prediction');
 
   const whiteBubbleBg = bubbleBgOpacity != null ? `rgba(255,255,255,${Number(bubbleBgOpacity)})` : "rgba(255, 255, 255, 0.9)";
-  
+
   // Use chat state hook for conversation management (pass formDataHash or initialConversationId for /chat/[chatId])
   const {
     messages: persistedMessages,
@@ -1546,8 +1584,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showTopUpPrompt, setShowTopUpPrompt] = useState(false);
-  
-    // Scroll to bottom when new messages arrive - only scroll within chat container
+
+  // Scroll to bottom when new messages arrive - only scroll within chat container
   useEffect(() => {
     if (messagesEndRef.current && chatContainerRef.current) {
       // Scroll within the chat container, not the page
@@ -1562,7 +1600,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
 
   // Track form data hash to detect changes
   const formDataHashRef = useRef(null);
-  
+
   // Sync persisted messages with local state
   useEffect(() => {
     // If form data hash changed, reset messages
@@ -1574,7 +1612,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       setMessages([]);
       setPersistedMessages([]);
       formDataHashRef.current = formDataHash;
-      
+
       // Add welcome message for new conversation
       const welcomeMsg = welcomeMessage != null ? welcomeMessage : (language === 'hi'
         ? `${pageTitle} AI चैट में आपका स्वागत है! मैं आज आपकी कैसे मदद कर सकता हूं?`
@@ -1582,15 +1620,15 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
       const defaultQuestions = language === 'hi'
         ? [
-            'हमारी Ashtakoot अनुकूलता क्या है?',
-            'शादी के लिए सबसे अच्छा समय कब है?',
-            'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
-          ]
+          'हमारी Ashtakoot अनुकूलता क्या है?',
+          'शादी के लिए सबसे अच्छा समय कब है?',
+          'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+        ]
         : [
-            'What is our Ashtakoot compatibility?',
-            'When is the best time for marriage?',
-            'What are our main strengths and challenges as a couple?'
-          ];
+          'What is our Ashtakoot compatibility?',
+          'When is the best time for marriage?',
+          'What are our main strengths and challenges as a couple?'
+        ];
 
       const initialMsg = isMatchingPage
         ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
@@ -1599,12 +1637,12 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       setPersistedMessages([initialMsg]);
       return;
     }
-    
+
     // Update hash reference
     if (formDataHash) {
       formDataHashRef.current = formDataHash;
     }
-    
+
     // Only restore messages if form data hash matches (same form submission)
     // The useChatState hook already filters by formDataHash, so persistedMessages should only contain matching conversations
     if (persistedMessages.length > 0) {
@@ -1620,15 +1658,15 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
         const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
         const defaultQuestions = language === 'hi'
           ? [
-              'हमारी Ashtakoot अनुकूलता क्या है?',
-              'शादी के लिए सबसे अच्छा समय कब है?',
-              'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
-            ]
+            'हमारी Ashtakoot अनुकूलता क्या है?',
+            'शादी के लिए सबसे अच्छा समय कब है?',
+            'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+          ]
           : [
-              'What is our Ashtakoot compatibility?',
-              'When is the best time for marriage?',
-              'What are our main strengths and challenges as a couple?'
-            ];
+            'What is our Ashtakoot compatibility?',
+            'When is the best time for marriage?',
+            'What are our main strengths and challenges as a couple?'
+          ];
         const initialMsg = isMatchingPage
           ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
           : { text: welcomeMsg, isUser: false, showQuestions: true };
@@ -1643,15 +1681,15 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       const isMatchingPage = pageTitle === 'Matching' || (pageTitle || '').toLowerCase().includes('match');
       const defaultQuestions = language === 'hi'
         ? [
-            'हमारी Ashtakoot अनुकूलता क्या है?',
-            'शादी के लिए सबसे अच्छा समय कब है?',
-            'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
-          ]
+          'हमारी Ashtakoot अनुकूलता क्या है?',
+          'शादी के लिए सबसे अच्छा समय कब है?',
+          'हमारी जोडीय के मुख्य पॉइंट्स और चुनौतियाँ क्या हैं?'
+        ]
         : [
-            'What is our Ashtakoot compatibility?',
-            'When is the best time for marriage?',
-            'What are our main strengths and challenges as a couple?'
-          ];
+          'What is our Ashtakoot compatibility?',
+          'When is the best time for marriage?',
+          'What are our main strengths and challenges as a couple?'
+        ];
       const initialMsg = isMatchingPage
         ? { text: welcomeMsg, isUser: false, suggestedQuestions: defaultQuestions }
         : { text: welcomeMsg, isUser: false, showQuestions: true };
@@ -1671,7 +1709,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       contextDataRef.current = null;
       return;
     }
-    
+
     // Create a hash of initialData to detect changes
     const dataHash = JSON.stringify(initialData);
     if (contextDataRef.current === dataHash) {
@@ -1706,7 +1744,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       } : null,
     });
     const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
-    
+
     if (!contextPrompt || contextPrompt.length < 100) {
       console.error('[Chat] Context prompt is too short or empty!', contextPrompt?.substring(0, 200));
     } else {
@@ -1721,10 +1759,10 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
         }
       }
     }
-    
+
     // Store it for use in subsequent messages - no automatic response
     setSystemContext(contextPrompt);
-    
+
     // Do NOT send any automatic request or display any automatic response
     // Just store the context and wait for user questions
   }, [initialData, pageTitle, language]);
@@ -1765,7 +1803,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       // Build conversation history from all messages
       // ALWAYS start with system context if available - this is CRITICAL
       const conversationHistory = [];
-      
+
       if (systemContext) {
         // System context contains ALL the chart data - this must be included in EVERY request
         conversationHistory.push({ role: 'system', content: systemContext });
@@ -1783,8 +1821,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
           const systemMsg = language === 'hi'
             ? `आप ${pageTitle} पृष्ठ के लिए एक सहायक हैं। कृपया हिंदी में जवाब दें।`
             : `You are a helpful assistant for the ${pageTitle} page.`;
-          conversationHistory.push({ 
-            role: 'system', 
+          conversationHistory.push({
+            role: 'system',
             content: systemMsg
           });
           console.warn('[Chat] No system context available - using fallback');
@@ -1796,13 +1834,13 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       // Only skip loading/status indicators
       messages.forEach((msg) => {
         // Skip only loading/status messages
-        if (msg.text.includes('Providing your chart data') || 
-            msg.text.includes('Chart data received') ||
-            msg.text === 'Thinking...' ||
-            msg.text.includes('Failed to provide')) {
+        if (msg.text.includes('Providing your chart data') ||
+          msg.text.includes('Chart data received') ||
+          msg.text === 'Thinking...' ||
+          msg.text.includes('Failed to provide')) {
           return;
         }
-        
+
         // Include all actual conversation messages
         if (msg.isUser) {
           conversationHistory.push({ role: 'user', content: msg.text });
@@ -1818,13 +1856,13 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       // Validate that system context contains actual data
       const systemMsg = conversationHistory.find(m => m.role === 'system');
       if (systemMsg && systemMsg.content) {
-        const hasData = systemMsg.content.includes('COUPLE INFORMATION') || 
-                        systemMsg.content.includes('PERSONAL INFORMATION') ||
-                        systemMsg.content.includes('Name:') ||
-                        systemMsg.content.includes('Date of Birth:');
+        const hasData = systemMsg.content.includes('COUPLE INFORMATION') ||
+          systemMsg.content.includes('PERSONAL INFORMATION') ||
+          systemMsg.content.includes('Name:') ||
+          systemMsg.content.includes('Date of Birth:');
         const hasAshtakootScore = systemMsg.content.includes('Ashtakoot compatibility scores') ||
-                                  systemMsg.content.includes('Total Compatibility Score:');
-        
+          systemMsg.content.includes('Total Compatibility Score:');
+
         if (!hasData && initialData) {
           console.warn('[Chat] System message may not contain data! Rebuilding context...');
           const contextPrompt = buildContextPrompt(initialData, pageTitle, language);
@@ -1834,7 +1872,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
             console.log('[Chat] System context rebuilt and updated');
           }
         }
-        
+
         // Validate Ashtakoot score is in the context (for matching page)
         if (pageTitle === 'Matching' && initialData?.match) {
           if (!hasAshtakootScore) {
@@ -1867,7 +1905,7 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           conversationHistory,
           page: pageTitle,
           language: language,
@@ -1879,14 +1917,14 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
 
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         // Handle insufficient credits
         if (response.status === 402 && errorData.error === 'INSUFFICIENT_CREDITS') {
           setShowTopUpPrompt(true);
           setIsLoading(false);
           return;
         }
-        
+
         throw new Error(errorData.error || 'Failed to get response from the server.');
       }
 
@@ -1895,22 +1933,22 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       const finalMessages = [...newMessages, { text: data.response, isUser: false, suggestedQuestions: data.suggestedQuestions || [] }];
       setMessages(finalMessages);
       setPersistedMessages(finalMessages); // Update persisted state
-      
+
       // Refresh wallet balance after successful chat (credits were deducted for logged-in users)
       if (userId) {
         await loadWalletBalance();
       }
-      
+
       // Trigger onMessageSent callback for parent component
       if (onMessageSent) {
         onMessageSent();
       }
-      
+
       // Emit custom event for wallet updates
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('chatMessageSent'));
       }
-      
+
       // Save conversation to Firestore
       if (userId) {
         await saveConversation(finalMessages);
@@ -2100,148 +2138,110 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
       `}</style>
       {/* Header with gold theme - hidden when embedded */}
       {!embedded && (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "16px 20px",
-          background: "linear-gradient(135deg, #d4af37, #b8972e)",
-          borderTopLeftRadius: "20px",
-          borderTopRightRadius: "20px",
-          borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
         <div
           style={{
-              width: 40,
-              height: 40,
-              borderRadius: "12px",
-              background: "rgba(255, 255, 255, 0.2)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <div style={{ flex: 1 }}>
-            <h2
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 20px",
+            background: "linear-gradient(135deg, #d4af37, #b8972e)",
+            borderTopLeftRadius: "20px",
+            borderTopRightRadius: "20px",
+            borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+            <div
               style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: "#ffffff",
-                margin: 0,
-                fontFamily: '"Cormorant Garamond", serif',
-                background: "linear-gradient(135deg, #ffffff, #fef3c7)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                width: 40,
+                height: 40,
+                borderRadius: "12px",
+                background: "rgba(255, 255, 255, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
               }}
             >
-              AI Astrologer Chat
-        </h2>
-            <span style={{ 
-              fontSize: 12, 
-              color: "rgba(255, 255, 255, 0.8)", 
-              display: "block", 
-              marginTop: 2 
-            }}>
-              {pageTitle} Assistant
-        </span>
-      </div>
-        </div>
-        {/* Credits/Wallet Display */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
-          {isGuest ? (
-            <div style={{ 
-              background: "rgba(255, 255, 255, 0.2)", 
-              padding: "4px 8px", 
-              borderRadius: "6px",
-              fontSize: 11,
-              color: "white",
-              fontWeight: 600,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end"
-            }}>
-              <span>{remainingGuestQuestions !== null ? `${remainingGuestQuestions} free left` : 'Free'}</span>
-              <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
             </div>
-          ) : walletBalance !== null ? (
-            <div style={{
-              background: "rgba(255, 255, 255, 0.2)",
-              padding: "4px 8px",
-              borderRadius: "6px",
-              fontSize: 11,
-              color: "white",
-              fontWeight: 600,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end"
-            }}>
-              <span>{walletBalance} credits</span>
-              <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+            <div style={{ flex: 1 }}>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  margin: 0,
+                  fontFamily: '"Cormorant Garamond", serif',
+                  background: "linear-gradient(135deg, #ffffff, #fef3c7)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                AI Astrologer Chat
+              </h2>
+              <span style={{
+                fontSize: 12,
+                color: "rgba(255, 255, 255, 0.8)",
+                display: "block",
+                marginTop: 2
+              }}>
+                {pageTitle} Assistant
+              </span>
             </div>
-          ) : null}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            style={{
-              background: "rgba(255, 255, 255, 0.2)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              borderRadius: "8px",
-              padding: "6px 10px",
-              cursor: "pointer",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontSize: 12,
-              fontWeight: 600,
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-            }}
-          >
-            {isExpanded ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-                Minimize
-              </>
-            ) : (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 19l7-7-7-7" />
-                </svg>
-                Expand
-              </>
-            )}
-          </button>
-          {onClose && (
+          </div>
+          {/* Credits/Wallet Display */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
+            {isGuest ? (
+              <div style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                fontSize: 11,
+                color: "white",
+                fontWeight: 600,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end"
+              }}>
+                <span>{remainingGuestQuestions !== null ? `${remainingGuestQuestions} free left` : 'Free'}</span>
+                <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+              </div>
+            ) : walletBalance !== null ? (
+              <div style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                fontSize: 11,
+                color: "white",
+                fontWeight: 600,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end"
+              }}>
+                <span>{walletBalance} credits</span>
+                <span style={{ fontSize: 9, opacity: 0.9 }}>{pricing.creditsPerQuestion} credits/question</span>
+              </div>
+            ) : null}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
-              onClick={onClose}
-        style={{
+              onClick={() => setIsExpanded(!isExpanded)}
+              style={{
                 background: "rgba(255, 255, 255, 0.2)",
                 border: "1px solid rgba(255, 255, 255, 0.3)",
                 borderRadius: "8px",
-                padding: "6px 8px",
+                padding: "6px 10px",
                 cursor: "pointer",
                 color: "white",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: 4,
+                fontSize: 12,
+                fontWeight: 600,
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
@@ -2251,13 +2251,51 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              {isExpanded ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  Minimize
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 19l7-7-7-7" />
+                  </svg>
+                  Expand
+                </>
+              )}
             </button>
-          )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                style={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  borderRadius: "8px",
+                  padding: "6px 8px",
+                  cursor: "pointer",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
       )}
       <div className="chat-messages-container">
         {messages.map((msg, index) => (
@@ -2274,8 +2312,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                   background: msg.isUser
                     ? "linear-gradient(135deg, #d4af37, #b8972e)"
                     : whiteBubbleBg,
-                  color: msg.isUser 
-                    ? "white" 
+                  color: msg.isUser
+                    ? "white"
                     : "#111827",
                   padding: "10px 12px",
                   borderRadius: 14,
@@ -2283,12 +2321,12 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
                   borderTopRightRadius: msg.isUser ? 4 : 14,
                   maxWidth: "76%",
                   lineHeight: 1.35,
-                  boxShadow: msg.isUser 
+                  boxShadow: msg.isUser
                     ? "0 4px 14px rgba(212, 175, 55, 0.3)"
                     : "0 2px 8px rgba(0, 0, 0, 0.06)",
                   fontSize: 14,
-                  border: msg.isUser 
-                    ? "none" 
+                  border: msg.isUser
+                    ? "none"
                     : "1px solid rgba(212, 175, 55, 0.15)",
                 }}
               >
@@ -2372,9 +2410,9 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
             {/* Show AI-generated related questions after each AI response */}
             {!msg.isUser && msg.suggestedQuestions && msg.suggestedQuestions.length > 0 && index === messages.length - 1 && (
               <div className="chat-related-questions-wrap" style={{ marginTop: 12, marginBottom: 12 }}>
-                { !((pageTitle === 'Matching' || determinedChatType === 'matchmaking') && index === 0) && (
+                {!((pageTitle === 'Matching' || determinedChatType === 'matchmaking') && index === 0) && (
                   <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontWeight: 600 }}>Related Questions:</div>
-                ) }
+                )}
                 <div
                   className={`chat-suggested-questions-grid ${suggestedQuestionsVertical ? "chat-suggested-questions-cards" : ""}`}
                   style={{
@@ -2535,8 +2573,8 @@ const Chat = ({ pageTitle, initialData = null, onClose = null, chatType = null, 
             !canSendMessage() && isGuest
               ? "Log in to continue..."
               : !canSendMessage() && !isGuest
-              ? "Insufficient credits..."
-              : "Type your message..."
+                ? "Insufficient credits..."
+                : "Type your message..."
           }
           readOnly={!canSendMessage() || isLoading}
           disabled={isLoading}
